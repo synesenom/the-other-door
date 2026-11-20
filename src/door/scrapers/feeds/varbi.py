@@ -35,7 +35,7 @@ from xml.etree import ElementTree
 from bs4 import BeautifulSoup
 
 from door.scrapers.sdk import (
-    Detection, JobPosting, NOT_ACCOUNTS, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, followed_name, keep_local,
+    Detection, JobPosting, NOT_ACCOUNTS, probe_session, PoliteSession, ProbeResult, followed_name, keep_local,
     make_job_id, parts, record_error, report, run_probe, scrape_feeds, strip_html, tenant_platform_id, workers,
     host_of,
 )
@@ -185,7 +185,7 @@ def probe(config: dict) -> ProbeResult | None:
     if not entries:
         return None
     tenant = _tenant(entries[0])
-    session = PoliteSession(min_delay=0.2, max_delay=0.5, timeout=PROBE_TIMEOUT_S, max_retries=0)
+    session = probe_session()
 
     def fetch() -> str:
         return _get(session, f"{_base(tenant)}/what:rssfeed/", "application/rss+xml")
@@ -209,12 +209,6 @@ def detect_url(url: str) -> Detection | None:
     tenant = host[: -len(_SUFFIX)] if host.endswith(_SUFFIX) else ""
     if tenant and "." not in tenant and tenant not in _NOT_TENANTS:
         return Detection("varbi", tenant, f"Varbi board {host}")
-    return None
-
-
-def feed_url(entry: str) -> str | None:
-    """None: the feed is RSS, not the JSON list the confirmation reads; the link's shape (a tenant host) vouches
-    for it, and `alive_url` drops a board that does not exist."""
     return None
 
 

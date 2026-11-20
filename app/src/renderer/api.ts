@@ -173,33 +173,10 @@ export async function findJobs(options: { skip?: string[]; onLine?: (line: strin
   }
 }
 
-export function stopRun(): Promise<{ ok: boolean; error?: string }> {
-  return window.door.stopRun()
-}
-
-/** Reveals the run record of the run that started at `startedAt` (the main process maps it to the file). */
-export function showRun(startedAt: string): Promise<{ ok: boolean; error?: string }> {
-  return window.door.showRun(startedAt)
-}
-
-export function runBoard(): Promise<RunBoard> {
-  return window.door.runBoard()
-}
-
-/** Calls `cb` with each new run board the main process pushes; returns the unsubscribe. */
-export function onRunBoard(cb: (board: RunBoard) => void): () => void {
-  return window.door.onRunBoard(cb)
-}
-
 /** A clicked notification that names a job, handed to the screen that holds it (`n` tells two clicks apart). */
 export interface Opening {
   target: Extract<NoticeTarget, { jobId: string }>
   n: number
-}
-
-/** Calls `cb` with the target of each clicked notification; returns the unsubscribe. */
-export function onOpen(cb: (target: NoticeTarget) => void): () => void {
-  return window.door.onOpen(cb)
 }
 
 export interface Match {
@@ -415,14 +392,6 @@ let callCounter = 0
 function newCallId(): string {
   callCounter += 1
   return `c${Date.now().toString(36)}-${callCounter}`
-}
-
-export function openExternal(url: string): Promise<{ ok: boolean; error?: string }> {
-  return window.door.openExternal(url)
-}
-
-export function saveMaterial(jobId: string, which: Document, sent: boolean, name: string): Promise<{ ok: boolean; path?: string; canceled?: true; error?: string }> {
-  return window.door.saveMaterial(jobId, which, sent, name)
 }
 
 const base = (path: string) => path.split(/[\\/]/).filter(Boolean).pop() ?? ''

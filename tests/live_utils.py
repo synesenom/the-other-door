@@ -38,6 +38,16 @@ def not_reached(site: str, why: str) -> None:
     pytest.skip(f"{NOT_REACHED} {site}: {why}")
 
 
+def page_or_not_reached(site: str, session, url: str, content: str | None = None) -> str:
+    """The page at *url* through `sdk.get_page`; a refusal or challenge page skips the test as not reached."""
+    from door.scrapers import sdk
+
+    try:
+        return sdk.get_page(session, url, content=content)
+    except sdk.Refused as exc:
+        not_reached(site, str(exc))
+
+
 def not_reached_if_refused(site: str, errors: list) -> None:
     """Skip the test as not reached when *site*'s errors are all refusals; otherwise let it fail as changed."""
     if refused(errors):

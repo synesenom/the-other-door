@@ -76,7 +76,7 @@ describe('Profile, the CV photo', () => {
 
   it('is offered where the country\'s CVs may carry one, and saved at once, not with Save', async () => {
     const h = await openWith(profile('Copenhagen'), { save_photo: { photo_path: '/p/photo.jpg' } })
-    h.pickPhoto.mockResolvedValueOnce({ token: 't1', name: 'me.jpg' })
+    h.actions['pick-photo'].mockResolvedValueOnce({ token: 't1', name: 'me.jpg' })
     h.call.mockClear()
     await userEvent.click(within(about()).getByRole('button', { name: 'Choose a photo…' }))
     await waitFor(() => expect(h.call).toHaveBeenCalledWith('save_photo', {}, undefined, ['t1']))
@@ -97,10 +97,10 @@ describe('Profile, the CV photo', () => {
       throw new Error('the picture is too small (50 x 50 px)')
     },
     })
-    h.pickPhoto.mockResolvedValueOnce({ token: 't1', name: 'tiny.png' })
+    h.actions['pick-photo'].mockResolvedValueOnce({ token: 't1', name: 'tiny.png' })
     await userEvent.click(within(about()).getByRole('button', { name: 'Choose a photo…' }))
     expect(await within(about()).findByRole('alert')).toHaveTextContent('too small')
-    h.pickPhoto.mockResolvedValueOnce({ error: 'Choose a JPEG or PNG picture.' })
+    h.actions['pick-photo'].mockResolvedValueOnce({ error: 'Choose a JPEG or PNG picture.' })
     await userEvent.click(within(about()).getByRole('button', { name: 'Choose a photo…' }))
     expect(await within(about()).findByRole('alert')).toHaveTextContent('JPEG or PNG')
   })
@@ -117,7 +117,7 @@ describe('Profile, the CV photo', () => {
     const h = await openWith(profile('Copenhagen'), { save_photo: { photo_path: '/p/photo.jpg' } })
     await userEvent.clear(screen.getByLabelText('Name'))
     await userEvent.type(screen.getByLabelText('Name'), 'Ada King')
-    h.pickPhoto.mockResolvedValueOnce({ token: 't1', name: 'me.jpg' })
+    h.actions['pick-photo'].mockResolvedValueOnce({ token: 't1', name: 'me.jpg' })
     await userEvent.click(within(about()).getByRole('button', { name: 'Choose a photo…' }))
     await waitFor(() => expect(h.call).toHaveBeenCalledWith('save_photo', {}, undefined, ['t1']))
     expect(screen.getByLabelText('Name')).toHaveValue('Ada King')

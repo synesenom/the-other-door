@@ -26,16 +26,15 @@ robots.txt (checked 2026-10-31) allows ``/job/`` for every agent and disallows `
 """
 
 import html as html_lib
-import json
 import re
 from datetime import datetime, timezone
 from urllib.parse import quote_plus
 
-import requests
 from bs4 import BeautifulSoup
 
+from door.scrapers import sdk
 from door.scrapers.sdk import (
-    FEED_DELAY, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, keep_local, log_keyword_results,
+    FEED_DELAY, JobPosting, probe_session, PoliteSession, ProbeResult, keep_local, log_keyword_results,
     make_job_id, on_topic, record_answered, record_error, record_pushback, report, run_probe, strip_html, topic_terms,
 )
 
@@ -55,14 +54,8 @@ _HEADERS = {
 # Hosts of this board: a link here is an ad on the board, never an employer's own site (`ats_detect.is_job_board`).
 JOB_BOARD_HOSTS = ("jobbank.",)
 
-_CHALLENGE_MARKERS = ("just a moment", "cdn-cgi/challenge-platform", "attention required", "cf-chl", "cf-browser-verification")
 _ID_IN_PATH = re.compile(r"^/job/(\d+)/")
 _UPDATED = re.compile(r"(\d{2})\.(\d{2})\.(\d{4})")
-_LD_JSON = re.compile(r"<script[^>]*application/ld\+json[^>]*>(.*?)</script>", re.S | re.I)
-
-
-class _Pushback(Exception):
-    """The site refused the request (a 403/429 or a challenge page); the run stops."""
 
 
 def _search_url(keyword: str, page: int) -> str:
@@ -71,14 +64,6 @@ def _search_url(keyword: str, page: int) -> str:
 
 def _detail_url(platform_id: str) -> str:
     return f"{_BASE}/job/{platform_id}/"
-
-
-def _is_challenge(body: str, status: int) -> bool:
-    """Whether an answer is Cloudflare's refusal or challenge, not the site. Pure."""
-    if status in (403, 429):
-        return True
-    head = (body or "")[:6000].lower()
-    return any(marker in head for marker in _CHALLENGE_MARKERS) and "job-item" not in head
 
 
 def _parse_teaser(text: str) -> tuple[str, str]:
@@ -141,51 +126,27 @@ def _location_text(address) -> str:
 
 
 def _parse_date(value) -> datetime | None:
-    if not isinstance(value, str) or not value:
-        return None
-    try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00")).replace(tzinfo=None)
-    except ValueError:
-        return None
+    parsed = sdk.parse_iso_date(value)
+    return parsed.replace(tzinfo=None) if parsed else None
 
 
 def _parse_detail(html: str) -> dict | None:
     """``title``, ``company``, ``location``, ``description`` (plain text), ``posted_at`` from the ad's
     ``JobPosting`` JSON-LD; None when the page has none. Pure."""
-    for block in _LD_JSON.findall(html or ""):
-        try:
-            data = json.loads(block, strict=False)
-        except ValueError:
-            continue
-        for node in data if isinstance(data, list) else [data]:
-            if not isinstance(node, dict) or node.get("@type") != "JobPosting":
-                continue
-            org = node.get("hiringOrganization")
-            place = node.get("jobLocation")
-            if isinstance(place, list):
-                place = place[0] if place else None
-            return {
-                "title": html_lib.unescape(str(node.get("title") or "")).strip(),
-                "company": html_lib.unescape(str((org or {}).get("name") if isinstance(org, dict) else org or "")).strip(),
-                "location": _location_text((place or {}).get("address") if isinstance(place, dict) else place),
-                "description": strip_html(str(node.get("description") or "")),
-                "posted_at": _parse_date(node.get("datePosted")),
-            }
-    return None
-
-
-def _get(session: PoliteSession, url: str) -> str:
-    """The page at *url*. Raises `_Pushback` on a refusal or a challenge, the request's own error otherwise."""
-    try:
-        resp = session.get(url)
-    except requests.HTTPError as exc:
-        status = getattr(exc.response, "status_code", 0)
-        if _is_challenge("", status):
-            raise _Pushback(f"HTTP {status}") from exc
-        raise
-    if _is_challenge(resp.text, resp.status_code):
-        raise _Pushback("challenge page")
-    return resp.text
+    node = next(iter(sdk.job_postings(html)), None)
+    if node is None:
+        return None
+    org = node.get("hiringOrganization")
+    place = node.get("jobLocation")
+    if isinstance(place, list):
+        place = place[0] if place else None
+    return {
+        "title": html_lib.unescape(str(node.get("title") or "")).strip(),
+        "company": html_lib.unescape(str((org or {}).get("name") if isinstance(org, dict) else org or "")).strip(),
+        "location": _location_text((place or {}).get("address") if isinstance(place, dict) else place),
+        "description": strip_html(str(node.get("description") or "")),
+        "posted_at": _parse_date(node.get("datePosted")),
+    }
 
 
 def _posting(card: dict, detail: dict, scraped_at: datetime) -> dict:
@@ -231,9 +192,9 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
         for page in range(1, max_pages + 1):
             url = _search_url(keyword, page)
             try:
-                html = _get(session, url)
+                html = sdk.get_page(session, url, content="job-item")
                 cards = _parse_cards(html)
-            except _Pushback as exc:
+            except sdk.Refused as exc:
                 _pushback(str(exc))
                 return out
             except Exception as exc:  # noqa: BLE001 - one bad page never stops the run
@@ -257,8 +218,8 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                     continue
                 report(f"'{keyword}' details", len(out) - start + 1, len(cards))
                 try:
-                    detail = _parse_detail(_get(session, card["url"]))
-                except _Pushback as exc:
+                    detail = _parse_detail(sdk.get_page(session, card["url"], content="job-item"))
+                except sdk.Refused as exc:
                     _pushback(str(exc))
                     return out
                 except Exception as exc:  # noqa: BLE001
@@ -285,7 +246,7 @@ def probe(config: dict) -> ProbeResult | None:
     keywords = config.get("search_keywords") or config.get("role_targets") or []
     if not keywords:
         return None
-    session = PoliteSession(min_delay=_MIN_DELAY, max_delay=_MAX_DELAY, timeout=PROBE_TIMEOUT_S, max_retries=0, headers=_HEADERS)
+    session = probe_session(_HEADERS)
     url = _search_url(keywords[0], 1)
 
     def fetch() -> str:
@@ -293,7 +254,7 @@ def probe(config: dict) -> ProbeResult | None:
         return resp.text
 
     def parse(html: str):
-        if _is_challenge(html, 200):
+        if sdk.is_challenge(html, 200, content="job-item"):
             return [], False, "bot-wall: a Cloudflare challenge page"
         cards = _parse_cards(html)
         # The results block is the job list; a page with a title saying there are none is an empty answer.

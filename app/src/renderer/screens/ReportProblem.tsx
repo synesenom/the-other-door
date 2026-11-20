@@ -20,7 +20,7 @@ export function ReportProblem({ onSaved }: { onSaved?: () => void } = {}) {
     setBusy(true)
     setSaved(null)
     setError(null)
-    const r = await window.door.reportProblem()
+    const r = await window.door.invoke('report-problem')
     setBusy(false)
     if (r.ok) {
       setSaved(basename((r.data as { path: string }).path))

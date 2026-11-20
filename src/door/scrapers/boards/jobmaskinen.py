@@ -25,17 +25,16 @@ Terms: none found on the site (no terms page, no clause on automated access); ch
 robots.txt: ``User-agent: *`` with an empty ``Disallow``, everything allowed.
 """
 
-import json
 import re
 from datetime import datetime, timezone
 from urllib.parse import urlencode
 
-import requests
 from bs4 import BeautifulSoup
 
+from door.scrapers import sdk
 from door.scrapers.sdk import (
-    FEED_DELAY, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, log_keyword_results, make_job_id,
-    parse_iso_date, record_answered, record_error, record_pushback, report, run_probe, strip_html,
+    FEED_DELAY, JobPosting, probe_session, PoliteSession, ProbeResult, log_keyword_results, make_job_id,
+    parse_iso_date, record_answered, record_error, report, run_probe, strip_html,
 )
 
 _SITE = "jobmaskinen"
@@ -48,10 +47,6 @@ _MIN_DELAY, _MAX_DELAY = FEED_DELAY
 JOB_BOARD_HOSTS = ("jobmaskinen.",)
 
 _JOBNET_ID = re.compile(r"[?&]jobnet=(\d+)")
-
-
-class _Pushback(Exception):
-    """The site refused (403 or 429): stop for this run."""
 
 
 def _search_url(keyword: str, page: int) -> str:
@@ -120,22 +115,17 @@ def _is_results_page(html: str) -> bool:
 def _parse_detail(html: str) -> dict | None:
     """``{title, company, location, description, posted_at}`` from an ad page's ``JobPosting`` JSON-LD
     (``posted_at`` the ISO string); None when the page has none. Pure."""
-    for block in re.findall(r'<script type="application/ld\+json">(.*?)</script>', html, re.DOTALL):
-        try:
-            data = json.loads(block)
-        except ValueError:
-            continue
-        if not isinstance(data, dict) or data.get("@type") != "JobPosting":
-            continue
-        address = (data.get("jobLocation") or {}).get("address") or {}
-        return {
-            "title": (data.get("title") or "").strip(),
-            "company": ((data.get("hiringOrganization") or {}).get("name") or "").strip(),
-            "location": (address.get("addressLocality") or "").strip(),
-            "description": strip_html(data.get("description")),
-            "posted_at": data.get("datePosted") or "",
-        }
-    return None
+    data = next(iter(sdk.job_postings(html)), None)
+    if data is None:
+        return None
+    address = (data.get("jobLocation") or {}).get("address") or {}
+    return {
+        "title": (data.get("title") or "").strip(),
+        "company": ((data.get("hiringOrganization") or {}).get("name") or "").strip(),
+        "location": (address.get("addressLocality") or "").strip(),
+        "description": strip_html(data.get("description")),
+        "posted_at": data.get("datePosted") or "",
+    }
 
 
 def _posting(card: dict, detail: dict | None, scraped_at: datetime) -> dict:
@@ -160,16 +150,6 @@ def _posting(card: dict, detail: dict | None, scraped_at: datetime) -> dict:
 
 def _keywords(config: dict) -> list[str]:
     return list(config.get("search_keywords") or config.get("role_targets") or [])
-
-
-def _get(session: PoliteSession, url: str) -> str:
-    """The page's text; a 403 or 429 raises `_Pushback`, any other failure its own exception."""
-    try:
-        return session.get(url).text
-    except requests.HTTPError as exc:
-        if getattr(exc.response, "status_code", None) in (403, 429):
-            raise _Pushback(f"HTTP {exc.response.status_code} on {url}") from exc
-        raise
 
 
 def _fail(message: str) -> None:
@@ -197,9 +177,9 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
             for page in range(1, _MAX_PAGES + 1):
                 url = _search_url(keyword, page)
                 try:
-                    html = _get(session, url)
+                    html = sdk.get_page(session, url)
                     cards, has_next = _parse_cards(html)
-                except _Pushback:
+                except sdk.Refused:
                     raise
                 except Exception as exc:
                     _fail(f"search error (keyword={keyword!r}, page={page}): {exc}")
@@ -225,10 +205,10 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                         continue
                     detail = None
                     try:
-                        detail = _parse_detail(_get(session, _job_url(platform_id)))
+                        detail = _parse_detail(sdk.get_page(session, _job_url(platform_id)))
                         if detail is None:
                             _fail(f"detail error ({_job_url(platform_id)}): no JobPosting data")
-                    except _Pushback:
+                    except sdk.Refused:
                         raise
                     except Exception as exc:
                         _fail(f"detail error ({_job_url(platform_id)}): {exc}")
@@ -236,9 +216,8 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                 if not has_next:
                     break
             log_keyword_results(_SITE, keyword, postings[start:])
-    except _Pushback as exc:
-        _fail(f"stopped for this run: {exc}")
-        record_pushback(_SITE)
+    except sdk.Refused as exc:
+        sdk.stop_for_run(_SITE, str(exc))
     return postings
 
 
@@ -251,7 +230,7 @@ def probe(config: dict) -> ProbeResult | None:
     if not keywords:
         return None
     url = _search_url(keywords[0], 1)
-    session = PoliteSession(min_delay=_MIN_DELAY, max_delay=_MAX_DELAY, timeout=PROBE_TIMEOUT_S, max_retries=0)
+    session = probe_session()
 
     def parse(html: str):
         cards, _ = _parse_cards(html)

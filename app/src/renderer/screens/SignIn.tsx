@@ -22,7 +22,7 @@ export function SignIn({ email, onDone }: { email?: string; onDone: () => void |
 
   useEffect(() => {
     let live = true
-    const off = window.door.claudeLogin.onState((s) => {
+    const off = window.door.on('claude-login', (s) => {
       if (!live) return
       setStale(false)
       setLogin(s)
@@ -32,7 +32,7 @@ export function SignIn({ email, onDone }: { email?: string; onDone: () => void |
           if (live) setStale(true)
         })
     })
-    void window.door.claudeLogin.state().then((s) => {
+    void window.door.invoke('claude-login-state').then((s) => {
       if (!live) return
       // Only a sign-in still going, or a done doctor did not confirm; an old failure or cancel is not shown again.
       const carried = s.state === 'starting' || s.state === 'waiting' || s.state === 'done'
@@ -51,12 +51,12 @@ export function SignIn({ email, onDone }: { email?: string; onDone: () => void |
     setCode('')
     setCodeError(null)
     setLogin({ state: 'starting' })
-    void window.door.claudeLogin.start(email)
+    void window.door.invoke('claude-login-start', email)
   }
 
   const sendCode = async () => {
     setCodeError(null)
-    const r = await window.door.claudeLogin.sendCode(code)
+    const r = await window.door.invoke('claude-login-code', code)
     if (!r.ok) setCodeError(r.error ?? 'That code did not go through.')
   }
 
@@ -75,10 +75,10 @@ export function SignIn({ email, onDone }: { email?: string; onDone: () => void |
       <div className="onb-field field">
         <Spinner message="Finish signing in in your browser. The other door waits here." />
         <div className="actions">
-          <button type="button" className="secondary" disabled={!login.canOpen} onClick={() => void window.door.claudeLogin.openPage()}>
+          <button type="button" className="secondary" disabled={!login.canOpen} onClick={() => void window.door.invoke('claude-login-open')}>
             Open the sign-in page again
           </button>
-          <button type="button" className="quiet" onClick={() => void window.door.claudeLogin.cancel()}>
+          <button type="button" className="quiet" onClick={() => void window.door.invoke('claude-login-cancel')}>
             Cancel
           </button>
         </div>

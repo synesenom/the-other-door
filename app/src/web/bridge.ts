@@ -5,12 +5,13 @@
 // requests): this follows the run through `status_summary.in_progress` and `job_result`, so the
 // screen still gets one answer at the end. What only the door machine can do (file dialogs, signing
 // in, export and import) says so.
-import type { Envelope } from '../main/ipc'
+import type { ActionArgs, ActionName, ActionResult, Envelope, Events } from '../main/ipc'
 import type { LoginState } from '../main/claude-login'
 import type { PickResult } from '../main/cv-sources'
 import type { NoticeTarget } from '../main/notices'
 import type { RunBoard } from '../main/run-board'
 
+type Impl = { [A in ActionName]?: (...args: ActionArgs<A>) => ActionResult<A> | Promise<ActionResult<A>> }
 type Progress = { progress: number; total?: number; message: string }
 
 export interface WebDeps {
@@ -158,6 +159,75 @@ export function createWebDoor(deps: WebDeps) {
   const machineOnly = async (..._args: unknown[]) => ({ ok: false as const, error: ON_THE_MACHINE })
   const loginState: LoginState = { state: 'failed', message: 'Sign in to Claude on the computer running The other door.' }
 
+  // The phone's short list of actions; every other action is refused (the actions the desktop's own machine alone can do answer ON_THE_MACHINE).
+  const actions: Impl = {
+    'open-external': async (url) => {
+      if (!/^https?:\/\//i.test(url)) return { ok: false, error: 'Only web links open from The other door.' }
+      deps.open(url)
+      return { ok: true }
+    },
+    'save-material': async (jobId, which, sent, name) => {
+      deps.download(`/files/jobs/output/${encodeURIComponent(jobId)}/${sent ? 'sent/' : ''}${which}.pdf`, name)
+      return { ok: true }
+    },
+    'pick-cv-files': async (): Promise<PickResult> => ({ files: [], refused: [] }),
+    'cv-file': async () => null,
+    'cv-sources-clear': async () => {},
+    'pick-photo': async () => ({ error: ON_THE_MACHINE }),
+    'claude-login-start': machineOnly,
+    'claude-login-code': machineOnly,
+    'claude-login-open': machineOnly,
+    'claude-login-cancel': async () => ({ ok: true }),
+    'claude-login-state': async () => loginState,
+    info: async () => ({ environment: 'production' as const, remote: true as const }),
+    'export-data': machineOnly,
+    'pick-archive': async () => ({ error: ON_THE_MACHINE }),
+    'report-problem': machineOnly,
+    'show-home': async () => ({ ok: false }),
+    'check-update': async () => ({ enabled: false as const }),
+    'install-update': async () => ({ ok: false }),
+    'stop-run': async () => {
+      const r = await rpc('cancel_job', {})
+      return r.ok ? { ok: true } : { ok: false, error: r.error }
+    },
+    'show-run': machineOnly,
+    'current-board': board,
+  }
+
+  function onRunBoard(cb: (b: RunBoard) => void): () => void {
+    let live = true
+    let last = ''
+    void (async () => {
+      while (live) {
+        const b = await board().catch(() => ({ active: false }) as RunBoard)
+        // the run is over but its answer is not collected yet: keep showing its steps
+        if (!b.active && following > 0 && last) {
+          await tick()
+          continue
+        }
+        const key = JSON.stringify(b)
+        if (live && key !== last) {
+          last = key
+          cb(b)
+        }
+        await tick()
+      }
+    })()
+    return () => {
+      live = false
+    }
+  }
+  function onOpen(cb: (target: NoticeTarget) => void): () => void {
+    openers.add(cb)
+    const waiting = held
+    held = []
+    for (const t of waiting) cb(t)
+    return () => openers.delete(cb)
+  }
+  const none = () => () => undefined
+  // update-state and claude-login never change on the phone.
+  const subscribers: { [E in keyof Events]: (cb: (payload: Events[E]) => void) => () => void } = { 'run-board': onRunBoard, open: onOpen, 'update-state': none, 'claude-login': none }
+
   return {
     async call(tool: string, args: Record<string, unknown> = {}, callId?: string): Promise<Envelope> {
       const r = await rpc(tool, args)
@@ -168,105 +238,26 @@ export function createWebDoor(deps: WebDeps) {
       listeners.set(callId, cb)
       return () => listeners.delete(callId)
     },
-    async openExternal(url: string) {
-      if (!/^https?:\/\//i.test(url)) return { ok: false, error: 'Only web links open from The other door.' }
-      deps.open(url)
-      return { ok: true }
+    invoke(action: string, ...args: unknown[]): Promise<unknown> {
+      const handler = actions[action as ActionName] as ((...a: unknown[]) => Promise<unknown>) | undefined
+      return handler ? handler(...args) : Promise.reject(new Error(`${action} is not available on the phone`))
     },
-    async saveMaterial(jobId: string, which: 'cv' | 'cover_letter', sent: boolean, name: string) {
-      deps.download(`/files/jobs/output/${encodeURIComponent(jobId)}/${sent ? 'sent/' : ''}${which}.pdf`, name)
-      return { ok: true }
+    on(event: string, cb: (payload: never) => void): () => void {
+      const subscribe = subscribers[event as keyof Events] as ((cb: (payload: never) => void) => () => void) | undefined
+      return subscribe ? subscribe(cb) : () => undefined
+    },
+    onBeforeClose: () => () => undefined,
+    async dropCvFiles(): Promise<PickResult> {
+      return { files: [], refused: [] }
     },
     /** The address of a prepared page image (the /files cookie set at pairing lets an <img> load it). */
     pageUrl(jobId: string, pngPath: string, v: number, sent = false): string {
       return `/files/jobs/output/${encodeURIComponent(jobId)}/${sent ? 'sent/' : ''}${encodeURIComponent(base(pngPath))}?v=${v}`
     },
-    async pickCvFiles(): Promise<PickResult> {
-      return { files: [], refused: [] }
-    },
-    async dropCvFiles(): Promise<PickResult> {
-      return { files: [], refused: [] }
-    },
-    async cvFile() {
-      return null
-    },
-    async clearCvSources() {},
-    async pickPhoto() {
-      return { error: ON_THE_MACHINE }
-    },
-    onBeforeClose: () => () => undefined,
-    claudeLogin: {
-      start: machineOnly,
-      sendCode: machineOnly,
-      openPage: machineOnly,
-      async cancel() {
-        return { ok: true }
-      },
-      async state() {
-        return loginState
-      },
-      onState: () => () => undefined,
-    },
-    async info() {
-      return { environment: 'production' as const, remote: true as const }
-    },
-    exportData: machineOnly,
-    async pickArchive() {
-      return { error: ON_THE_MACHINE }
-    },
-    reportProblem: machineOnly,
-    async showHome() {
-      return { ok: false }
-    },
-    async checkUpdate() {
-      return { enabled: false as const }
-    },
-    async installUpdate() {
-      return { ok: false }
-    },
-    onUpdateState() {
-      return () => undefined
-    },
-    async stopRun() {
-      const r = await rpc('cancel_job', {})
-      return r.ok ? { ok: true } : { ok: false, error: r.error }
-    },
-    showRun: machineOnly,
-    runBoard: board,
-    onRunBoard(cb: (b: RunBoard) => void): () => void {
-      let live = true
-      let last = ''
-      void (async () => {
-        while (live) {
-          const b = await board().catch(() => ({ active: false }) as RunBoard)
-          // the run is over but its answer is not collected yet: keep showing its steps
-          if (!b.active && following > 0 && last) {
-            await tick()
-            continue
-          }
-          const key = JSON.stringify(b)
-          if (live && key !== last) {
-            last = key
-            cb(b)
-          }
-          await tick()
-        }
-      })()
-      return () => {
-        live = false
-      }
-    },
-    /** Tells App where to go (App listens through onOpen, as it does for the desktop's notifications). */
+    /** Tells App where to go (App listens through `on('open')`, as it does for the desktop's notifications). */
     openTarget(target: NoticeTarget): void {
       if (openers.size === 0) held.push(target)
       else for (const cb of openers) cb(target)
-    },
-    onOpen(cb: (target: NoticeTarget) => void): () => void {
-      openers.add(cb)
-      const waiting = held
-      held = []
-      for (const t of waiting) cb(t)
-      return () => openers.delete(cb)
     },
   }
 }

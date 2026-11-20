@@ -129,4 +129,7 @@ def test_a_lever_name_probe_tries_the_us_host_then_the_eu_one():
     us, eu = lever.name_probes("acme")
     assert us.url == "https://api.lever.co/v0/postings/acme" and us.key is None and us.params == {"mode": "json"}
     assert eu.url == "https://api.eu.lever.co/v0/postings/acme" and eu.evidence == "Lever account acme (EU host)"
-    assert lever.feed_url("acme") is None
+
+
+def test_parse_date_returns_a_str_not_a_datetime():
+    assert lever._parse_date(1746100800000) == "2025-05-01T12:00:00"

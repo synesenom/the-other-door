@@ -88,14 +88,14 @@ describe('createWebDoor', () => {
       if (tool === 'cancel_job') return { cancelling: 'find_jobs' }
       return {}
     })
-    expect(await door.runBoard()).toEqual({ active: true, own: true, started_at: 's', purpose: 'find', message: 'm', steps: [{ name: 'search', status: 'done' }] })
-    expect(await door.stopRun()).toEqual({ ok: true })
+    expect(await door.invoke('current-board')).toEqual({ active: true, own: true, started_at: 's', purpose: 'find', message: 'm', steps: [{ name: 'search', status: 'done' }] })
+    expect(await door.invoke('stop-run')).toEqual({ ok: true })
     expect(server.calls.some((c) => c.tool === 'cancel_job')).toBe(true)
   })
 
   it('no run is an inactive board', async () => {
     const { door } = setup(() => ({ in_progress: null }))
-    expect(await door.runBoard()).toEqual({ active: false })
+    expect(await door.invoke('current-board')).toEqual({ active: false })
   })
 
   it('a tunnel with no computer behind it counts as not reaching it, and says what to do after a restart', async () => {
@@ -111,26 +111,26 @@ describe('createWebDoor', () => {
     const { door, deps } = setup(() => ({}))
     expect(door.pageUrl('jobindex.1', '/home/x/jobs/output/jobindex.1/cv-1.png', 3)).toBe('/files/jobs/output/jobindex.1/cv-1.png?v=3')
     expect(door.pageUrl('jobindex.1', '/home/x/jobs/output/jobindex.1/sent/cv-1.png', 3, true)).toBe('/files/jobs/output/jobindex.1/sent/cv-1.png?v=3')
-    expect(await door.saveMaterial('jobindex.1', 'cv', false, 'Jane Doe - CV.pdf')).toEqual({ ok: true })
+    expect(await door.invoke('save-material', 'jobindex.1', 'cv', false, 'Jane Doe - CV.pdf')).toEqual({ ok: true })
     expect(deps.download).toHaveBeenCalledWith('/files/jobs/output/jobindex.1/cv.pdf', 'Jane Doe - CV.pdf')
-    await door.saveMaterial('jobindex.1', 'cover_letter', true, 'Cover letter.pdf')
+    await door.invoke('save-material', 'jobindex.1', 'cover_letter', true, 'Cover letter.pdf')
     expect(deps.download).toHaveBeenLastCalledWith('/files/jobs/output/jobindex.1/sent/cover_letter.pdf', 'Cover letter.pdf')
-    await door.openExternal('https://example.com/job')
+    await door.invoke('open-external', 'https://example.com/job')
     expect(deps.open).toHaveBeenCalledWith('https://example.com/job')
   })
 
   it("what belongs to the computer running The other door says so; info says it's remote", async () => {
     const { door } = setup(() => ({}))
-    expect(await door.info()).toEqual({ environment: 'production', remote: true })
-    expect(await door.pickCvFiles()).toEqual({ files: [], refused: [] })
-    expect(await door.exportData()).toEqual({ ok: false, error: expect.stringMatching(/computer running The other door/) })
+    expect(await door.invoke('info')).toEqual({ environment: 'production', remote: true })
+    expect(await door.invoke('pick-cv-files')).toEqual({ files: [], refused: [] })
+    expect(await door.invoke('export-data')).toEqual({ ok: false, error: expect.stringMatching(/computer running The other door/) })
   })
 
   it('a target opened before the app listens is held until it does', async () => {
     const { door } = setup(() => ({}))
     door.openTarget({ screen: 'posting', jobId: 'manual.1', inPlay: false })
     const seen: unknown[] = []
-    door.onOpen((t) => seen.push(t))
+    door.on('open', (t) => seen.push(t))
     expect(seen).toEqual([{ screen: 'posting', jobId: 'manual.1', inPlay: false }])
     door.openTarget({ screen: 'matches' })
     expect(seen).toHaveLength(2)
@@ -150,7 +150,7 @@ describe('createWebDoor', () => {
       return {}
     })
     const boards: unknown[] = []
-    const stop = door.onRunBoard((b) => boards.push(b))
+    const stop = door.on('run-board', (b) => boards.push(b))
     const run = door.call('find_jobs', {})
     await vi.waitFor(() => expect(boards).toContainEqual(expect.objectContaining({ active: true })))
     finished = true // the lock is gone: in_progress is null, but the result is not collected yet
@@ -162,7 +162,15 @@ describe('createWebDoor', () => {
 
   it('opens only web links (a posting could carry anything)', async () => {
     const { door, deps } = setup(() => ({}))
-    expect(await door.openExternal('javascript:alert(1)')).toEqual({ ok: false, error: 'Only web links open from The other door.' })
+    expect(await door.invoke('open-external', 'javascript:alert(1)')).toEqual({ ok: false, error: 'Only web links open from The other door.' })
     expect(deps.open).not.toHaveBeenCalled()
+  })
+})
+
+describe('the phone refuses every action that is not on its list', () => {
+  it('rejects an action it does not know, and answers a desktop-only one with where to do it', async () => {
+    const { door } = setup(() => ({}))
+    await expect((door as { invoke(a: string): Promise<unknown> }).invoke('no-such-action')).rejects.toThrow(/not available on the phone/)
+    expect(await door.invoke('pick-archive')).toEqual({ error: expect.stringMatching(/computer running The other door/) })
   })
 })

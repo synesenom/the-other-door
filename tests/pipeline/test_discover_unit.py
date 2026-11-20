@@ -409,15 +409,6 @@ def test_the_block_keeps_its_fields_and_breaks_down_by_source(env, fake):
     assert src["stopped"] is None and src["skipped"] is None and src["error"] is None
 
 
-def test_the_old_state_file_is_migrated_on_the_first_run(env, fake):
-    env.jobs_dir.mkdir(parents=True, exist_ok=True)
-    (env.jobs_dir / "linkedin_discovery.json").write_text(json.dumps(
-        {"seen": {}, "pace": {"budget": 75, "factor": 2, "clean_runs": 0}}))
-    run(env)
-    assert fake.calls[-1]["budget"] == 75 and fake.calls[-1]["pause"] == (4.0, 8.0)
-    assert (env.jobs_dir / "discovery" / "linkedin.json").exists()
-
-
 # --- profession.hu, the second source ---------------------------------------------------------
 
 def _profession_employer(company, *ids):

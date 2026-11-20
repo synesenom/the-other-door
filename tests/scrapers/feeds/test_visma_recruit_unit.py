@@ -192,7 +192,6 @@ def test_the_list_guid_is_read_from_an_entry_or_a_link():
 
 
 def test_the_feed_contract_for_a_list():
-    assert visma_recruit.feed_url(_NASSJO) is None
     assert visma_recruit.alive_url(_NASSJO) == f"{_LIST_URL}?guidExtSoftware={_NASSJO}"
     assert visma_recruit.NAME_FROM_PAGE is True
     assert visma_recruit.name_page(_NASSJO, "https://recruit.visma.com/x") == f"{_LIST_URL}?guidExtSoftware={_NASSJO}"

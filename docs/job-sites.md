@@ -507,7 +507,7 @@ run by the `discover` step (`door.core.employers.discovery_sources`), each with 
 - **Slow, small, spread out and quick to stop.** LinkedIn: a budget of **150 requests a run**
   (search pages and job pages together) with **2 to 4 seconds between two**, job pages only for employers with an ad title on topic for your keywords.
   Employers already followed, or looked at in the last 90 days, are not fetched again
-  (`jobs/discovery/linkedin.json`, copied from the older `jobs/linkedin_discovery.json` on first read). The pace adapts: after a refusal the next run gets half the
+  (`jobs/discovery/linkedin.json`). The pace adapts: after a refusal the next run gets half the
   budget and twice the pause (down to 10 requests, up to 4 times the pause), and three runs in a
   row without a refusal step it back up toward the defaults. Every run's observation (time,
   requests made, pause, outcome, and for a refusal after how many requests and seconds the first

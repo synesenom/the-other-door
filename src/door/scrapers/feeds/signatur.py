@@ -31,7 +31,7 @@ from urllib.parse import parse_qs, unquote_plus, urlparse
 from bs4 import BeautifulSoup
 
 from door.scrapers.sdk import (
-    JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, make_job_id,
+    JobPosting, probe_session, ProbeResult, make_job_id,
     record_error, report, run_probe, scrape_feeds, strip_html, workers, followed_name,
 )
 from door.scrapers.sdk import Detection, parts, split_known
@@ -150,7 +150,7 @@ def probe(config: dict) -> ProbeResult | None:
     if not entries:
         return None
     client = _client_id(entries[0])
-    session = PoliteSession(min_delay=0.2, max_delay=0.5, timeout=PROBE_TIMEOUT_S, max_retries=0)
+    session = probe_session()
 
     def fetch() -> str:
         return session.get(f"{_BASE}/JobList.aspx", params={"ClientId": client}).text
@@ -175,6 +175,3 @@ def detect_url(url: str) -> Detection | None:
     client = query.get("clientid", "")
     return Detection("signatur", client, f"Signatur job portal link {url}") if client.isdigit() else None
 
-def feed_url(entry: str) -> str | None:
-    """None: a link to the board names the account, no feed check is needed."""
-    return None

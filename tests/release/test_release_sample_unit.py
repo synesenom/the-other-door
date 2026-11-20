@@ -33,7 +33,6 @@ NEW_SINCE_RELEASE: set[str] = {
 
 # Files the inventory names that a release's own sample does not hold, and why (never for lack of effort).
 ABSENT_BY_DESIGN = {
-    "jobs/linkedin_discovery.json": "the state a version older than v0.1.0 kept; v0.1.0 writes jobs/discovery/linkedin.json",
     "upskill/**": "not in profile/ or jobs/, the two folders a sample holds",
 }
 # Inventory kinds that are the user's own data: a sample holds a file for each pattern of them.

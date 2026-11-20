@@ -43,7 +43,6 @@ def test_an_entry_without_a_client_id_names_no_employer(entry):
 
 def test_the_search_that_lists_one_clients_adverts():
     assert networx.search_url("3509") == "https://www.networxrecruitment.com/Website/Search?SelectedEmployers=3509"
-    assert networx.feed_url("3509") is None
 
 
 # --- the search page ---
@@ -121,13 +120,6 @@ def test_an_advert_of_another_template_has_no_json_ld_but_its_text():
 def test_a_page_with_neither_text_nor_markup_has_no_ad():
     assert networx.parse_ad("<html><body><h1>Error</h1></body></html>") is None
     assert networx.parse_ad("") is None
-
-
-def test_the_unclosed_json_ld_is_read_and_another_broken_one_is_not():
-    assert networx._load_ld('{"datePosted": "2026-10-27", "hiringOrganization": {"name": "A"}') == {
-        "datePosted": "2026-10-27", "hiringOrganization": {"name": "A"}}
-    assert networx._load_ld('{"datePosted": ') is None
-    assert networx._load_ld('{"a": 1}') == {"a": 1}
 
 
 def test_the_posting_is_built_from_a_row_and_its_ad():

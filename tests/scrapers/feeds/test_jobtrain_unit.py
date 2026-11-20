@@ -39,7 +39,6 @@ def test_an_entry_that_names_no_tenant_has_no_target(entry):
 
 
 def test_there_is_no_feed_check_and_the_alive_check_is_the_first_card_page():
-    assert jobtrain.feed_url("leighacademiestrust") is None
     assert jobtrain.alive_url("leighacademiestrust") == "https://www.jobtrain.co.uk/leighacademiestrust/Home/_JobCard?Skip=0"
     assert jobtrain.alive_url("jobs.crisis.org.uk") == "https://jobs.crisis.org.uk/Home/_JobCard?Skip=0"
     assert jobtrain.alive_url("") is None

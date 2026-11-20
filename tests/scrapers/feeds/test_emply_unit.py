@@ -32,10 +32,6 @@ def test_detect_url_ignores_what_is_no_tenant(url):
     assert emply.detect_url(url) is None
 
 
-def test_feed_url_is_none_because_the_feed_is_a_post():
-    assert emply.feed_url("dca") is None
-
-
 def test_ad_url_is_language_title_and_short_id():
     vacancy = {"shortId": "06mqt4", "titleAsUrl": "intern-x", "translations": [{"languageKey": "en-GB"}]}
     assert emply._ad_url("dca", vacancy) == "https://dca.career.emply.com/en/ad/intern-x/06mqt4"

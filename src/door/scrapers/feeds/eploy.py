@@ -37,7 +37,7 @@ from xml.etree import ElementTree
 from bs4 import BeautifulSoup
 
 from door.scrapers.sdk import (
-    Detection, JobPosting, NOT_ACCOUNTS, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, followed_name, keep_local,
+    Detection, JobPosting, NOT_ACCOUNTS, probe_session, PoliteSession, ProbeResult, followed_name, keep_local,
     make_job_id, parts, host_of, run_probe, scrape_feeds, strip_html, tenant_platform_id, workers,
 )
 
@@ -175,7 +175,7 @@ def probe(config: dict) -> ProbeResult | None:
     if not entries:
         return None
     host = _host(entries[0])
-    session = PoliteSession(min_delay=0.2, max_delay=0.5, timeout=PROBE_TIMEOUT_S, max_retries=0)
+    session = probe_session()
 
     def fetch() -> str:
         return _get(session, datafeed_url(host, limit=5))
@@ -208,12 +208,6 @@ def detect_html(html: str, url: str) -> Detection | None:
     host = parts(url.strip())[0]
     if host and _FOOTER.search(html or "") and _SEARCH_PAGES.search(html or ""):
         return Detection("eploy", host, f"{host} is an Eploy careers site (its footer and vacancy pages)")
-    return None
-
-
-def feed_url(entry: str) -> str | None:
-    """None: the feed is RSS, not the JSON list the confirmation reads; the host's shape (or `detect_html`'s two
-    signatures) vouches for it, and `alive_url` drops a host that does not exist."""
     return None
 
 

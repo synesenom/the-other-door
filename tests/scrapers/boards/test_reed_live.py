@@ -1,7 +1,7 @@
 """Live smoke tests for Reed (reed.co.uk), one per mode (#19): the search for "project manager" in London.
 
 Opt-in (marked `live`): fetches the real search pages and ads over plain HTTP. Run with `./scripts/run-test.sh --live`.
-A refusal or challenge page (`reed._Pushback`) is not reached.
+A refusal or challenge page (`sdk.Refused`) is not reached.
 """
 
 from datetime import datetime, timezone
@@ -12,7 +12,7 @@ from door.scrapers.boards import reed
 from door.scrapers.http_client import PoliteSession
 from live_utils import (
     NONSENSE_KEYWORD as KW, assert_contract, assert_listing, assert_page2, assert_zero_hits, drain_zero_hit_state,
-    fail, not_reached, probe_sized,
+    fail, page_or_not_reached, probe_sized,
 )
 
 CONFIG = {"search_keywords": ["project manager"], "topic_terms": ["project*"], "location": "London"}
@@ -23,15 +23,8 @@ def _session() -> PoliteSession:
     return PoliteSession(min_delay=0.5, max_delay=1.0, timeout=30, max_retries=0, headers=reed._HEADERS)
 
 
-def _get(session: PoliteSession, url: str) -> str:
-    try:
-        return reed._get(session, url)
-    except reed._Pushback as exc:
-        not_reached("reed", str(exc))
-
-
 def _cards(session: PoliteSession, page: int) -> list[dict]:
-    parsed = reed._parse_results(_get(session, reed._search_url(_KEYWORD, CONFIG["location"], page)))
+    parsed = reed._parse_results(page_or_not_reached("reed", session, reed._search_url(_KEYWORD, CONFIG["location"], page), content="__next_data__"))
     assert parsed is not None, fail("reed", "page2" if page > 1 else "details", "no __NEXT_DATA__ searchResults")
     return [c for c in (reed._card(j) for j in parsed[1]) if c]
 
@@ -64,7 +57,7 @@ def test_reed_details_live():
         now = datetime.now(timezone.utc)
         postings = []
         for card in cards[:2]:
-            description = reed._parse_description(_get(session, card["url"]))
+            description = reed._parse_description(page_or_not_reached("reed", session, card["url"], content="__next_data__"))
             assert description, fail("reed", "details", f"no JobPosting JSON-LD on {card['url']}")
             postings.append(reed._posting(card, description, now))
     assert_contract("reed", postings, "details", config=CONFIG)

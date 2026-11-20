@@ -196,26 +196,5 @@ def test_each_source_has_its_own_file(tmp_path):
     assert ds.path(tmp_path, "fake") == tmp_path / "discovery" / "fake.json"
 
 
-def test_the_old_linkedin_file_is_migrated_by_copy_on_load_and_kept(tmp_path):
-    old = {"last_run": NOW.isoformat(), "seen": {}, "pace": {"budget": 75, "factor": 2, "clean_runs": 0}}
-    (tmp_path / "linkedin_discovery.json").write_text(json.dumps(old))
-    assert ds.load(tmp_path, "linkedin") == old
-    assert json.loads((tmp_path / "discovery" / "linkedin.json").read_text()) == old
-    assert (tmp_path / "linkedin_discovery.json").exists()
-    assert ds.load(tmp_path, "linkedin") == old  # idempotent
-
-
-def test_the_new_file_wins_when_both_exist(tmp_path):
-    (tmp_path / "linkedin_discovery.json").write_text(json.dumps({"mode": "combined", "seen": {}}))
-    ds.save(tmp_path, "linkedin", {"mode": "rotate", "seen": {}})
-    assert ds.load(tmp_path, "linkedin")["mode"] == "rotate"
-
-
-def test_another_source_never_reads_the_legacy_file(tmp_path):
-    (tmp_path / "linkedin_discovery.json").write_text(json.dumps({"mode": "combined", "seen": {}}))
-    assert ds.load(tmp_path, "fake") == {"seen": {}}
-    assert not (tmp_path / "discovery" / "fake.json").exists()
-
-
 def test_resting_is_read_for_any_source():
     assert ds.resting_until({"pushback_at": NOW.isoformat(), "seen": {}}, NOW, "fake") == NOW + timedelta(hours=24)

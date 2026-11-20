@@ -7,6 +7,7 @@ from door.core.employers import ats_detect
 from door.matching import locality, title_fit
 from door.scrapers import sdk
 from door import i18n
+from paths import TESTS_DIR
 
 
 def test_every_export_is_documented():
@@ -30,12 +31,10 @@ def test_wrappers_follow_a_patch_of_the_defining_module(monkeypatch):
     monkeypatch.setattr(title_fit, "on_topic", lambda title, terms: ("t", title, terms))
     monkeypatch.setattr(locality, "country_is_non_local", lambda c, config, remote=False: ("l", c, remote))
     monkeypatch.setattr(i18n, "career_site_words", lambda: ["patched"])
-    monkeypatch.setattr(ats_detect, "from_url", lambda url: ("a", url))
     monkeypatch.setattr(freshness, "days_back", lambda since, now: "patched")
     assert sdk.on_topic("x", ["y"]) == ("t", "x", ["y"])
     assert sdk.country_is_non_local("SE", {}, remote=True) == ("l", "SE", True)
     assert sdk.career_site_words() == ["patched"]
-    assert sdk.from_url("u") == ("a", "u")
     assert sdk.look_back_days(datetime.now(timezone.utc), datetime.now(timezone.utc)) == "patched"
 
 
@@ -170,3 +169,133 @@ def test_split_known_turns_known_ids_into_seen_only_records_in_row_order():
 def test_split_known_with_nothing_known_or_no_rows():
     assert sdk.split_known([{"id": "1"}], lambda r: r["id"], frozenset()) == ([{"id": "1"}], [])
     assert sdk.split_known([], lambda r: r["id"], frozenset({"1"})) == ([], [])
+
+
+@pytest.mark.parametrize("body, status, content, expected", [
+    ("<html><title>Just a moment...</title><script src='/cdn-cgi/challenge-platform/x'></script></html>", 200, None, True),
+    ("<html>Attention Required! | Cloudflare</html>", 200, None, True),
+    ("anything", 403, None, True),
+    ("anything", 429, None, True),
+    ("anything", 403, "job-item", True),
+    ("<html><body>ok</body></html>", 200, None, False),
+    ("<html>cf-chl <div class='job-item'></div></html>", 200, "job-item", False),
+    ("<html>cf-chl <div class='job-item'></div></html>", 200, None, True),
+    ("<html>cf-chl</html>", 200, "job-item", True),
+])
+def test_is_challenge(body, status, content, expected):
+    assert sdk.is_challenge(body, status, content=content) is expected
+
+
+def _session(*, text="", status=200, error=None):
+    class _Resp:
+        pass
+
+    resp = _Resp()
+    resp.text, resp.status_code = text, status
+
+    class _Session:
+        def get(self, url):
+            if error is not None:
+                raise error
+            return resp
+
+    return _Session()
+
+
+@pytest.mark.parametrize("status", [403, 429])
+def test_get_page_refuses_403_429_and_challenge_pages(status):
+    import requests
+
+    response = requests.Response()
+    response.status_code = status
+    with pytest.raises(sdk.Refused, match=f"HTTP {status}"):
+        sdk.get_page(_session(error=requests.HTTPError(response=response)), "u")
+    with pytest.raises(sdk.Refused, match="challenge page"):
+        sdk.get_page(_session(text="<title>Just a moment...</title>"), "u")
+    late = "x" * 7000 + "cf-chl"  # a marker past the first 6000 characters is no challenge
+    assert sdk.get_page(_session(text=late), "u") == late
+
+
+def test_get_page_lets_other_errors_through():
+    import requests
+
+    response = requests.Response()
+    response.status_code = 500
+    with pytest.raises(requests.HTTPError):
+        sdk.get_page(_session(error=requests.HTTPError(response=response)), "u")
+
+
+def test_refusal_is_the_403_429_rule():
+    import requests
+
+    for status, expected in ((403, "HTTP 403"), (429, "HTTP 429"), (500, None)):
+        response = requests.Response()
+        response.status_code = status
+        refused = sdk.refusal(requests.HTTPError(response=response))
+        assert (str(refused) if refused else None) == expected
+    assert sdk.refusal(requests.HTTPError()) is None
+
+
+def test_get_page_returns_a_real_page_and_honours_content():
+    assert sdk.get_page(_session(text="<html>ok</html>"), "u") == "<html>ok</html>"
+    page = "<script src='/cdn-cgi/challenge-platform/x'></script><div class='job-item'>"
+    assert sdk.get_page(_session(text=page), "u", content="job-item") == page
+
+
+def test_stop_for_run_reports_records_and_marks_pushback(monkeypatch):
+    from door import scrapers
+
+    reported, errors, pushed = [], [], []
+    monkeypatch.setattr(scrapers, "report", lambda m, *a, **k: reported.append(m))
+    monkeypatch.setattr(scrapers, "record_error", lambda site, m: errors.append((site, m)))
+    monkeypatch.setattr(scrapers, "record_pushback", lambda site: pushed.append(site))
+    sdk.stop_for_run("x", "HTTP 429")
+    assert reported == ["x: HTTP 429; stopping for this run"]
+    assert errors == [("x", "x: HTTP 429; stopped for this run")]
+    assert pushed == ["x"]
+
+
+# --- job_postings: the one JSON-LD reader ---
+
+_FEEDS = TESTS_DIR / "scrapers" / "feeds" / "fixtures"
+
+
+def _ld(*bodies: str) -> str:
+    return "".join(f'<script type="application/ld+json">{b}</script>' for b in bodies)
+
+
+def test_job_postings_reads_graph_lists_and_type_lists():
+    html = _ld(
+        '{"@graph": [{"@type": "Organization"}, {"@type": "JobPosting", "title": "A"}]}',
+        '[{"@type": ["JobPosting"], "title": "B"}]',
+        "{not json",
+        '{"@type": "WebSite"}',
+        '{"@type": "JobPosting", "title": "C", "@graph": [{"@type": "JobPosting", "title": "D"}]}',
+    )
+    assert [j["title"] for j in sdk.job_postings(html)] == ["A", "B", "C", "D"]
+    assert sdk.job_postings("") == [] and sdk.job_postings(None) == []
+
+
+def test_job_postings_reads_an_entity_escaped_type():
+    html = (_FEEDS / "jobtrain" / "lat_9610.html").read_text(encoding="utf-8")
+    assert sdk.job_postings(html)
+
+
+def test_job_postings_reads_js_escapes_and_an_unclosed_object():
+    html = (_FEEDS / "career_sites" / "ps_job_copenhagen.html").read_text(encoding="utf-8")
+    [job] = sdk.job_postings(html)
+    assert job["title"] == "Data Science - Manager - Retail"
+    unclosed = (_FEEDS / "networx" / "ad_4361924.html").read_text(encoding="utf-8")
+    assert sdk.job_postings(unclosed)
+    assert sdk.job_postings(_ld('{"datePosted": ')) == []
+    assert sdk.job_postings(_ld('{"@type": "JobPosting", "title": "A"')) == [{"@type": "JobPosting", "title": "A"}]
+
+
+def test_probe_session_has_the_probe_pacing():
+    session = sdk.probe_session()
+    assert (session.min_delay, session.max_delay) == (0.2, 0.5)
+    assert session.timeout == sdk.PROBE_TIMEOUT_S and session.max_retries == 0
+
+
+def test_probe_session_passes_its_headers_through():
+    assert sdk.probe_session({"Accept": "application/json"})._session.headers["Accept"] == "application/json"

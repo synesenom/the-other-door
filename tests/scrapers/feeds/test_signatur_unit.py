@@ -60,4 +60,3 @@ def test_detect_url_reads_the_client(url, client):
 def test_a_link_without_a_client_is_not_a_feed():
     assert signatur.detect_url("https://portal.signatur.dk/ExtJobs/DefaultHosting/Default.aspx") is None
     assert signatur.detect_url("https://portal.signatur.dk/x?ClientId=abc") is None
-    assert signatur.feed_url("1449") is None

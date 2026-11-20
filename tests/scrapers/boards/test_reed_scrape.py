@@ -312,3 +312,28 @@ def test_a_page_whose_jobs_all_fail_to_read_is_not_answered(monkeypatch):
 
     assert reed.scrape({**_CFG, "max_pages_per_keyword": 1}) == []
     assert drain_answered(reed._SITE) is False
+
+
+_CHALLENGE_SCRIPT = '<script src="/cdn-cgi/challenge-platform/scripts/jsd/main.js"></script>'
+
+
+@responses.activate
+def test_a_real_page_that_carries_a_challenge_script_is_no_refusal():
+    _serve(_search(), _CHALLENGE_SCRIPT + _html("p1.html"))
+    _serve_details(_PAGE1)
+    drain_pushback("reed")
+    out = reed.scrape({**_CFG, "max_pages_per_keyword": 1})
+    assert [p["platform_id"] for p in out] == _PAGE1
+    assert drain_pushback("reed") is False
+
+
+@responses.activate
+def test_a_stale_card_stays_a_full_posting_even_when_known_and_a_fresh_known_one_is_seen_only():
+    _serve_search(("p1.html",))
+    out = reed.scrape({**_CFG, "max_pages_per_keyword": 1}, known_ids=frozenset({"57458959"}), since=datetime(2027, 1, 1))
+    assert [p["platform_id"] for p in out] == _PAGE1
+    assert not any(p.get("seen_only") for p in out)
+    responses.reset()
+    _serve_search(("p1.html",))
+    out = reed.scrape({**_CFG, "max_pages_per_keyword": 1}, known_ids=frozenset(_PAGE1), since=datetime(2000, 1, 1))
+    assert out == [{"platform_id": i, "seen_only": True} for i in _PAGE1]

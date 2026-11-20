@@ -39,7 +39,6 @@ engines; each employer's own terms and robots.txt apply, read at run time.
 import gzip
 import hashlib
 import html as _html
-import json
 import re
 import unicodedata
 from functools import lru_cache
@@ -50,8 +49,9 @@ from xml.etree import ElementTree
 import requests
 from bs4 import BeautifulSoup
 
+from door.scrapers import sdk
 from door.scrapers.sdk import (
-    FEED_DELAY, JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, RobotsBlocked, ad_links,
+    FEED_DELAY, JobPosting, PoliteSession, probe_session, ProbeResult, RobotsBlocked, ad_links,
     career_apply_words, career_nav_words, career_path_stems, career_site_words, followed_name, generic_host_labels, tld_labels, host_of, keep_local, local_names, location_filter,
     log_keyword_results, make_job_id, map_by_group, name_pattern, parse_iso_date, probe_failure, record_entry_error,
     record_answered, record_non_local, report, split_known, split_urls, squash, topic_words, workers,
@@ -72,7 +72,6 @@ _MAX_WORKDAY_REQUESTS = 50  # job-list requests (20 jobs each) per Workday site 
 _TEXT_PROBE = 3             # pages in a row without markup (none with) before a site is read from page text
 _MIN_TEXT = 200             # characters of main text that make a page a job ad when it has no markup
 _NOISE_TAGS = ("script", "style", "nav", "header", "footer", "aside", "noscript", "svg", "iframe", "button", "select")
-_LD_JSON = re.compile(r"<script[^>]*type=[\"']application/ld\+json[\"'][^>]*>(.*?)</script>", re.IGNORECASE | re.DOTALL)
 _CHALLENGE = re.compile(r"just a moment|cf-challenge|attention required|authenticating\.\.\.|captcha", re.IGNORECASE)
 # A script tag that loads a CAPTCHA widget (a contact or apply form's reCAPTCHA): not a challenge page.
 _CAPTCHA_SCRIPT = re.compile(r"<script[^>]*\bsrc=[\"'][^\"']*(?:recaptcha|hcaptcha)[^>]*>", re.IGNORECASE)
@@ -143,40 +142,6 @@ def _job_words() -> re.Pattern:
 def _looks_like_job(url: str) -> bool:
     """Whether a URL's path names a job page (a job-word stem from the language data). Pure."""
     return bool(_job_words().search(urlparse(url).path))
-
-
-def _load_json(raw: str):
-    """JSON-LD as sites write it: JavaScript ``\\xHH`` escapes are tolerated."""
-    try:
-        return json.loads(raw, strict=False)
-    except ValueError:
-        return json.loads(re.sub(r"\\x([0-9a-fA-F]{2})", r"\\u00\1", raw), strict=False)
-
-
-def _is_job_posting(node) -> bool:
-    kind = node.get("@type") if isinstance(node, dict) else None
-    kinds = kind if isinstance(kind, list) else [kind]
-    return "JobPosting" in kinds
-
-
-def _job_postings_from_html(html: str) -> list[dict]:
-    """Every schema.org JobPosting object in a page's JSON-LD (top level, lists, ``@graph``). Pure."""
-    found = []
-    for match in _LD_JSON.finditer(html or ""):
-        try:
-            data = _load_json(match.group(1).strip())
-        except ValueError:
-            continue
-        stack = data if isinstance(data, list) else [data]
-        for node in stack:
-            if not isinstance(node, dict):
-                continue
-            if _is_job_posting(node):
-                found.append(node)
-            graph = node.get("@graph")
-            if isinstance(graph, list):
-                found.extend(n for n in graph if _is_job_posting(n))
-    return found
 
 
 def _text(value) -> str:
@@ -476,7 +441,7 @@ def _get(session: PoliteSession, url: str) -> requests.Response:
         raise
     if "charset" not in resp.headers.get("Content-Type", "").lower():
         resp.encoding = "utf-8"  # requests would guess Latin-1 for text/* without a charset
-    if _is_challenge(resp.text, resp.headers) and not _job_postings_from_html(resp.text):
+    if _is_challenge(resp.text, resp.headers) and not sdk.job_postings(resp.text):
         raise _Challenged(url)
     return resp
 
@@ -646,7 +611,7 @@ def _scrape_site(session: PoliteSession, entry: str, config: dict, known_ids: fr
                 report(f"{url}: {exc}")
                 continue
             page_url = resp.url or url
-            jobs = _job_postings_from_html(resp.text)
+            jobs = sdk.job_postings(resp.text)
             if not jobs and not warned:
                 warned = True
                 report(f"{host}: no JobPosting markup at {url}")
@@ -718,7 +683,7 @@ def probe(config: dict) -> ProbeResult | None:
         return None
     base = _base(entries[0])
     host = urlparse(base).netloc
-    session = PoliteSession(min_delay=0.2, max_delay=0.5, timeout=PROBE_TIMEOUT_S, max_retries=0, headers=_HEADERS)
+    session = probe_session(_HEADERS)
     try:
         if _platform_reservation(host):
             raise RobotsBlocked(base)
@@ -736,7 +701,7 @@ def probe(config: dict) -> ProbeResult | None:
                 "reason": f"bot protection ({exc})"}
     except Exception as exc:  # noqa: BLE001 - reported, never raised
         return probe_failure(exc, "html")
-    jobs = _job_postings_from_html(resp.text)
+    jobs = sdk.job_postings(resp.text)
     scraped_at = datetime.now(timezone.utc)
     postings = [_to_posting(j, resp.url or urls[0], host, scraped_at) for j in jobs[:1]]
     if not jobs and listing:  # a listing entry is read from the ads' text
@@ -831,11 +796,6 @@ def tenant_probe(session: PoliteSession, slug: str) -> Detection | None:
                 return Detection("career_sites", f"{base}/{site}",
                                  f"Workday site {host}/{site}, named like the employer, lists {count} "
                                  f"{'job' if count == 1 else 'jobs'} publicly")
-    return None
-
-
-def feed_url(entry: str) -> str | None:
-    """None: a link to the site names the account, no feed check is needed."""
     return None
 
 

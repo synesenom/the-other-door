@@ -19,7 +19,7 @@ e.g. ``["2420"]`` (or a widget link). Endpoints used:
 Finding the company of a link: an ad link (``emp.jobylon.com/jobs/<id>-...``, or its ``/applications/jobs/<id>/``
 apply form) names the ad, not the company; ``resolve`` reads the ad page, whose analytics script holds the
 company number. A career page that embeds the widget (``jbl_company_id = <n>``) names it directly. There is no
-JSON endpoint to confirm an entry with, so ``feed_url`` is None and no company name is probed.
+JSON endpoint to confirm an entry with, so it has no ``feed_url`` and no company name is probed.
 
 Terms: Jobylon publishes no general terms of use for visitors (``https://www.jobylon.com/terms`` is a 404);
 the only legal page found is its privacy policy, https://www.jobylon.com/privacy-policy, which says nothing
@@ -29,15 +29,15 @@ about reading ads. Nothing bans scraping, bots or text-and-data mining. robots.t
 """
 
 import html as _html
-import json
 import re
 from datetime import datetime, timezone
 from urllib.parse import urljoin
 
 import requests
 
+from door.scrapers import sdk
 from door.scrapers.sdk import (
-    Detection, JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, followed_name, keep_local, split_known, make_job_id,
+    Detection, JobPosting, PoliteSession, probe_session, ProbeResult, followed_name, keep_local, split_known, make_job_id,
     parse_iso_date, parts, record_error, record_pushback, report, run_probe, scrape_feeds, strip_html, unfollowable,
 )
 
@@ -50,7 +50,6 @@ _HEADERS = {"Accept": "text/html"}
 _JOBS_MARKER = "JBL.embed_v2['jobs'] = ["
 _JOB_START = re.compile(r"\{\s*id:\s*'(\d+)'")
 _ESCAPE = re.compile(r"\\u([0-9a-fA-F]{4})")
-_LD_JSON = re.compile(r'<script[^>]*type="application/ld\+json"[^>]*>(.*?)</script>', re.S)
 _AD_COMPANY = re.compile(r"company_id\s*=\s*(\d+)")
 _AD_PATH = re.compile(r"^(\d+)(?:-|$)")
 
@@ -88,19 +87,6 @@ def parse_widget(page: str) -> list[dict] | None:
 
 # --- one ad page ---
 
-def _ld_job(page: str) -> dict:
-    """The schema.org JobPosting object of an ad page, ``{}`` when it has none."""
-    for raw in _LD_JSON.findall(page):
-        try:
-            data = json.loads(raw, strict=False)
-        except ValueError:
-            continue
-        for node in data if isinstance(data, list) else [data]:
-            if isinstance(node, dict) and node.get("@type") == "JobPosting":
-                return node
-    return {}
-
-
 def _ld_location(job: dict) -> str:
     places = job.get("jobLocation") or []
     names = []
@@ -115,7 +101,7 @@ def _ld_location(job: dict) -> str:
 def parse_ad(page: str) -> dict | None:
     """What an ad page holds: ``company_id``, ``title``, ``company``, ``posted_at`` (ISO text), ``location`` and
     the plain-text ``description``. None for a page with neither the JSON-LD nor the company number. Pure."""
-    job = _ld_job(page)
+    job = next(iter(sdk.job_postings(page)), {})
     company = _AD_COMPANY.search(page)
     if not job and not company:
         return None
@@ -222,7 +208,7 @@ def probe(config: dict) -> ProbeResult | None:
     entries: list[str] = config.get("jobylon_companies") or []
     if not entries:
         return None
-    session = PoliteSession(min_delay=0.2, max_delay=0.5, timeout=PROBE_TIMEOUT_S, max_retries=0, headers=_HEADERS)
+    session = probe_session(_HEADERS)
 
     def fetch() -> str:
         return session.get(_widget_url(entries[0]), headers=_HEADERS).text
@@ -278,16 +264,6 @@ def resolve(session: PoliteSession, det: Detection, url: str) -> Detection:
         return det
     who = f" ({ad['company']})" if ad["company"] else ""
     return Detection(_SITE, ad["company_id"], f"Jobylon ad {ad_id} belongs to company {ad['company_id']}{who}")
-
-
-def feed_url(entry: str) -> str | None:
-    """None: the widget is HTML, so an entry is not confirmed by a JSON job list."""
-    return None
-
-
-def name_probes(slug: str) -> list:
-    """None to try: a Jobylon company is a number, not a name."""
-    return []
 
 
 def detect_html(html: str, url: str) -> Detection | None:

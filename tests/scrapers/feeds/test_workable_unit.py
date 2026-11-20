@@ -110,4 +110,3 @@ def test_detect_url():
 def test_a_workable_name_probe_is_the_widget_api():
     (probe,) = workable.name_probes("acme")
     assert (probe.url, probe.key) == ("https://apply.workable.com/api/v1/widget/accounts/acme", "jobs")
-    assert workable.feed_url("acme") is None

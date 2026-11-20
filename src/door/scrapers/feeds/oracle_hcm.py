@@ -37,7 +37,7 @@ from datetime import datetime, timezone
 from urllib.parse import urlparse
 
 from door.scrapers.sdk import (
-    Detection, FEED_DELAY, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, followed_name, keep_local, list_at, make_job_id,
+    Detection, FEED_DELAY, JobPosting, probe_session, PoliteSession, ProbeResult, followed_name, keep_local, list_at, make_job_id,
     parse_iso_date, parts, record_error, report, run_probe, scrape_feeds, strip_html, tenant_platform_id, unfollowable,
 )
 
@@ -208,7 +208,7 @@ def probe(config: dict) -> ProbeResult | None:
     if target is None:
         return None
     host, site = target
-    session = PoliteSession(min_delay=0.2, max_delay=0.5, timeout=PROBE_TIMEOUT_S, max_retries=0, headers=_HEADERS)
+    session = probe_session(_HEADERS)
 
     def fetch() -> str:
         return session.get(_search_url(host, site, offset=0, limit=_PAGE), headers=_HEADERS).text
@@ -238,11 +238,6 @@ def detect_url(url: str) -> Detection | None:
     if site:
         return Detection(_SITE, f"{host}/{site}", f"Oracle Cloud HCM career site {host}, site {site}")
     return unfollowable(_SITE, host, "Oracle Cloud HCM, but the link names no career site", "cant_yet")
-
-
-def feed_url(entry: str) -> str | None:
-    """None: a link into a site names the entry; `resolve` and `alive_url` check it."""
-    return None
 
 
 def alive_url(entry: str) -> str | None:

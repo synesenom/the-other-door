@@ -33,18 +33,17 @@ robots.txt (checked 2026-10-31) disallows ``/wp-admin/`` and ``/wp-content/uploa
 """
 
 import html as html_lib
-import json
 import re
 import unicodedata
 from datetime import datetime, timezone
 from urllib.parse import quote
 
-import requests
 from bs4 import BeautifulSoup
 
+from door.scrapers import sdk
 from door.scrapers.sdk import (
-    FEED_DELAY, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, city_names, log_keyword_results,
-    make_job_id, on_topic, record_answered, record_error, record_pushback, report, run_probe, topic_terms,
+    FEED_DELAY, JobPosting, probe_session, PoliteSession, ProbeResult, city_names, log_keyword_results,
+    make_job_id, on_topic, record_answered, record_error, report, run_probe, topic_terms,
 )
 
 _SITE = "choisirleservicepublic"
@@ -180,22 +179,11 @@ def _is_results_page(html: str) -> bool:
     return "js-results" in h or "fr-card--offer" in h
 
 
-def _json_ld(soup) -> dict:
-    for script in soup.find_all("script", type="application/ld+json"):
-        try:
-            data = json.loads(script.string or "")
-        except ValueError:
-            continue
-        if isinstance(data, dict) and data.get("@type") == "JobPosting":
-            return data
-    return {}
-
-
 def _parse_detail(page: str) -> dict | None:
     """``description`` (plain text: missions, profile, skills), ``company`` and ``location`` from an ad page;
     None when it has no ad text. Pure."""
     soup = BeautifulSoup(page or "", "html.parser")
-    ld = _json_ld(soup)
+    ld = next(iter(sdk.job_postings(page)), {})
     body = soup.select_one("div.col-left.rte")
     text = ""
     if body is not None:
@@ -240,16 +228,6 @@ def _card_posting(card: dict, scraped_at: datetime | None = None) -> dict:
     return _posting(card, {"description": text, "company": "", "location": ""}, scraped_at or datetime.now(timezone.utc))
 
 
-def _pushback(message: str) -> None:
-    report(f"{_SITE}: {message}; stopping for this run")
-    record_error(_SITE, f"{_SITE}: {message}; stopped for this run")
-    record_pushback(_SITE)
-
-
-def _refused(exc: requests.HTTPError) -> bool:
-    return getattr(exc.response, "status_code", 0) in (403, 429)
-
-
 def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> list[dict]:
     """JobPosting dicts for the on-topic ads of every search keyword (``seen_only`` records for known ids)."""
     keywords: list[str] = config.get("search_keywords") or config.get("role_targets") or []
@@ -265,14 +243,10 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
         start = len(out)
         for page in range(1, max_pages + 1):
             try:
-                html = session.get(_search_url(keyword, place, page)).text
-            except requests.HTTPError as exc:
-                if _refused(exc):
-                    _pushback(f"HTTP {exc.response.status_code}")
-                    return out
-                report(f"search error (keyword={keyword!r}, page={page}): {exc}")
-                record_error(_SITE, f"search error (keyword={keyword!r}, page={page}): {exc}")
-                break
+                html = sdk.get_page(session, _search_url(keyword, place, page))
+            except sdk.Refused as exc:
+                sdk.stop_for_run(_SITE, str(exc))
+                return out
             except Exception as exc:  # noqa: BLE001 - one bad page never stops the run
                 report(f"search error (keyword={keyword!r}, page={page}): {exc}")
                 record_error(_SITE, f"search error (keyword={keyword!r}, page={page}): {exc}")
@@ -293,13 +267,10 @@ def scrape(config: dict, known_ids: frozenset[str] = frozenset(), **kwargs) -> l
                     continue
                 report(f"'{keyword}' details", len(out) - start + 1, len(relevant))
                 try:
-                    detail = _parse_detail(session.get(card["url"]).text)
-                except requests.HTTPError as exc:
-                    if _refused(exc):
-                        _pushback(f"HTTP {exc.response.status_code}")
-                        return out
-                    record_error(_SITE, f"detail error ({card['id']}): {exc}")
-                    continue
+                    detail = _parse_detail(sdk.get_page(session, card["url"]))
+                except sdk.Refused as exc:
+                    sdk.stop_for_run(_SITE, str(exc))
+                    return out
                 except Exception as exc:  # noqa: BLE001
                     record_error(_SITE, f"detail error ({card['id']}): {exc}")
                     continue
@@ -323,7 +294,7 @@ def probe(config: dict) -> ProbeResult | None:
     keywords = config.get("search_keywords") or config.get("role_targets") or []
     if not keywords:
         return None
-    session = PoliteSession(min_delay=_MIN_DELAY, max_delay=_MAX_DELAY, timeout=PROBE_TIMEOUT_S, max_retries=0, headers=_HEADERS)
+    session = probe_session(_HEADERS)
     url = _search_url(keywords[0], _location_id(config.get("location") or ""), 1)
 
     def fetch() -> str:

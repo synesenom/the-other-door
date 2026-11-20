@@ -208,7 +208,7 @@ scoring.
 conversation, or `find` [in a shell](manual-cli.md), then review. Two things keep each session to what's actually new:
 
 - **`discover` asks LinkedIn (and, in Hungary, profession.hu) which employers hire for your keywords** (`linkedin_discovery`, `profession_discovery`;
-  state in `jobs/discovery/linkedin.json` (one file per discovery source; an older `jobs/linkedin_discovery.json` is copied there on first read): when it last ran, when it was refused, which employers
+  state in `jobs/discovery/linkedin.json` (one file per discovery source): when it last ran, when it was refused, which employers
   it already looked at, the adaptive request budget and pause, and a log of what each run saw, so a
   run soon after another asks for little) and `follow` then finds their
   own job feeds, so `collect` reads them at the source. LinkedIn's job descriptions are never fetched.

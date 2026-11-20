@@ -244,3 +244,14 @@ def test_search_url_puts_the_area_in_the_path_and_pages_after_the_first_in_the_q
     assert jobindex._search_url("data scientist", "") == "https://www.jobindex.dk/jobsoegning?q=%22data+scientist%22"
     assert jobindex._search_url("ml", "storkoebenhavn") == "https://www.jobindex.dk/jobsoegning/storkoebenhavn?q=ml"
     assert jobindex._search_url("ml", "", 2) == "https://www.jobindex.dk/jobsoegning?q=ml&page=2"
+
+
+def test_the_main_ad_wins_over_an_unrelated_posting_later_in_the_graph():
+    ld = ('{"@type": "JobPosting", "description": "<p>Main</p>", '
+          '"@graph": [{"@type": "JobPosting", "description": "<p>Other</p>"}]}')
+    html = f'<html><script type="application/ld+json">{ld}</script></html>'
+    assert jobindex._description_from_html(html) == "Main"
+
+
+def test_the_first_non_empty_description_is_read():
+    assert jobindex._description_from_html('<script type="application/ld+json">{"@type": "JobPosting", "title": "A", "description": "  "}</script><script type="application/ld+json">{"@type": "JobPosting", "title": "B", "description": "<p>Second</p>"}</script>') == "Second"

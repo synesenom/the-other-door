@@ -21,8 +21,7 @@ between them), so the scraper runs in ``_scrape_core``'s pool next to the
 other boards.
 
 Parsing (``_parse_listing_payload``, ``_parse_detail_payload``, ``_job_url``,
-``_location_text``, ``_parse_date``) is kept pure and
-separate from the network so it can be unit/fixture tested offline.
+``_location_text``) is kept pure and separate from the network so it can be unit/fixture tested offline.
 
 The Hub is a Nordic startup job board; only its Danish listings are searched.
 
@@ -37,7 +36,7 @@ from urllib.parse import quote_plus
 
 from door.scrapers import sdk
 from door.scrapers.sdk import (
-    FEED_DELAY, JobPosting, PoliteSession, PROBE_TIMEOUT_S, ProbeResult, log_keyword_results, make_job_id, record_answered, record_error,
+    FEED_DELAY, JobPosting, PoliteSession, probe_session, ProbeResult, log_keyword_results, make_job_id, record_answered, record_error,
     report, run_probe, split_known, strip_html,
 )
 
@@ -63,15 +62,6 @@ def _country_code(config: dict) -> str:
     `src/door/i18n/country/`) when the site is registered for it, else the
     first country it is registered for."""
     return sdk.country(config, _SERVED)
-
-
-def _parse_date(raw: Any) -> datetime | None:
-    if not isinstance(raw, str) or not raw:
-        return None
-    try:
-        return datetime.fromisoformat(raw.replace("Z", "+00:00"))
-    except ValueError:
-        return None
 
 
 def _location_text(node: dict) -> str:
@@ -135,7 +125,7 @@ def _parse_detail_payload(job_obj: dict | None) -> dict | None:
         "company": company,
         "location": _location_text(job_obj),
         "description": description,
-        "posted_at": _parse_date(job_obj.get("publishedAt")),
+        "posted_at": sdk.parse_iso_date(job_obj.get("publishedAt")),
         # The company's own job page; empty for ads applied to by email.
         "apply_url": (job_obj.get("link") or "").strip() or None,
     }
@@ -309,7 +299,7 @@ def probe(config: dict) -> ProbeResult | None:
     if not keywords:
         return None
     url = _listing_url(keywords[0], _country_code(config), 1)
-    session = PoliteSession(min_delay=_MIN_DELAY, max_delay=_MAX_DELAY, timeout=PROBE_TIMEOUT_S, max_retries=0)
+    session = probe_session()
 
     def parse(html: str):
         jobs_obj = _nuxt_state(html, ("state", "jobs", "jobs"))

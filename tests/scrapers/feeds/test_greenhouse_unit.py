@@ -63,4 +63,4 @@ def test_detect_url(url, expected):
 def test_a_greenhouse_name_probe_is_the_board_api():
     (probe,) = greenhouse.name_probes("acme")
     assert (probe.url, probe.key) == ("https://boards-api.greenhouse.io/v1/boards/acme/jobs", "jobs")
-    assert probe.evidence == "Greenhouse board acme" and greenhouse.feed_url("acme") is None
+    assert probe.evidence == "Greenhouse board acme"

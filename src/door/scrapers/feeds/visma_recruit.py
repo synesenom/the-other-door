@@ -63,8 +63,9 @@ from urllib.parse import parse_qs, urljoin, urlsplit, urlparse
 import requests
 from bs4 import BeautifulSoup
 
+from door.scrapers import sdk
 from door.scrapers.sdk import (
-    Detection, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, RobotsBlocked, career_links, followed_name,
+    Detection, JobPosting, probe_session, PoliteSession, ProbeResult, RobotsBlocked, career_links, followed_name,
     host_of, is_job_board, keep_local, split_known, make_job_id, name_key, parts, record_entry_error, record_error, record_pushback,
     report, run_probe, scrape_feeds, unfollowable, workers,
 )
@@ -163,17 +164,6 @@ def parse_list(html: str) -> tuple[str, list[dict]]:
     return name, rows
 
 
-def _schema(soup: BeautifulSoup) -> dict:
-    for script in soup.find_all("script", attrs={"type": "application/ld+json"}):
-        try:
-            data = json.loads(script.string or "")
-        except ValueError:
-            continue
-        if isinstance(data, dict) and data.get("@type") == "JobPosting":
-            return data
-    return {}
-
-
 def _address(value) -> str:
     """A schema.org ``jobLocation.address``: a string, or an ``addressLocality``, tidied (``"Gatan 1 , Ort "``)."""
     if isinstance(value, dict):
@@ -205,7 +195,7 @@ def parse_detail(html: str) -> dict | None:
     The place is the page's ``Kommun`` line, else the schema's ``jobLocation``. Pure."""
     soup = BeautifulSoup(html or "", "html.parser")
     content = soup.find("div", class_="mainContent")
-    schema = _schema(soup)
+    schema = next(iter(sdk.job_postings(html)), {})
     if content is None and not schema:
         return None
     location = ""
@@ -515,7 +505,7 @@ def probe(config: dict) -> ProbeResult | None:
     key = next((k for k in (list_guid(e) or page_entry(e) for e in config.get(_KEY) or []) if k), None)
     if key is None:
         return None
-    session = PoliteSession(min_delay=0.2, max_delay=0.5, timeout=PROBE_TIMEOUT_S, max_retries=0)
+    session = probe_session()
     own = not _GUID.match(key)
 
     def fetch() -> str:
@@ -562,12 +552,6 @@ def detect_html(html: str, url: str) -> Detection | None:
         return Detection(_SITE, guid, f"{url} links Visma Recruit's job list {guid}")
     if _LINK.search(html or ""):
         return unfollowable(_SITE, f"{url} links to Visma Recruit", _REASON, "cant_yet")
-    return None
-
-
-def feed_url(entry: str) -> str | None:
-    """None: the list is HTML, not the JSON list the confirmation reads; the link's guid vouches for it, and
-    `alive_url` drops a customer that does not exist."""
     return None
 
 

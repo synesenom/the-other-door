@@ -144,7 +144,7 @@ Each platform's scraper module knows how to recognise its own feed. Its hooks:
 - `detect_url`: a job link or careers URL
 - `detect_cname`: a careers host's DNS alias
 - `detect_html`: a careers page's markup
-- `feed_url`: an account id → its public feed URL
+- `feed_url` (optional): an account id → its public feed URL, only where a JSON endpoint can confirm it
 - `name_probes`: an employer name → URLs to try
 - `tenant_probe(session, slug)` (optional): the tenant named like an employer whose own website was found (`career_sites`: a Workday tenant's robots.txt lists its career sites)
 
@@ -172,7 +172,7 @@ To add a platform, you write one module (plus its `Site` entry if it can be foll
 
 ### Desktop app
 
-`app/` is a third surface over the same core: an Electron app, packaged with its own Python, the pipeline code and Chromium (`app/README.md`, "Packaging"; a release is a `v*` tag), or run from the checkout (`npm run dev`). The app and the pipeline inside it are one version (`src/door/version.py`, reported in the server's `initialize`; the app refuses another). Its main process starts the MCP server (`python -m door.mcp_server`) as a child over stdio and keeps one typed client to it (`app/src/main/door-server.ts`: JSON in the text block, `{"error"}` results as errors, a lazy restart on the next call after the child dies, never a retry of a call that was in flight). The renderer is sandboxed and has only `window.door.call(tool, args)`, `onProgress(callId, cb)` (progress of a long call) and `openExternal(url)`; the main process forwards only tools named in `app/src/generated/tools.json`, the server's tool list as committed, which `tests/commands/test_mcp_server.py` compares with the live server. It does not run the CLI or call a model. Its five screens are Matches, Applications, Profile, Settings and Analytics, with "Ask about your jobs" and the first-launch wizard (see [manual-app.md](manual-app.md)).
+`app/` is a third surface over the same core: an Electron app, packaged with its own Python, the pipeline code and Chromium (`app/README.md`, "Packaging"; a release is a `v*` tag), or run from the checkout (`npm run dev`). The app and the pipeline inside it are one version (`src/door/version.py`, reported in the server's `initialize`; the app refuses another). Its main process starts the MCP server (`python -m door.mcp_server`) as a child over stdio and keeps one typed client to it (`app/src/main/door-server.ts`: JSON in the text block, `{"error"}` results as errors, a lazy restart on the next call after the child dies, never a retry of a call that was in flight). The renderer is sandboxed and has only `window.door.call(tool, args)`, `onProgress(callId, cb)` (progress of a long call), `invoke(action, ...args)` (every other capability of the main process: one entry of the action table in `src/main/ipc.ts`), `on(event, cb)` (what main pushes), `onBeforeClose` and `dropCvFiles`; the main process forwards only tools named in `app/src/generated/tools.json`, the server's tool list as committed, which `tests/commands/test_mcp_server.py` compares with the live server. It does not run the CLI or call a model. Its five screens are Matches, Applications, Profile, Settings and Analytics, with "Ask about your jobs" and the first-launch wizard (see [manual-app.md](manual-app.md)).
 
 Setup happens once per machine, in two parts: `./scripts/setup.sh` / `scripts\setup.ps1` installs everything (Python 3.12, Poetry, the packages, then `door doctor --fix` for Chromium, `claude` and an MCP handshake), and `/onboard` in a conversation builds the profile and CV.
 
@@ -345,7 +345,7 @@ on a Mac, a launch agent (`core/phone/launch_agent.py`).
 
 One module per site or source, in the folder of its kind: keyword boards in `src/door/scrapers/boards/` (`jobindex`, `thehub`, `euraxess`, `globalnyt`, `jobbank`, `jobmaskinen`, `reed`, `jobs_ac_uk`, `nhs_jobs`, `arbetsformedlingen`, `francetravail`, `choisirleservicepublic`, `kozigallas`, `reliefweb`),
 the employer discovery sources in `src/door/scrapers/discovery/` (`linkedin`, `profession`, `hellowork`, `jobbsafari`; not sites, registered in
-`core/employers/discovery_sources.SOURCES`), and the employer feed platforms in `src/door/scrapers/feeds/` (Workable,
+`core/employers/discovery_sources.SOURCES`; the last three share one crawl, `scrapers/paged_discovery.py`, handed to them as `sdk.paged_discovery`), and the employer feed platforms in `src/door/scrapers/feeds/` (Workable,
 a board with a feed, too). `Site.module` works the folder out from the entry's flags. The registry in
 `src/door/core/sites.py` has one `Site` entry per scraper — its name, the countries it
 serves (ISO 3166 codes, each with a `src/door/i18n/country/<cc>.toml`; none for global
@@ -589,7 +589,7 @@ jobs/                             # gitignored — created on first scrape
 ├── applications.json             # application status ledger
 ├── scrape_state.json             # per-board last successful search (freshness), and pushback_at
 ├── candidates.json               # the employers `follow` has yet to look at (core/jobs/candidates.py)
-├── discovery/<source>.json       # one per discovery source (linkedin.json, profession.json, hellowork.json): last_run, pushback_at, Easy Apply employers seen, pace (budget/factor), history of runs, mode/rotation; an older linkedin_discovery.json is copied here on first read and left in place
+├── discovery/<source>.json       # one per discovery source (linkedin.json, profession.json, hellowork.json): last_run, pushback_at, Easy Apply employers seen, pace (budget/factor), history of runs, mode/rotation
 ├── skill_aliases.json            # market: {variant: canonical | null}, hand-editable, hand edits win
 ├── last_review.json              # review watermark
 ├── usage.jsonl                   # one line per Claude call: when, what for, postings scored, its weight, how full the plan's windows were; this computer's only (not exported or synced)

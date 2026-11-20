@@ -41,8 +41,9 @@ from datetime import datetime, timezone
 import requests
 from bs4 import BeautifulSoup
 
+from door.scrapers import sdk
 from door.scrapers.sdk import (
-    Detection, JobPosting, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, RobotsBlocked, followed_name, host_of,
+    Detection, JobPosting, probe_session, PoliteSession, ProbeResult, RobotsBlocked, followed_name, host_of,
     keep_local, split_known, make_job_id, parse_iso_date, parts, record_entry_error, record_error, record_pushback, report, run_probe,
     scrape_feeds, strip_html, workers,
 )
@@ -83,11 +84,6 @@ def _cid(entry: str) -> str | None:
 def search_url(cid: str) -> str:
     """The board's search narrowed to the client with id *cid*."""
     return f"{_HOST}/Website/Search?SelectedEmployers={cid}"
-
-
-def feed_url(entry: str) -> str | None:
-    """None: the list is HTML, not a JSON answer to confirm by; a link that carries a client id is proof enough."""
-    return None
 
 
 def _text(node) -> str:
@@ -160,28 +156,12 @@ def parse_more(text: str) -> tuple[int, list[dict]]:
     return pages, parse_rows(data["HTML"])
 
 
-def _load_ld(text: str):
-    """The JSON-LD object of *text*; the unclosed object the site writes is closed first. ``None`` when it is not JSON."""
-    text = (text or "").strip()
-    for candidate in (text, text + "}" * max(text.count("{") - text.count("}"), 0)):
-        try:
-            return json.loads(candidate, strict=False)
-        except ValueError:
-            continue
-    return None
-
-
 def parse_ad(html: str) -> dict | None:
     """``{description, posted_at, organization}`` of an advert page: the text of its blocks under their headings, the
     day and the hiring organisation from the JSON-LD (``None`` and ``""`` when the page has none). ``None`` when the page
     has neither text nor markup. Pure."""
     soup = BeautifulSoup(html or "", "html.parser")
-    node = None
-    for tag in soup.find_all("script", type=re.compile(r"ld(\+|&#x2B;|&#43;)json", re.IGNORECASE)):
-        data = _load_ld(tag.string or tag.get_text())
-        if isinstance(data, dict) and data.get("@type") == "JobPosting":
-            node = data
-            break
+    node = next(iter(sdk.job_postings(html)), None)
     sections = []
     for block in soup.select(_TEXT_BLOCK):
         for junk in block.find_all(["script", "style"]):
@@ -312,7 +292,7 @@ def probe(config: dict) -> ProbeResult | None:
     cid = _cid(entries[0]) if entries else None
     if cid is None:
         return None
-    session = PoliteSession(min_delay=0.2, max_delay=0.5, timeout=PROBE_TIMEOUT_S, max_retries=0, headers=_HEADERS)
+    session = probe_session(_HEADERS)
 
     def fetch() -> str:
         return session.get(search_url(cid)).text

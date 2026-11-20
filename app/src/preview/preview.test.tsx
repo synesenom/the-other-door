@@ -48,14 +48,14 @@ describe('createMockDoor', () => {
   })
   it('lets the app past its first read of the profile in every state, then not', async () => {
     const d = door('error')
-    await d.info()
+    await d.invoke('info')
     expect(await d.call('show_profile')).toMatchObject({ ok: true })
     expect(await d.call('show_profile')).toMatchObject({ ok: false })
   })
   it('does not hand out a second free read when the app starts twice (StrictMode)', async () => {
     const d = door('error')
-    await d.info()
-    await d.info()
+    await d.invoke('info')
+    await d.invoke('info')
     expect(await d.call('show_profile')).toMatchObject({ ok: true })
     expect(await d.call('show_profile')).toMatchObject({ ok: false })
   })

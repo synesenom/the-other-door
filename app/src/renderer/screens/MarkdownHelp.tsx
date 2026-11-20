@@ -1,4 +1,3 @@
-import { openExternal } from '../api'
 
 /** The Markdown Guide's one-page cheatsheet, opened in the browser. */
 export const MARKDOWN_CHEATSHEET = 'https://www.markdownguide.org/cheat-sheet/'
@@ -9,7 +8,7 @@ export const MARKDOWN_CHEATSHEET = 'https://www.markdownguide.org/cheat-sheet/'
  */
 export function MarkdownLink() {
   return (
-    <button type="button" className="link-inline" title="Markdown cheatsheet" onClick={() => void openExternal(MARKDOWN_CHEATSHEET)}>
+    <button type="button" className="link-inline" title="Markdown cheatsheet" onClick={() => void window.door.invoke('open-external', MARKDOWN_CHEATSHEET)}>
       Markdown
     </button>
   )

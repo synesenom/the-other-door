@@ -1,7 +1,7 @@
 import { AppName, ErrorBox } from './AppName'
 import { CheckMark, CrossMark, WarningMark } from './CheckMark'
 import { useEffect, useState } from 'react'
-import { scoreText, showRun } from '../api'
+import { scoreText } from '../api'
 import type { RunBoard, RunRecord, StepRow } from '../api'
 import type { DiscoveryChoice } from './onboarding/reducer'
 import { andList, LegalLink } from './discovery-notice'
@@ -221,7 +221,7 @@ function Summary({
         <button type="button" className="primary" onClick={onViewMatches}>
           View matches
         </button>
-        <button type="button" className="quiet" onClick={() => void showRun(record.started_at)}>
+        <button type="button" className="quiet" onClick={() => void window.door.invoke('show-run', record.started_at)}>
           Show run record
         </button>
       </div>

@@ -1,10 +1,13 @@
 """Shared helpers for all scrapers."""
 
 import html as _html
+import json
 import re
 import threading
 from datetime import datetime, timezone
 from typing import Any, NotRequired, TypedDict
+
+import requests
 
 from door.core import progress as _progress
 
@@ -178,6 +181,50 @@ def wall_page(html: str) -> str | None:
     return None
 
 
+_CHALLENGE_MARKERS = ("just a moment", "cdn-cgi/challenge-platform", "attention required", "cf-chl", "cf-browser-verification")
+
+
+class Refused(Exception):
+    """The site refused the request (a 403/429 or a challenge page); the run stops."""
+
+
+def is_challenge(body: str, status: int, *, content: str | None = None) -> bool:
+    """Whether an answer is a refusal or a challenge page, not the site. A page whose first 6000
+    characters hold *content* (a marker of the real page, lowercase) is the site's whatever else it
+    carries. Pure."""
+    if status in (403, 429):
+        return True
+    head = (body or "")[:6000].lower()
+    return any(marker in head for marker in _CHALLENGE_MARKERS) and not (content and content in head)
+
+
+def refusal(exc: requests.HTTPError) -> Refused | None:
+    """`Refused("HTTP <status>")` when *exc* is a 403 or 429 answer, None for any other error. Pure."""
+    status = getattr(exc.response, "status_code", 0)
+    return Refused(f"HTTP {status}") if status in (403, 429) else None
+
+
+def get_page(session, url: str, *, content: str | None = None) -> str:
+    """The page at *url*. Raises `Refused` on a 403/429 or a challenge page, the request's own error otherwise."""
+    try:
+        resp = session.get(url)
+    except requests.HTTPError as exc:
+        refused = refusal(exc)
+        if refused:
+            raise refused from exc
+        raise
+    if is_challenge(resp.text, resp.status_code, content=content):
+        raise Refused("challenge page")
+    return resp.text
+
+
+def stop_for_run(site: str, message: str) -> None:
+    """Say *message* as the reason *site* stops for this run: reported, recorded as an error and as pushback."""
+    report(f"{site}: {message}; stopping for this run")
+    record_error(site, f"{site}: {message}; stopped for this run")
+    record_pushback(site)
+
+
 _non_local: dict[str, int] = {}
 
 
@@ -219,6 +266,48 @@ _BLOCK_BREAK = re.compile(r"(?i)<br\s*/?>|<li[^>]*>|</(p|li|h\d|div|ul|ol|tr)>")
 _TAG = re.compile(r"<[^>]+>")
 _INVISIBLE = re.compile("[​-‏⁠﻿]")
 _SPACES = re.compile(r"[ \t\r\f\v]+")
+
+
+_LD_JSON = re.compile(r"<script[^>]*application/ld(?:\+|&#x2B;|&#43;)json[^>]*>(.*?)</script>", re.I | re.S)
+
+
+def _load_json(raw: str):
+    """JSON-LD as sites write it: JavaScript ``\\xHH`` escapes and one unclosed object are tolerated."""
+    raw = raw.strip()
+    try:
+        return json.loads(raw, strict=False)
+    except ValueError:
+        pass
+    try:
+        return json.loads(re.sub(r"\\x([0-9a-fA-F]{2})", r"\\u00\1", raw), strict=False)
+    except ValueError:
+        return json.loads(raw + "}" * max(raw.count("{") - raw.count("}"), 0), strict=False)
+
+
+def _is_job_posting(node) -> bool:
+    kind = node.get("@type") if isinstance(node, dict) else None
+    return "JobPosting" in (kind if isinstance(kind, list) else [kind])
+
+
+def job_postings(html: str | None) -> list[dict]:
+    """Every schema.org ``JobPosting`` object in a page's JSON-LD, in document order (per script: the node, then
+    its ``@graph`` members; top-level lists, ``@type`` lists, an entity-escaped ``ld&#x2B;json`` type and
+    unreadable blocks all handled). The caller keeps its own pick rule. Pure."""
+    found = []
+    for match in _LD_JSON.finditer(html or ""):
+        try:
+            data = _load_json(match.group(1))
+        except ValueError:
+            continue
+        for node in data if isinstance(data, list) else [data]:
+            if not isinstance(node, dict):
+                continue
+            if _is_job_posting(node):
+                found.append(node)
+            graph = node.get("@graph")
+            if isinstance(graph, list):
+                found.extend(n for n in graph if _is_job_posting(n))
+    return found
 
 
 def strip_html(raw: str | None, *, encoded: bool = False) -> str:
@@ -311,6 +400,13 @@ def list_at(data, key: str, what: str) -> list:
     if not isinstance(found, list):
         raise ValueError(f"no `{key}` list in {what}'s answer")
     return found
+
+
+def probe_session(headers: dict[str, str] | None = None):
+    """The session of a probe: quick, one try, `PROBE_TIMEOUT_S` a request."""
+    from door.scrapers.http_client import PoliteSession
+
+    return PoliteSession(min_delay=0.2, max_delay=0.5, timeout=PROBE_TIMEOUT_S, max_retries=0, headers=headers)
 
 
 def probe_failure(exc: Exception, ext: str) -> ProbeResult:

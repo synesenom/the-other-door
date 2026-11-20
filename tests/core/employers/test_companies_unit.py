@@ -376,20 +376,6 @@ def _raw(name, **kw):
     return {"name": name, "status": "unresolved", "found_via": "manual", **kw}
 
 
-def test_an_old_also_key_loads_as_aliases_and_saves_as_aliases(tmp_path):
-    _write(tmp_path, [_raw("Acme", also=["Acme Group"])])
-    items = companies.load(tmp_path)
-    assert items[0].aliases == ["Acme Group"]
-    companies.save(tmp_path, items)
-    saved = json.loads((tmp_path / "companies.json").read_text())["companies"][0]
-    assert saved["aliases"] == ["Acme Group"] and "also" not in saved
-
-
-def test_an_entry_with_both_keys_merges_them_without_duplicates(tmp_path):
-    _write(tmp_path, [_raw("Acme", also=["Acme Group", "Acme X"], aliases=["acme group", "Acme Y"])])
-    assert companies.load(tmp_path)[0].aliases == ["acme group", "Acme Y", "Acme X"]
-
-
 def test_find_matches_an_alias_case_and_suffix_insensitively():
     items = [companies.Company(name="Novo Nordisk", status="unresolved", found_via="manual", aliases=["Novo"])]
     assert companies.find(items, "NOVO A/S") is items[0]

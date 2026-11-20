@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { ErrorBox } from './AppName'
-import { call, errorText, languageLine, openExternal, placeLine, scoreText } from '../api'
+import { call, errorText, languageLine, placeLine, scoreText } from '../api'
 import type { PrepareResult, Posting as PostingData, SetStatusResult } from '../api'
 import { useNarrow } from '../useNarrow'
 import { CheckMark, CrossMark } from './CheckMark'
@@ -173,7 +173,7 @@ export function Posting({ jobId, onChanged, onOpenMaterials }: Props) {
   // board's ad points to one; else the ad where it was found.
   const applyHost = applyHostOf(posting.apply_url, posting.url)
   const target = applyHost ? (posting.apply_url as string) : posting.url
-  const open = target ? () => void openExternal(target) : null
+  const open = target ? () => void window.door.invoke('open-external', target) : null
   const openLabel = applyHost ? `Apply on ${applyHost}` : 'Open in browser'
   const locked = Boolean(running)
   const hasMaterials = Boolean(posting.materials)

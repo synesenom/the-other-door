@@ -1,6 +1,6 @@
 """Unit tests for The Hub pure helpers (C4, unit layer) — Nuxt SSR payloads.
 
-Covers _location_text, _parse_date, _country_code,
+Covers _location_text, _country_code,
 _parse_listing_payload, _parse_detail_payload and the `window.__NUXT__` extraction
 and evaluation (_nuxt_script, _evaluate_nuxt, _nuxt_state).
 Pure and offline.
@@ -38,15 +38,6 @@ def _fx(name: str) -> dict:
 )
 def test_location_text(node, expected):
     assert thehub._location_text(node) == expected
-
-
-# --------------------------------------------------------------------------- #
-# _parse_date
-# --------------------------------------------------------------------------- #
-
-@pytest.mark.parametrize("bad", [None, "not-a-date"])
-def test_parse_date_invalid_returns_none(bad):
-    assert thehub._parse_date(bad) is None
 
 
 # --------------------------------------------------------------------------- #

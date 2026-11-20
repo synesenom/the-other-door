@@ -40,10 +40,6 @@ def fits(title: str, terms: list[str]) -> bool:
     return any(_stems(k) and _stems(k) <= have for k in terms)
 
 
-def any_fits(titles, terms: list[str]) -> bool:
-    return any(fits(t, terms) for t in titles)
-
-
 def squash(text: str) -> str:
     """Lower-case ASCII words of a name or URL path, one space between: ``Dalsvej-99/Hørsholm`` -> ``dalsvej 99 hrsholm``. Pure."""
     ascii_ = unicodedata.normalize("NFD", text.lower()).encode("ascii", "ignore").decode()

@@ -23,7 +23,7 @@ rest wait for the next run (an ad read once is in ``known_ids``).
 Finding a tenant: ``detect_html`` recognises the platform on the page itself (the Nuxt payload names
 ``api.digitalrecruiters.com/careers`` and the tenant's ``domain_name``), so ``follow`` finds it on an employer's
 career page, whatever domain it is on. ``detect_url`` takes only a ``<x>.digitalrecruiters.com`` link. There is
-no JSON endpoint to confirm an entry with, so ``feed_url`` is None and ``alive_url`` is the sitemap.
+no JSON endpoint to confirm an entry with, so it has no ``feed_url`` and ``alive_url`` is the sitemap.
 
 Terms: Digitalrecruiters publishes no terms for a tenant's visitors. Cegid's legal notice
 (https://www.cegid.com/fr/mentions-legales/) covers cegid.com and its brands, and its CGU/CGV are contracts with
@@ -32,7 +32,6 @@ charter) say nothing about reading the ads. Nothing bans scraping, bots or text-
 Monoprix, Franprix and Afflelou: ``User-agent: *``, ``Allow: /``, ``Crawl-delay: 10``. Checked 2026-11-01.
 """
 
-import json
 import re
 from datetime import datetime, timezone
 from urllib.parse import urlparse
@@ -40,8 +39,9 @@ from xml.etree import ElementTree
 
 import requests
 
+from door.scrapers import sdk
 from door.scrapers.sdk import (
-    Detection, JobPosting, NOT_ACCOUNTS, PROBE_TIMEOUT_S, PoliteSession, ProbeResult, followed_name, host_of,
+    Detection, JobPosting, NOT_ACCOUNTS, probe_session, PoliteSession, ProbeResult, followed_name, host_of,
     keep_local, split_known, make_job_id, on_topic, parse_iso_date, parts, record_error, record_pushback, report, run_probe,
     scrape_feeds, strip_html, tenant_platform_id, topic_terms, workers,
 )
@@ -58,7 +58,6 @@ _HEADERS = {"Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*
 # Hosts of the platform's own that are no employer's career site.
 _NOT_TENANTS = NOT_ACCOUNTS | {"app", "matomo", "status", "help", "docs", "cdn", "mail", "support"}
 _AD_PATH = re.compile(r"/annonce/(\d+)(?:-([^/?#]*))?", re.IGNORECASE)
-_LD_JSON = re.compile(r'<script[^>]*type=["\']application/ld\+json["\'][^>]*>(.*?)</script>', re.IGNORECASE | re.DOTALL)
 _NUXT_API = re.compile(r"api\.digitalrecruiters\.com(?:/|\\u002F)careers", re.IGNORECASE)
 _NUXT_DOMAIN = re.compile(r"""domain_name\s*:\s*["']([^"']+)["']""")
 
@@ -128,19 +127,6 @@ def _rank(items: list[dict], config: dict) -> list[dict]:
 
 # --- one ad page ---
 
-def _ld_job(page: str) -> dict:
-    """The schema.org JobPosting object of an ad page, ``{}`` when it has none."""
-    for raw in _LD_JSON.findall(page or ""):
-        try:
-            data = json.loads(raw, strict=False)
-        except ValueError:
-            continue
-        for node in data if isinstance(data, list) else [data]:
-            if isinstance(node, dict) and node.get("@type") == "JobPosting":
-                return node
-    return {}
-
-
 def _ld_location(job: dict) -> str:
     places = job.get("jobLocation") or []
     names = []
@@ -155,7 +141,7 @@ def _ld_location(job: dict) -> str:
 def parse_ad(page: str) -> dict | None:
     """What an ad page holds: ``title``, ``company``, ``posted_at`` (ISO text), ``location`` and the plain-text
     ``description``. None for a page without the JSON-LD JobPosting. Pure."""
-    job = _ld_job(page)
+    job = next(iter(sdk.job_postings(page)), {})
     if not job:
         return None
     hiring = job.get("hiringOrganization")
@@ -283,7 +269,7 @@ def probe(config: dict) -> ProbeResult | None:
     if not entries:
         return None
     entry = entries[0]
-    session = PoliteSession(min_delay=0.2, max_delay=0.5, timeout=PROBE_TIMEOUT_S, max_retries=0, headers=_HEADERS)
+    session = probe_session(_HEADERS)
 
     def fetch() -> str:
         return session.get(f"{_base(entry)}/sitemap.xml", headers=_HEADERS).text
@@ -320,16 +306,6 @@ def detect_html(html: str, url: str) -> Detection | None:
     return Detection(_SITE, host, f"{url} is a Digitalrecruiters career site ({host})") if host else None
 
 
-def feed_url(entry: str) -> str | None:
-    """None: the sitemap is XML, not the JSON list the confirmation reads; `alive_url` drops a site that is gone."""
-    return None
-
-
 def alive_url(entry: str) -> str:
     """The first read of a site's feed: the sitemap, which a site that is gone answers with a 4xx."""
     return f"{_base(entry)}/sitemap.xml"
-
-
-def name_probes(slug: str) -> list:
-    """None to try: a tenant is a career-site host, not a company name."""
-    return []
