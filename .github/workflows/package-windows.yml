@@ -28,7 +28,6 @@ on:
       - "profile.example/**"
       - "pyproject.toml"
       - "poetry.lock"
-      - ".claude/agents/**"
       - ".github/workflows/package-windows.yml"
   workflow_dispatch:
 

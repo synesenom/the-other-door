@@ -1,4 +1,4 @@
-"""Every model prompt lives in `.claude/agents/<name>.md` and `claude_cli.prompt` returns it byte for byte.
+"""Every model prompt lives in `src/door/prompts/<name>.md` and `claude_cli.prompt` returns it byte for byte.
 
 Recorded answers (cv reading, style structure, facts) are keyed by a hash of prompt plus input, so a prompt
 moved into a file must be exactly the text the code sent before: pinned here by sha256."""
@@ -49,16 +49,16 @@ def test_the_model_is_the_files(name):
 
 
 def test_a_field_is_filled_where_the_file_names_it_and_other_braces_stay():
-    text = (workspace.REPO_ROOT / ".claude" / "agents" / "skill-grouper.md").read_text(encoding="utf-8")
+    text = (workspace.REPO_ROOT / "src" / "door" / "prompts" / "skill-grouper.md").read_text(encoding="utf-8")
     assert "{variant, canonical, skill}" in claude_cli.prompt("skill-grouper")
-    assert "{webfetch_rules}" in (workspace.REPO_ROOT / ".claude" / "agents" / "cv-drafter.md").read_text(encoding="utf-8")
+    assert "{webfetch_rules}" in (workspace.REPO_ROOT / "src" / "door" / "prompts" / "cv-drafter.md").read_text(encoding="utf-8")
     assert "{webfetch_rules}" not in claude_cli.prompt("cv-drafter", webfetch_rules="X")
     assert text.startswith("---\nname: skill-grouper\n")
 
 
 def test_every_prompt_file_says_it_is_not_for_direct_use_and_names_its_module():
     for name in PROMPTS:
-        text = (workspace.REPO_ROOT / ".claude" / "agents" / f"{name}.md").read_text(encoding="utf-8")
+        text = (workspace.REPO_ROOT / "src" / "door" / "prompts" / f"{name}.md").read_text(encoding="utf-8")
         description = re.search(r"^description: (.*)$", text, re.M).group(1)
         assert description.startswith("Not for direct use"), name
         assert "`door." in description, name
@@ -91,17 +91,33 @@ MESSAGES = ["stylist-reply-first", "stylist-reply-next", "stylist-reply-letter",
 
 @pytest.mark.parametrize("name", MESSAGES)
 def test_a_message_file_is_not_for_direct_use_and_has_no_model_or_tools(name):
-    text = (workspace.REPO_ROOT / ".claude" / "agents" / f"{name}.md").read_text(encoding="utf-8")
+    text = (workspace.REPO_ROOT / "src" / "door" / "prompts" / f"{name}.md").read_text(encoding="utf-8")
     front = text.split("---", 2)[1]
     assert re.search(r"^description: Not for direct use", front, re.M) and "`door." in front
     assert not re.search(r"^(model|tools):", front, re.M)
 
 
-def test_the_bundle_copies_the_agent_files_the_code_names_and_no_more():
-    src = "\n".join(p.read_text(encoding="utf-8") for p in (REPO_ROOT / "src" / "door").rglob("*.py"))
-    named = {p.stem for p in (REPO_ROOT / ".claude" / "agents").glob("*.md")
-             if re.search(rf'agents/{p.stem}\.md|"{p.stem}(\.md)?"', src)}
-    for script in ("bundle-python.sh", "bundle-python.ps1"):
-        text = (REPO_ROOT / "app" / "scripts" / script).read_text(encoding="utf-8")
-        listed = set(re.search(r"^(?:AGENTS=\(|\$Agents = )(.*?)\)?$", text, re.M).group(1).replace(",", " ").replace("'", "").split())
-        assert listed == named, f"{script}: {sorted(listed ^ named)}"
+def _src() -> str:
+    return "\n".join(p.read_text(encoding="utf-8") for p in (REPO_ROOT / "src" / "door").rglob("*.py"))
+
+
+def test_every_prompt_the_code_names_is_a_file_in_the_prompts_folder():
+    called = set(re.findall(r'(?:prompt|model_of|tools_of|agent_definition|ask)\(\s*"([a-z][a-z-]*)"', _src()))
+    called |= set(re.findall(r'agent="([a-z][a-z-]*)"', _src()))
+    called |= {"stylist", "tailor", "reviewer", "scraper-fixer"}  # named by a constant or an `--agent` argument
+    have = {p.stem for p in claude_cli.PROMPTS_DIR.glob("*.md")}
+    assert called <= have, sorted(called - have)
+
+
+def test_every_file_in_the_prompts_folder_is_used_by_the_code():
+    src = _src()
+    unused = [p.stem for p in claude_cli.PROMPTS_DIR.glob("*.md") if f'"{p.stem}"' not in src and f"prompts/{p.stem}.md" not in src]
+    assert not unused, unused
+
+
+def test_the_bundle_copies_the_whole_of_src_so_the_prompts_go_with_it():
+    sh = (REPO_ROOT / "app" / "scripts" / "bundle-python.sh").read_text(encoding="utf-8")
+    ps = (REPO_ROOT / "app" / "scripts" / "bundle-python.ps1").read_text(encoding="utf-8")
+    assert re.search(r"rsync -a --exclude '__pycache__' \"\$REPO/src/\" ", sh)
+    assert re.search(r"robocopy \(Join-Path \$Repo 'src'\) .* /E /XD __pycache__ ", ps)
+    assert "AGENTS" not in sh and "$Agents" not in ps

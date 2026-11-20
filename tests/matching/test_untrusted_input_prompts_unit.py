@@ -9,7 +9,7 @@ from paths import REPO_ROOT
 
 @pytest.mark.parametrize("agent", ["matcher", "tailor", "reviewer"])
 def test_agent_prompts_call_the_ad_untrusted(agent):
-    text = (REPO_ROOT / ".claude" / "agents" / f"{agent}.md").read_text(encoding="utf-8").lower()
+    text = (REPO_ROOT / "src" / "door" / "prompts" / f"{agent}.md").read_text(encoding="utf-8").lower()
     assert "untrusted" in text
 
 

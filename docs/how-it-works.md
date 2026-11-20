@@ -112,7 +112,7 @@ tracks status, but does not fill or submit live application forms. See [Status](
    language requirements) come per language and country from `src/door/i18n/`, and a
    Danish title gets an English translation (`title_en`, one Haiku call per 50 titles)
    so it ranks fairly against English `role_targets`. Then each unscored posting in every `jobs/postings/<date>/` of the last
-   `max_age_days` is scored against a fixed rubric (`.claude/agents/matcher.md`, read at runtime as
+   `max_age_days` is scored against a fixed rubric (`src/door/prompts/matcher.md`, read at runtime as
    the system prompt) via parallel Haiku `claude -p` calls. Postings that already have a
    `score` are skipped, so a re-run or an interrupted run never pays twice, and whatever an
    interrupted run left unscored is picked up by the next `find`.

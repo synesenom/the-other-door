@@ -88,7 +88,7 @@ def _match_core(
     `find`'s second stage: scans every `jobs_dir/postings/<YYYY-MM-DD>/` directory
     within config's `max_age_days` (excluding `jobs_dir/output/`), so
     postings left unscored by an earlier, interrupted run are picked up too;
-    builds the scoring system prompt from `.claude/agents/
+    builds the scoring system prompt from `src/door/prompts/
     matcher.md` + the profile, runs `door.matching.scorer.score_postings`
     over every unscored posting, and writes each result back to its
     posting JSON atomically — as soon as it's available, not only once the

@@ -6,7 +6,7 @@ import re
 from door.render import html_guard
 from tests.paths import REPO_ROOT
 
-AGENTS = REPO_ROOT / ".claude" / "agents"
+AGENTS = REPO_ROOT / "src" / "door" / "prompts"
 
 
 def _tailor() -> str:

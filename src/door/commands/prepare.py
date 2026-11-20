@@ -33,7 +33,7 @@ _HEARTBEAT_INTERVAL_S = 30.0
 
 
 def _tailor_outputs_missing(output_dir: Path) -> list[str]:
-    """The tailor agent's output files (see `.claude/agents/tailor.md` → Output)
+    """The tailor agent's output files (see `src/door/prompts/tailor.md` → Output)
     that are absent or empty in `output_dir`, in contract order.
 
     An empty list means the materials are complete. A 0-byte file counts as
@@ -118,7 +118,7 @@ def _tailor_folders(posting_path: Path) -> list[Path]:
 
 
 def _cv_conventions_text(posting_path: Path) -> str:
-    """The country's CV conventions as the tailor reads them (`.claude/agents/tailor.md` → CV conventions): the
+    """The country's CV conventions as the tailor reads them (`src/door/prompts/tailor.md` → CV conventions): the
     posting's country, else the profile's (`i18n.cv_country`), else the neutral default."""
     try:
         posting = json.loads(Path(posting_path).read_text(encoding="utf-8"))
@@ -150,7 +150,7 @@ def _tailor_args(job_id: str, posting_path: Path, feedback: str | None = None) -
     The session runs in the job's output folder (`_run_tailor`), not the checkout, in
     `--restricted` mode: no tool that runs commands, file tools confined to the working
     directories (that folder and `_tailor_folders`), no project or user settings. The
-    tailor and reviewer agents come from `--agents` (the `.claude/agents/` files), the
+    tailor and reviewer agents come from `--agents` (the `src/door/prompts/` files), the
     door server from `--mcp-config` alone. `feedback` (the retry after the ATS read-back) adds the
     problems the PDFs read back with: the files exist, keep them and fix only these.
     """

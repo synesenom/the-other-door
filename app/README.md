@@ -97,7 +97,7 @@ scripts/check-bundle.sh    # imports, the MCP handshake, doctor (with its Chromi
 - `python/` is [python-build-standalone](https://github.com/astral-sh/python-build-standalone) 3.12 with *The other door*'s
   `poetry.lock` main group installed into it, every package by hash and from a wheel only
   (`scripts/lock_requirements.py` writes the requirements; a package with no wheel for the system fails the build).
-- `door/` is `src/`, the `.claude/agents/` files `src/door` names (a test checks the list) and `profile.example/`, laid out as in a checkout.
+- `door/` is `src/`, the prompts in `src/door/prompts/` (they go with `src/`) and `profile.example/`, laid out as in a checkout.
 - `bin/` is `chromium/`, the Chrome for Testing headless shell that
   prints CVs (#165), pinned in `src/door/core/downloads/chromium_pin.json` (the one pin, also what `doctor --fix` installs;
   not in `bundle.lock.json`): an estimated 105-128 MB more per installer zipped and about 200 MB unpacked. On Windows on ARM the

@@ -4,13 +4,14 @@ git, gh, `claude -p` and the test/probe gate are all injected, so the whole
 flow (including a fixer that writes a broken patch) runs offline.
 """
 
+import json
 import os
 import subprocess
 from datetime import datetime
 
 import pytest
 
-from door.core import lock, scraper_fix
+from door.core import claude_cli, lock, scraper_fix
 from door.core.scraper_fix import ScraperFixerError, fix_scraper
 
 NOW = datetime(2026, 10, 8, 9, 30)
@@ -284,6 +285,8 @@ def test_run_scraper_fixer_uses_claude_print_mode_only(monkeypatch, tmp_path):
     assert scraper_fix._run_scraper_fixer("jobindex", tmp_path / "raw.html", 5, tmp_path) == "summary"
     assert seen["argv"][:2] == ["claude", "-p"] and "--allowedTools" in seen["argv"]
     assert seen["kw"]["cwd"] == tmp_path and seen["kw"]["timeout"] == 5
+    # the agent is handed in, not found in the checkout's .claude/agents/
+    assert json.loads(seen["argv"][seen["argv"].index("--agents") + 1]) == {"scraper-fixer": claude_cli.agent_definition("scraper-fixer")}
 
     monkeypatch.setattr(scraper_fix.subprocess, "run", lambda *a, **k: subprocess.CompletedProcess(a, 2, stdout="", stderr="bad"))
     with pytest.raises(ScraperFixerError, match="bad"):
