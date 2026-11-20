@@ -19,6 +19,7 @@ from door.scrapers import sdk
 from door.scrapers.discovery import hellowork, jobbsafari, profession
 
 _FIX = Path(__file__).parent / "fixtures"
+_REAL_SLEEP = {m.NAME: m._sleep for m in (hellowork, jobbsafari, profession)}   # before any test fakes it
 _PAUSE = (3.0, 6.0)
 _KEYS = {"employers", "details", "pages", "requests", "stopped", "pushback", "outcome", "mode", "mode_switched",
          "searched", "search_complete", "first_429", "budget", "pause", "seconds"}
@@ -353,3 +354,26 @@ def test_a_block_page_sent_with_a_server_error_is_a_refusal_not_a_failing_server
     result = _run(src)
     assert result["outcome"] == "refused" and result["pushback"] and len(session.page.calls) == 1
     assert drain_pushback(src.name) is True
+
+
+def test_hellowork_searches_the_city_of_the_profiles_location_and_none_without_one(src, session):
+    if src.name != "hellowork":
+        pytest.skip("only HelloWork puts the city in its search")
+    _pages(src, session, src.page(1, 3))
+    _run(src, {"search_keywords": [src.keyword], "location": "Lyon, France"})
+    _run(src, {"search_keywords": [src.keyword]})
+    assert session.page.calls == [
+        "https://www.hellowork.com/fr-fr/emploi/recherche.html?k=chef+de+projet&l=Lyon",
+        "https://www.hellowork.com/fr-fr/emploi/recherche.html?k=chef+de+projet",
+    ]
+
+
+def test_the_real_sleep_waits_the_seconds_or_ends_early_on_a_stop_signal(src, monkeypatch):
+    real = _REAL_SLEEP[src.name]
+    waited = []
+    monkeypatch.setattr("time.sleep", waited.append)
+    assert real(2, None) is False and waited == [2]
+    stop = threading.Event()
+    assert real(0.01, stop) is False
+    stop.set()
+    assert real(30, stop) is True
