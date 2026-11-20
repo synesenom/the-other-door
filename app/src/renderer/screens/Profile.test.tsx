@@ -274,6 +274,18 @@ describe('Profile', () => {
     expect(screen.queryByRole('group', { name: 'CV fonts' })).toBeNull()
   })
 
+  it('lists CV style beside the page only when the part is there', async () => {
+    await open()
+    const links = () => within(screen.getByRole('navigation', { name: 'Sections' })).getAllByRole('link').map((l) => l.textContent)
+    expect(links()).toContain('CV style')
+    cleanup()
+    mockDoor({ show_profile: { ...show(), config: null, errors: ['profile/config.json: remote — bad'] }, ...NO_STORIES })
+    render(<Profile onSaved={() => {}} onDraft={() => {}} />)
+    await screen.findByRole('heading', { name: 'Master CV' })
+    expect(links()).toEqual(['Master CV', 'Stories'])
+    expect(screen.queryByRole('region', { name: 'CV style' })).toBeNull()
+  })
+
   it('a config that does not load says why, with the lines', async () => {
     mockDoor({ show_profile: { ...show(), config: null, errors: ['profile/config.json: remote — bad'] }, ...NO_STORIES })
     render(<Profile onSaved={() => {}} onDraft={() => {}} />)

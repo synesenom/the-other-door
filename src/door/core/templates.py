@@ -125,15 +125,6 @@ NO_ACCENT = "--heading:#1E1A16;--rule:#D6C7A8"  # `none`: ink headings and a hai
 FONT_PAIRS = {"editorial": ('"Playfair Display", serif', "Lato, sans-serif", 700, 700),
               "friendly": ("Montserrat, sans-serif", 'Merriweather, serif', 700, 700),
               "plain": ("Figtree, sans-serif", "Figtree, sans-serif", 600, 600)}
-# the shipped files each pair loads (`@font-face` in the templates); a face missing here would print as Type 3 text
-FONT_FILES = {"door": ("YoungSerif-Regular.ttf", "Figtree-Regular.ttf", "Figtree-Italic.ttf", "Figtree-SemiBold.ttf",
-                       "Figtree-SemiBoldItalic.ttf"),
-              "editorial": ("PlayfairDisplay-Bold.ttf", "Lato-Regular.ttf", "Lato-Italic.ttf", "Lato-Bold.ttf",
-                            "Lato-BoldItalic.ttf"),
-              "friendly": ("Montserrat-Bold.ttf", "Merriweather-Regular.ttf", "Merriweather-Italic.ttf",
-                           "Merriweather-Bold.ttf", "Merriweather-BoldItalic.ttf"),
-              "plain": ("Figtree-Regular.ttf", "Figtree-Italic.ttf", "Figtree-SemiBold.ttf", "Figtree-SemiBoldItalic.ttf")}
-
 
 def style_css(config: dict | None) -> str:
     """The `:root{...}` block that sets the shipped templates' style variables from `cv_accent` and `cv_fonts`; "" for the

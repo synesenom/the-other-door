@@ -1445,7 +1445,8 @@ async def cv_style_sample(cv_accent: str = "blue", cv_fonts: str = "door") -> di
 
     Returns:
         ``{"png_base64", "own_cv"}`` (the page as a PNG; whether it is the user's own CV, not the example), or
-        ``{"error"}`` in words when the CV cannot be read or the print fails.
+        ``{"error": "cv_unreadable"}`` (the CV cannot be read: say so and point at the Master CV) or
+        ``{"error": "print_failed"}`` (nothing the user can fix: say nothing).
     """
     return await asyncio.to_thread(style_sample_cmd._cv_style_sample_core, cv_accent, cv_fonts)
 

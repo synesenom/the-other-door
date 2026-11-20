@@ -19,6 +19,8 @@ interface Props {
   specs: FieldSpec[]
   /** profile/config.json as read (a key it does not set is its default) */
   config: Record<string, unknown>
+  /** Counts the saves of the CV text: the sample is printed again from the new text */
+  cvSaves?: number
 }
 
 /**
@@ -26,7 +28,7 @@ interface Props {
  * style (`cv_style_sample`), right the two pickers. A pick is saved at once with `init_profile` and applies from the
  * next CV that is prepared; an answer for a pick that a newer one replaced is ignored.
  */
-export function CvStyle({ specs, config }: Props) {
+export function CvStyle({ specs, config, cvSaves = 0 }: Props) {
   const choices = (key: string) => specs.find((s) => s.key === key)?.choices ?? []
   const first = (key: string, fallback: string) => String(specs.find((s) => s.key === key)?.default ?? fallback)
   const [chosen, setChosen] = useState<Record<string, string>>({
@@ -35,7 +37,9 @@ export function CvStyle({ specs, config }: Props) {
   })
   const [png, setPng] = useState<string | null>(null)
   const [busy, setBusy] = useState(true)
-  const [problem, setProblem] = useState<string | null>(null)
+  // Only what the user can act on is said: a CV that could not be read (under the sample), a pick that was not saved (under its row)
+  const [unreadable, setUnreadable] = useState(false)
+  const [saveError, setSaveError] = useState<{ key: string; text: string } | null>(null)
   const latest = useRef(0)
 
   const sample = async (now: Record<string, string>) => {
@@ -45,9 +49,10 @@ export function CvStyle({ specs, config }: Props) {
       const r = await call<{ png_base64: string }>('cv_style_sample', now)
       if (mine !== latest.current) return
       setPng(r.png_base64)
-      setProblem(null)
+      setUnreadable(false)
     } catch (e) {
-      if (mine === latest.current) setProblem(errorText(e))
+      // any other failure of the print is nothing to act on: the last picture (or the placeholder) stays
+      if (mine === latest.current) setUnreadable(errorText(e) === 'cv_unreadable')
     } finally {
       if (mine === latest.current) setBusy(false)
     }
@@ -55,17 +60,26 @@ export function CvStyle({ specs, config }: Props) {
   useEffect(() => {
     void sample(chosen)
   }, [])
+  // The CV was saved while this part is open (a pause in typing): its sample is printed again once the saves stop
+  const chosenNow = useRef(chosen)
+  chosenNow.current = chosen
+  useEffect(() => {
+    if (cvSaves === 0) return
+    const timer = setTimeout(() => void sample(chosenNow.current), 2000)
+    return () => clearTimeout(timer)
+  }, [cvSaves])
 
   const pick = async (key: string, value: string) => {
     if (chosen[key] === value) return
     const before = chosen
     const now = { ...chosen, [key]: value }
     setChosen(now)
+    setSaveError(null)
     try {
       await call('init_profile', toInitArgs({ [key]: before[key]! }, { [key]: value }, specs))
     } catch (e) {
       setChosen(before)
-      setProblem(errorText(e))
+      setSaveError({ key, text: errorText(e) })
       return
     }
     await sample(now)
@@ -77,16 +91,18 @@ export function CvStyle({ specs, config }: Props) {
         <h2 className="display-s" id="profile-cv-style">
           CV style
         </h2>
-        <p className="small muted">How your tailored CVs and cover letters look. A choice is saved at once; your CVs are printed with it from the next one you prepare.</p>
+        <p className="small muted">How your tailored CVs and cover letters look. A choice is saved at once; they are printed with it from the next one you prepare or revise.</p>
       </div>
       <div className="style-part">
+        <div className="style-sample-column">
         <div className="style-sample" aria-busy={busy}>
           {png ? <img src={`data:image/png;base64,${png}`} alt="A sample of your CV in this style" /> : <div className="style-sample-wait">{busy && <span className="small">Printing a sample…</span>}</div>}
-          {problem && (
-            <p role="alert" className="field-error">
-              {named(problem)}
-            </p>
-          )}
+        </div>
+        {unreadable && (
+          <p role="alert" className="field-error style-sample-error">
+            Your CV could not be read, so there is no sample. Check your Master CV above and try again.
+          </p>
+        )}
         </div>
         <div className="style-pickers">
           <fieldset className="style-group">
@@ -102,6 +118,7 @@ export function CvStyle({ specs, config }: Props) {
                 )
               })}
             </div>
+            <PickError of="cv_accent" error={saveError} />
           </fieldset>
           <fieldset className="style-group">
             <legend className="field-label">Fonts</legend>
@@ -117,14 +134,25 @@ export function CvStyle({ specs, config }: Props) {
                         <span className="t">a</span>
                       </span>
                     </span>
-                    <span className="style-name">{label}</span>
+                    <span className="style-name">{named(label)}</span>
                   </label>
                 )
               })}
             </div>
+            <PickError of="cv_fonts" error={saveError} />
           </fieldset>
         </div>
       </div>
     </section>
+  )
+}
+
+/** Why a pick was not saved, under the row it belongs to. */
+function PickError({ of, error }: { of: string; error: { key: string; text: string } | null }) {
+  if (error?.key !== of) return null
+  return (
+    <p role="alert" className="field-error">
+      {named(error.text)}
+    </p>
   )
 }

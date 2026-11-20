@@ -123,12 +123,12 @@ def test_each_font_pair_prints_its_two_families_as_real_text_and_reads_back_clea
     assert results["cv.html"]["readable"] == []
 
 
-def _has_colour(pdf, rgb):
+def _has_colour(pdf, rgb, scale=1):
     import pypdfium2 as pdfium
 
     doc = pdfium.PdfDocument(str(pdf))
     try:
-        image = doc[0].render(scale=1).to_pil().convert("RGB")
+        image = doc[0].render(scale=scale).to_pil().convert("RGB")
     finally:
         doc.close()
     return any(all(abs(a - b) < 10 for a, b in zip(px, rgb)) for px in image.getdata())
@@ -146,6 +146,19 @@ def test_an_accent_colours_the_section_headings_and_the_rule_under_the_name(tmp_
         assert not _has_colour(plain / f"{name}.pdf", (0x0F, 0x64, 0x66)), name
         assert _has_colour(plain / f"{name}.pdf", (0x2F, 0x55, 0xC8)), f"{name}: the default is the app's blue"
         assert not _has_colour(ink / f"{name}.pdf", (0x2F, 0x55, 0xC8)), f"{name}: none is ink"
+
+
+_LINK_CV = '<header class="cv-header"><h1>Jane Doe</h1></header><p><a href="https://example.com/x">example</a></p>'
+_LINK_LETTER = '<p><a href="https://example.com/x">example</a></p>'
+
+
+@pytest.mark.parametrize("accent,rgb,present", [("teal", (0x0F, 0x64, 0x66), True), ("blue", (0x2F, 0x55, 0xC8), True),
+                                                 ("none", (0x2F, 0x55, 0xC8), False)])
+def test_a_link_follows_the_heading_colour_and_is_ink_under_no_colour(tmp_path, monkeypatch, accent, rgb, present):
+    """#465: no heading and no rule here, so the colour on the page is the link's; at a scale where 10 pt text shows its core."""
+    out, _ = _setup(tmp_path, monkeypatch, cv=_LINK_CV, letter=_LINK_LETTER, extra={"cv_accent": accent})
+    for name in ("cv", "cover_letter"):
+        assert _has_colour(out / f"{name}.pdf", rgb, scale=6) is present, name
 
 
 def test_the_example_cv_reads_back_with_every_heading_on_its_own_line_and_in_order(example):

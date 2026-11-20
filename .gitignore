@@ -24,6 +24,10 @@ jobs/
 # The problem log of a checkout used as the data folder (core/problem_log.py)
 /logs/
 
+# What a checkout used as the data folder keeps of the CV: the model's reading of it (core/cv_read) and the style samples
+/.cv_read/
+/.style/
+
 # Claude research/plan/validation scratch files
 /thoughts/
 

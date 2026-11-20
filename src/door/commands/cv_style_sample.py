@@ -17,17 +17,9 @@ from door.core import cv_read, templates, utils, workspace
 from door.render import cv_body, html_pdf, pdf_render
 from door.render import page as page_mod
 
-SAMPLE_LANGUAGE = "en"
 # Printed on a page this size, with no margin (the app pads the picture): the lines re-flow, so the text is large in the
 # app's small box and no line is cut at the edge. Only the top of page 1 is shown; the app fades it out at its foot.
 SAMPLE_PAGE = "@page{size:10cm 13cm;margin:0}"
-
-
-def _check(accent: str, fonts: str) -> None:
-    if accent != "none" and accent not in templates.ACCENTS:
-        raise ValueError(f"cv_accent must be none or one of {', '.join(templates.ACCENTS)}")
-    if fonts != "door" and fonts not in templates.FONT_PAIRS:
-        raise ValueError(f"cv_fonts must be door or one of {', '.join(templates.FONT_PAIRS)}")
 
 
 def _cv_text(config: dict) -> tuple[str, bool]:
@@ -43,39 +35,42 @@ def _answer(png: bytes, own: bool) -> dict:
 
 
 def _cv_style_sample_core(accent: str, fonts: str) -> dict:
-    """Page 1 of the CV printed with `accent` and `fonts`: ``{"png_base64", "own_cv"}``, or ``{"error": words}`` when the
-    CV cannot be read or the print fails.
+    """Page 1 of the CV printed with `accent` and `fonts` (a name `Profile` does not accept counts as the default):
+    ``{"png_base64", "own_cv"}``, or ``{"error": kind}`` where kind is ``cv_unreadable`` (the CV cannot be read: the user
+    can act) or ``print_failed`` (nothing the user can do).
 
     Raises:
-        ValueError: `accent` or `fonts` is not one of the names `Profile` accepts; no Chromium is installed.
+        ValueError: no Chromium is installed.
     """
-    _check(accent, fonts)
     config = common._load_json_tolerant(workspace.PROFILE_DIR / "config.json")
     cv_md, own = _cv_text(config)
     template_path = templates.resolve("cv_template", config)
     template = template_path.read_text(encoding="utf-8")
     photo = page_mod.profile_photo(config, {}) if own else None
     style = templates.style_css({"cv_accent": accent, "cv_fonts": fonts}) + SAMPLE_PAGE
-    key = hashlib.sha256("\0".join([
-        cv_md, style, template, photo.name if photo else "", hashlib.sha256(photo.read_bytes()).hexdigest() if photo else "",
-    ]).encode("utf-8")).hexdigest()[:32]
+    # `<the CV's hash>-<the rest's>.png`: a new CV drops the files of the old one, so the folder never grows
+    cv_key = hashlib.sha256(cv_md.encode("utf-8")).hexdigest()[:16]
+    rest = "\0".join([style, template, photo.name if photo else "", hashlib.sha256(photo.read_bytes()).hexdigest() if photo else ""])
     folder = workspace.HOME / ".style" / "preview"
-    cached = folder / f"{key}.png"
+    cached = folder / f"{cv_key}-{hashlib.sha256(rest.encode('utf-8')).hexdigest()[:16]}.png"
     if cached.is_file():
         return _answer(cached.read_bytes(), own)
     if not common._chromium_available():
         raise common.NoChromium
     try:
         body = cv_body.body(cv_md, cv_read.read(cv_md))
-    except cv_read.CvReadError as exc:
-        return {"error": str(exc)}
+    except cv_read.CvReadError:
+        return {"error": "cv_unreadable"}
     with utils.staging(folder, "print-") as staged:
         try:
             pdf, _, _ = page_mod.print_page(
-                body, template, template_path, SAMPLE_LANGUAGE, staged, "cv", manifest=templates.manifest(template_path),
+                body, template, template_path, "en", staged, "cv", manifest=templates.manifest(template_path),
                 photo=photo, style=style)
-        except (ValueError, html_pdf.PrintError) as exc:
-            return {"error": str(exc)}
+        except (ValueError, html_pdf.PrintError):
+            return {"error": "print_failed"}
         png = pdf_render.render_pdf_pages(pdf, staged)[0].read_bytes()
     utils.write_atomic(cached, png)
+    for other in folder.glob("*.png"):
+        if not other.name.startswith(cv_key):
+            other.unlink(missing_ok=True)
     return _answer(png, own)

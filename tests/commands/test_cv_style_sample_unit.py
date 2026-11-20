@@ -66,6 +66,16 @@ def test_a_changed_cv_prints_again(world):
     assert len(world.print.calls) == 2
 
 
+def test_a_changed_cv_drops_the_old_samples_and_a_new_style_keeps_the_cvs_others(world):
+    sample_cmd._cv_style_sample_core("teal", "door")
+    sample_cmd._cv_style_sample_core("rust", "door")
+    folder = world.home / ".style" / "preview"
+    assert len(list(folder.glob("*.png"))) == 2
+    (world.profile / "cv.md").write_text(CV + "- More\n", encoding="utf-8")
+    sample_cmd._cv_style_sample_core("teal", "door")
+    assert len(list(folder.glob("*.png"))) == 1
+
+
 def test_only_the_png_is_kept_in_the_cache_folder(world):
     sample_cmd._cv_style_sample_core("teal", "door")
     kept = sorted(p.name for p in (world.home / ".style" / "preview").iterdir())
@@ -76,18 +86,17 @@ def test_a_cv_that_cannot_be_read_is_an_error_in_words(world, monkeypatch):
     def fail(md):
         raise cv_read.CvReadError("Could not read your CV: try again.")
     monkeypatch.setattr(cv_read, "_ask", fail)
-    assert sample_cmd._cv_style_sample_core("teal", "door") == {"error": "Could not read your CV: try again."}
+    assert sample_cmd._cv_style_sample_core("teal", "door") == {"error": "cv_unreadable"}
 
 
-@pytest.mark.parametrize("accent,fonts", [("red", "door"), ("blue", "Comic")])
-def test_a_choice_outside_the_lists_is_refused(world, accent, fonts):
-    with pytest.raises(ValueError):
-        sample_cmd._cv_style_sample_core(accent, fonts)
+def test_a_name_outside_the_lists_prints_the_default_style(world):
+    sample_cmd._cv_style_sample_core("red", "Comic")
+    assert "<style>:root{" not in world.print.calls[0]["html"]
 
 
 def test_a_failed_print_is_an_error_in_words(world, monkeypatch):
     install(monkeypatch, fail="Chromium crashed")
-    assert "Chromium crashed" in sample_cmd._cv_style_sample_core("teal", "door")["error"]
+    assert sample_cmd._cv_style_sample_core("teal", "door") == {"error": "print_failed"}
 
 
 def test_the_sample_is_printed_on_a_narrow_page_so_its_text_is_big_in_the_apps_small_box(world):

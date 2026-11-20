@@ -5,7 +5,7 @@ carry your data. The HTML templates (`cv.template.html`, `cover-letter.template.
 fonts, colours, margins, the CSS of each building block — and nothing personal; the tailor
 writes only the body of the document (headings, entries, lists, links) from `cv.md` and `config.json` for every
 application, so there is nothing to keep in sync by hand. They ship with the code (`profile.example/`, with the `fonts/` they load:
-Figtree and Young Serif as TrueType files, under the SIL Open Font License) and are not copied into `profile/`, so a release that
+Figtree, Young Serif, Playfair Display, Lato, Montserrat and Merriweather as TrueType files, under the SIL Open Font License) and are not copied into `profile/`, so a release that
 changes them never breaks your profile. To restyle the PDFs, put your own `cv.template.html` and/or
 `cover-letter.template.html` in `profile/` (copy the shipped one and edit it; a `profile/fonts/` folder with `.ttf`
 files replaces the shipped fonts) or name a file in `cv_template` / `cover_letter_template`: yours wins, and earlier materials pick it up on their next revise. Your own copy does not get later changes to the shipped template. Keep the two places the shipped template marks for the page's language and the body, the class names it styles (the

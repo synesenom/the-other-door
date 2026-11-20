@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mockDoor } from '../testing'
 import { CvStyle } from './CvStyle'
 import type { FieldSpec } from './profile-form/form'
@@ -87,9 +87,40 @@ describe('CvStyle', () => {
     await waitFor(() => expect(call).toHaveBeenCalledWith('init_profile', { other: { cv_accent: 'teal' } }))
   })
 
-  it('says a CV that could not be read under the sample', async () => {
-    show({ cv_style_sample: () => { throw { message: 'Your CV could not be read. Try again.' } } })
-    expect(await screen.findByRole('alert')).toHaveTextContent('Your CV could not be read. Try again.')
+  it('says a CV that could not be read in one line under the sample, which keeps its placeholder', async () => {
+    show({ cv_style_sample: () => { throw { message: 'cv_unreadable' } } })
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent(/Check your Master CV/)
+    expect(alert).toHaveClass('field-error')
+    expect(screen.queryByRole('img')).toBeNull()
+    expect(alert.closest('.style-sample')).toBeNull()
+  })
+
+  it('says nothing of a print that failed: the last picture stays', async () => {
+    const user = userEvent.setup()
+    show({ cv_style_sample: (a: Record<string, unknown>) => { if (a['cv_accent'] === 'blue') return sample('first'); throw { message: 'print_failed' } } })
+    await screen.findByRole('img')
+    await user.click(colours().getByRole('radio', { name: 'Teal' }))
+    await waitFor(() => expect(colours().getByRole('radio', { name: 'Teal' })).toBeChecked())
+    await new Promise((r) => setTimeout(r, 20))
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(screen.getByRole('img')).toHaveAttribute('src', 'data:image/png;base64,PNG-first')
+  })
+
+  it('prints the sample again once the CV has been saved', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      const h = mockDoor({ cv_style_sample: sample('first'), init_profile: {} })
+      const { rerender } = render(<CvStyle specs={SPECS} config={{}} cvSaves={0} />)
+      await screen.findByRole('img')
+      h.call.mockClear()
+      rerender(<CvStyle specs={SPECS} config={{}} cvSaves={1} />)
+      rerender(<CvStyle specs={SPECS} config={{}} cvSaves={2} />)
+      await vi.advanceTimersByTimeAsync(2500)
+      expect(h.call.mock.calls.filter((c) => c[0] === 'cv_style_sample')).toHaveLength(1)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('puts a pick back and says why when it could not be saved', async () => {

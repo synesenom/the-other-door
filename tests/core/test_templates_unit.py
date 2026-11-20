@@ -80,8 +80,8 @@ def test_the_shipped_templates_carry_the_two_tokens_and_the_page():
 
 # A pinned hash: a change to a shipped template is deliberate (a user's own copy does not follow it).
 SHIPPED_HASHES = {
-    "cv_template": "715a89357fd667529c9ed5534e85f287e03b61a12b2eac16049418d9e8716702",
-    "cover_letter_template": "f0d2d81ae14fad68e29f44200e49f7f5b6b7ba598c869b6329fe32382c352891",
+    "cv_template": "1388842149a1476be99ae15c38ddb3676de4d7977d08e67394ed22a8e954d007",
+    "cover_letter_template": "014ae9272567bfc606efb35f8a936057b5e8f3b3c678c40ccba0c2623b578d42",
 }
 
 
@@ -124,21 +124,13 @@ def test_an_unknown_value_falls_back_and_is_never_echoed():
     assert templates.style_css({"cv_accent": 3, "cv_fonts": None}) == ""
 
 
-def test_every_font_file_a_pair_names_ships_with_its_licence():
-    shipped = REPO_ROOT / "profile.example" / "fonts"
-    for pair, files in templates.FONT_FILES.items():
-        for name in files:
-            assert (shipped / name).is_file(), f"{pair}: {name}"
-    for name in ("PlayfairDisplay", "Lato", "Montserrat", "Merriweather", "Figtree", "YoungSerif"):
-        assert (shipped / f"{name}-OFL.txt").is_file()
-
-
 def test_every_font_a_template_loads_is_a_shipped_truetype_file():
     shipped = REPO_ROOT / "profile.example" / "fonts"
     for template in ("cv.template.html", "cover-letter.template.html"):
         text = (REPO_ROOT / "profile.example" / template).read_text()
         for name in re.findall(r"/fonts/([\w.-]+\.ttf)", text):
             assert (shipped / name).is_file(), f"{template}: {name}"
+            assert (shipped / f"{name.split('-')[0]}-OFL.txt").is_file(), f"{template}: the licence of {name}"
 
 
 def test_the_apps_swatches_are_the_accent_table():

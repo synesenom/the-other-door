@@ -165,7 +165,7 @@ describe('scenes', () => {
 
   it('profile-cv-style-failed says a CV that could not be read under the sample', async () => {
     mount('profile-cv-style-failed')
-    expect(await screen.findByText('Your CV could not be read. Try again.')).toBeInTheDocument()
+    expect(await screen.findByText(/Check your Master CV/)).toBeInTheDocument()
   })
 
   it('profile-stories lists the stories', async () => {

@@ -35,7 +35,7 @@ test.describe('the Details form', () => {
     await expect(page.getByRole('button', { name: 'Undo changes' })).toBeDisabled()
     // the sections aside
     const sections = page.getByRole('navigation', { name: 'Sections' })
-    await expect(sections.getByRole('link')).toHaveText(['About you', 'What to look for', 'What to skip', 'Master CV', 'Stories'])
+    await expect(sections.getByRole('link')).toHaveText(['About you', 'What to look for', 'What to skip', 'Master CV', 'CV style', 'Stories'])
   })
 
   test('Save writes the changed text, flag and number fields and nothing else', { tag: '@core' }, async ({ page, world }) => {

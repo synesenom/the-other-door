@@ -488,13 +488,12 @@ the preview, brought into view, until you next type.
 
 ### CV style
 
-How your prepared CVs and cover letters look: an accent colour and a pair of fonts. Left is a sample of your CV's first
+How your tailored CVs and cover letters look: an accent colour and a pair of fonts. Left is a sample of your CV's first
 page (your own CV, or the example one until you have yours) in the choice, fading at its foot; right are the pickers.
 **Colour** is a row of nine tiles: blue (the default, the app's own blue), no colour (ink headings and a hairline rule) and navy, teal, forest, burgundy, plum, slate and
 rust, which colour the section headings and the rule under your name; entry titles stay ink. **Fonts** is four blocks
 showing a heading letter and a text letter: The other door (the default), Editorial, Friendly and Plain. The arrow keys
-move within a group. A choice is saved at once (nothing to Save) and the sample is printed again, a second or two; your
-CVs and letters are printed with it from the next one you prepare or revise. The choice is `cv_accent` and `cv_fonts` in
+move within a group. A choice is saved at once (nothing to Save) and the sample is printed again, a second or two; your tailored CVs and cover letters are printed with it from the next one you prepare or revise. The choice is `cv_accent` and `cv_fonts` in
 `profile/config.json` ([Configuration](configuration.md)). CV style is not on the phone and not part of set-up.
 
 ### Your stories

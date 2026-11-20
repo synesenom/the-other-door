@@ -1,6 +1,6 @@
 # Inventory: Profile and CV (desktop app renderer)
 
-Sources read in full: `app/src/renderer/screens/{Profile,PageSections,SettingsFields,CvEditor,Markdown,Hint,Dialog,todos}.tsx|ts`, `profile-form/{form.ts,fields.json}`, `onboarding/parts.tsx` (ChipInput, CityField, TextField, FieldLabel), `Switch.tsx`, `Spinner.tsx`, `AppName.tsx`, `api.ts`, the Profile wiring in `App.tsx`, `app/src/main/{ipc.ts,door-server.ts}` (error envelopes, timeouts, path refusals), and the Python side: `commands/profile.py` (`_init_core`, `_save_cv_core`, `_show_profile_core`, `_profile_field_specs`, `_profile_options`), `core/profile_loader.py` (the `Profile` model and its error lines), `commands/{keywords,enrich,market,companies}.py`, `core/{companies,claude_cli,lock,skill_aliases,discovery_sources}.py`, `mcp_server.py` (`_tool_errors`, `_EXPECTED_ERRORS`).
+Sources read in full: `app/src/renderer/screens/{Profile,PageSections,SettingsFields,CvEditor,Markdown,Hint,Dialog,todos}.tsx|ts`, `profile-form/{form.ts,fields.json}`, `onboarding/parts.tsx` (ChipInput, CityField, TextField, FieldLabel), `CvStyle.tsx`, `Switch.tsx`, `Spinner.tsx`, `AppName.tsx`, `api.ts`, the Profile wiring in `App.tsx`, `app/src/main/{ipc.ts,door-server.ts}` (error envelopes, timeouts, path refusals), and the Python side: `commands/profile.py` (`_init_core`, `_save_cv_core`, `_show_profile_core`, `_profile_field_specs`, `_profile_options`), `core/profile_loader.py` (the `Profile` model and its error lines), `commands/{keywords,enrich,market,companies}.py`, `core/{companies,claude_cli,lock,skill_aliases,discovery_sources}.py`, `mcp_server.py` (`_tool_errors`, `_EXPECTED_ERRORS`).
 
 Conventions used below:
 - **alert** means `role="alert"`. **status** means `role="status"`, which is always the `Spinner`: `<p role=status>` holding the message.
@@ -40,6 +40,7 @@ Always present: `heading level 1 "Profile"`.
 
 ### 1.1 One page
 - No switch between parts: the details' sections, then `region "Master CV"` (the CV file, the pages, the editor), and `region "Stories"`, each with its `heading level 2`, and the details' save bar at the page's foot. — ✓ opens with every section and the saved values; unit: `app/src/renderer/screens/Profile.test.tsx`
+- `region "CV style"` sits between Master CV and Stories (listed beside the page only when the details could be read): the sample of the CV, a Colour row of nine radios (Blue is the default) and a Fonts row of four; a pick is saved at once with only its key (`init_profile` `other.cv_accent` / `cv_fonts`) and the sample is printed again (`cv_style_sample`); a CV that cannot be read is one line under the sample; a print failure is said nowhere; a pick that cannot be saved is said under its row. — ✓ shows a sample of the CV, and a pick is saved at once and printed again; unit: `app/src/renderer/screens/CvStyle.test.tsx`
 - The CV and the Stories read their own data: a details part that cannot be read (error, spinner, invalid config) leaves them on the page. — ✓ a part that could not be read says so, and the rest of the page is there
 
 ### 1.2 Details load states
