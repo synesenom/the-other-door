@@ -41,7 +41,7 @@ company hosts).
    `doctor` uses to notice when the site changes (contract in
    [CONTRIBUTING.md](../CONTRIBUTING.md#adding-a-scraper);
    `tests/scrapers/test_scrapers_probe_contract_unit.py` enforces it).
-   Build its session with `sdk.probe_session(headers)` (the probe pacing: 0.2-0.5 s, one try, `PROBE_TIMEOUT_S` a request); a site that needs other delays keeps its own `PoliteSession`.
+   Build its session with `sdk.probe_session(headers)` (the probe pacing: 0.2-0.5 s, one try, `PROBE_TIMEOUT_S` a request); a site that needs other delays or settings keeps its own `PoliteSession` (kozigallas: `system_trust`).
 
    Read the search terms from `config["search_keywords"]` (falling back to
    `role_targets`) and `config["location"]`; `kwargs["since"]` is how far back to look: a card older than it is returned as a dated card posting (no ad request), not dropped, an ad dropped for its place goes through `record_non_local`, and a known id is returned as `{"platform_id", "seen_only": True}` (`sdk.split_known(rows, pid_of, known_ids)` makes them; the `platform_id` is the one the ledger stores, tenant-folded where the feed folds it), so the run counts the ad seen and refreshes its `last_seen`; and the page or list read is marked with `record_answered` whenever it parses, even when every ad on it is known or off topic (`scrape_feeds` does it for each entry it fetched); otherwise a quiet day is reported `empty`.

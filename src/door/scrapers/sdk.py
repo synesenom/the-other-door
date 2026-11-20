@@ -41,8 +41,8 @@ Feed platforms (the detection half of a per-company feed site, issue #282)
     call; none is required except the first:
     `detect_url(url) -> Detection | None` (a careers or job link on the platform, with the entry
     it names, or `entry=None` when the link names no account),
-    `feed_url(entry) -> str` (only where a JSON endpoint confirms a detected entry by listing jobs; a platform whose
-    link's shape is proof enough defines none) with `FEED_KEY` (the JSON key the list is under),
+    `feed_url(entry) -> str | None` (only where a JSON endpoint confirms a detected entry by listing jobs, None
+    for an entry with no such endpoint, as flatchr's custom host; a platform whose link's shape is proof enough defines none) with `FEED_KEY` (the JSON key the list is under),
     `detect_cname(host, target, where) -> Detection | None` (a CNAME target, `where` the evidence text), `detect_html(html, url) -> Detection | None`
     (page signatures), `name_probes(slug) -> list[Probe]` (the public endpoints to try for a
     company name), and `resolve(...)` for a platform that needs more than a link.

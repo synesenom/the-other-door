@@ -118,5 +118,5 @@ def test_detect_cname_follows_a_career_host_to_its_tenant():
     assert talentsoft.detect_cname("emploi.example.fr", "elsewhere.example.com", "why") is None
 
 
-def test_feed_url_is_none_and_alive_url_is_the_list_page():
+def test_alive_url_is_the_list_page():
     assert talentsoft.alive_url("x.talent-soft.com") == "https://x.talent-soft.com/offre-de-emploi/liste-offres.aspx"
