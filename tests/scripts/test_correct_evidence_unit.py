@@ -53,6 +53,12 @@ def test_a_turn_carries_what_claude_said_before_it(tmp_path):
     assert (turn["session"], turn["at"], turn["file"]) == ("s9", "2026-02-02T00:00:00Z", "a.jsonl")
 
 
+def test_before_keeps_only_the_end_of_a_long_answer(tmp_path):
+    path = _write(tmp_path, [_line("assistant", [{"type": "text", "text": "x" * 5000 + "the end"}]), _line("user", "why?")])
+    (turn,) = ce.turns([path])
+    assert len(turn["before"]) == ce.BEFORE_CHARS and turn["before"].endswith("the end")
+
+
 def _turn(text, session):
     return {"text": text, "session": session}
 

@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 
 MIN_SESSIONS = 2
+BEFORE_CHARS = 300  # the end of Claude's answer is what a correction answers
 
 
 def _text_of(content):
@@ -49,7 +50,7 @@ def turns(paths):
             found.append(
                 {
                     "text": text,
-                    "before": before,
+                    "before": before[-BEFORE_CHARS:],
                     "session": entry.get("sessionId"),
                     "at": entry.get("timestamp"),
                     "file": path.name,
