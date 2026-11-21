@@ -8,9 +8,9 @@ Automated job hunting pipeline: scrape job boards → score against a candidate 
 
 When summarising what you just did, use at most 10 short bullet points: what happened, no details. Go into details only when asked.
 
-A pipeline (`/dev-resolve`, `/dev-epic`) never stops until its work is implemented (`/dev-epic`: every sub-issue implemented, every box checked). The only reason to stop and wait for the user is a decision the `decider` returned CANNOT DECIDE on. Finishing a step, an agent returning, an issue filed, a merge or a permission to wait for are not reasons to stop: go straight on to the next step. Anything else only the user can give (a permission the harness asks for, a merge into `main`, a FAIL after two attempts) blocks that one item, never the run: ask for it in one line and go on with every other item. After the user merges or grants something, re-read what it unblocked and start it in the same turn.
+A pipeline (`/dev-resolve`, `/dev-epic`) never stops until its work is implemented (`/dev-epic`: every sub-issue implemented, every box checked). The only reason to stop and wait for the user is a decision the `decider` returned CANNOT DECIDE on. Finishing a step, an agent returning, an issue filed, a merge or a permission to wait for are not reasons to stop: go straight on to the next step. Anything else only the user can give (a permission the harness asks for, a FAIL after two attempts) blocks that one item, never the run: ask for it in one line and go on with every other item. After the user merges or grants something, re-read what it unblocked and start it in the same turn.
 
-Waiting is not idle time. While a PR's checks run, or a PR waits for the user's merge, find the next issue to resolve and start it without being asked. First the PRs the session-start list names ("Open PRs that need you"): fix a conflict, a failed or missing check or a failed `verify`, verify or merge one that waits on Claude, and ask for a `Needs the maintainer:` one in one line. Then pick in this order:
+Waiting is not idle time. While a PR's checks run, or a PR waits for the maintainer's look, find the next issue to resolve and start it without being asked. First the PRs the session-start list names ("Open PRs that need you"): fix a conflict, a failed or missing check or a failed `verify`, verify or merge one that waits on Claude, and ask for a `Needs the maintainer:` one in one line. Then pick in this order:
 
 1. The next open sub-issue of the epic being worked.
 2. Else an open sub-issue of an epic the session's work belongs to.
@@ -49,15 +49,19 @@ The summary names each finding and which way it went. A finding you judge not re
 
 ## Pull requests
 
-Merging into `main` is the user's. The one exception is `/dev-epic`: a sub-issue's PR into its own epic branch (`epic/<N>-<slug>`) is squash-merged by Claude once its checks are green and its review findings are dealt with; the epic branch's PR into `main` is the user's to merge.
+A PR of Claude's into `main` merges by auto-merge (`gh pr merge <n> --auto --squash --match-head-commit <sha>`) once the `verify` commit status, which the `verifier` agent posts and `scripts/decide.py <pr>` gates, is success. A PR that changes `app/src/renderer/`, `app/src/web/`, `app/src/preview/` or `docs/design/` carries `Needs the maintainer: look at it` and waits for the maintainer's look and merge. A sub-issue's PR into its own epic branch (`epic/<N>-<slug>`, `/dev-epic`) is squash-merged by Claude once its checks are green and its review findings are dealt with. Tags and publishing a release stay the maintainer's.
+
+The gate's GitHub settings (they live in GitHub, not in a diff): the `main` ruleset (id 27155729) requires the `verify` commit status (any source, not strict), repo admin is on its bypass list (always), "Allow auto-merge" is on, and the `gh` token needs **Commit statuses: Read and write** (a fine-grained PAT without it gets 403 "Resource not accessible by personal access token" when posting `verify`).
+
+Design a change to the app's screens from the visual guide: read `docs/design/README.md` and the preview's `?scene=guide` first, build from the controls and classes it shows, and add a new control, class, colour or size to the guide in the same change.
 
 A PR you open (by `/dev-pr` or any other way) is yours until it is green: watch it and fix what breaks, without being asked.
 
-- Watch its checks after every push (subscribe to its activity where the session can, else poll its check runs every few minutes) until every check has finished.
+- Watch its checks after every push with `gh pr checks <n> --watch` in the background (about 60 s after the push: path-filtered workflows register late), then read `gh pr view <n> --json mergeable,statusCheckRollup` (a conflict shows only there), until every check has finished.
 - A failing check: read its logs, find the cause, fix it test-first on the branch, push, and watch again. A flaky failure (passes on a rerun with no change) is rerun once and named in the report; one that fails again is a failure.
 - A merge conflict with `main` (or `main` moving under it): merge `origin/main` into the branch, resolve the conflicts keeping both sides' intent, run the tests the conflicting files touch, push, and watch again.
 - A git push the sandbox blocks (no keychain, no `~/.config/gh`) is retried with the sandbox off, not handed to the user.
-- Stop only when every check is green and the branch merges cleanly; then report it in one line. A fix that needs a decision goes to the `decider` (see Decisions); escalate to the user only on CANNOT DECIDE, or after three rounds of fixes that did not turn it green, with what was tried.
+- Stop only when every check is green, the branch merges cleanly and it is verified and merged (or waits on a `Needs the maintainer:` line); then report it in one line. A fix that needs a decision goes to the `decider` (see Decisions); escalate to the user only on CANNOT DECIDE, or after three rounds of fixes that did not turn it green, with what was tried.
 
 ## Key directories
 

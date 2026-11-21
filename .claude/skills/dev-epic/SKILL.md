@@ -12,7 +12,7 @@ You are working through an epic issue of The other door. The epic's number is th
 - every sub-issue of the epic (and of its sub-epics), including those added while working, is **implemented**: closed as completed, closed as not planned, or has an open pull request that closes it with every check green and no merge conflict;
 - the epic's body has no unchecked `- [ ]` box.
 
-Merging into `main` is the maintainer's: never merge, approve or enable auto-merge on a PR that targets `main`. The one exception is a sub-issue's PR into the epic branch (below): once its checks are green and its review findings are dealt with, merge it (squash) without asking. Run the loop below until done. **Never stop before then**, except to ask a question the `decider` returned CANNOT DECIDE on (Step 7). Do not stop after one sub-issue to report or ask whether to go on. Something else only the maintainer can give (a permission the harness asks for, a hint for a `failed` sub-issue) blocks that one item, never the loop: ask for it in one line and go on with every other sub-issue. When the maintainer says something is granted, re-read the epic at once and start what it unblocked, in the same turn.
+A sub-issue's PR into the epic branch (below) is merged (squash) by you without asking once its checks are green and its review findings are dealt with. The epic branch's PR into `main` goes through the `verifier` and auto-merge like any PR (`/dev-pr` Step 7); one that changes screens waits for the maintainer's look and merge. Run the loop below until done. **Never stop before then**, except to ask a question the `decider` returned CANNOT DECIDE on (Step 7). Do not stop after one sub-issue to report or ask whether to go on. Something else only the maintainer can give (a permission the harness asks for, a hint for a `failed` sub-issue) blocks that one item, never the loop: ask for it in one line and go on with every other sub-issue. When the maintainer says something is granted, re-read the epic at once and start what it unblocked, in the same turn.
 
 **Never stop to report.** A sub-issue's PR opened or merged, a step of `/dev-resolve` done, an agent returned, a decision taken, an issue filed: none ends the run. Go on to the next step or sub-issue in the same turn; the progress line (Step 6) is one line printed on the way, not a stopping point. While background agents or checks run, end the turn without a summary or a question and pick up the moment they finish. The only stops are Step 7 (only the maintainer can move things on), a CANNOT DECIDE, and a permission the harness must ask for. The report is Step 8, once, at the end.
 
@@ -113,7 +113,7 @@ Reached when every sub-issue is merged into the epic branch, closed, `failed` or
    - `## Summary` first, for a person with no context: one plain sentence for the epic's goal, then one line per implemented sub-issue ("#12 — what a user can now do or what was fixed"), in a user's words, no code names.
    - `## What it looks like`: the images and GIFs from step 2.
    - `Closes #<sub>` for every implemented sub-issue and `Closes #<N>`, so merging closes them (GitHub only closes on a merge into `main`).
-   Subscribe to it and keep it green as in Step 3 (checks, conflicts with `main`).
+   Watch it as `/dev-pr` Step 7 says (checks, conflicts with `main`, the `verifier`, auto-merge).
 4. **Report:**
 
 ```
@@ -124,7 +124,7 @@ Epic #<N> — <title>   Branch: <epic branch>   PR: #<pr> → main (checks: gree
 Sub-issues: <done>/<total> implemented   Filed for its boxes: #.., #..
 Epic boxes: <checked>/<total> checked    Unchecked: <list, or none>
 Filed outside the epic: #.., #..
-Left for you: merge #<pr> (review it as one diff; the sub-PRs are the per-issue history); questions; or nothing
+Left for you: look at #<pr> (only when it carries `Needs the maintainer:`; the sub-PRs are the per-issue history); questions; or nothing
 ```
 
 Then the summary in the PR's words (at most 10 short bullets, CLAUDE.md "Reporting back": what was added, each review finding and which way it went), the link to the PR, and the media (inline links, or the files sent).
