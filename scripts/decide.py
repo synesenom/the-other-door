@@ -7,8 +7,8 @@ verifier has spoken, the body's `Needs the maintainer:` lines, read as the gate 
 
 `<pr> --checks <file.json>` is the verifier's verdict, computed here and not
 written by it: the file lists its checks `{"goal", "saw", "matches_goal", "ran"}` (the goal in the
-issue's own words, verbatim); a check that ran and misses its goal is a failure, one not run is
-pending, else the gate below decides. Prints {"state", "description", "reasons", "sha"}.
+issue's own words, verbatim); a check that ran and misses its goal is a failure, one not run, or a
+Done-when sentence of the issue with no check, is pending, else the gate below decides. Prints {"state", "description", "reasons", "sha"}.
 `--checks <file> --issue <file>` is the same offline (no gh; the gate counts as ok), for a spike.
 `--trusted <n>` says whether Claude may take work from issue or PR #n, read before its text is:
 {"trusted": opened by the repo owner, "author", "strangers": its sub-issues opened by anyone else};
@@ -67,7 +67,7 @@ def verdict(checks, gate_ok, gate_reasons, issue):
     """The verifier's (state, description) from its checks and the gate's result.
 
     A goal is grounded only with at least 3 words, verbatim in the issue text; otherwise it is not
-    trusted. A check counts as run only when `ran` is True and `matches_goal` a bool."""
+    trusted. Every Done-when sentence needs a grounded check quoted from it. A check counts as run only when `ran` is True and `matches_goal` a bool."""
     grounded, ungrounded = [], []
     for c in checks:
         goal = _norm(c["goal"])
@@ -83,9 +83,65 @@ def verdict(checks, gate_ok, gate_reasons, issue):
     not_run = [c["goal"] for c in grounded if not _ran(c)]
     if not_run:
         return "pending", "not run: " + "; ".join(not_run)
+    unchecked = _unchecked(issue, [_norm(c["goal"]) for c in grounded])
+    if unchecked:
+        return "pending", "not checked: " + "; ".join(" ".join(i.split()[:8]) for i in unchecked)
     if not checks:
         return "pending", "no checks"
     return ("success", "PASS") if gate_ok else ("pending", "; ".join(gate_reasons))
+
+
+BULLET = re.compile(r"\s*(\d+[.)]|[-*+])\s+")
+AFTER_MERGE = re.compile(r"\bmerged\b|\bmerge commit\b", re.I)  # cannot be seen before the merge
+POINTER = re.compile(r"\bDone-when (\d+)\b")
+
+
+def _blocks(text):
+    """Each `Done when` of the text as its list of items (a `Done when: …` line is a one-item list)."""
+    blocks, items, gap = [], None, False
+    for line in _unfenced(text).splitlines():
+        bare = line.strip().lstrip("#").strip().strip("*").strip()
+        if re.match(r"done when\b", bare, re.I):
+            rest = re.sub(r"^done when[\s*]*(\(.*?\))?[\s*:]*", "", bare, flags=re.I).strip()
+            items, gap = [], False
+            blocks.append(items)
+            if rest:
+                items.append(rest)
+                items = None
+        elif items is None:
+            continue
+        elif not line.strip():
+            gap = True
+        elif m := BULLET.match(line):
+            items.append(line[m.end():])
+            gap = False
+        elif items and not gap:
+            items[-1] += " " + line.strip()
+        else:
+            items = None
+    return blocks
+
+
+def done_when(text):
+    return [i for b in _blocks(text) for i in b]
+
+
+def _unchecked(text, goals):
+    """The Done-when sentences no goal is quoted from. A sentence about the merge is left out (it can be
+    seen only after it); one pointing at `Done-when K` asks for that item of the epic's list instead."""
+    lists = [b for b in _blocks(text) if len(b) > 1]
+    out = []
+    for item in done_when(text):
+        for sentence in re.split(r"(?<=[.!?])\s+", _norm(item)):
+            if not sentence or AFTER_MERGE.search(sentence):
+                continue
+            if m := POINTER.search(sentence):
+                if not any(len(b) >= int(m[1]) for b in lists):
+                    out.append(sentence + " (its item is not in the text)")
+                continue
+            if not any(g in sentence for g in goals):
+                out.append(sentence)
+    return out
 
 
 def _ran(c):
