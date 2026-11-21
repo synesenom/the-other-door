@@ -122,6 +122,8 @@ FIELDS = {
     "cv_content": "profile/cv.md",
     "cover_letter_template": "profile/cover-letter.template.html",
     "photo": "profile/photo.jpg",
+    "cv_accent": "teal",
+    "cv_fonts": "editorial",
     "role_targets": ["Financial Controller", "Head of Finance"],
     "search_keywords": ["financial controller", "head of finance", "group controller"],
     "topic_terms": ["controller", "finance*", "accounting"],
