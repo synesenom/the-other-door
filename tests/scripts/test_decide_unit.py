@@ -36,6 +36,15 @@ def test_an_unticked_box_is_not_ok():
     assert not ok and "unticked box" in reasons
 
 
+def test_a_text_edited_after_the_checks_finished_is_not_ok():
+    # the verifier starts only once the checks finished, so an edit after that may be the verifier ticking its own box
+    checks = [_check("tests") | {"completed_at": "2026-11-21T13:39:41Z"}]
+    ok, reasons = decide.decide(checks, "- [x] done", FILES, head="H", edited=[("the PR text", "2026-11-21T13:41:27Z")])
+    assert not ok and "the PR text changed after the checks finished: run them again" in reasons
+    assert decide.decide(checks, "- [x] done", FILES, head="H", edited=[("the PR text", "2026-11-21T13:30:00Z"),
+                                                                       ("issue #3", None)]) == (True, [])
+
+
 def test_an_unticked_box_inside_a_fence_is_ignored():
     assert _decide(body="```\n- [ ] x\n```\n- [x] y") == (True, [])
 
@@ -76,12 +85,18 @@ def test_a_visible_change_needs_the_maintainer(path):
 ISSUE = "Running prepare twice keeps one folder."
 
 
-def _run(checks, body="Prepare twice keeps one folder.\n- [x] done", files=FILES, author="synesenom", issues=None):
+def _run(checks, body="Prepare twice keeps one folder.\n- [x] done", files=FILES, author="synesenom", issues=None,
+         edited=None):
     issues = issues or {}
+    edited = edited or {}
     calls = []
 
     def run(args):
         calls.append(args)
+        if args[:2] == ["api", "graphql"]:
+            pr = {"lastEditedAt": edited.get("pr"), "closingIssuesReferences": {
+                "nodes": [{"number": n, "lastEditedAt": edited.get(n)} for n in issues]}}
+            return {"data": {"repository": {"pullRequest": pr}}}
         if args[:2] == ["pr", "view"]:
             return {"headRefOid": "H", "body": body, "author": {"login": author},
                     "closingIssuesReferences": [{"number": n} for n in issues]}
@@ -108,6 +123,16 @@ def test_main_reports_ok_and_drops_the_verify_check(tmp_path, capsys):
     assert out == {"state": "success", "description": "PASS", "reasons": [], "sha": "H"}
     assert calls[0][:3] == ["pr", "view", "7"]
     assert any("commits/H/check-runs" in " ".join(c) for c in calls)
+
+
+def test_main_holds_a_pr_whose_text_or_issue_changed_after_the_checks(tmp_path, capsys):
+    done = {"completed_at": "2026-11-21T13:39:41Z"}
+    run, _ = _run([_check("tests") | done], issues={3: "synesenom"}, edited={"pr": "2026-11-21T13:41:27Z",
+                                                                             3: "2026-11-21T13:40:00Z"})
+    assert _main7(tmp_path, run) == 1
+    reasons = json.loads(capsys.readouterr().out)["reasons"]
+    assert reasons == ["the PR text changed after the checks finished: run them again",
+                       "issue #3 changed after the checks finished: run them again"]
 
 
 def test_main_exits_1_for_a_visible_file(tmp_path, capsys):

@@ -34,9 +34,12 @@ OWNER = "synesenom"
 MAINTAINER = "Needs the maintainer: look at it"
 
 
-def decide(checks, body, files, head, author=OWNER, issues=()):
+def decide(checks, body, files, head, author=OWNER, issues=(), edited=()):
     """Return (ok, reasons) for a head's check runs, the PR body, the changed file paths, the PR's
-    author and the closing issues as (number, author)."""
+    author, the closing issues as (number, author) and when each text was last edited as (what, time or None).
+
+    A text edited after the checks finished is held: the verifier starts only then, and it must never change
+    the PR or the issue it judges (tick a box, rewrite a goal)."""
     reasons = []
     if author != OWNER:
         reasons.append(f"Needs the maintainer: opened by {author}")
@@ -50,6 +53,9 @@ def decide(checks, body, files, head, author=OWNER, issues=()):
             reasons.append(f"check {c['name']} is pending")
         elif c["conclusion"] not in GREEN:
             reasons.append(f"check {c['name']} failed")
+    finished = max((c.get("completed_at") or "" for c in checks), default="")
+    reasons += [f"{what} changed after the checks finished: run them again"
+                for what, at in edited if at and finished and at > finished]
     text = _unfenced(body)
     if re.search(r"^\s*(?:[-*+]|\d+[.)])\s+\[ \]", text, re.M):
         reasons.append("unticked box")
@@ -230,6 +236,15 @@ def _verdict_out(checks_file, gate_ok, reasons, sha, issue):
     return 0 if state == "success" else 1
 
 
+def _edited(pr, run):
+    owner, name = REPO.split("/")
+    query = (f'{{repository(owner:"{owner}",name:"{name}"){{pullRequest(number:{int(pr)}){{lastEditedAt '
+             'closingIssuesReferences(first:50){nodes{number lastEditedAt}}}}}')
+    data = run(["api", "graphql", "-f", f"query={query}"])["data"]["repository"]["pullRequest"]
+    return [("the PR text", data["lastEditedAt"])] + [
+        (f"issue #{i['number']}", i["lastEditedAt"]) for i in data["closingIssuesReferences"]["nodes"]]
+
+
 def _trusted(n, run):
     try:
         item = run(["api", f"repos/{REPO}/issues/{n}"])  # a PR too: GitHub's PRs are issues
@@ -273,7 +288,7 @@ def main(argv=None, run=_gh):
     checks = [c for page in pages for c in page["check_runs"] if c["name"] != "verify"]
     paths = [f["filename"] for page in files for f in page]
     issues = [(i["number"], i["author"]["login"]) for i in closing]
-    ok, reasons = decide(checks, view["body"], paths, sha, view["author"]["login"], issues)
+    ok, reasons = decide(checks, view["body"], paths, sha, view["author"]["login"], issues, _edited(pr, run))
     text = "\n".join(i["body"] for i in closing) if closing else view["body"]
     return _verdict_out(checks_file, ok, reasons, sha, text)
 
