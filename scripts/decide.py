@@ -8,7 +8,7 @@ verifier has spoken, the body's `Needs the maintainer:` lines, read as the gate 
 `<pr> --checks <file.json>` is the verifier's verdict, computed here and not
 written by it: the file lists its checks `{"goal", "saw", "matches_goal", "ran"}` (the goal in the
 issue's own words, verbatim); a check that ran and misses its goal is a failure, one not run, or a
-Done-when sentence of the issue with no check, is pending, else the gate below decides. Prints {"state", "description", "reasons", "sha"}.
+Done-when sentence of the issue with no check, is a failure too (one marked `(by the maintainer)` waits for them), else the gate below decides. Prints {"state", "description", "reasons", "sha"}.
 `--checks <file> --issue <file>` is the same offline (no gh; the gate counts as ok), for a spike.
 `--trusted <n>` says whether Claude may take work from issue or PR #n, read before its text is:
 {"trusted": opened by the repo owner, "author", "strangers": its sub-issues opened by anyone else};
@@ -67,7 +67,9 @@ def verdict(checks, gate_ok, gate_reasons, issue):
     """The verifier's (state, description) from its checks and the gate's result.
 
     A goal is grounded only with at least 3 words, verbatim in the issue text; otherwise it is not
-    trusted. Every Done-when sentence needs a grounded check quoted from it. A check counts as run only when `ran` is True and `matches_goal` a bool."""
+    trusted. Every Done-when sentence needs a grounded check quoted from it, but for
+    one marked `(by the maintainer)`, which waits for them. A check counts as run only when `ran`
+    is True and `matches_goal` a bool; a goal not run or not checked is a failure."""
     grounded, ungrounded = [], []
     for c in checks:
         goal = _norm(c["goal"])
@@ -80,12 +82,15 @@ def verdict(checks, gate_ok, gate_reasons, issue):
         return "failure", f"FAIL: {failed[0]}"
     if ungrounded:
         return "pending", "goal words not in the issue: " + "; ".join(ungrounded)
-    not_run = [c["goal"] for c in grounded if not _ran(c)]
-    if not_run:
-        return "pending", "not run: " + "; ".join(not_run)
+    theirs = [s for s in _sentences(issue) if BY_MAINTAINER.search(s)]
+    not_run = [c["goal"] for c in grounded if not _ran(c) and not any(_norm(c["goal"]) in t for t in theirs)]
+    if not_run:  # an untested goal is a failure, so the session picks it up
+        return "failure", "FAIL: not run: " + "; ".join(not_run)
     unchecked = _unchecked(issue, [_norm(c["goal"]) for c in grounded])
     if unchecked:
-        return "pending", "not checked: " + "; ".join(" ".join(i.split()[:8]) for i in unchecked)
+        return "failure", "FAIL: not checked: " + "; ".join(" ".join(i.split()[:8]) for i in unchecked)
+    if theirs:
+        return "pending", "Needs the maintainer: " + "; ".join(theirs)
     if not checks:
         return "pending", "no checks"
     return ("success", "PASS") if gate_ok else ("pending", "; ".join(gate_reasons))
@@ -94,6 +99,7 @@ def verdict(checks, gate_ok, gate_reasons, issue):
 BULLET = re.compile(r"\s*(\d+[.)]|[-*+])\s+")
 AFTER_MERGE = re.compile(r"\bmerged\b|\bmerge commit\b", re.I)  # cannot be seen before the merge
 POINTER = re.compile(r"\bDone-when (\d+)\b")
+BY_MAINTAINER = re.compile(r"\(by the maintainer\)", re.I)  # a goal only the maintainer can run
 
 
 def _blocks(text):
@@ -126,21 +132,31 @@ def done_when(text):
     return [i for b in _blocks(text) for i in b]
 
 
+def _sentences(text):
+    out = []
+    for item in done_when(text):
+        for s in re.split(r"(?<=[.!?])\s+", _norm(item)):
+            if out and BY_MAINTAINER.fullmatch(s.rstrip(".")):  # "… Mac. (by the maintainer)"
+                out[-1] += " " + s
+            elif s:
+                out.append(s)
+    return out
+
+
 def _unchecked(text, goals):
     """The Done-when sentences no goal is quoted from. A sentence about the merge is left out (it can be
     seen only after it); one pointing at `Done-when K` asks for that item of the epic's list instead."""
     lists = [b for b in _blocks(text) if len(b) > 1]
     out = []
-    for item in done_when(text):
-        for sentence in re.split(r"(?<=[.!?])\s+", _norm(item)):
-            if not sentence or AFTER_MERGE.search(sentence):
-                continue
-            if m := POINTER.search(sentence):
-                if not any(len(b) >= int(m[1]) for b in lists):
-                    out.append(sentence + " (its item is not in the text)")
-                continue
-            if not any(g in sentence for g in goals):
-                out.append(sentence)
+    for sentence in _sentences(text):
+        if AFTER_MERGE.search(sentence) or BY_MAINTAINER.search(sentence):
+            continue
+        if m := POINTER.search(sentence):
+            if not any(len(b) >= int(m[1]) for b in lists):
+                out.append(sentence + " (its item is not in the text)")
+            continue
+        if not any(g in sentence for g in goals):
+            out.append(sentence)
     return out
 
 

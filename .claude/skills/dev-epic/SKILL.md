@@ -1,6 +1,6 @@
 ---
 name: dev-epic
-description: Churn through an epic issue in one run — resolve its sub-issues one after another on one epic branch (each in its own pull request into that branch, merged once green), file what is found on the way as issues of their own, tick the epic's checkboxes, then open one pull request from the epic branch into main with a plain summary and screenshots or a GIF of anything a user sees. Invoked with /dev-epic <epic_issue_number>.
+description: Churn through an epic issue in one run — resolve its sub-issues one after another, each as its own small pull request into main that the verifier checks and auto-merge lands, file what is found on the way as issues of their own, tick the epic's checkboxes, and report once at the end. Invoked with /dev-epic <epic_issue_number>.
 ---
 
 You are working through an epic issue of The other door. The epic's number is the argument. **Repo constants**: `owner: synesenom`, `repo: the-other-door`, `base: main`.
@@ -12,15 +12,13 @@ You are working through an epic issue of The other door. The epic's number is th
 - every sub-issue of the epic (and of its sub-epics), including those added while working, is **implemented**: closed as completed, closed as not planned, or has an open pull request that closes it with every check green and no merge conflict;
 - the epic's body has no unchecked `- [ ]` box.
 
-A sub-issue's PR into the epic branch (below) is merged (squash) by you without asking once its checks are green and its review findings are dealt with. The epic branch's PR into `main` goes through the `verifier` and auto-merge like any PR (`/dev-pr` Step 7); one that changes screens waits for the maintainer's look and merge. Run the loop below until done. **Never stop before then**, except to ask a question the `decider` returned CANNOT DECIDE on (Step 7). Do not stop after one sub-issue to report or ask whether to go on. Something else only the maintainer can give (a permission the harness asks for, a hint for a `failed` sub-issue) blocks that one item, never the loop: ask for it in one line and go on with every other sub-issue. When the maintainer says something is granted, re-read the epic at once and start what it unblocked, in the same turn.
+Each sub-issue is its own small PR into `main`. It lands like any PR (`/dev-pr` Step 7): checks green, the `verifier` sets `verify` to success, auto-merge merges it; one that changes screens or carries `Needs the maintainer:` waits for the maintainer's look. There is no epic branch and no big PR at the end: the maintainer reads a few sentences per PR, never a whole epic at once. Run the loop below until done. **Never stop before then**, except to ask a question the `decider` returned CANNOT DECIDE on (Step 7). Do not stop after one sub-issue to report or ask whether to go on. Something else only the maintainer can give (a permission the harness asks for, a hint for a `failed` sub-issue) blocks that one item, never the loop: ask for it in one line and go on with every other sub-issue. When the maintainer says something is granted, re-read the epic at once and start what it unblocked, in the same turn.
 
 **Never stop to report.** A sub-issue's PR opened or merged, a step of `/dev-resolve` done, an agent returned, a decision taken, an issue filed: none ends the run. Go on to the next step or sub-issue in the same turn; the progress line (Step 6) is one line printed on the way, not a stopping point. While background agents or checks run, end the turn without a summary or a question and pick up the moment they finish. The only stops are Step 7 (only the maintainer can move things on), a CANNOT DECIDE, and a permission the harness must ask for. The report is Step 8, once, at the end.
 
-State lives in `thoughts/epic/<N>.md` (the epic branch; per sub-issue its branch, PR, state, notes; the open questions), so a later `/dev-epic <N>` picks up where this one stopped. Write it after every step that changes something.
+State lives in `thoughts/epic/<N>.md` (per sub-issue its branch, PR, state, notes; the open questions), so a later `/dev-epic <N>` picks up where this one stopped. Write it after every step that changes something.
 
-**The epic branch.** `epic/<N>-<slug>` (`<slug>` two to five words from the epic's title), made from `main` and pushed at the start (or found again from the state file or `git ls-remote --heads origin 'epic/<N>-*'`). Every sub-issue's branch starts from the epic branch's current tip and its PR targets the epic branch (`/dev-resolve <sub> epic=<N> base=<epic branch> target=<epic branch>`). A green sub-PR is squash-merged into the epic branch by you; the next sub-issue starts from the new tip. So the epic branch is always the sum of what is done, and it is the only branch that ever becomes a PR into `main` (Step 8). Never rebase or force-push it. `main` moving is handled by merging `origin/main` into the epic branch (Step 3).
-
-**A fixed branch.** When the session's own instructions fix the branch to push to (a cloud session), that branch is the epic branch, and there are no sub-PRs: `/dev-resolve <sub> epic=<N>` commits on it (no `base`, no `target`), pushes it, and the epic branch's PR is opened at the end (Step 8).
+**A fixed branch.** When the session's own instructions fix the branch to push to (a cloud session), there are no sub-PRs: `/dev-resolve <sub> epic=<N>` commits on that branch and pushes it, and its one PR is opened at the end (Step 8).
 
 ---
 
@@ -51,7 +49,7 @@ Run in parallel:
 
 For each open sub-issue, find its pull request: `mcp__github__issue_read` (`method: get`) on it gives `closed_by_pull_requests`; when that is missing or empty, fall back to `gh api -X GET search/issues -f q='repo:synesenom/the-other-door is:pr is:open author:synesenom "Closes #<sub>"'` before treating it as PR-less. Read its checks (`mcp__github__pull_request_read`, `method: get_check_runs`) and whether it is mergeable (`method: get`).
 
-Rebuild the state from GitHub too, not only from the state file (it may be missing, in a new session): the epic branch, the open PRs into it by `synesenom` that say `Part of #<N>`, and the PRs already merged into it (a sub-issue whose PR was merged into the epic branch is implemented, though GitHub keeps it open until the epic branch reaches `main`).
+Rebuild the state from GitHub too, not only from the state file (it may be missing, in a new session): the open and merged PRs by `synesenom` that say `Part of #<N>`.
 
 Read GitHub again on every pass: the counts are never remembered. If the epic is closed, go to Step 8.
 
@@ -59,33 +57,31 @@ Read GitHub again on every pass: the counts are never remembered. If the epic is
 
 Read the body's checkboxes. Each unchecked box must map to a sub-issue: by a `#<sub>` on its line, or by its words matching a sub-issue's title. A box that maps to none is work no issue tracks: file it with `/dev-file-issue epic=<N>` (a title from the box, a body that quotes the box): it attaches the issue here and adds ` (#<sub>)` to that box's line. A box that is not work (a note, a question already answered in the maintainer's comments) goes to the `decider`: tick it with a one-line comment on the epic saying why, or file it.
 
-### Step 3: Keep the epic branch and its PRs green
+### Step 3: Keep the sub-PRs moving
 
-Look after the open sub-PRs as `/dev-pr` Step 7 (its steps 1-2: no verifier or auto-merge for a PR into the epic branch) and CLAUDE.md "Pull requests" say: a failing check is read, fixed test-first on its own branch, pushed; a review comment of the maintainer's is addressed, or recorded as a question when it needs the maintainer. When a sub-PR is green, mergeable and its review findings are dealt with, squash-merge it into the epic branch (`mcp__github__merge_pull_request`, `merge_method: squash`) and delete its branch; its sub-issue is now implemented.
+Each open sub-PR is watched and landed as `/dev-pr` Step 7 says (a background watch of its checks, the `verifier` once they are green, a fix and a fresh verify on a FAIL, auto-merge on success); a review comment of the maintainer's is addressed, or recorded as a question when it needs the maintainer. A sub-issue whose PR merged into `main` is implemented (GitHub closes it).
 
-**`main` moved:** `git fetch origin && git switch <epic branch> && git merge origin/main --no-edit`, resolve conflicts keeping both sides' intent as in `/dev-pr` Step 2, run the tests the conflicting files touch, push. Open sub-PRs then merge the epic branch in the same way (`git merge origin/<epic branch>`), so they stay mergeable. Do this when the epic's PR into `main` reports a conflict, and once before Step 8.
-
-**A sub-PR closed without merging:** read why (the maintainer's comments on it). If the maintainer closed it on purpose, record that as a question and leave the sub-issue; otherwise it goes back to the queue and is resolved again from the epic branch's tip.
+**A sub-PR closed without merging:** read why (the maintainer's comments on it). If the maintainer closed it on purpose, record that as a question and leave the sub-issue; otherwise it goes back to the queue and is resolved again from `main`.
 
 ### Step 4: The next sub-issue
 
 Pick the first open sub-issue, in GitHub's order, that has no PR yet and is not blocked:
 
-- **Order**: a sub-issue that depends on one later in GitHub's order waits until that one is merged into the epic branch (pick the dependency first).
+- **Order**: a sub-issue that depends on one later in GitHub's order waits until that one is merged into `main` (pick the dependency first). One that depends on an open sub-PR may start on that PR's branch (`base=<its branch>`), its PR into `main` merging after it.
 - **Blocked** means it needs a decision the `decider` could not take (record the question, mark it `blocked: question`), or it depends on a sub-issue that is `failed` or `blocked`. Go on with the next.
 - **A sub-issue that is itself an epic** (it has sub-issues): work its sub-issues the same way, depth first.
 
 If none is left to pick, go to Step 6.
 
-Run `/dev-resolve <sub> epic=<N> base=<epic branch> target=<epic branch>` and follow it to the end: it makes the branch from the epic branch's tip, implements, validates, runs the review (CLAUDE.md "Review") and opens the PR into the epic branch, and returns without watching it; the loop's Step 3 watches it and merges it.
+Run `/dev-resolve <sub> epic=<N>` and follow it to the end: it makes the branch from `main`, implements, validates, runs the review (CLAUDE.md "Review") and opens the PR into `main`, and returns without watching it; the loop's Step 3 watches it and lands it.
 
 The issues its review filed (its report's Review line: only bugs a user would hit outside the change, CLAUDE.md "Review") went through `/dev-file-issue` as issues of their own, never into this epic: the epic's scope stays fixed while it is worked, so its queue does not grow. Name them in the final report.
 
-If `/dev-resolve` ends in FAIL, record its diagnosis, comment it on the sub-issue, mark it `failed`, and go on: nothing of it is merged, and the next sub-issue builds on the same tip. Keep each sub-issue's review lines (what the reviewers found and how each ended) and, for a change to the app's screens, what a user sees: Step 8 uses them.
+If `/dev-resolve` ends in FAIL, record its diagnosis, comment it on the sub-issue, mark it `failed`, and go on: nothing of it is merged. Keep each sub-issue's review lines (what the reviewers found and how each ended) and, for a change to the app's screens, what a user sees: Step 8 uses them.
 
 ### Step 5: Tick the boxes
 
-Tick a box (`- [ ]` → `- [x]`, adding ` — #<pr>`) only when its sub-issue's PR is merged into the epic branch, or with ` — not planned` when it was closed as not planned. Edit with `mcp__github__issue_write` (`method: update`), changing only those boxes: re-read the body first and keep every other character, since the maintainer may have edited it. Untick a box whose PR was closed unmerged.
+Tick a box (`- [ ]` → `- [x]`, adding ` — #<pr>`) only when its sub-issue's PR is merged into `main`, or with ` — not planned` when it was closed as not planned. Edit with `mcp__github__issue_write` (`method: update`), changing only those boxes: re-read the body first and keep every other character, since the maintainer may have edited it. Untick a box whose PR was closed unmerged.
 
 ### Step 6: Print the progress line, go round
 
@@ -101,32 +97,8 @@ Stop and wait only for a `blocked: question` (the `decider`'s CANNOT DECIDE): as
 
 ---
 
-## Step 8: The epic's pull request and the final report
+## Step 8: The final report
 
-Reached when every sub-issue is merged into the epic branch, closed, `failed` or `blocked`, and every box is ticked or explained.
+Reached when every sub-issue is merged, closed, `failed` or `blocked`, and every box is ticked or explained.
 
-1. **Bring `main` in** (Step 3) and run the offline suite once on the epic branch (`./scripts/run-test.sh`, and `--app` when `app/` changed). Fix what fails test-first, on the epic branch.
-2. **Show what changed.** When the epic's diff against `main` touches what a user sees (`app/src/renderer/`, `app/src/web/`, `app/src/preview/`, `docs/design/`, or the CLI's printed output):
-   - **Screenshots**: render each changed screen in the preview (`npm run dev:preview` in `app/`, `?scene=…&state=…&theme=…`; the pages the design-reviewer used), with Playwright at `deviceScaleFactor: 2`, one image per screen and state that is new or changed, light and dark where the colours changed. Put a before shot (from `main`) beside it when something was changed, not added.
-   - **GIF**: for a flow (several steps, something that moves), record it with the repo's recorders (`npm run record:gif`, `record:phone-gif`, a tape under `scripts/demo/` for the CLI) or a Playwright video turned into a GIF with `scripts/demo/app_gif.py`.
-   - Write them to the scratchpad, never into the epic branch (nothing of them reaches `main`). Push them to the branch `epic-media/<N>` (made from `main` for the first push; only these files; `<N>/<name>.png`) and refer to them in the PR body as `![what it shows](https://github.com/synesenom/the-other-door/blob/epic-media/<N>/<N>/<name>.png?raw=true)`. When the session cannot push that branch (a fixed branch), send the files with `SendUserFile` and name them in the body instead.
-   - Nothing a user sees: say "Nothing a user sees." and skip.
-3. **Open the PR** `<epic branch>` → `main` with `/dev-pr epic=<N> final=true` (it uses the epic's commits as its own; `/dev-pr` Step 4's body, then):
-   - `## Summary` first, for a person with no context: one plain sentence for the epic's goal, then one line per implemented sub-issue ("#12 — what a user can now do or what was fixed"), in a user's words, no code names.
-   - `## What it looks like`: the images and GIFs from step 2.
-   - `Closes #<sub>` for every implemented sub-issue and `Closes #<N>`, so merging closes them (GitHub only closes on a merge into `main`).
-   Watch it as `/dev-pr` Step 7 says (checks, conflicts with `main`, the `verifier`, auto-merge).
-4. **Report:**
-
-```
-Epic #<N> — <title>   Branch: <epic branch>   PR: #<pr> → main (checks: green|running|red, mergeable: yes|no, verify: success|pending|failure, merged: yes|no)
-| Sub-issue | Title | Sub-PR (merged into the branch) | State |
-|-----------|-------|----|-------|
-| #12       | ...   | #40 | merged |
-Sub-issues: <done>/<total> implemented   Filed for its boxes: #.., #..
-Epic boxes: <checked>/<total> checked    Unchecked: <list, or none>
-Filed outside the epic: #.., #..
-Left for you: look at #<pr> (only when it carries `Needs the maintainer:`; the sub-PRs are the per-issue history); questions; or nothing
-```
-
-Then the summary in the PR's words (at most 10 short bullets, CLAUDE.md "Reporting back": what was added, each review finding and which way it went), the link to the PR, and the media (inline links, or the files sent).
+Post it as a comment on the epic issue, starting with `## In short` (at most five plain sentences: what the epic set out to do, what now works, how it was proven), then one plain line per sub-issue with its PR, so a giant epic still reads in a minute; and say the same to the user, in plain words and at most 200 words (CLAUDE.md "Reporting back"): the epic's goal in one sentence, then one line per sub-issue (what a user can now do, its PR, merged or what it waits for), the issues filed outside the epic, and what is left for the maintainer (a screen to look at, a question), or nothing. A screen change's before/after shots are in its own PR (the verifier's comment); link them.
