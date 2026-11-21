@@ -387,17 +387,22 @@ A rule that only lives in prose gets forgotten; this table lists the ones someth
 
 | Rule | Enforced by | Since |
 |------|-------------|-------|
-| No `print(` under `src/door/` | `tests/core/test_no_print_guard_unit.py` | |
-| Layers: lower packages never import `door.commands` | `tests/core/test_layer_guard_unit.py` | |
-| Writes are atomic | `tests/core/test_atomic_write_guard_unit.py` | |
-| Subprocess stdin and encoding are set | `tests/core/test_subprocess_stdin_guard_unit.py`, `test_subprocess_encoding_guard_unit.py` | |
-| No real network, browser, robots or forbidden hosts in tests or code | `tests/core/test_network_guard_unit.py`, `test_no_browser_guard_unit.py`, `test_robots_guard_unit.py`, `test_no_forbidden_hosts_unit.py` | |
-| A CV or letter body stays inside the HTML allow-list | `tests/render/test_html_guard_unit.py` | |
-| A quiet zero-hit board is told from a broken one | `tests/scrapers/test_zero_hit_guard_unit.py` | |
-| The example CV is never scored or tailored | `tests/commands/test_example_cv_guard_cli.py` | |
-| The app's renderer runs no CLI or model | `app/src/main/guard.test.ts` | |
+| No `print(` under `src/door/` | `tests/core/test_no_print_guard_unit.py` | before #478 |
+| Layers: lower packages never import `door.commands` | `tests/core/test_layer_guard_unit.py` | before #478 |
+| Writes are atomic | `tests/core/test_atomic_write_guard_unit.py` | before #478 |
+| Subprocess stdin and encoding are set | `tests/core/test_subprocess_stdin_guard_unit.py`, `test_subprocess_encoding_guard_unit.py` | before #478 |
+| No real network, browser, robots or forbidden hosts in tests or code | `tests/core/test_network_guard_unit.py`, `test_no_browser_guard_unit.py`, `test_robots_guard_unit.py`, `test_no_forbidden_hosts_unit.py` | before #478 |
+| A CV or letter body stays inside the HTML allow-list | `tests/render/test_html_guard_unit.py` | before #478 |
+| A quiet zero-hit board is told from a broken one | `tests/scrapers/test_zero_hit_guard_unit.py` | before #478 |
+| The example CV is never scored or tailored | `tests/commands/test_example_cv_guard_cli.py` | before #478 |
+| The app's renderer runs no CLI or model | `app/src/main/guard.test.ts` | before #478 |
 | No test of a doc's or asset's content; docs, prompt and skill steps get no `[TEST]` | `issue-planner` and `issue-implementer` prompts (#483) | #483 |
-| Complexity is not added by accretion (class B) | `epic-architect` and `simplicity-reviewer` item 6 (#482) | #482 |
+| Reading the meaning of free-form text is a model call, not Python rules or word lists | `epic-architect` ("a model understands; code verifies"), `simplicity-reviewer` item 6 | #482 |
+| A rule fits the general case, not only the example at hand | `simplicity-reviewer` item 6 (a special case needs a second case and a counter-case) | #482 |
+| A reviewer finding is acted on only with a run that shows it | the reviewers' proof rules, "Review" above | #482 |
+| A fix is done only when a run shows it working as a user would | `verifier` and the required `verify` status (`scripts/decide.py`) | #479 |
+| A screen change is shown before and after, and waits for the maintainer's look | `verifier`; `scripts/decide.py` holds a changed screen | #479 |
+| A PR Claude opened is watched until it is green and merged | `/dev-pr` Step 7's background watch; the session-start list (`scripts/decide.py --open`) | #480, #481 |
 
 ## Docs maintenance
 
