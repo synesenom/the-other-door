@@ -126,3 +126,12 @@ def test_a_misnamed_argument_is_refused_without_counting_as_a_failure(log):
     result = _call("list_stories", {"bogus": 1})
     assert result.is_error and "bogus" in result.content[0].text
     assert "ERROR" not in (log.read_text() if log.exists() else "")
+
+
+def test_an_unreadable_cv_is_not_logged_as_a_failure_but_a_real_error_is(log):
+    """#503: the CV style part tells the user to fix the Master CV; it never feeds "something keeps going wrong"."""
+    for _ in range(3):
+        server._log_answer("cv_style_sample", {"error": "cv_unreadable"})
+    assert not log.exists()
+    server._log_answer("cv_style_sample", {"error": "render failed"})
+    assert "ERROR tool cv_style_sample: render failed" in log.read_text(encoding="utf-8")
