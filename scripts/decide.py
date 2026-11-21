@@ -58,13 +58,13 @@ def _norm(text):
     return " ".join(text.split())
 
 
-def verdict(checks, gate_ok, gate_reasons, issue=None):
+def verdict(checks, gate_ok, gate_reasons, issue):
     """The verifier's (state, description) from its checks and the gate's result.
 
-    With the issue text, a check whose goal is not verbatim in it is not trusted: it counts as not run."""
+    A check whose goal is not verbatim in the issue text is not trusted: it counts as not run."""
     grounded, ungrounded = [], []
     for c in checks:
-        if issue is not None and _norm(c["goal"]) not in _norm(issue):
+        if _norm(c["goal"]) not in _norm(issue):
             ungrounded.append(c["goal"])
         else:
             grounded.append(c)

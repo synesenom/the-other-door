@@ -198,31 +198,36 @@ def test_open_is_silent_when_gh_fails_or_nothing_needs_you(capsys):
 
 
 # the verdict is computed from the checks, not written by the verifier
+def _v(checks, gate_ok, reasons):
+    """verdict() with an issue that quotes every goal, for the cases that are not about grounding."""
+    return decide.verdict(checks, gate_ok, reasons, " ".join(c["goal"] for c in checks))
+
+
 def _c(goal="keeps one folder", ran=True, ok=True):
     return {"goal": goal, "saw": "x", "matches_goal": ok, "ran": ran}
 
 
 def test_a_ran_check_that_misses_its_goal_is_a_failure():
-    assert decide.verdict([_c(ok=False)], True, []) == ("failure", "FAIL: keeps one folder")
+    assert _v([_c(ok=False)], True, []) == ("failure", "FAIL: keeps one folder")
 
 
 def test_checks_that_all_match_defer_to_the_gate():
-    assert decide.verdict([_c()], True, []) == ("success", "PASS")
-    assert decide.verdict([_c()], False, ["unticked box", "check a failed"]) == (
+    assert _v([_c()], True, []) == ("success", "PASS")
+    assert _v([_c()], False, ["unticked box", "check a failed"]) == (
         "pending", "unticked box; check a failed")
 
 
 def test_a_failure_outranks_a_check_not_run():
-    state, desc = decide.verdict([_c("a", ran=False), _c("b", ok=False)], True, [])
+    state, desc = _v([_c("a", ran=False), _c("b", ok=False)], True, [])
     assert (state, desc) == ("failure", "FAIL: b")
 
 
 def test_a_check_not_run_is_pending():
-    assert decide.verdict([_c(), _c("two", ran=False)], True, []) == ("pending", "not run: two")
+    assert _v([_c(), _c("two", ran=False)], True, []) == ("pending", "not run: two")
 
 
 def test_no_checks_is_pending():
-    assert decide.verdict([], True, []) == ("pending", "no checks")
+    assert _v([], True, []) == ("pending", "no checks")
 
 
 def test_a_goal_that_is_not_the_issues_text_is_pending():
