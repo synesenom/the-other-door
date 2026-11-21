@@ -76,7 +76,7 @@ def test_a_visible_change_needs_the_maintainer(path):
 ISSUE = "Running prepare twice keeps one folder."
 
 
-def _run(checks, body="- [x] done", files=FILES, author="synesenom", issues=None):
+def _run(checks, body="Prepare twice keeps one folder.\n- [x] done", files=FILES, author="synesenom", issues=None):
     issues = issues or {}
     calls = []
 
@@ -95,25 +95,31 @@ def _run(checks, body="- [x] done", files=FILES, author="synesenom", issues=None
     return run, calls
 
 
-def test_main_reports_ok_and_drops_the_verify_check(capsys):
+def _main7(tmp_path, run):
+    f = tmp_path / "checks.json"
+    f.write_text(json.dumps([_c("twice keeps one folder")]))
+    return decide.main(["7", "--checks", str(f)], run)
+
+
+def test_main_reports_ok_and_drops_the_verify_check(tmp_path, capsys):
     run, calls = _run([_check("tests"), _check("verify", status="in_progress", conclusion=None)])
-    assert decide.main(["7"], run) == 0
+    assert _main7(tmp_path, run) == 0
     out = json.loads(capsys.readouterr().out)
-    assert out == {"ok": True, "reasons": [], "sha": "H"}
+    assert out == {"state": "success", "description": "PASS", "reasons": [], "sha": "H"}
     assert calls[0][:3] == ["pr", "view", "7"]
     assert any("commits/H/check-runs" in " ".join(c) for c in calls)
 
 
-def test_main_exits_1_for_a_visible_file(capsys):
+def test_main_exits_1_for_a_visible_file(tmp_path, capsys):
     run, _ = _run([_check("tests")], files=["docs/design/README.md"])
-    assert decide.main(["7"], run) == 1
+    assert _main7(tmp_path, run) == 1
     out = json.loads(capsys.readouterr().out)
-    assert out["ok"] is False and out["reasons"] == ["Needs the maintainer: look at it"]
+    assert out["state"] == "pending" and out["reasons"] == ["Needs the maintainer: look at it"]
 
 
-def test_main_reads_every_page_of_check_runs(capsys):
+def test_main_reads_every_page_of_check_runs(tmp_path, capsys):
     run, _ = _run([_check("tests"), _check("app", conclusion="failure")])
-    assert decide.main(["7"], run) == 1
+    assert _main7(tmp_path, run) == 1
     assert "check app failed" in json.loads(capsys.readouterr().out)["reasons"]
 
 
@@ -131,19 +137,24 @@ def test_a_needs_the_maintainer_line_in_a_list_or_in_bold_is_seen(line):
     assert _decide(body=line) == (False, ["Needs the maintainer: try it"])
 
 
-def test_main_reads_every_changed_file_past_the_first_hundred(capsys):
+def test_main_reads_every_changed_file_past_the_first_hundred(tmp_path, capsys):
     run, _ = _run([_check("tests")], files=[f"src/door/f{i}.py" for i in range(150)] + ["app/src/web/x.ts"])
-    assert decide.main(["7"], run) == 1
+    assert _main7(tmp_path, run) == 1
     assert json.loads(capsys.readouterr().out)["reasons"] == ["Needs the maintainer: look at it"]
 
 
-def test_main_says_when_gh_fails(capsys):
+def test_main_says_when_gh_fails(tmp_path, capsys):
     def run(args):
         raise decide.subprocess.CalledProcessError(1, ["gh"], stderr="HTTP 404")
 
-    assert decide.main(["7"], run) == 1
+    assert _main7(tmp_path, run) == 1
     out = json.loads(capsys.readouterr().out)
-    assert out["ok"] is False and "gh failed" in out["reasons"][0]
+    assert out["state"] == "pending" and "gh failed" in out["reasons"][0]
+
+
+def test_main_without_checks_is_a_usage_error(capsys):
+    assert decide.main(["7"], lambda args: None) == 2
+    assert capsys.readouterr().out == ""
 
 
 # --open: the session-start list of the user's open PRs that need something
@@ -312,9 +323,9 @@ def test_the_owner_as_author_of_pr_and_issue_passes():
                          issues=[(5, "synesenom")]) == (True, [])
 
 
-def test_main_reads_the_author_and_the_closing_issues_authors(capsys):
+def test_main_reads_the_author_and_the_closing_issues_authors(tmp_path, capsys):
     run, _ = _run([_check("tests")], author="mallory", issues={5: "eve"})
-    assert decide.main(["7"], run) == 1
+    assert _main7(tmp_path, run) == 1
     reasons = json.loads(capsys.readouterr().out)["reasons"]
     assert "Needs the maintainer: opened by mallory" in reasons
     assert "Needs the maintainer: issue #5 opened by eve" in reasons

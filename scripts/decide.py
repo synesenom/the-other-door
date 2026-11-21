@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Whether a PR's head has what the verifier needs to pass it: `python scripts/decide.py <pr>`.
+"""Whether a PR's head has what the verifier needs to pass it: `python scripts/decide.py <pr> --checks <file.json>`.
 
 `python scripts/decide.py --open` lists the user's open PRs that need something (the
 session-start hook): a conflict, a failed or missing check, the `verify` status, or, before the
 verifier has spoken, the body's `Needs the maintainer:` lines, read as the gate reads them.
 
-`python scripts/decide.py <pr> --checks <file.json>` is the verifier's verdict, computed here and not
+`<pr> --checks <file.json>` is the verifier's verdict, computed here and not
 written by it: the file lists its checks `{"goal", "saw", "matches_goal", "ran"}` (the goal in the
 issue's own words, verbatim); a check that ran and misses its goal is a failure, one not run is
 pending, else the gate below decides. Prints {"state", "description", "reasons", "sha"}.
@@ -14,9 +14,9 @@ A PR, or an issue it closes, opened by anyone but the repo owner needs the maint
 sees only closing references (`Closes #N`), which `/dev-pr` writes for every issue. A PR with no
 closing issue (a direct request) has its goals read from its own body.
 
-Prints {"ok", "reasons", "sha"} and exits 0 when ok, 1 otherwise. Reads the PR and its head's
-check runs through `gh`; the `verify` check (the verifier's own status) is left out. A PR that
-changes what a user sees is never ok: the maintainer looks at it.
+Exits 0 on success, 1 otherwise, 2 for a missing `--checks`. Reads the PR and its head's check
+runs through `gh`; the `verify` check (the verifier's own status) is left out. A PR that changes
+what a user sees is never ok: the maintainer looks at it.
 """
 
 import json
@@ -161,9 +161,12 @@ def main(argv=None, run=_gh):
     if checks_file and issue_file:  # offline, for a spike: no gh, the gate counts as ok
         with open(issue_file) as f:
             return _verdict_out(checks_file, True, [], None, f.read())
-    pr = argv[0]
+    pr = argv[0] if argv else None
     if pr == "--open":
         return _open(run if run is not _gh else (lambda args: _gh(args, timeout=5)))
+    if not checks_file or not pr or pr.startswith("--"):
+        print("usage: decide.py <pr> --checks <file> | --checks <file> --issue <file> | --open", file=sys.stderr)
+        return 2
     try:
         view = run(["pr", "view", pr, "--json", "headRefOid,body,author,closingIssuesReferences"])
         sha = view["headRefOid"]
@@ -173,20 +176,14 @@ def main(argv=None, run=_gh):
         files = run(["api", "--paginate", "--slurp", f"repos/{REPO}/pulls/{pr}/files?per_page=100"])
     except subprocess.CalledProcessError as e:
         why = f"gh failed: {(e.stderr or '').strip()}"
-        if checks_file:
-            print(json.dumps({"state": "pending", "description": why[:140], "reasons": [why], "sha": None}))
-        else:
-            print(json.dumps({"ok": False, "reasons": [why], "sha": None}))
+        print(json.dumps({"state": "pending", "description": why[:140], "reasons": [why], "sha": None}))
         return 1
     checks = [c for page in pages for c in page["check_runs"] if c["name"] != "verify"]
     paths = [f["filename"] for page in files for f in page]
     issues = [(i["number"], i["author"]["login"]) for i in closing]
     ok, reasons = decide(checks, view["body"], paths, sha, view["author"]["login"], issues)
-    if checks_file:
-        text = "\n".join(i["body"] for i in closing) if closing else view["body"]
-        return _verdict_out(checks_file, ok, reasons, sha, text)
-    print(json.dumps({"ok": ok, "reasons": reasons, "sha": sha}))
-    return 0 if ok else 1
+    text = "\n".join(i["body"] for i in closing) if closing else view["body"]
+    return _verdict_out(checks_file, ok, reasons, sha, text)
 
 
 if __name__ == "__main__":
