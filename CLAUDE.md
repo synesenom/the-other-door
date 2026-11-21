@@ -381,6 +381,24 @@ committed so it shows in the README. Regenerate it by running `./scripts/run-tes
 after changing tests; `coverage.xml` and `.coverage` are gitignored, only the
 SVG is tracked.
 
+## Rules and what enforces them
+
+A rule that only lives in prose gets forgotten; this table lists the ones something enforces. When the maintainer corrects Claude, the same change adds the check that would have caught it, where a check is the natural fix (`/dev-correct` finds the repeated ones; the memory is still written).
+
+| Rule | Enforced by | Since |
+|------|-------------|-------|
+| No `print(` under `src/door/` | `tests/core/test_no_print_guard_unit.py` | |
+| Layers: lower packages never import `door.commands` | `tests/core/test_layer_guard_unit.py` | |
+| Writes are atomic | `tests/core/test_atomic_write_guard_unit.py` | |
+| Subprocess stdin and encoding are set | `tests/core/test_subprocess_stdin_guard_unit.py`, `test_subprocess_encoding_guard_unit.py` | |
+| No real network, browser, robots or forbidden hosts in tests or code | `tests/core/test_network_guard_unit.py`, `test_no_browser_guard_unit.py`, `test_robots_guard_unit.py`, `test_no_forbidden_hosts_unit.py` | |
+| A CV or letter body stays inside the HTML allow-list | `tests/render/test_html_guard_unit.py` | |
+| A quiet zero-hit board is told from a broken one | `tests/scrapers/test_zero_hit_guard_unit.py` | |
+| The example CV is never scored or tailored | `tests/commands/test_example_cv_guard_cli.py` | |
+| The app's renderer runs no CLI or model | `app/src/main/guard.test.ts` | |
+| No test of a doc's or asset's content; docs, prompt and skill steps get no `[TEST]` | `issue-planner` and `issue-implementer` prompts (#483) | #483 |
+| Complexity is not added by accretion (class B) | `epic-architect` and `simplicity-reviewer` item 6 (#482) | #482 |
+
 ## Docs maintenance
 
 README is only the get-started path plus links; reference material lives in `docs/`. When

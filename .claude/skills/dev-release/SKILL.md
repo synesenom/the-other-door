@@ -26,6 +26,8 @@ Then run everything a release needs locally, in the background, and wait for it:
 
 Find the previous release tag: `git describe --tags --abbrev=0 --match 'v*'` (none = the first release).
 
+Then run `/dev-correct since=<that tag>` (none: no `since`) and prune the table "Rules and what enforces them" in `CLAUDE.md`: a rule whose mistake can no longer happen, or that no correction touched since it was added, is dropped. A change goes through its own PR with `/dev-pr`, like the data-upgrade step below.
+
 ### What is in it
 
 Gather every PR merged since that tag:
