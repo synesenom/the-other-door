@@ -32,7 +32,8 @@ No skill is needed for:
 ## Developer skills
 
 For working **on** *The other door* (see [CONTRIBUTING.md](../CONTRIBUTING.md)). They drive the
-GitHub-issue workflow and are prefixed `dev-` to stay out of the way of the user skills.
+GitHub-issue workflow and are prefixed `dev-` to stay out of the way of the user skills; `/eli5`, a
+conversation helper, is the one without the prefix.
 
 | Skill | What it does |
 |-------|--------------|
@@ -49,6 +50,7 @@ GitHub-issue workflow and are prefixed `dev-` to stay out of the way of the user
 | `/dev-add-scraper <site> [country]` | Build a scraper for a new job board test-first: module, unit/fixture/probe/live tests from saved real payloads, the registry entry and its doc rows (scraper-builder agent; see [adding-a-site.md](adding-a-site.md)). |
 | `/dev-add-country <country>` | Add a whole country: research its job boards and their terms (you pick which to build), write its data files and the scrapers test-first, document the country, run the new live smoke tests, and validate it with two fake profiles in sandboxes (`scripts/country_smoke.py`, built on `scripts/sandbox.py`): one reading only English, one English plus the local language, since where someone lives doesn't decide which ad languages they want. State and every agent's report in `thoughts/country/<cc>/`, which the validator also checks the run against. |
 | `/dev-add-profession <titles> <country>` | Make *The other door* work for one profession, given as one or more job titles (`"Reward Partner, C&B Specialist" dk`), in one country (the country needs its data file: `/dev-add-country` first): research the titles it is advertised under, what *The other door* finds today, and where its jobs are posted (boards, profession and union job banks, the ATS platforms of its employers, discovery sources) with each source's terms; you pick what to build; the sources are built test-first with live smoke tests that search for the profession, documented in the Sources by profession table, its *The other door* gaps filed as issues, and the result checked with a fake profile of the profession in a sandbox against the research baseline. State and reports in `thoughts/profession/<cc>-<slug>/`. |
+| `/eli5 [part]` | Re-explain Claude's last message (or just the named part) in plain, short words: the point first, no jargon, paths or issue numbers unless you need one to act, what it needs from you last, nothing added. Runs only when you type it. |
 
 The skills are tested end to end, locally and before a release (`./scripts/run-test.sh --model`, never
 in CI): the real model runs `/onboard`, `/expand` and a review session against a test world,
