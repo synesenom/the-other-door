@@ -73,7 +73,7 @@ From these, draft:
 - **Body** (markdown). This body is the source of the release notes: `/dev-release` reads it months later, with no other context, so it must stand on its own.
   ```
   ## In short
-  <Three plain sentences for the maintainer, who reads only this: what changed, why, and how it was proven (what the verifier will run). No code names, no jargon.>
+  <Three plain sentences for the maintainer, who reads only this: what changed, why, and how it was proven (what the verifier will run). No code names, no jargon. However big the PR, never more than five sentences: a large one says its parts in a short list under them, one plain line each.>
 
   <details><summary>Details</summary>
 
