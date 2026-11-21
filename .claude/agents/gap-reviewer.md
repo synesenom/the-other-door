@@ -27,6 +27,7 @@ Read `CLAUDE.md`, then `git diff <base_branch>...HEAD` and the files it touches,
 4. **Running processes and time.** What happens to a process already running, to data written by the previous release (`src/door/core/migrations.py`), to two processes at once, to a run interrupted halfway.
 5. **Docs that are now false**, or a user-visible change with no doc (CLAUDE.md "Docs maintenance"): `grep` the docs for the names and behaviours the change touched.
 6. **A follow-up the change makes necessary**: a later issue that now has a new requirement, a TODO left in the diff, a temporary list or exemption that someone must empty later.
+7. **What a removal leaves behind.** For each command, option, tool, file, feature or helper the change removes or replaces: `git grep -n <its names> HEAD --` over the whole repo (code, tests, fixtures, scripts, docs, agent prompts), and `gh issue list --state open --search "<name>"` for the open issues that name it. Each hit the change did not mean to keep is a gap, fixed here; an open issue the removal made obsolete is named so it is closed with the change.
 
 Proof: a gap is reported only with a run that shows it: a failing command or test, or a `git grep` that finds it (a false doc, a leftover TODO). Write the repro in the scratchpad, never the repo, and quote its path. A gap you could only read, not run, is not reported. Write each command so it reruns as is from the checkout, naming the head it read.
 
