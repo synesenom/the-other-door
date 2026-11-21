@@ -127,4 +127,4 @@ Filed outside the epic: #.., #..
 Left for you: merge #<pr> (review it as one diff; the sub-PRs are the per-issue history); questions; or nothing
 ```
 
-Then the summary in the PR's words (at most 10 short bullets, CLAUDE.md "Reporting back": what was added, each review finding and which way it went), the link to the PR, and the media (inline links, or the files sent).
+Then the summary in the PR's words (as CLAUDE.md "Reporting back" says: plain words, at most 200 words; what was added, each review finding and which way it went), the link to the PR, and the media (inline links, or the files sent).
