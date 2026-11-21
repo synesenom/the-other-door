@@ -1,7 +1,7 @@
 ---
 name: issue-validator
 description: Validate the current implementation of a GitHub issue by running the test suite and checking TDD compliance. Requirements coverage is left to the gap review. Spawned by the /dev-validate and /dev-resolve skills. The prompt must include the issue number, title, and the base branch to diff against.
-model: sonnet
+model: haiku
 tools:
   - Bash
   - Glob
