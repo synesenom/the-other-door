@@ -62,15 +62,16 @@ def turns(paths, since=None):
 
 
 def verify(classes, all_turns):
-    """Keep only quotes that are a substring of a turn; `sessions` counts the distinct sessions they come from."""
+    """Keep only quotes that are a substring of exactly one turn (one found in several is too generic to be evidence);
+    `sessions` counts the distinct sessions of the turns they come from."""
     checked = []
     for cls in classes:
         quotes, sessions = [], set()
         for quote in cls.get("quotes", []):
-            hits = {t["session"] for t in all_turns if quote and quote in t["text"]}
-            if hits and quote not in quotes:
+            hits = [t["session"] for t in all_turns if quote and quote in t["text"]]
+            if len(hits) == 1 and quote not in quotes:
                 quotes.append(quote)
-            sessions |= hits
+                sessions.add(hits[0])
         checked.append({**cls, "quotes": quotes, "sessions": len(sessions), "qualifies": len(sessions) >= MIN_SESSIONS})
     return checked
 

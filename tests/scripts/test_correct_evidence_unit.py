@@ -82,3 +82,9 @@ def test_verify_drops_quotes_that_are_not_in_a_turn_and_counts_sessions():
     assert first["quotes"] == ["do not add a test", "no test for a doc"]
     assert first["sessions"] == 2 and first["qualifies"]
     assert second["sessions"] == 1 and not second["qualifies"]
+
+
+def test_a_quote_found_in_several_turns_is_too_generic_to_count():
+    turns = [_turn("why do we need this file?", "s1"), _turn("why do we need two scripts?", "s2")]
+    (checked,) = ce.verify([{"cause": "c", "quotes": ["why do we need"]}], turns)
+    assert checked["quotes"] == [] and not checked["qualifies"]
