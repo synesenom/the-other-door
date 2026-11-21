@@ -4,7 +4,7 @@ A release is a tag `vX.Y.Z`. `.github/workflows/release.yml` builds the installe
 unit tests (on macOS and Windows; Linux's run in `app.yml`) and the packaged smoke test on each, and uploads them to a **draft** release. The same workflow run by hand is a dry run that builds and tests everything and
 uploads to no release (see Before the tag). A draft is published
 only after a person has installed it on a clean machine of each system and gone through the checklist below
-(#502). `/dev-release` in Claude Code walks through it (the maintainer only). How the build, the bundle and the signing work is in [app/README.md](../app/README.md#releasing-224).
+(#502). `/dev-release` in Claude Code walks through it (the maintainer only). How the build, the bundle and the signing work is in [app/README.md](../../app/README.md#releasing-224).
 
 ## Before the tag
 
@@ -65,7 +65,7 @@ previous install (`docs/manual-app.md`, "Your data"). Go through every system th
 
 Steps 1 and 3–6 below are also the install test, which `release.yml` runs on every installer of the draft
 and on Windows on ARM (the x64 installer, emulated): a green release run means they passed on each system, on a
-test world with a stand-in Claude ([app/README.md](../app/README.md#the-install-test-639)). Locally it is
+test world with a stand-in Claude ([app/README.md](../../app/README.md#the-install-test-639)). Locally it is
 `DOOR_INSTALLER=<the downloaded file> ./scripts/run-test.sh --release`. The first-open warnings of step 1, the
 real sign-in, real scoring and the update stay by hand, on one machine.
 

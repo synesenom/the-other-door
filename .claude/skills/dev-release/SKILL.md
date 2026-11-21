@@ -3,7 +3,7 @@ name: dev-release
 description: Cut a release of The other door — check main is green, set the version, dry-run release.yml on main, push the vX.Y.Z tag, watch release.yml build the installers into a draft release, write the release notes, and publish it only when the maintainer says so. Maintainer only. Invoked with /dev-release [X.Y.Z] [pre-release].
 ---
 
-You are cutting a release of The other door. `docs/releasing.md` is the reference (the checklist before a draft is published); `.github/workflows/release.yml` is what a tag starts. Follow the steps in order and stop where a step says so.
+You are cutting a release of The other door. `docs/development/releasing.md` is the reference (the checklist before a draft is published); `.github/workflows/release.yml` is what a tag starts. Follow the steps in order and stop where a step says so.
 
 **Repo constants**: `owner: synesenom`, `repo: the-other-door`, `base: main`.
 
@@ -137,13 +137,13 @@ Write the release notes into `thoughts/release/vX.Y.Z.md` (gitignored), for the 
 
 - Leave out a section with nothing in it. Several PRs that make one change for a user (a feature and its follow-up fixes in the same release) are one bullet citing all of them; a fix to something new in this same release is not a **Fixed** bullet.
 - Order each section by how much a user will notice, most first.
-- **Install**: which file is for which computer (the table in `docs/releasing.md`), that you need a Claude Pro or Max plan, and, while the builds are unsigned (no signing secrets in `release.yml`'s run), that macOS and Windows ask once the first time, linking `docs/manual-app.md#opening-it-on-macos-the-first-time`.
+- **Install**: which file is for which computer (the table in `docs/development/releasing.md`), that you need a Claude Pro or Max plan, and, while the builds are unsigned (no signing secrets in `release.yml`'s run), that macOS and Windows ask once the first time, linking `docs/manual-app.md#opening-it-on-macos-the-first-time`.
 
 Show the notes and ask whether to put them on the draft; on yes, `gh release edit vX.Y.Z --notes-file thoughts/release/vX.Y.Z.md`.
 
 ## Step 6: Publish
 
-Point the user at the draft URL and at `docs/releasing.md`'s checklist: install each installer on a clean machine first (`DOOR_INSTALLER=<the downloaded file> ./scripts/run-test.sh --release` adds the install test to the rest; `npm run test:install` in `app/` runs it alone). Then ask with AskUserQuestion: "Publish vX.Y.Z?" Options:
+Point the user at the draft URL and at `docs/development/releasing.md`'s checklist: install each installer on a clean machine first (`DOOR_INSTALLER=<the downloaded file> ./scripts/run-test.sh --release` adds the install test to the rest; `npm run test:install` in `app/` runs it alone). Then ask with AskUserQuestion: "Publish vX.Y.Z?" Options:
 
 - "Publish as the latest release": the README's download link and the apps' updater find it; publishing is what rolls the update out. `gh release edit vX.Y.Z --draft=false --latest`
 - "Publish as a pre-release": public on the releases page, but `releases/latest` skips it, so the README link and the updater don't see it; share the release URL instead. `gh release edit vX.Y.Z --draft=false --prerelease`
@@ -174,4 +174,4 @@ Installers: <n>/5
 URL:       <release url>
 ```
 
-Then what is left of `docs/releasing.md`'s checklist for this release, if anything.
+Then what is left of `docs/development/releasing.md`'s checklist for this release, if anything.
