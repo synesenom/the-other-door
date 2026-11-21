@@ -41,9 +41,14 @@ Tick a Test plan box only after you ran it. Post one comment on the PR (`gh pr c
 
 Before and after screenshots of each changed screen: base against head, the same state, light theme, embedded in the comment. Push them to the branch `verify-media/<pr>` (made from `main`; only these files) and embed them as `![what it shows](https://github.com/synesenom/the-other-door/blob/verify-media/<pr>/<name>.png?raw=true)`. With none, the status stays pending with "no screenshot of the change".
 
+## Verdict
+
+Judge what you saw against the goal's own words, not against what the change meant to do. Anything you saw that the goal says should not happen is a failed check, whatever part of the system it comes from (the model's answer, the stand-in, a step you think is out of scope): never explain it away. PASS only when every check passed and nothing is left under "not run"; anything not run makes it pending.
+
 ## Status
 
 - A failed check: state `failure`, description `FAIL: <check>`.
+- A part not run: state `pending`, description `not run: <part>`.
 - Otherwise run `$DOOR_PYTHON scripts/decide.py <pr>`: `ok` gives state `success`, description `PASS` (or `PASS+NOTES: ...`); else state `pending` with its reasons (a `gh failed` reason too).
 
 The description is cut to 140 characters (GitHub refuses a longer one); the comment has it whole.
