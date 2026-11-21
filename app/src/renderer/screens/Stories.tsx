@@ -262,7 +262,7 @@ export function Stories() {
                 ))}
               </dl>
               <div className="actions">
-                <button type="button" className="secondary go" onClick={() => setView({ kind: 'form', old: s.title, values: toValues(s) })}>
+                <button type="button" className="secondary" onClick={() => setView({ kind: 'form', old: s.title, values: toValues(s) })}>
                   Edit
                 </button>
                 <button type="button" className="secondary" onClick={() => setRemoving(s)}>

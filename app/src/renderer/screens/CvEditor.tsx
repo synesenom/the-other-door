@@ -452,7 +452,7 @@ export function CvEditor({
                 {cvFile ? 'Replace CV file…' : 'Add a CV file…'}
               </button>
             )}
-            <button type="button" className="secondary go" onClick={() => from({ kind: 'page' })}>
+            <button type="button" className="secondary" onClick={() => from({ kind: 'page' })}>
               Add a page
             </button>
             {remembered.length > 0 && (

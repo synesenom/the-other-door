@@ -197,7 +197,7 @@ export function Applications({
           {rows && rows.length > 0 && <p className="subtitle">{`${rows.length} in play${interviewing ? ` · ${interviewing} in interviews` : ''}`}</p>}
         </div>
         <div className="actions head-actions">
-          <button type="button" className="secondary go" onClick={() => setImporting(true)}>
+          <button type="button" className="secondary" onClick={() => setImporting(true)}>
             Add a job
           </button>
         </div>

@@ -98,7 +98,7 @@ export function Ask({ onGo }: { onGo: (to: AskGoTo) => void }) {
           <span className="dash" aria-hidden="true" />
           <p className="body">{state.a.answer}</p>
           {state.a.go_to && (
-            <button type="button" className="secondary go" onClick={() => onGo(state.a.go_to!)}>
+            <button type="button" className="secondary" onClick={() => onGo(state.a.go_to!)}>
               {OPEN[state.a.go_to.screen]}
             </button>
           )}
