@@ -61,7 +61,7 @@ If a critic answers `BLOCK`, or a check fails, send the final architect the prob
 
 ## Step 7: Show it, then file it
 
-Write the plan to `thoughts/epic-plan/<slug>.md` and show the maintainer, in at most 10 short bullets: the goal; the shape (sub-issues, files, lines, new concepts); where a model is used and where code is; the riskiest assumption and its spike; what the critics changed from the first plans and what they could not agree on; the "Not doing" list; the path to the file.
+Write the plan to `thoughts/epic-plan/<slug>.md` and show the maintainer, in plain words and at most 200 words (CLAUDE.md "Reporting back"): the goal; the shape (sub-issues, files, lines, new concepts); where a model is used and where code is; the riskiest assumption and its spike; what the critics changed from the first plans and what they could not agree on; the "Not doing" list; the path to the file.
 
 Then ask once (AskUserQuestion): file it as an epic with its sub-issues, or stop with the plan on disk. This is outward-facing, so it is asked. On yes:
 
