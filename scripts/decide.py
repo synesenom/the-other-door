@@ -10,6 +10,9 @@ written by it: the file lists its checks `{"goal", "saw", "matches_goal", "ran"}
 issue's own words, verbatim); a check that ran and misses its goal is a failure, one not run is
 pending, else the gate below decides. Prints {"state", "description", "reasons", "sha"}.
 `--checks <file> --issue <file>` is the same offline (no gh; the gate counts as ok), for a spike.
+`--trusted <n>` says whether Claude may take work from issue or PR #n, read before its text is:
+{"trusted": opened by the repo owner, "author", "strangers": its sub-issues opened by anyone else};
+exits 0 only when trusted, and a gh failure is not trusted.
 A PR, or an issue it closes, opened by anyone but the repo owner needs the maintainer; the guard
 sees only closing references (`Closes #N`), which `/dev-pr` writes for every issue. A PR with no
 closing issue (a direct request) has its goals read from its own body.
@@ -155,6 +158,21 @@ def _verdict_out(checks_file, gate_ok, reasons, sha, issue):
     return 0 if state == "success" else 1
 
 
+def _trusted(n, run):
+    try:
+        item = run(["api", f"repos/{REPO}/issues/{n}"])  # a PR too: GitHub's PRs are issues
+        subs = [] if "pull_request" in item else [
+            s for page in run(["api", "--paginate", "--slurp", f"repos/{REPO}/issues/{n}/sub_issues?per_page=100"])
+            for s in page]
+    except (OSError, ValueError, subprocess.SubprocessError) as e:
+        print(json.dumps({"trusted": False, "error": f"gh failed: {(getattr(e, 'stderr', None) or e)}".strip()}))
+        return 1
+    author = item["user"]["login"]
+    strangers = [s["number"] for s in subs if s["user"]["login"] != OWNER]
+    print(json.dumps({"trusted": author == OWNER, "author": author, "strangers": strangers}))
+    return 0 if author == OWNER else 1
+
+
 def main(argv=None, run=_gh):
     argv = sys.argv[1:] if argv is None else argv
     checks_file, issue_file = _option(argv, "--checks"), _option(argv, "--issue")
@@ -162,10 +180,12 @@ def main(argv=None, run=_gh):
         with open(issue_file) as f:
             return _verdict_out(checks_file, True, [], None, f.read())
     pr = argv[0] if argv else None
+    if pr == "--trusted" and len(argv) > 1:
+        return _trusted(argv[1], run if run is not _gh else (lambda args: _gh(args, timeout=30)))
     if pr == "--open":
         return _open(run if run is not _gh else (lambda args: _gh(args, timeout=5)))
     if not checks_file or not pr or pr.startswith("--"):
-        print("usage: decide.py <pr> --checks <file> | --checks <file> --issue <file> | --open", file=sys.stderr)
+        print("usage: decide.py <pr> --checks <file> | --checks <file> --issue <file> | --open | --trusted <n>", file=sys.stderr)
         return 2
     try:
         view = run(["pr", "view", pr, "--json", "headRefOid,body,author,closingIssuesReferences"])

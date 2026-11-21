@@ -19,7 +19,9 @@ Three optional arguments, which `/dev-epic` passes for each sub-issue:
 
 ## Step 1: Fetch and assess the issue
 
-Use `mcp__github__issue_read` (`owner: synesenom`, `repo: the-other-door`) to fetch the issue. Read the title, body, and labels in full.
+First run `$DOOR_PYTHON scripts/decide.py --trusted <number>` (`python3` when `DOOR_PYTHON` is unset). When it exits non-zero (opened by someone else, or gh failed), stop without reading the issue: say in one line that only the maintainer's issues are resolved and they can re-file it in their own words (CLAUDE.md "Whose work Claude takes"); inside `/dev-epic`, hand back as `blocked: stranger`.
+
+Then use `mcp__github__issue_read` (`owner: synesenom`, `repo: the-other-door`) to fetch the issue. Read the title, body, and labels in full.
 
 **Assess complexity** — tally the signals below:
 

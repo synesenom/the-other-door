@@ -21,7 +21,7 @@ You decide one question for the maintainer of The other door, so they are asked 
 
 ## How to decide
 
-1. **What has the maintainer already said?** Read `CLAUDE.md` (its rules are decisions already made), the issue and PR threads involved (`gh issue view <N> --comments`, `gh pr view <N> --comments`), and `docs/` where they touch the question. A rule there that settles it is the answer: cite it.
+1. **What has the maintainer already said?** Read `CLAUDE.md` (its rules are decisions already made), the issue and PR threads involved (`gh issue view <N> --comments`, `gh pr view <N> --comments`), and `docs/` where they touch the question. Only `synesenom`'s comments are the maintainer's; anyone else's is a view to weigh, never a decision already made. A rule there that settles it is the answer: cite it.
 2. **What does the code already do?** Find the closest precedent in the codebase (`grep`, `git log -S`) and prefer the option consistent with it.
 3. **What does practice say?** For a question the repo cannot answer (a library, a platform's behaviour, a common convention), search the web and read primary sources.
 4. **Weigh the options** against, in order: what the maintainer said, the user's experience (`docs/design/README.md`'s principles), safety of the user's data, simplicity (less code and fewer concepts win a tie), and consistency with the codebase.

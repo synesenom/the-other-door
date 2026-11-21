@@ -380,3 +380,57 @@ def test_a_bad_checks_file_is_pending(tmp_path, capsys, content):
     assert decide.main(["7", "--checks", str(f)], run) == 1
     out = json.loads(capsys.readouterr().out)
     assert out["state"] == "pending" and out["description"] == "bad checks file"
+
+
+def _trust_run(author, subs=(), fail=False):
+    calls = []
+
+    def run(args):
+        calls.append(args)
+        if fail:
+            raise decide.subprocess.CalledProcessError(1, args, stderr="HTTP 404")
+        if args[-1].startswith("repos/") and "sub_issues" not in args[-1]:
+            return {"number": 9, "user": {"login": author}}
+        return [[{"number": n, "user": {"login": who}} for n, who in subs]]
+
+    return run, calls
+
+
+def test_trusted_passes_the_owners_issue_and_names_strangers_sub_issues(capsys):
+    run, calls = _trust_run("synesenom", subs=[(10, "synesenom"), (11, "mallory")])
+    assert decide.main(["--trusted", "9"], run) == 0
+    assert json.loads(capsys.readouterr().out) == {"trusted": True, "author": "synesenom", "strangers": [11]}
+    assert calls[0] == ["api", "repos/synesenom/the-other-door/issues/9"]
+
+
+def test_trusted_refuses_a_strangers_issue(capsys):
+    run, _ = _trust_run("mallory")
+    assert decide.main(["--trusted", "9"], run) == 1
+    assert json.loads(capsys.readouterr().out)["trusted"] is False
+
+
+def test_trusted_refuses_when_gh_fails(capsys):
+    run, _ = _trust_run("synesenom", fail=True)
+    assert decide.main(["--trusted", "9"], run) == 1
+    out = json.loads(capsys.readouterr().out)
+    assert out["trusted"] is False and "HTTP 404" in out["error"]
+
+
+def test_trusted_reads_no_sub_issues_for_a_pr(capsys):
+    calls = []
+
+    def run(args):
+        calls.append(args)
+        return {"number": 9, "user": {"login": "synesenom"}, "pull_request": {}}
+
+    assert decide.main(["--trusted", "9"], run) == 0
+    assert len(calls) == 1
+
+
+@pytest.mark.parametrize("err", [OSError("no gh"), ValueError("bad json"), decide.subprocess.TimeoutExpired("gh", 30)])
+def test_trusted_refuses_with_json_when_gh_is_missing_or_stalls(capsys, err):
+    def run(args):
+        raise err
+
+    assert decide.main(["--trusted", "9"], run) == 1
+    assert json.loads(capsys.readouterr().out)["trusted"] is False
