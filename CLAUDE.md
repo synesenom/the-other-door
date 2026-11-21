@@ -403,6 +403,7 @@ A rule that only lives in prose gets forgotten; this table lists the ones someth
 | A fix is done only when a run shows it working as a user would | `verifier` and the required `verify` status (`scripts/decide.py`, `--checks`) | #479 |
 | A screen change is shown before and after, and waits for the maintainer's look | `verifier`; `scripts/decide.py` holds a changed screen | #479 |
 | A PR Claude opened is watched until it is green and merged | `/dev-pr` Step 7's background watch; the session-start list (`scripts/decide.py --open`) | #480, #481 |
+| Auto-merge only for the maintainer's own PRs and issues | `scripts/decide.py` (author and closing-issue reasons), `verifier` refuses a stranger's PR | #478 |
 
 ## Docs maintenance
 

@@ -10,7 +10,9 @@ written by it: the file lists its checks `{"goal", "saw", "matches_goal", "ran"}
 issue's own words, verbatim); a check that ran and misses its goal is a failure, one not run is
 pending, else the gate below decides. Prints {"state", "description", "reasons", "sha"}.
 `--checks <file> --issue <file>` is the same offline (no gh; the gate counts as ok), for a spike.
-A PR, or an issue it closes, opened by anyone but the repo owner needs the maintainer.
+A PR, or an issue it closes, opened by anyone but the repo owner needs the maintainer; the guard
+sees only closing references (`Closes #N`), which `/dev-pr` writes for every issue. A PR with no
+closing issue (a direct request) has its goals read from its own body.
 
 Prints {"ok", "reasons", "sha"} and exits 0 when ok, 1 otherwise. Reads the PR and its head's
 check runs through `gh`; the `verify` check (the verifier's own status) is left out. A PR that
@@ -61,24 +63,36 @@ def _norm(text):
 def verdict(checks, gate_ok, gate_reasons, issue):
     """The verifier's (state, description) from its checks and the gate's result.
 
-    A check whose goal is not verbatim in the issue text is not trusted: it counts as not run."""
+    A goal is grounded only with at least 3 words, verbatim in the issue text; otherwise it is not
+    trusted. A check counts as run only when `ran` is True and `matches_goal` a bool."""
     grounded, ungrounded = [], []
     for c in checks:
-        if _norm(c["goal"]) not in _norm(issue):
+        goal = _norm(c["goal"])
+        if len(goal.split()) < 3 or goal not in _norm(issue):
             ungrounded.append(c["goal"])
         else:
             grounded.append(c)
-    failed = [c["goal"] for c in grounded if c["ran"] and not c["matches_goal"]]
+    failed = [c["goal"] for c in grounded if _ran(c) and not c["matches_goal"]]
     if failed:
         return "failure", f"FAIL: {failed[0]}"
     if ungrounded:
         return "pending", "goal words not in the issue: " + "; ".join(ungrounded)
-    not_run = [c["goal"] for c in grounded if not c["ran"]]
+    not_run = [c["goal"] for c in grounded if not _ran(c)]
     if not_run:
         return "pending", "not run: " + "; ".join(not_run)
     if not checks:
         return "pending", "no checks"
     return ("success", "PASS") if gate_ok else ("pending", "; ".join(gate_reasons))
+
+
+def _ran(c):
+    return c["ran"] is True and isinstance(c["matches_goal"], bool)
+
+
+def _well_formed(checks):
+    return isinstance(checks, list) and all(
+        isinstance(c, dict) and isinstance(c.get("goal"), str) and {"ran", "matches_goal", "saw"} <= c.keys()
+        for c in checks)
 
 
 def _unfenced(body):
@@ -128,9 +142,15 @@ def _option(argv, name):
 
 
 def _verdict_out(checks_file, gate_ok, reasons, sha, issue):
-    with open(checks_file) as f:
-        checks = json.load(f)
-    state, description = verdict(checks, gate_ok, reasons, issue)
+    try:
+        with open(checks_file) as f:
+            checks = json.load(f)
+    except (OSError, ValueError):
+        checks = None
+    if _well_formed(checks):
+        state, description = verdict(checks, gate_ok, reasons, issue)
+    else:
+        state, description = "pending", "bad checks file"
     print(json.dumps({"state": state, "description": description[:140], "reasons": reasons, "sha": sha}))
     return 0 if state == "success" else 1
 
@@ -152,14 +172,19 @@ def main(argv=None, run=_gh):
         pages = run(["api", "--paginate", "--slurp", f"repos/{REPO}/commits/{sha}/check-runs?per_page=100"])
         files = run(["api", "--paginate", "--slurp", f"repos/{REPO}/pulls/{pr}/files?per_page=100"])
     except subprocess.CalledProcessError as e:
-        print(json.dumps({"ok": False, "reasons": [f"gh failed: {(e.stderr or '').strip()}"], "sha": None}))
+        why = f"gh failed: {(e.stderr or '').strip()}"
+        if checks_file:
+            print(json.dumps({"state": "pending", "description": why[:140], "reasons": [why], "sha": None}))
+        else:
+            print(json.dumps({"ok": False, "reasons": [why], "sha": None}))
         return 1
     checks = [c for page in pages for c in page["check_runs"] if c["name"] != "verify"]
     paths = [f["filename"] for page in files for f in page]
     issues = [(i["number"], i["author"]["login"]) for i in closing]
     ok, reasons = decide(checks, view["body"], paths, sha, view["author"]["login"], issues)
     if checks_file:
-        return _verdict_out(checks_file, ok, reasons, sha, "\n".join(i["body"] for i in closing))
+        text = "\n".join(i["body"] for i in closing) if closing else view["body"]
+        return _verdict_out(checks_file, ok, reasons, sha, text)
     print(json.dumps({"ok": ok, "reasons": reasons, "sha": sha}))
     return 0 if ok else 1
 

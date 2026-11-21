@@ -218,12 +218,12 @@ def test_checks_that_all_match_defer_to_the_gate():
 
 
 def test_a_failure_outranks_a_check_not_run():
-    state, desc = _v([_c("a", ran=False), _c("b", ok=False)], True, [])
-    assert (state, desc) == ("failure", "FAIL: b")
+    state, desc = _v([_c("one two three", ran=False), _c("b b b", ok=False)], True, [])
+    assert (state, desc) == ("failure", "FAIL: b b b")
 
 
 def test_a_check_not_run_is_pending():
-    assert _v([_c(), _c("two", ran=False)], True, []) == ("pending", "not run: two")
+    assert _v([_c(), _c("two two two", ran=False)], True, []) == ("pending", "not run: two two two")
 
 
 def test_no_checks_is_pending():
@@ -237,6 +237,23 @@ def test_a_goal_that_is_not_the_issues_text_is_pending():
 
 def test_a_goal_found_in_the_issue_counts_whatever_the_whitespace():
     assert decide.verdict([_c("twice  keeps\none folder")], True, [], issue=ISSUE) == ("success", "PASS")
+
+
+@pytest.mark.parametrize("goal", ["", "one", "two words"])
+def test_a_goal_under_three_words_is_ungrounded(goal):
+    state, desc = decide.verdict([_c(goal)], True, [], issue="one two words here " + goal)
+    assert state == "pending" and desc.startswith("goal words not in the issue")
+
+
+@pytest.mark.parametrize("ran", ["false", "true", 1, None])
+def test_only_a_true_bool_counts_as_run(ran):
+    check = _c() | {"ran": ran}
+    assert _v([check], True, []) == ("pending", "not run: keeps one folder")
+
+
+def test_a_matches_goal_that_is_not_a_bool_is_not_run():
+    check = _c() | {"matches_goal": "false"}
+    assert _v([check], True, []) == ("pending", "not run: keeps one folder")
 
 
 def _checks_file(tmp_path, checks):
@@ -301,3 +318,54 @@ def test_main_reads_the_author_and_the_closing_issues_authors(capsys):
     reasons = json.loads(capsys.readouterr().out)["reasons"]
     assert "Needs the maintainer: opened by mallory" in reasons
     assert "Needs the maintainer: issue #5 opened by eve" in reasons
+
+
+def test_with_no_closing_issue_the_goal_is_grounded_in_the_pr_body(tmp_path, capsys):
+    run, _ = _run([_check("tests")], body="Prepare twice keeps one folder.\n- [x] ok")
+    f = _checks_file(tmp_path, [_c("twice keeps one folder")])
+    assert decide.main(["7", "--checks", f], run) == 0
+    assert json.loads(capsys.readouterr().out)["state"] == "success"
+
+
+def test_a_closing_issue_grounds_the_goals_and_the_pr_body_box_is_the_gates(tmp_path, capsys):
+    run, _ = _run([_check("tests")], body="- [ ] x", issues={5: "synesenom"})
+    f = _checks_file(tmp_path, [_c("twice keeps one folder")])
+    assert decide.main(["7", "--checks", f], run) == 1
+    out = json.loads(capsys.readouterr().out)
+    assert out["state"] == "pending" and out["description"] == "unticked box"
+
+
+def test_a_long_description_is_cut_to_140(tmp_path, capsys):
+    run, _ = _run([_check("tests")], body="- [ ] x\nNeeds the maintainer: " + "x" * 300, issues={5: "synesenom"})
+    f = _checks_file(tmp_path, [_c("twice keeps one folder")])
+    decide.main(["7", "--checks", f], run)
+    out = json.loads(capsys.readouterr().out)
+    assert out["state"] == "pending" and len(out["description"]) == 140
+
+
+def test_gh_failing_under_checks_prints_a_pending_verdict(tmp_path, capsys):
+    def run(args):
+        raise decide.subprocess.CalledProcessError(1, ["gh"], stderr="HTTP 404 " + "y" * 300)
+
+    f = _checks_file(tmp_path, [_c()])
+    assert decide.main(["7", "--checks", f], run) == 1
+    out = json.loads(capsys.readouterr().out)
+    assert out["state"] == "pending" and out["sha"] is None
+    assert out["description"].startswith("gh failed: HTTP 404") and len(out["description"]) == 140
+    assert out["reasons"][0].startswith("gh failed")
+
+
+@pytest.mark.parametrize("content", [
+    json.dumps({"goal": "a b c"}),
+    json.dumps([{"goal": "a b c", "saw": "x", "matches_goal": True}]),
+    json.dumps([{"goal": "a b c", "ran": True, "matches_goal": True}]),
+    json.dumps(["text"]),
+    "not json",
+])
+def test_a_bad_checks_file_is_pending(tmp_path, capsys, content):
+    f = tmp_path / "c.json"
+    f.write_text(content)
+    run, _ = _run([_check("tests")])
+    assert decide.main(["7", "--checks", str(f)], run) == 1
+    out = json.loads(capsys.readouterr().out)
+    assert out["state"] == "pending" and out["description"] == "bad checks file"

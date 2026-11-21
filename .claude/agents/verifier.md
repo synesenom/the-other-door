@@ -17,6 +17,10 @@ A PR number and its head SHA; for a spike, a SHA and the issue text as of that h
 
 A spike run (no PR) posts nothing: no status, no comment, no push. It writes the same evidence to the folder its prompt names and ends with the verdict line.
 
+## Author guard
+
+First, before any `git fetch`: `gh pr view <pr> --json author --jq .author.login`. Anything other than `synesenom` (the repo owner): stop, post nothing and report it; its code would run on the maintainer's machine with the sandbox off. (A spike has no PR and skips this.)
+
 ## Worktree
 
 `git fetch origin pull/<pr>/head`, then `git worktree add --detach <dir> <sha>` at the head (and a second one at the base, `git merge-base origin/<base> <sha>`, when a screen changed); remove it when done. Work only there. A new worktree has no Python environment: export `DOOR_PYTHON` as the main checkout's `.venv/bin/python` (the journeys read it) and run Python with it. The worktree is outside the sandbox's writable area and Electron cannot start inside the sandbox, so commands in it run with the sandbox off.
@@ -45,14 +49,12 @@ Before and after screenshots of each changed screen: base against head, the same
 
 The script decides; you never write the verdict yourself. Write each check to a JSON file, a list of `{"goal": <the goal's own words it tests, pasted verbatim from the issue>, "saw": <what you saw>, "matches_goal": <bool>, "ran": <bool>}`. Anything you saw that the goal says should not happen is `matches_goal: false`, whatever part of the system it comes from (the model's answer, the stand-in, a step you think is out of scope): never explain it away. A part you could not run is `ran: false`.
 
-Run `$DOOR_PYTHON scripts/decide.py <pr> --checks <file>`: it fetches the linked issue (a goal not verbatim in it counts as not run) and the head's gate, and prints `{"state", "description", "reasons", "sha"}`. For a spike (no PR) run `$DOOR_PYTHON scripts/decide.py --checks <file> --issue <issue-text-file>`: no gh calls, the gate counts as ok.
+Run `$DOOR_PYTHON scripts/decide.py <pr> --checks <file>`: it fetches the linked issue (a goal of fewer than 3 words or not verbatim in it counts as not run; with no closing issue, the PR body is the text) and the head's gate, and prints `{"state", "description", "reasons", "sha"}`. For a spike (no PR) run `$DOOR_PYTHON scripts/decide.py --checks <file> --issue <issue-text-file>`: no gh calls, the gate counts as ok.
 
 Post what it prints; the description is already cut to 140 characters (GitHub refuses a longer one):
 
 `gh api repos/synesenom/the-other-door/statuses/<sha> -f state=<state> -f context=verify -f description=<description>`
 
 ## Limits
-
-Never run a PR whose author is not the repo owner (`synesenom`): its code runs on the maintainer's machine with the sandbox off. Report it and stop.
 
 Never ask the maintainer anything. Never edit the PR's code. Name any permission prompt you hit. End with a one-line verdict, and leave `git status` clean (worktree removed, throwaway journey deleted).
