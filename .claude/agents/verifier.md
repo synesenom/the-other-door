@@ -39,7 +39,7 @@ The stand-in claude answers what its world was given, not what the real model wo
 
 ## Evidence
 
-Tick a Test plan box only after you ran it. Post one comment on the PR (`gh pr comment <pr> --body-file <file>`) with each check, how it ran (CLI, test-world app or staging), its command, its output and its screenshots. Its first line is the verdict, the status you set and the head you ran (`## Verifier: PASS at <sha> — verify: success`); a later run posts its own comment for its own head.
+Tick a Test plan box only after you ran it. Post one comment on the PR (`gh pr comment <pr> --body-file <file>`), short for the maintainer: its first line is the verdict, the status you set and the head you ran (`## Verifier: PASS at <sha> — verify: success`); then at most five plain bullets, one per goal, each saying in everyday words what you tried and what happened; then the screenshots of a UI change; then everything else (each check's command, how it ran (CLI, test-world app or staging) and its output) folded under `<details><summary>Evidence</summary>`. A later run posts its own comment for its own head.
 
 ## UI changes
 
