@@ -1,6 +1,8 @@
-# How changes land
+# Development workflow
 
-How a change goes from an issue to `main` without the maintainer watching CI or reading big diffs, and what still needs them. The skills and agents named here are listed in [skills.md](skills.md).
+For developing The other door, not for using it: nothing here is about the app or the command line.
+
+How a change goes from an issue to `main` without the maintainer watching CI or reading big diffs, and what still needs them. The skills and agents named here are listed in [skills.md](../skills.md).
 
 ## The goal
 

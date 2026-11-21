@@ -3,7 +3,7 @@
 Most of *The other door* is driven from a Claude Code conversation with plain sentences, which call
 the [MCP tools](manual-claude.md) directly ("what's new?", "prepare the Trustpilot one"). A few flows are
 scripted, multi-step **skills** you invoke with a slash command. Skills live in
-`.claude/skills/<name>/SKILL.md`; the agents and prompts the code runs live in `src/door/prompts/<name>.md`, the developer agents in `.claude/agents/<name>.md`. How a change goes from an issue to `main` (the checker, auto-merge, what waits for you) is in [how-changes-land.md](how-changes-land.md).
+`.claude/skills/<name>/SKILL.md`; the agents and prompts the code runs live in `src/door/prompts/<name>.md`, the developer agents in `.claude/agents/<name>.md`. How a change goes from an issue to `main` (the checker, auto-merge, what waits for you) is in the [development workflow](development/workflow.md).
 
 ## User skills
 
