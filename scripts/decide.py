@@ -5,6 +5,13 @@
 session-start hook): a conflict, a failed or missing check, the `verify` status, or, before the
 verifier has spoken, the body's `Needs the maintainer:` lines, read as the gate reads them.
 
+`python scripts/decide.py <pr> --checks <file.json>` is the verifier's verdict, computed here and not
+written by it: the file lists its checks `{"goal", "saw", "matches_goal", "ran"}` (the goal in the
+issue's own words, verbatim); a check that ran and misses its goal is a failure, one not run is
+pending, else the gate below decides. Prints {"state", "description", "reasons", "sha"}.
+`--checks <file> --issue <file>` is the same offline (no gh; the gate counts as ok), for a spike.
+A PR, or an issue it closes, opened by anyone but the repo owner needs the maintainer.
+
 Prints {"ok", "reasons", "sha"} and exits 0 when ok, 1 otherwise. Reads the PR and its head's
 check runs through `gh`; the `verify` check (the verifier's own status) is left out. A PR that
 changes what a user sees is never ok: the maintainer looks at it.
@@ -18,12 +25,17 @@ import sys
 REPO = "synesenom/the-other-door"
 GREEN = {"success", "skipped", "neutral"}
 VISIBLE = ("app/src/renderer/", "app/src/web/", "app/src/preview/", "docs/design/")
+OWNER = "synesenom"
 MAINTAINER = "Needs the maintainer: look at it"
 
 
-def decide(checks, body, files, head):
-    """Return (ok, reasons) for a head's check runs, the PR body and the changed file paths."""
+def decide(checks, body, files, head, author=OWNER, issues=()):
+    """Return (ok, reasons) for a head's check runs, the PR body, the changed file paths, the PR's
+    author and the closing issues as (number, author)."""
     reasons = []
+    if author != OWNER:
+        reasons.append(f"Needs the maintainer: opened by {author}")
+    reasons += [f"Needs the maintainer: issue #{n} opened by {who}" for n, who in issues if who != OWNER]
     if not checks:
         reasons.append("no checks yet")
     for c in checks:
@@ -40,6 +52,33 @@ def decide(checks, body, files, head):
     if any(f.startswith(VISIBLE) for f in files):
         reasons.append(MAINTAINER)
     return not reasons, reasons
+
+
+def _norm(text):
+    return " ".join(text.split())
+
+
+def verdict(checks, gate_ok, gate_reasons, issue=None):
+    """The verifier's (state, description) from its checks and the gate's result.
+
+    With the issue text, a check whose goal is not verbatim in it is not trusted: it counts as not run."""
+    grounded, ungrounded = [], []
+    for c in checks:
+        if issue is not None and _norm(c["goal"]) not in _norm(issue):
+            ungrounded.append(c["goal"])
+        else:
+            grounded.append(c)
+    failed = [c["goal"] for c in grounded if c["ran"] and not c["matches_goal"]]
+    if failed:
+        return "failure", f"FAIL: {failed[0]}"
+    if ungrounded:
+        return "pending", "goal words not in the issue: " + "; ".join(ungrounded)
+    not_run = [c["goal"] for c in grounded if not c["ran"]]
+    if not_run:
+        return "pending", "not run: " + "; ".join(not_run)
+    if not checks:
+        return "pending", "no checks"
+    return ("success", "PASS") if gate_ok else ("pending", "; ".join(gate_reasons))
 
 
 def _unfenced(body):
@@ -84,13 +123,32 @@ def _open(run):
     return 0
 
 
+def _option(argv, name):
+    return argv[argv.index(name) + 1] if name in argv else None
+
+
+def _verdict_out(checks_file, gate_ok, reasons, sha, issue):
+    with open(checks_file) as f:
+        checks = json.load(f)
+    state, description = verdict(checks, gate_ok, reasons, issue)
+    print(json.dumps({"state": state, "description": description[:140], "reasons": reasons, "sha": sha}))
+    return 0 if state == "success" else 1
+
+
 def main(argv=None, run=_gh):
-    pr = (sys.argv[1:] if argv is None else argv)[0]
+    argv = sys.argv[1:] if argv is None else argv
+    checks_file, issue_file = _option(argv, "--checks"), _option(argv, "--issue")
+    if checks_file and issue_file:  # offline, for a spike: no gh, the gate counts as ok
+        with open(issue_file) as f:
+            return _verdict_out(checks_file, True, [], None, f.read())
+    pr = argv[0]
     if pr == "--open":
         return _open(run if run is not _gh else (lambda args: _gh(args, timeout=5)))
     try:
-        view = run(["pr", "view", pr, "--json", "headRefOid,body"])
+        view = run(["pr", "view", pr, "--json", "headRefOid,body,author,closingIssuesReferences"])
         sha = view["headRefOid"]
+        closing = [run(["issue", "view", str(i["number"]), "--json", "body,author"]) | {"number": i["number"]}
+                   for i in view.get("closingIssuesReferences", [])]
         pages = run(["api", "--paginate", "--slurp", f"repos/{REPO}/commits/{sha}/check-runs?per_page=100"])
         files = run(["api", "--paginate", "--slurp", f"repos/{REPO}/pulls/{pr}/files?per_page=100"])
     except subprocess.CalledProcessError as e:
@@ -98,7 +156,10 @@ def main(argv=None, run=_gh):
         return 1
     checks = [c for page in pages for c in page["check_runs"] if c["name"] != "verify"]
     paths = [f["filename"] for page in files for f in page]
-    ok, reasons = decide(checks, view["body"], paths, sha)
+    issues = [(i["number"], i["author"]["login"]) for i in closing]
+    ok, reasons = decide(checks, view["body"], paths, sha, view["author"]["login"], issues)
+    if checks_file:
+        return _verdict_out(checks_file, ok, reasons, sha, "\n".join(i["body"] for i in closing))
     print(json.dumps({"ok": ok, "reasons": reasons, "sha": sha}))
     return 0 if ok else 1
 

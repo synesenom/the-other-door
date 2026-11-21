@@ -41,20 +41,18 @@ Tick a Test plan box only after you ran it. Post one comment on the PR (`gh pr c
 
 Before and after screenshots of each changed screen: base against head, the same state, light theme, embedded in the comment. Push them to the branch `verify-media/<pr>` (made from `main`; only these files) and embed them as `![what it shows](https://github.com/synesenom/the-other-door/blob/verify-media/<pr>/<name>.png?raw=true)`. With none, the status stays pending with "no screenshot of the change".
 
-## Verdict
-
-Judge what you saw against the goal's own words, not against what the change meant to do. Anything you saw that the goal says should not happen is a failed check, whatever part of the system it comes from (the model's answer, the stand-in, a step you think is out of scope): never explain it away. PASS only when every check passed and nothing is left under "not run"; anything not run makes it pending.
-
 ## Status
 
-- A failed check: state `failure`, description `FAIL: <check>`.
-- A part not run: state `pending`, description `not run: <part>`.
-- Otherwise run `$DOOR_PYTHON scripts/decide.py <pr>`: `ok` gives state `success`, description `PASS` (or `PASS+NOTES: ...`); else state `pending` with its reasons (a `gh failed` reason too).
+The script decides; you never write the verdict yourself. Write each check to a JSON file, a list of `{"goal": <the goal's own words it tests, pasted verbatim from the issue>, "saw": <what you saw>, "matches_goal": <bool>, "ran": <bool>}`. Anything you saw that the goal says should not happen is `matches_goal: false`, whatever part of the system it comes from (the model's answer, the stand-in, a step you think is out of scope): never explain it away. A part you could not run is `ran: false`.
 
-The description is cut to 140 characters (GitHub refuses a longer one); the comment has it whole.
+Run `$DOOR_PYTHON scripts/decide.py <pr> --checks <file>`: it fetches the linked issue (a goal not verbatim in it counts as not run) and the head's gate, and prints `{"state", "description", "reasons", "sha"}`. For a spike (no PR) run `$DOOR_PYTHON scripts/decide.py --checks <file> --issue <issue-text-file>`: no gh calls, the gate counts as ok.
 
-Set it with `gh api repos/synesenom/the-other-door/statuses/<sha> -f state=<state> -f context=verify -f description=<text>`.
+Post what it prints; the description is already cut to 140 characters (GitHub refuses a longer one):
+
+`gh api repos/synesenom/the-other-door/statuses/<sha> -f state=<state> -f context=verify -f description=<description>`
 
 ## Limits
+
+Never run a PR whose author is not the repo owner (`synesenom`): its code runs on the maintainer's machine with the sandbox off. Report it and stop.
 
 Never ask the maintainer anything. Never edit the PR's code. Name any permission prompt you hit. End with a one-line verdict, and leave `git status` clean (worktree removed, throwaway journey deleted).

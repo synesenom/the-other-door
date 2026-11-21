@@ -73,13 +73,20 @@ def test_a_visible_change_needs_the_maintainer(path):
     assert not ok and reasons == ["Needs the maintainer: look at it"]
 
 
-def _run(checks, body="- [x] done", files=FILES):
+ISSUE = "Running prepare twice keeps one folder."
+
+
+def _run(checks, body="- [x] done", files=FILES, author="synesenom", issues=None):
+    issues = issues or {}
     calls = []
 
     def run(args):
         calls.append(args)
         if args[:2] == ["pr", "view"]:
-            return {"headRefOid": "H", "body": body}
+            return {"headRefOid": "H", "body": body, "author": {"login": author},
+                    "closingIssuesReferences": [{"number": n} for n in issues]}
+        if args[:2] == ["issue", "view"]:
+            return {"body": ISSUE, "author": {"login": issues[int(args[2])]}}
         assert "--slurp" in args  # --paginate alone concatenates the pages' objects
         if "/files" in args[-1]:
             return [[{"filename": f} for f in files[:100]], [{"filename": f} for f in files[100:]]]
@@ -188,3 +195,104 @@ def test_open_is_silent_when_gh_fails_or_nothing_needs_you(capsys):
     assert decide.main(["--open"], fail) == 0
     assert decide.main(["--open"], lambda args: [_pr()]) == 0
     assert capsys.readouterr().out == ""
+
+
+# the verdict is computed from the checks, not written by the verifier
+def _c(goal="keeps one folder", ran=True, ok=True):
+    return {"goal": goal, "saw": "x", "matches_goal": ok, "ran": ran}
+
+
+def test_a_ran_check_that_misses_its_goal_is_a_failure():
+    assert decide.verdict([_c(ok=False)], True, []) == ("failure", "FAIL: keeps one folder")
+
+
+def test_checks_that_all_match_defer_to_the_gate():
+    assert decide.verdict([_c()], True, []) == ("success", "PASS")
+    assert decide.verdict([_c()], False, ["unticked box", "check a failed"]) == (
+        "pending", "unticked box; check a failed")
+
+
+def test_a_failure_outranks_a_check_not_run():
+    state, desc = decide.verdict([_c("a", ran=False), _c("b", ok=False)], True, [])
+    assert (state, desc) == ("failure", "FAIL: b")
+
+
+def test_a_check_not_run_is_pending():
+    assert decide.verdict([_c(), _c("two", ran=False)], True, []) == ("pending", "not run: two")
+
+
+def test_no_checks_is_pending():
+    assert decide.verdict([], True, []) == ("pending", "no checks")
+
+
+def test_a_goal_that_is_not_the_issues_text_is_pending():
+    state, desc = decide.verdict([_c("one folder only", ok=False)], True, [], issue=ISSUE)
+    assert state == "pending" and desc.startswith("goal words not in the issue: one folder only")
+
+
+def test_a_goal_found_in_the_issue_counts_whatever_the_whitespace():
+    assert decide.verdict([_c("twice  keeps\none folder")], True, [], issue=ISSUE) == ("success", "PASS")
+
+
+def _checks_file(tmp_path, checks):
+    f = tmp_path / "checks.json"
+    f.write_text(json.dumps(checks))
+    return str(f)
+
+
+def test_main_with_checks_prints_the_verdict(tmp_path, capsys):
+    run, _ = _run([_check("tests")], issues={5: "synesenom"})
+    f = _checks_file(tmp_path, [_c("twice keeps one folder", ok=False)])
+    assert decide.main(["7", "--checks", f], run) == 1
+    out = json.loads(capsys.readouterr().out)
+    assert out == {"state": "failure", "description": "FAIL: twice keeps one folder",
+                   "reasons": [], "sha": "H"}
+
+
+def test_main_with_checks_defers_to_the_gate_and_cuts_the_description(tmp_path, capsys):
+    run, _ = _run([_check("tests", conclusion="failure")])
+    f = _checks_file(tmp_path, [_c("keeps one folder")])
+    decide.main(["7", "--checks", f], run)
+    out = json.loads(capsys.readouterr().out)
+    assert out["state"] == "pending" and out["reasons"] == ["check tests failed"]
+    long = _checks_file(tmp_path, [_c("keeps one folder", ran=False)] * 1)
+    run, _ = _run([_check("tests")])
+    decide.main(["7", "--checks", long], run)
+    assert len(json.loads(capsys.readouterr().out)["description"]) <= 140
+
+
+def test_offline_checks_read_the_issue_from_a_file_and_call_no_gh(tmp_path, capsys):
+    issue = tmp_path / "issue.md"
+    issue.write_text(ISSUE)
+    f = _checks_file(tmp_path, [_c("keeps one folder")])
+
+    def no_gh(args):
+        raise AssertionError("gh called")
+
+    assert decide.main(["--checks", f, "--issue", str(issue)], no_gh) == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["state"] == "success" and out["sha"] is None
+
+
+# the author guard
+def test_a_pr_by_someone_else_needs_the_maintainer():
+    ok, reasons = decide.decide([_check("tests")], "- [x] a", FILES, head="H", author="mallory")
+    assert not ok and reasons == ["Needs the maintainer: opened by mallory"]
+
+
+def test_an_issue_opened_by_someone_else_needs_the_maintainer():
+    ok, reasons = decide.decide([_check("tests")], "- [x] a", FILES, head="H", issues=[(5, "mallory")])
+    assert not ok and reasons == ["Needs the maintainer: issue #5 opened by mallory"]
+
+
+def test_the_owner_as_author_of_pr_and_issue_passes():
+    assert decide.decide([_check("tests")], "- [x] a", FILES, head="H", author="synesenom",
+                         issues=[(5, "synesenom")]) == (True, [])
+
+
+def test_main_reads_the_author_and_the_closing_issues_authors(capsys):
+    run, _ = _run([_check("tests")], author="mallory", issues={5: "eve"})
+    assert decide.main(["7"], run) == 1
+    reasons = json.loads(capsys.readouterr().out)["reasons"]
+    assert "Needs the maintainer: opened by mallory" in reasons
+    assert "Needs the maintainer: issue #5 opened by eve" in reasons
