@@ -51,6 +51,10 @@ class CvReadError(ValueError):
     """The CV could not be read: the call failed or its answer did not hold. The message is in plain words."""
 
 
+class CvUnreached(CvReadError):
+    """The call itself failed (`claude` timed out, signed out, no answer): nothing in the CV to fix."""
+
+
 def _normalise(cv_md: str) -> str:
     """The CV as it is read and cached: line endings made `\\n`, the text stripped, each line's trailing space dropped."""
     return "\n".join(line.rstrip() for line in (cv_md or "").replace("\r\n", "\n").replace("\r", "\n").strip().split("\n"))
@@ -191,5 +195,5 @@ def read(cv_md: str) -> dict:
     return ask_cached.cached_answer(
         key=hashlib.sha256(md.encode("utf-8")).hexdigest(), version=PROMPT_VERSION, ask=lambda: _ask(md),
         check=lambda answer: check(answer, md), error=CvReadError,
-        unreached=lambda exc: CvReadError(f"Your CV could not be read: {exc}"), label="cv read",
+        unreached=lambda exc: CvUnreached(f"Your CV could not be read: {exc}"), label="cv read",
         store=ask_cached.DirStore(_cache_dir()))

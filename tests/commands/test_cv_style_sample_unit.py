@@ -9,7 +9,7 @@ from PIL import Image
 
 from compile_utils import install
 from door.commands import cv_style_sample as sample_cmd
-from door.core import cv_read, workspace
+from door.core import claude_cli, cv_read, workspace
 from paths import REPO_ROOT
 
 CV = "# Ada Lovelace\n\n**Email:** ada@example.com\n\n## Experience\n\n### Analyst, Engine Co 2020 - 2023\n- Wrote the first program\n"
@@ -98,6 +98,14 @@ def test_a_cv_that_cannot_be_read_is_an_error_in_words(world, monkeypatch):
         raise cv_read.CvReadError("Could not read your CV: try again.")
     monkeypatch.setattr(cv_read, "_ask", fail)
     assert sample_cmd._cv_style_sample_core("teal", "door") == {"error": "cv_unreadable"}
+
+
+def test_a_failed_claude_call_is_not_called_an_unreadable_cv(world, monkeypatch):
+    # #503's review: a timeout is nothing the user can fix in their CV, so it is a failure the problem log keeps
+    def fail(md):
+        raise claude_cli.ClaudeError("claude timed out")
+    monkeypatch.setattr(cv_read, "_ask", fail)
+    assert sample_cmd._cv_style_sample_core("teal", "door") == {"error": "print_failed"}
 
 
 def test_a_name_outside_the_lists_prints_the_default_style(world):

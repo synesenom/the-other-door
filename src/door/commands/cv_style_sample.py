@@ -36,8 +36,8 @@ def _answer(png: bytes, own: bool) -> dict:
 
 def _cv_style_sample_core(accent: str, fonts: str) -> dict:
     """Page 1 of the CV printed with `accent` and `fonts` (a name `Profile` does not accept counts as the default):
-    ``{"png_base64", "own_cv"}``, or ``{"error": kind}`` where kind is ``cv_unreadable`` (the CV cannot be read: the user
-    can act) or ``print_failed`` (nothing the user can do).
+    ``{"png_base64", "own_cv"}``, or ``{"error": kind}`` where kind is ``cv_unreadable`` (the reading of the CV does not
+    hold: the user can act) or ``print_failed`` (the print or the `claude` call failed: nothing the user can do).
 
     Raises:
         ValueError: no Chromium is installed.
@@ -60,6 +60,8 @@ def _cv_style_sample_core(accent: str, fonts: str) -> dict:
         raise common.NoChromium
     try:
         body = cv_body.body(cv_md, cv_read.read(cv_md))
+    except cv_read.CvUnreached:
+        return {"error": "print_failed"}
     except cv_read.CvReadError:
         return {"error": "cv_unreadable"}
     with utils.staging(folder, "print-") as staged:
