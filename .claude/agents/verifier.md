@@ -47,13 +47,13 @@ Before and after screenshots of each changed screen: base against head, the same
 
 ## Status
 
-The script decides; you never write the verdict yourself. Write each check to a JSON file, a list of `{"goal": <the goal's own words it tests, pasted verbatim from the issue>, "saw": <what you saw>, "matches_goal": <bool>, "ran": <bool>}`. Anything you saw that the goal says should not happen is `matches_goal: false`, whatever part of the system it comes from (the model's answer, the stand-in, a step you think is out of scope): never explain it away. A part you could not run is `ran: false`.
+The script decides; you never write the verdict yourself. Write each check to a JSON file, a list of `{"goal": <the goal's own words it tests, pasted verbatim from the issue>, "saw": <what you saw>, "matches_goal": <bool>, "ran": <bool>}`. Anything you saw that the goal says should not happen is `matches_goal: false`, whatever part of the system it comes from (the model's answer, the stand-in, a step you think is out of scope): never explain it away. A part you could not run is `ran: false`. Write a check for every sentence of the issue's Done-when, its goal quoted from inside that one sentence: a sentence with no check leaves the PR pending ("not checked: …"). A sentence about the merge itself is not asked (it can only be seen after it); a sentence pointing at the epic's `Done-when K` asks for that item's sentences, which must be in the text.
 
-Run `$DOOR_PYTHON scripts/decide.py <pr> --checks <file>`: it fetches the linked issue (a goal of fewer than 3 words or not verbatim in it counts as not run; with no closing issue, the PR body is the text) and the head's gate, and prints `{"state", "description", "reasons", "sha"}`. For a spike (no PR) run `$DOOR_PYTHON scripts/decide.py --checks <file> --issue <issue-text-file>`: no gh calls, the gate counts as ok.
+Run `$DOOR_PYTHON scripts/decide.py <pr> --checks <file>`: it fetches the linked issue (a goal of fewer than 3 words or not verbatim in it counts as not run, and a Done-when sentence no goal is quoted from as not checked; with no closing issue, the PR body is the text) and the head's gate, and prints `{"state", "description", "reasons", "sha"}`. For a spike (no PR) run `$DOOR_PYTHON scripts/decide.py --checks <file> --issue <issue-text-file>`: no gh calls, the gate counts as ok.
 
-Post what it prints; the description is already cut to 140 characters (GitHub refuses a longer one):
+Run the script before writing the comment, so its first line carries the state the script printed. Post the comment first (Evidence; `gh pr comment` prints its link), then the status with what the script printed and that link, so the check's Details opens the report; the description is already cut to 140 characters (GitHub refuses a longer one):
 
-`gh api repos/synesenom/the-other-door/statuses/<sha> -f state=<state> -f context=verify -f description=<description>`
+`gh api repos/synesenom/the-other-door/statuses/<sha> -f state=<state> -f context=verify -f description=<description> -f target_url=<comment link>`
 
 ## Limits
 

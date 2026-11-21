@@ -434,3 +434,67 @@ def test_trusted_refuses_with_json_when_gh_is_missing_or_stalls(capsys, err):
 
     assert decide.main(["--trusted", "9"], run) == 1
     assert json.loads(capsys.readouterr().out)["trusted"] is False
+
+
+EPIC = """Goal.
+
+**Done when**
+1. A PR merges by itself when every check is green.
+2. Run on a past PR, each reviewer quotes a command.
+
+**Notes** after."""
+
+
+def test_a_done_when_item_with_no_check_leaves_it_pending():
+    state, why = decide.verdict([_c("merges by itself when every check")], True, [], EPIC)
+    assert state == "pending" and why.startswith("not checked: Run on a past PR")
+
+
+def test_every_done_when_item_checked_passes():
+    checks = [_c("merges by itself when every check"), _c("each reviewer quotes a command")]
+    assert decide.verdict(checks, True, [], EPIC) == ("success", "PASS")
+
+
+def test_an_inline_done_when_must_be_checked_too():
+    text = "Body.\n\nDone when: the go rule holds, and the run is green."
+    assert decide.verdict([_c("the go rule holds")], True, [], text)[0] == "success"
+    assert decide.verdict([_c("Body. Done when:")], True, [], text)[0] == "pending"
+
+
+def test_an_issue_with_no_done_when_needs_only_its_checks():
+    assert decide.verdict([_c("keeps one folder")], True, [], "It keeps one folder.") == ("success", "PASS")
+
+
+def test_each_sentence_of_an_item_needs_its_own_check():
+    text = "**Done when**\n1. Run on a past PR, each reviewer quotes a command. Rerunning it shows the same thing."
+    assert decide.verdict([_c("Rerunning it shows the same thing")], True, [], text)[0] == "pending"
+    both = [_c("Rerunning it shows the same thing"), _c("each reviewer quotes a command")]
+    assert decide.verdict(both, True, [], text)[0] == "success"
+
+
+def test_a_sentence_that_needs_the_merge_is_not_asked_before_it():
+    text = "Done when: the go rule holds, and this PR was merged by auto-merge."
+    assert decide.verdict([_c("the go rule holds")], True, [], text)[0] == "success"
+
+
+def test_a_pointer_to_another_done_when_item_asks_for_that_item():
+    epic = "**Done when**\n1. One thing works here.\n2. Each reviewer quotes a command.\n"
+    sub = "\nDone when: Done-when 2 holds."
+    assert decide.verdict([_c("One thing works here")], True, [], epic + sub)[0] == "pending"
+    checks = [_c("One thing works here"), _c("Each reviewer quotes a command")]
+    assert decide.verdict(checks, True, [], epic + sub)[0] == "success"
+    assert decide.verdict([_c("Done-when 2 holds")], True, [], sub)[0] == "pending"
+
+
+@pytest.mark.parametrize("text", [
+    "## Done when\n\n1. alpha beta gamma.\n2. delta epsilon zeta.\n",
+    "**Done when** (all hold):\n1. alpha beta gamma.\n2. delta epsilon\n   zeta.\n",
+    "Done when:\n\n- alpha beta gamma.\n\n- delta epsilon zeta.\n\nAfter.",
+    "Done when:\n+ alpha beta gamma.\n+ delta epsilon zeta.\n",
+])
+def test_done_when_reads_every_markdown_shape(text):
+    assert [" ".join(i.split()) for i in decide.done_when(text)] == ["alpha beta gamma.", "delta epsilon zeta."]
+
+
+def test_done_when_ignores_a_fenced_block():
+    assert decide.done_when("Text.\n```\nDone when: alpha beta gamma.\n```\n") == []
