@@ -1,6 +1,6 @@
 """Evidence for /dev-correct: the typed user turns of Claude Code transcripts, and a check of quoted corrections.
 
-Standard library only. `extract <dir>` prints the turns as JSON; `verify <classes.json> <turns.json>` prints the
+Standard library only. `extract <dir> [--since <iso>]` prints the turns as JSON; `verify <classes.json> <turns.json>` prints the
 classes with the quotes that are not verbatim in a turn dropped and their distinct sessions counted.
 """
 
@@ -20,8 +20,9 @@ def _text_of(content):
     return "\n".join(parts) if parts else None
 
 
-def turns(paths):
-    """Typed user turns of the given jsonl files, each with `text`, `before`, `session`, `at`, `file`."""
+def turns(paths, since=None):
+    """Typed user turns of the given jsonl files, each with `text`, `before`, `session`, `at`; with `since` (an ISO
+    date or time), only those from then on."""
     found = []
     for path in map(Path, paths):
         before = ""
@@ -47,13 +48,14 @@ def turns(paths):
             text = _text_of(content)
             if not text or not text.strip() or text.startswith(("<", "[Request interrupted")):
                 continue
+            if since and (entry.get("timestamp") or "") < since:
+                continue
             found.append(
                 {
                     "text": text,
                     "before": before[-BEFORE_CHARS:],
                     "session": entry.get("sessionId"),
                     "at": entry.get("timestamp"),
-                    "file": path.name,
                 }
             )
     return found
@@ -74,15 +76,16 @@ def verify(classes, all_turns):
 
 
 def main(argv):
-    if len(argv) == 3 and argv[1] == "extract":
-        json.dump(turns(sorted(Path(argv[2]).glob("*.jsonl"))), sys.stdout, ensure_ascii=False)
+    if len(argv) in (3, 5) and argv[1] == "extract" and (len(argv) == 3 or argv[3] == "--since"):
+        since = argv[4] if len(argv) == 5 else None
+        json.dump(turns(sorted(Path(argv[2]).glob("*.jsonl")), since), sys.stdout, ensure_ascii=False)
         return 0
     if len(argv) == 4 and argv[1] == "verify":
         classes = json.loads(Path(argv[2]).read_text(encoding="utf-8"))
         all_turns = json.loads(Path(argv[3]).read_text(encoding="utf-8"))
         json.dump(verify(classes, all_turns), sys.stdout, ensure_ascii=False, indent=2)
         return 0
-    print("usage: correct_evidence.py extract <dir> | verify <classes.json> <turns.json>", file=sys.stderr)
+    print("usage: correct_evidence.py extract <dir> [--since <iso>] | verify <classes.json> <turns.json>", file=sys.stderr)
     return 2
 
 

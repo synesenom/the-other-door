@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 Find mistakes the maintainer corrected more than once, and make the repository stop them: a check where a check is the natural fix, else a change to the architecture at the cause. A memory is only a reminder; an enforced rule cannot be forgotten.
 
-**Argument**: optional `since=<ref>`: only evidence from that range (a release's use); transcripts newer than the ref's date.
+**Argument**: optional `since=<ref>`: only evidence from that range (a release's use); turns from the ref's date on (`extract <dir> --since $(git log -1 --format=%cI <ref>)`).
 
 ## 1. Evidence
 

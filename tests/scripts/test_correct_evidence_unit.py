@@ -50,7 +50,15 @@ def test_a_turn_carries_what_claude_said_before_it(tmp_path):
     )
     (turn,) = ce.turns([path])
     assert turn["before"] == "second"
-    assert (turn["session"], turn["at"], turn["file"]) == ("s9", "2026-02-02T00:00:00Z", "a.jsonl")
+    assert (turn["session"], turn["at"]) == ("s9", "2026-02-02T00:00:00Z")
+
+
+def test_since_keeps_only_turns_from_that_time_on(tmp_path):
+    path = _write(
+        tmp_path,
+        [_line("user", "old", at="2026-01-01T00:00:00Z"), _line("user", "new", at="2026-03-01T00:00:00Z")],
+    )
+    assert [t["text"] for t in ce.turns([path], since="2026-02-01")] == ["new"]
 
 
 def test_before_keeps_only_the_end_of_a_long_answer(tmp_path):
