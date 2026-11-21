@@ -43,6 +43,8 @@ An epic is a list on its issue. Each sub-issue is its own small PR into `main`, 
 - **GitHub ruleset on `main`**: a PR is required, the `verify` check is required, no force-push or deletion. The admin bypass applies to pull requests only, so nobody can push straight to `main`.
 - **This computer** (`.claude/settings.local.json`, not committed): Claude may arm auto-merge on a checked commit, and is refused `gh pr merge --admin`, the merge and ruleset APIs, and pushing to `main`; its GitHub merge tool is refused for any PR into `main`.
 - **The verdict is code**: the checker cannot pass a PR by leaving a goal out or by inventing an easy one (each goal must be quoted from the issue).
+- **The checker only reads the PR and its issue**: it never ticks a box or rewords a goal. The script holds a PR whose description or issue was edited after its tests finished, until every test has run again.
+- **Boxes in a PR are only what Claude already ran**, ticked when the PR opens. What the checker is to try is written as a goal, never as an empty box.
 
 ## Mistakes that keep happening
 
@@ -51,4 +53,5 @@ When the maintainer corrects Claude for the same kind of mistake more than once,
 ## Known limits
 
 - The maintainer's own GitHub login on this computer could post a `verify` status; only a separate GitHub App would close that.
+- An edit made after the checker has already set its result is not caught: nothing re-checks the PR on an edit. The checker's own rules forbid it.
 - For changes to instructions and docs, the checker mostly reads the text, which is weaker proof than running something.

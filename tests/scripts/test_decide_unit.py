@@ -36,6 +36,23 @@ def test_an_unticked_box_is_not_ok():
     assert not ok and "unticked box" in reasons
 
 
+def test_a_text_edited_after_the_checks_finished_is_not_ok():
+    # the verifier starts only once the checks finished, so an edit after that may be the verifier ticking its own box
+    checks = [_check("tests") | {"completed_at": "2026-11-21T13:39:41Z"}]
+    ok, reasons = decide.decide(checks, "- [x] done", FILES, head="H", edited=[("the PR text", "2026-11-21T13:41:27Z")])
+    assert not ok and "the PR text changed after the checks finished: run them again" in reasons
+    assert decide.decide(checks, "- [x] done", FILES, head="H", edited=[("the PR text", "2026-11-21T13:30:00Z"),
+                                                                       ("issue #3", None)]) == (True, [])
+
+
+def test_rerunning_one_check_does_not_lift_the_hold():
+    # every check must have finished after the edit, so rerunning the cheapest one is not enough
+    checks = [_check("tests") | {"completed_at": "2026-11-21T13:39:41Z"},
+              _check("merge") | {"completed_at": "2026-11-21T13:50:00Z"}]
+    ok, reasons = decide.decide(checks, "- [x] done", FILES, head="H", edited=[("the PR text", "2026-11-21T13:41:27Z")])
+    assert not ok and "the PR text changed after the checks finished: run them again" in reasons
+
+
 def test_an_unticked_box_inside_a_fence_is_ignored():
     assert _decide(body="```\n- [ ] x\n```\n- [x] y") == (True, [])
 
@@ -76,14 +93,20 @@ def test_a_visible_change_needs_the_maintainer(path):
 ISSUE = "Running prepare twice keeps one folder."
 
 
-def _run(checks, body="Prepare twice keeps one folder.\n- [x] done", files=FILES, author="synesenom", issues=None):
+def _run(checks, body="Prepare twice keeps one folder.\n- [x] done", files=FILES, author="synesenom", issues=None,
+         edited=None):
     issues = issues or {}
+    edited = edited or {}
     calls = []
 
     def run(args):
         calls.append(args)
+        if args[:2] == ["api", "graphql"]:
+            pr = {"lastEditedAt": edited.get("pr"), "closingIssuesReferences": {
+                "nodes": [{"number": n, "lastEditedAt": edited.get(n)} for n in issues]}}
+            return {"data": {"repository": {"pullRequest": pr}}}
         if args[:2] == ["pr", "view"]:
-            return {"headRefOid": "H", "body": body, "author": {"login": author},
+            return {"number": 7, "headRefOid": "H", "body": body, "author": {"login": author},
                     "closingIssuesReferences": [{"number": n} for n in issues]}
         if args[:2] == ["issue", "view"]:
             return {"body": ISSUE, "author": {"login": issues[int(args[2])]}}
@@ -108,6 +131,16 @@ def test_main_reports_ok_and_drops_the_verify_check(tmp_path, capsys):
     assert out == {"state": "success", "description": "PASS", "reasons": [], "sha": "H"}
     assert calls[0][:3] == ["pr", "view", "7"]
     assert any("commits/H/check-runs" in " ".join(c) for c in calls)
+
+
+def test_main_holds_a_pr_whose_text_or_issue_changed_after_the_checks(tmp_path, capsys):
+    done = {"completed_at": "2026-11-21T13:39:41Z"}
+    run, _ = _run([_check("tests") | done], issues={3: "synesenom"}, edited={"pr": "2026-11-21T13:41:27Z",
+                                                                             3: "2026-11-21T13:40:00Z"})
+    assert _main7(tmp_path, run) == 1
+    reasons = json.loads(capsys.readouterr().out)["reasons"]
+    assert reasons == ["the PR text changed after the checks finished: run them again",
+                       "issue #3 changed after the checks finished: run them again"]
 
 
 def test_main_exits_1_for_a_visible_file(tmp_path, capsys):
@@ -150,6 +183,27 @@ def test_main_says_when_gh_fails(tmp_path, capsys):
     assert _main7(tmp_path, run) == 1
     out = json.loads(capsys.readouterr().out)
     assert out["state"] == "pending" and "gh failed" in out["reasons"][0]
+
+
+def test_main_says_when_the_edit_times_cannot_be_read(tmp_path, capsys):
+    good, _ = _run([_check("tests")])
+
+    def run(args):
+        if args[:2] == ["api", "graphql"]:
+            raise decide.subprocess.CalledProcessError(1, ["gh"], stderr="HTTP 502")
+        return good(args)
+
+    assert _main7(tmp_path, run) == 1
+    out = json.loads(capsys.readouterr().out)
+    assert out["state"] == "pending" and "gh failed" in out["reasons"][0]
+
+
+def test_main_takes_the_pr_by_its_url(tmp_path, capsys):
+    run, calls = _run([_check("tests")])
+    f = tmp_path / "checks.json"
+    f.write_text(json.dumps([_c("twice keeps one folder")]))
+    assert decide.main(["https://github.com/synesenom/the-other-door/pull/7", "--checks", str(f)], run) == 0
+    assert any("pullRequest(number:7)" in " ".join(c) for c in calls)
 
 
 def test_main_without_checks_is_a_usage_error(capsys):
