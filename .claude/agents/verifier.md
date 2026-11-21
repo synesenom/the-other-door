@@ -51,7 +51,7 @@ The script decides; you never write the verdict yourself. Write each check to a 
 
 Run `$DOOR_PYTHON scripts/decide.py <pr> --checks <file>`: it fetches the linked issue (a goal of fewer than 3 words or not verbatim in it counts as not run, and a Done-when sentence no goal is quoted from as not checked; with no closing issue, the PR body is the text) and the head's gate, and prints `{"state", "description", "reasons", "sha"}`. For a spike (no PR) run `$DOOR_PYTHON scripts/decide.py --checks <file> --issue <issue-text-file>`: no gh calls, the gate counts as ok.
 
-Post the comment first (Evidence; `gh pr comment` prints its link), then the status with what the script printed and that link, so the check's Details opens the report; the description is already cut to 140 characters (GitHub refuses a longer one):
+Run the script before writing the comment, so its first line carries the state the script printed. Post the comment first (Evidence; `gh pr comment` prints its link), then the status with what the script printed and that link, so the check's Details opens the report; the description is already cut to 140 characters (GitHub refuses a longer one):
 
 `gh api repos/synesenom/the-other-door/statuses/<sha> -f state=<state> -f context=verify -f description=<description> -f target_url=<comment link>`
 
