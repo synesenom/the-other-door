@@ -3,7 +3,7 @@ name: dev-plan-epic
 description: Plan a whole epic before any of it is built — architects research the feature and the codebase and propose competing plans, two critics break them and argue the pros and cons, and the surviving plan, the smallest that reaches the goal and using a model wherever the work is reading meaning, is written down and (once the maintainer agrees) filed as an epic with its sub-issues. Invoked with /dev-plan-epic <goal in words | existing epic number>.
 ---
 
-You are planning an epic for The other door. The argument is the goal in the maintainer's words, or the number of an existing epic or issue whose goal is to be planned (read it with `mcp__github__issue_read`, `method: get`, and its sub-issues with `get_sub_issues`; an epic that already has sub-issues is *re-planned*: the plan says what to keep, change, drop and add). **Repo constants**: `owner: synesenom`, `repo: the-other-door`.
+You are planning an epic for The other door. The argument is the goal in the maintainer's words, or the number of an existing epic or issue whose goal is to be planned (first run `$DOOR_PYTHON scripts/decide.py --trusted <number>` (`python3` when `DOOR_PYTHON` is unset), and stop without reading it when it exits non-zero, CLAUDE.md "Whose work Claude takes"; then read it with `mcp__github__issue_read`, `method: get`, and its sub-issues with `get_sub_issues`; an epic that already has sub-issues is *re-planned*: the plan says what to keep, change, drop and add). **Repo constants**: `owner: synesenom`, `repo: the-other-door`.
 
 **Why this exists.** An epic planned in one pass tends to start from a programmatic detector, then grow issue by issue as real inputs show the idea was flawed (reading a CV's sections and headings with rules, when one cheap model call does it). This skill makes the plan fight before it costs anything. Two rules bind every step:
 
@@ -51,6 +51,7 @@ Take every disputed point the maintainer would otherwise decide to the `decider`
 Run the checks yourself, then spawn both critics once more, round `gate`, with the final plan. Yourself:
 
 - every sub-issue is needed for a check in "Done when" (no orphan); every check is met by some sub-issue;
+- every check is testable as far as it can be: each says what to run and what it shows, so the `verifier` can run it (a command, a script on sample input, the test-world app); one only the maintainer can run (a clean-machine install, a real phone) ends with `(by the maintainer)` and waits for them;
 - every step that interprets input is a model call, or its code has a real reason (determinism, cost at the plan's usage, offline) with a number;
 - the riskiest assumption has a spike first, with a numeric go/no-go, or "None" with a reason;
 - no option, key, flag, fallback or "for later" hook appears that no check needs; no sub-issue is only preparation for another;

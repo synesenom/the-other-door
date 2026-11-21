@@ -7,7 +7,7 @@ You are checking that the suite passes and the current implementation of a GitHu
 
 ## Steps
 
-1. **Fetch the issue** — use `mcp__github__issue_read` with:
+1. **Fetch the issue** — first run `$DOOR_PYTHON scripts/decide.py --trusted <issue_number>` (`python3` when `DOOR_PYTHON` is unset); when it exits non-zero, stop without reading it (CLAUDE.md "Whose work Claude takes"). Then use `mcp__github__issue_read` with:
    - `owner`: `synesenom`
    - `repo`: `the-other-door`
    - `issue_number`: the number from the argument

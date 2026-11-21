@@ -1,13 +1,18 @@
 #!/bin/bash
-# SessionStart hook for Claude Code cloud sessions.
+# SessionStart hook: lists the user's open PRs that need something, in every
+# session; in a cloud session it also installs the Python dependencies.
 #
 # A cloud session starts from a fresh clone with no `.venv/`, and `.mcp.json`
 # starts The other door's MCP server with `.venv/bin/python`, so without this every
 # door tool is "failed to connect" and nothing in docs/manual-claude.md works.
 # Installs the Python dependencies with Poetry, once per poetry.lock: a stamp
 # in .venv/ skips the install on a container that already has it. Local
-# sessions are left alone: ./scripts/setup.sh is the install there.
+# sessions skip the install: ./scripts/setup.sh is the install there.
 set -euo pipefail
+
+# The user's open PRs that need something, one line each, so every session
+# starts on them (scripts/decide.py --open: silent without gh or network, 5 s cap).
+python3 "${CLAUDE_PROJECT_DIR:-$(dirname "$0")/../..}/scripts/decide.py" --open 2>/dev/null || true
 
 if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
   exit 0

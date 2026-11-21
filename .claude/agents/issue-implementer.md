@@ -38,6 +38,7 @@ If `validation_feedback` is provided, read it carefully and identify every faili
 For each planned change, follow this loop strictly:
 
 **Red**: Write the failing test first.
+- Only for code. A step that changes only docs, prompts or skill text gets no test: a test asserts the behaviour of code, never the content of a shipped asset or doc.
 - Unit tests go in `tests/<area>/test_*_unit.py`, where `<area>` mirrors the package (`core/`, `matching/`, `scrapers/`, …) (pure helper functions, models).
 - Fixture tests go in `tests/scrapers/<boards|discovery|feeds>/test_*_scrape.py` + the `fixtures/<site>/` folder beside them (full scrape path, mocked HTTP). Command tests go in `tests/commands/test_<command>_cli.py`.
 - Run `./scripts/run-test.sh` and confirm the new test fails for the right reason (not a syntax error).
@@ -50,6 +51,10 @@ For each planned change, follow this loop strictly:
 
 **Refactor**: Clean up with the test suite green.
 - Run `./scripts/run-test.sh` again before moving to the next step.
+
+**Bug fixes** (also on a retry after a FAIL): reproduce the bug first, then ask "why" until the answer is a wrong decision in the code, and fix it there, not where the bug showed. A guard, retry, clamp or swallowed error is a fix only when the state it handles is legitimate; otherwise find what produced that state. Fix the pattern, not the instance: `git grep` for the same fault elsewhere and fix every place in the same change.
+
+**UI changes**: before designing any change to the app's screens, read the visual guide: `docs/design/README.md` and the preview's `?scene=guide` (`app/src/preview/Guide.tsx`). Build from the controls and classes it shows; a new control, class, colour or size is added to the guide in the same change, never only on one screen.
 
 ### 3 — Constraints
 
