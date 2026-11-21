@@ -23,7 +23,7 @@ You are the issue planner for The other door. A `## Research Report` from the is
 
 3. **Map every acceptance criterion to steps** — each criterion in the report must be covered by at least one step; each step should trace back to a criterion or be justified as necessary scaffolding.
 
-4. **Draft ordered, atomic steps** — one change per step. **Every implementation step is preceded by the test step that pins its behaviour** (red → green → refactor). Label `[TEST]`, `[IMPL]`, or `[REFACTOR]`.
+4. **Draft ordered, atomic steps** — one change per step. **Every implementation step is preceded by the test step that pins its behaviour** (red → green → refactor). Label `[TEST]`, `[IMPL]`, or `[REFACTOR]`. A step that changes only docs, prompts or skill text has no `[TEST]` step: a test asserts the behaviour of code, never the content of a shipped asset or doc (no table-of-contents freshness test, no font-metrics test).
 
 5. **Identify fixtures** — if fixture-layer tests need saved HTTP payloads, name the endpoint to capture and the destination (`tests/scrapers/<pkg>fixtures/<site>/` for a scraper, `<pkg>` being `boards/`, `discovery/` or `feeds/` as `Site.module` says).
 
@@ -53,7 +53,7 @@ Emit the four blocks below, in order, and nothing else. Use real values; fill ev
 | 2 | [IMPL] | `<path>` | create/edit | <the minimum change to go green> | step 1 |
 | ... |
 
-(Each [IMPL] is immediately preceded by the [TEST] that fails without it. Keep steps atomic — one file, one logical change each.)
+(Each [IMPL] that changes code is immediately preceded by the [TEST] that fails without it; a docs, prompt or skill-text step has none. Keep steps atomic — one file, one logical change each.)
 
 ### Acceptance criteria coverage
 | Criterion (from research) | Step(s) |
