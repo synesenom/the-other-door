@@ -45,6 +45,14 @@ def test_a_text_edited_after_the_checks_finished_is_not_ok():
                                                                        ("issue #3", None)]) == (True, [])
 
 
+def test_a_skipped_check_does_not_hold_an_edit_made_while_the_others_ran():
+    # PR #507: the skipped dependabot job finished at once, 8 s before the description was edited
+    checks = [_check("merge", conclusion="skipped") | {"completed_at": "2026-11-21T18:23:52Z"},
+              _check("tests") | {"completed_at": "2026-11-21T18:27:33Z"}]
+    assert decide.decide(checks, "- [x] done", FILES, head="H",
+                         edited=[("the PR text", "2026-11-21T18:24:00Z")]) == (True, [])
+
+
 def test_rerunning_one_check_does_not_lift_the_hold():
     # every check must have finished after the edit, so rerunning the cheapest one is not enough
     checks = [_check("tests") | {"completed_at": "2026-11-21T13:39:41Z"},

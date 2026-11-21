@@ -51,7 +51,8 @@ def decide(checks, body, files, head, author=OWNER, issues=(), edited=()):
             reasons.append(f"check {c['name']} is pending")
         elif c["conclusion"] not in GREEN:
             reasons.append(f"check {c['name']} failed")
-    finished = min((c.get("completed_at") or "" for c in checks), default="")  # every check after the edit
+    # every check that ran finished after the edit; a skipped one finishes at once, so it says nothing
+    finished = min((c.get("completed_at") or "" for c in checks if c["conclusion"] != "skipped"), default="")
     reasons += [f"{what} changed after the checks finished: run them again"
                 for what, at in edited if at and finished and at > finished]
     text = _unfenced(body)
