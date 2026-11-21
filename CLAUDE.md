@@ -6,7 +6,7 @@ Automated job hunting pipeline: scrape job boards → score against a candidate 
 
 ## Reporting back
 
-When summarising what you just did, use at most 10 short bullet points: what happened, no details. Go into details only when asked.
+Do not narrate the work while it happens. Answer the user in plain words and simple sentences, with no jargon, and never more than 200 words. No tables. Say what happened and what is needed from them. Go into details only when asked.
 
 A pipeline (`/dev-resolve`, `/dev-epic`) never stops until its work is implemented (`/dev-epic`: every sub-issue implemented, every box checked). The only reason to stop and wait for the user is a decision the `decider` returned CANNOT DECIDE on. Finishing a step, an agent returning, an issue filed, a merge or a permission to wait for are not reasons to stop: go straight on to the next step. Anything else only the user can give (a permission the harness asks for, a merge into `main`, a FAIL after two attempts) blocks that one item, never the run: ask for it in one line and go on with every other item. After the user merges or grants something, re-read what it unblocked and start it in the same turn.
 
