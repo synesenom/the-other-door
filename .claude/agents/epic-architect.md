@@ -44,7 +44,7 @@ Emit this block and nothing else:
 ## Epic Plan (<lens>)
 
 **Goal**: <what a user gets, one sentence>
-**Done when**: <3-6 checks a person can run>
+**Done when**: <3-6 checks: each says what to run and what it shows, so the `verifier` can run it (a command, a script on sample input, the test-world app); one only the maintainer can run (a clean-machine install, a real phone) ends with `(by the maintainer)` and waits for them>
 **Assumptions**: <what you assumed instead of asking, or None>
 
 ### Research

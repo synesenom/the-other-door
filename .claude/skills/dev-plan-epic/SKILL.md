@@ -51,6 +51,7 @@ Take every disputed point the maintainer would otherwise decide to the `decider`
 Run the checks yourself, then spawn both critics once more, round `gate`, with the final plan. Yourself:
 
 - every sub-issue is needed for a check in "Done when" (no orphan); every check is met by some sub-issue;
+- every check is testable as far as it can be: each says what to run and what it shows, so the `verifier` can run it (a command, a script on sample input, the test-world app); one only the maintainer can run (a clean-machine install, a real phone) ends with `(by the maintainer)` and waits for them;
 - every step that interprets input is a model call, or its code has a real reason (determinism, cost at the plan's usage, offline) with a number;
 - the riskiest assumption has a spike first, with a numeric go/no-go, or "None" with a reason;
 - no option, key, flag, fallback or "for later" hook appears that no check needs; no sub-issue is only preparation for another;

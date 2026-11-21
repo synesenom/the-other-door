@@ -23,7 +23,7 @@ One optional argument:
 
 - the first line says where it came from (`Found by the gap review of #N`, `From epic #N's box`, `Asked by the user`);
 - what is wrong or missing, with the evidence (files and lines, a command's output, a failing case);
-- `## What`: what done looks like, test first (`Test first: …`).
+- `## What`: what done looks like, test first (`Test first: …`), and a `Done when:` line of checks: each says what to run and what it shows, so the `verifier` can run it (a command, a script on sample input, the test-world app); one only the maintainer can run (a clean-machine install, a real phone) ends with `(by the maintainer)` and waits for them.
 
 Keep the response's `number` and `id`.
 

@@ -233,8 +233,8 @@ def test_a_failure_outranks_a_check_not_run():
     assert (state, desc) == ("failure", "FAIL: b b b")
 
 
-def test_a_check_not_run_is_pending():
-    assert _v([_c(), _c("two two two", ran=False)], True, []) == ("pending", "not run: two two two")
+def test_a_check_not_run_is_a_failure():
+    assert _v([_c(), _c("two two two", ran=False)], True, []) == ("failure", "FAIL: not run: two two two")
 
 
 def test_no_checks_is_pending():
@@ -259,12 +259,12 @@ def test_a_goal_under_three_words_is_ungrounded(goal):
 @pytest.mark.parametrize("ran", ["false", "true", 1, None])
 def test_only_a_true_bool_counts_as_run(ran):
     check = _c() | {"ran": ran}
-    assert _v([check], True, []) == ("pending", "not run: keeps one folder")
+    assert _v([check], True, []) == ("failure", "FAIL: not run: keeps one folder")
 
 
 def test_a_matches_goal_that_is_not_a_bool_is_not_run():
     check = _c() | {"matches_goal": "false"}
-    assert _v([check], True, []) == ("pending", "not run: keeps one folder")
+    assert _v([check], True, []) == ("failure", "FAIL: not run: keeps one folder")
 
 
 def _checks_file(tmp_path, checks):
@@ -445,9 +445,9 @@ EPIC = """Goal.
 **Notes** after."""
 
 
-def test_a_done_when_item_with_no_check_leaves_it_pending():
+def test_a_done_when_item_with_no_check_is_a_failure():
     state, why = decide.verdict([_c("merges by itself when every check")], True, [], EPIC)
-    assert state == "pending" and why.startswith("not checked: Run on a past PR")
+    assert state == "failure" and why.startswith("FAIL: not checked: Run on a past PR")
 
 
 def test_every_done_when_item_checked_passes():
@@ -458,7 +458,7 @@ def test_every_done_when_item_checked_passes():
 def test_an_inline_done_when_must_be_checked_too():
     text = "Body.\n\nDone when: the go rule holds, and the run is green."
     assert decide.verdict([_c("the go rule holds")], True, [], text)[0] == "success"
-    assert decide.verdict([_c("Body. Done when:")], True, [], text)[0] == "pending"
+    assert decide.verdict([_c("Body. Done when:")], True, [], text)[0] == "failure"
 
 
 def test_an_issue_with_no_done_when_needs_only_its_checks():
@@ -467,7 +467,7 @@ def test_an_issue_with_no_done_when_needs_only_its_checks():
 
 def test_each_sentence_of_an_item_needs_its_own_check():
     text = "**Done when**\n1. Run on a past PR, each reviewer quotes a command. Rerunning it shows the same thing."
-    assert decide.verdict([_c("Rerunning it shows the same thing")], True, [], text)[0] == "pending"
+    assert decide.verdict([_c("Rerunning it shows the same thing")], True, [], text)[0] == "failure"
     both = [_c("Rerunning it shows the same thing"), _c("each reviewer quotes a command")]
     assert decide.verdict(both, True, [], text)[0] == "success"
 
@@ -480,10 +480,10 @@ def test_a_sentence_that_needs_the_merge_is_not_asked_before_it():
 def test_a_pointer_to_another_done_when_item_asks_for_that_item():
     epic = "**Done when**\n1. One thing works here.\n2. Each reviewer quotes a command.\n"
     sub = "\nDone when: Done-when 2 holds."
-    assert decide.verdict([_c("One thing works here")], True, [], epic + sub)[0] == "pending"
+    assert decide.verdict([_c("One thing works here")], True, [], epic + sub)[0] == "failure"
     checks = [_c("One thing works here"), _c("Each reviewer quotes a command")]
     assert decide.verdict(checks, True, [], epic + sub)[0] == "success"
-    assert decide.verdict([_c("Done-when 2 holds")], True, [], sub)[0] == "pending"
+    assert decide.verdict([_c("Done-when 2 holds")], True, [], sub)[0] == "failure"
 
 
 @pytest.mark.parametrize("text", [
@@ -498,3 +498,39 @@ def test_done_when_reads_every_markdown_shape(text):
 
 def test_done_when_ignores_a_fenced_block():
     assert decide.done_when("Text.\n```\nDone when: alpha beta gamma.\n```\n") == []
+
+
+def test_a_goal_marked_for_the_maintainer_waits_for_them_and_needs_no_check():
+    text = "**Done when**\n1. One thing works here.\n2. The installer opens on a clean Mac (by the maintainer).\n"
+    state, why = decide.verdict([_c("One thing works here")], True, [], text)
+    assert state == "pending" and why.startswith("Needs the maintainer: The installer opens")
+
+
+MINE = "**Done when**\n1. One thing works here.\n2. The installer opens on a clean Mac (by the maintainer).\n"
+
+
+def test_a_check_written_for_the_maintainers_goal_need_not_run():
+    checks = [_c("One thing works here"), _c("installer opens on a clean", ran=False)]
+    assert decide.verdict(checks, True, [], MINE)[0] == "pending"
+
+
+@pytest.mark.parametrize("text", [
+    "**Done when**\n1. One thing works here.\n2. The installer opens on a clean Mac. (by the maintainer)\n",
+    "Done when: One thing works here. The installer opens on a clean Mac (by the maintainer).",
+])
+def test_the_maintainer_mark_works_inline_and_after_the_full_stop(text):
+    state, why = decide.verdict([_c("One thing works here")], True, [], text)
+    assert state == "pending" and "installer opens" in why
+
+
+def test_an_untested_goal_beats_the_maintainers_wait():
+    assert decide.verdict([_c("installer opens on a clean")], True, [], MINE)[0] == "failure"
+
+
+def test_only_the_maintainers_goals_need_no_checks():
+    text = "Done when: The installer opens on a clean Mac (by the maintainer)."
+    assert decide.verdict([], True, [], text)[1].startswith("Needs the maintainer")
+
+
+def test_the_maintainers_wait_comes_before_the_gate():
+    assert decide.verdict([_c("One thing works here")], False, ["check test failed"], MINE)[1].startswith("Needs the maintainer")
