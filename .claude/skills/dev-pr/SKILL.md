@@ -92,11 +92,11 @@ From these, draft:
   - [ ] <the new or changed tests, by file>
   - [ ] <a check the `verifier` can run: the CLI in a sandbox, the app on the test world, staging, the preview>
 
-  Needs the maintainer: <anything else, one line each; it keeps `verify` pending>
+  Needs the maintainer: <anything else, one line each; it keeps `verify` pending> (leave out when nothing does)
 
   <the PR attribution lines this session's system reminder gives>
   ```
-- The Test plan holds only boxes the verifier can run; whatever else needs a person goes on a `Needs the maintainer: …` line, never a box. A PR that changes `app/src/renderer/`, `app/src/web/`, `app/src/preview/` or `docs/design/` always carries `Needs the maintainer: look at it` (`scripts/decide.py` enforces it from the changed files) and before/after screenshots of each changed screen, embedded in the body as images (so they show on a phone). Every other PR merges itself once verified (Step 7).
+- Whatever needs a person goes on a `Needs the maintainer: …` line, never a box. A PR that changes `app/src/renderer/`, `app/src/web/`, `app/src/preview/` or `docs/design/` always carries `Needs the maintainer: look at it` (`scripts/decide.py` enforces it from the changed files); the verifier runs it and posts before/after screenshots of each changed screen (pushed to `verify-media/<pr>`, embedded in its comment so they show on a phone), and the maintainer merges it after looking. Every other PR merges itself once verified (Step 7).
 
 ---
 
@@ -123,16 +123,16 @@ Call `mcp__github__subscribe_pr_activity` with the PR number from Step 5.
 Branch:  <BRANCH>
 PR:      #<number> — <title>
 URL:     <html_url from create_pull_request response>
-Watching: CI failures and review comments will arrive in this session.
+Watching: checks by a background command (`gh pr checks --watch`); CI failures, conflicts and review comments are handled in this session.
 ```
 
-Then keep watching until the PR is verified and merged, or waits on the maintainer (CLAUDE.md "Pull requests"):
+Then keep watching until the PR is verified and merged, or waits on the maintainer (CLAUDE.md "Pull requests"). Sub-steps 3 and 4 are for a PR into `main`; a sub-PR into an epic branch stops after step 2 and is merged on green by `/dev-epic` Step 3.
 
 1. After each push wait about 60 s (path-filtered workflows register late), then run `gh pr checks <n> --watch` with `run_in_background`; it wakes the session when it exits.
 2. On exit read `gh pr view <n> --json mergeable,statusCheckRollup`: `--watch` cannot see a conflict (no `pull_request` run starts while a PR conflicts).
-   - **CI failure**: read the failing job logs, find the root cause, fix it test-first on the branch, push, and go back to 1. A flaky failure is rerun once and named in the report. A fix that needs a decision goes to the `decider`.
+   - **CI failure**: read the failing job logs, find the root cause, fix it test-first on the branch, push, and go back to 1. A flaky failure is rerun once and named in the report. A fix that needs a decision goes to the `decider`; escalate to the user only on CANNOT DECIDE, or after three rounds of fixes that did not turn it green.
    - **Merge conflict** (main moved): merge `origin/main`, resolve as in Step 2, push, and go back to 1.
    - **Review comment**: address it if unambiguous and non-breaking; otherwise ask the user first.
-3. **Everything green, no conflict**: spawn the `verifier` on the head. It posts `verify`: when `scripts/decide.py <n>` says merge, run `gh pr merge <n> --auto --squash --match-head-commit <sha>` (it refuses a moved head, and merges at once when every requirement already holds); with a `Needs the maintainer:` line, report it in one line and leave it pending.
+3. **Everything green, no conflict**: spawn the `verifier` on the head. It posts `verify`; when `scripts/decide.py <n>` prints `ok` (`verify` is success), run `gh pr merge <n> --auto --squash --match-head-commit <sha>` (it refuses a moved head, and merges at once when every requirement already holds). On any other pending reason (an unticked box, "no screenshot of the change", a part of the issue not run, `gh failed`) fix what Claude can and verify again; a `Needs the maintainer:` reason is asked in one line and left pending.
 4. **The verifier FAILs**: rerun the implementer once with the verdict, push, and verify again. After a second FAIL, attack the premise before another fix: write down the one sentence both fixes assumed, and run one observation that would come out differently if it were false. Record the premise, the run and its result in a PR comment. If the run disproves it, make one fix built on what it found and verify again. If the premise holds, or that fix fails too, the PR goes to the session-start list with the premise, its test and both verdicts, and the run carries on.
 5. **PR merged or closed**: call `mcp__github__unsubscribe_pr_activity` and report the final status.

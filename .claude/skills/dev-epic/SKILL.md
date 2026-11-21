@@ -59,7 +59,7 @@ Read the body's checkboxes. Each unchecked box must map to a sub-issue: by a `#<
 
 ### Step 3: Keep the epic branch and its PRs green
 
-Look after the open sub-PRs as `/dev-pr` Step 7 and CLAUDE.md "Pull requests" say: a failing check is read, fixed test-first on its own branch, pushed; a review comment is addressed, or recorded as a question when it needs the maintainer. When a sub-PR is green, mergeable and its review findings are dealt with, squash-merge it into the epic branch (`mcp__github__merge_pull_request`, `merge_method: squash`) and delete its branch; its sub-issue is now implemented.
+Look after the open sub-PRs as `/dev-pr` Step 7 (its steps 1-2: no verifier or auto-merge for a PR into the epic branch) and CLAUDE.md "Pull requests" say: a failing check is read, fixed test-first on its own branch, pushed; a review comment is addressed, or recorded as a question when it needs the maintainer. When a sub-PR is green, mergeable and its review findings are dealt with, squash-merge it into the epic branch (`mcp__github__merge_pull_request`, `merge_method: squash`) and delete its branch; its sub-issue is now implemented.
 
 **`main` moved:** `git fetch origin && git switch <epic branch> && git merge origin/main --no-edit`, resolve conflicts keeping both sides' intent as in `/dev-pr` Step 2, run the tests the conflicting files touch, push. Open sub-PRs then merge the epic branch in the same way (`git merge origin/<epic branch>`), so they stay mergeable. Do this when the epic's PR into `main` reports a conflict, and once before Step 8.
 
@@ -117,7 +117,7 @@ Reached when every sub-issue is merged into the epic branch, closed, `failed` or
 4. **Report:**
 
 ```
-Epic #<N> — <title>   Branch: <epic branch>   PR: #<pr> → main (checks: green|running|red, mergeable: yes|no)
+Epic #<N> — <title>   Branch: <epic branch>   PR: #<pr> → main (checks: green|running|red, mergeable: yes|no, verify: success|pending|failure, merged: yes|no)
 | Sub-issue | Title | Sub-PR (merged into the branch) | State |
 |-----------|-------|----|-------|
 | #12       | ...   | #40 | merged |
