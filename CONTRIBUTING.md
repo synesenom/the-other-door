@@ -64,7 +64,7 @@ Claude Code skills prefixed `dev-` drive the issue workflow: `/dev-resolve <issu
 research → plan → TDD implementation → validation → review → pull request, `/dev-pr` opens
 and watches a pull request, and `/dev-add-scraper <site>` scaffolds a new scraper. Each step also exists on
 its own (`/dev-research`, `/dev-plan`, `/dev-implement`, `/dev-validate`); see
-[docs/skills.md](docs/skills.md#developer-skills) for what each one does.
+[docs/skills.md](docs/skills.md#developer-skills) for what each one does. How a change goes from an issue to a merged pull request (the checker, auto-merge, what waits for the maintainer) is the [development workflow](docs/development/workflow.md); cutting a release is [docs/development/releasing.md](docs/development/releasing.md).
 
 ## Adding a scraper
 

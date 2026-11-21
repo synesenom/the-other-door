@@ -36,7 +36,7 @@
 #                            data, tests/data_versions/, opens and reads back as it
 #                            did), the app's tests with every journey, the CLI journeys, the real-model tests,
 #                            and the install test when DOOR_INSTALLER names an
-#                            installer (docs/releasing.md). Not the live smoke
+#                            installer (docs/development/releasing.md). Not the live smoke
 #                            tests: a site's bad day does not block a release.
 #
 # Extra arguments are passed through to pytest (not with --app or --release).

@@ -8,7 +8,7 @@ name: Release
 # A DRY RUN (Actions -> Release -> Run workflow, or `gh workflow run release.yml --ref main`) builds exactly as
 # a tag does (the same electron-builder call, the same renames, the same smoke and install tests, Windows on ARM
 # included) but makes no tag, no draft and no release: the renamed installers and manifests are kept as the run's
-# artifacts for 14 days. Run it before tagging (docs/releasing.md).
+# artifacts for 14 days. Run it before tagging (docs/development/releasing.md).
 #
 # Secrets (Settings → Secrets and variables → Actions):
 # The workflow's own GITHUB_TOKEN writes the release (permissions below); no other token is needed.
@@ -17,7 +17,7 @@ name: Release
 #                                                 without them the macOS build is unsigned (signed ad hoc)
 #   WINDOWS_CERTIFICATE, WINDOWS_CERTIFICATE_PASSWORD      an Authenticode certificate; without, unsigned
 # The install test runs on every installer and on Windows on ARM; before publishing, the by-hand rest of
-# docs/releasing.md (the first-open warnings, the real sign-in, release notes).
+# docs/development/releasing.md (the first-open warnings, the real sign-in, release notes).
 on:
   push:
     tags: ["v*"]
