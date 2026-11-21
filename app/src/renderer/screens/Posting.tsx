@@ -195,7 +195,7 @@ export function Posting({ jobId, onChanged, onOpenMaterials }: Props) {
       </button>
     ) : null
   const openIsPrimary = narrow && !primary && !running
-  const openClass = openIsPrimary ? 'primary' : 'secondary'
+  const openClass = openIsPrimary ? 'primary' : 'secondary go'
   const matching = posting.matching_skills ?? []
   const missing = posting.missing_skills ?? []
   return (
@@ -235,7 +235,7 @@ export function Posting({ jobId, onChanged, onOpenMaterials }: Props) {
               {openLabel}
             </button>
           )}
-          <button type="button" className="secondary" disabled={locked} onClick={() => setDialog('status')}>
+          <button type="button" className="secondary go" disabled={locked} onClick={() => setDialog('status')}>
             Status
           </button>
           {prepareAgain}
@@ -263,7 +263,7 @@ export function Posting({ jobId, onChanged, onOpenMaterials }: Props) {
       {narrow && (
         // The phone layout: the actions sit in a bar at the bottom, one ink button.
         <div className="action-bar">
-          <button type="button" className="secondary" disabled={locked} onClick={() => setDialog('status')}>
+          <button type="button" className="secondary go" disabled={locked} onClick={() => setDialog('status')}>
             Status
           </button>
           {!hasMaterials && (

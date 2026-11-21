@@ -45,6 +45,10 @@ export function Guide() {
               <button type="button" className={kind} disabled>Disabled</button>
             </Row>
           ))}
+          <Row label="secondary go">
+            <button type="button" className="secondary go">Open in browser</button>
+            <button type="button" className="secondary go" disabled>Disabled</button>
+          </Row>
           <Row label="link-inline">
             <span className="small">
               LinkedIn (not enabled, <button type="button" className="link-inline">enable</button>)

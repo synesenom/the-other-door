@@ -71,7 +71,7 @@ function ClaudeConnection({ doctor, email, onRecheck }: { doctor: DoctorReport |
     state = <p className="small muted">{row.plan ? `${who} (${row.plan})` : who}</p>
     // no Check again: opening Settings reads doctor again, and a signed-in row has nothing to fix
     actions = !again && (
-      <button type="button" className="secondary" onClick={() => setAgain(true)}>
+      <button type="button" className="secondary go" onClick={() => setAgain(true)}>
         Use another account
       </button>
     )
@@ -230,7 +230,7 @@ function DriveConnection({
     if (busy === 'connect') body = <Spinner message="Waiting for you to allow access in the browser (up to five minutes), then syncing…" />
     else
       actions = (
-        <button type="button" className="secondary" onClick={() => void connect()}>
+        <button type="button" className="secondary go" onClick={() => void connect()}>
           Connect
         </button>
       )
@@ -353,13 +353,13 @@ export function PhoneConnection() {
         Disconnect
       </button>
       {!paired && (
-        <button type="button" className="secondary" disabled={busy} onClick={() => setSetup('pair')}>
+        <button type="button" className="secondary go" disabled={busy} onClick={() => setSetup('pair')}>
           Pair your phone
         </button>
       )}
     </>
   ) : status !== null ? (
-    <button type="button" className="secondary" onClick={() => setSetup('how')}>
+    <button type="button" className="secondary go" onClick={() => setSetup('how')}>
       Set up your phone
     </button>
   ) : error ? (

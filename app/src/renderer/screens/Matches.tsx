@@ -308,7 +308,7 @@ export function Matches({
           <div className="board-head">
             <h1 className="display-l">Matches</h1>
             <div className="actions head-actions">
-              <button type="button" className="secondary" onClick={() => setImporting(true)}>
+              <button type="button" className="secondary go" onClick={() => setImporting(true)}>
                 Add a job
               </button>
               {/* The sidebar's button starts a run; a narrow window has no sidebar foot, so it is here instead. */}
