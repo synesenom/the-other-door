@@ -46,6 +46,7 @@ jobs/
 # Test + coverage artifacts (the badge SVG under docs/ is committed)
 .pytest_cache/
 .coverage
+.coverage.*
 coverage.xml
 .claude/worktrees/
 

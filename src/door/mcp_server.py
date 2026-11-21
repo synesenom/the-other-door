@@ -102,6 +102,8 @@ _UNLOGGED_ANSWERS = ("job_result", "set_status")
 # Tools whose `warning` is advice for the user, not a malfunction (`prepare`'s ATS read-back, #21): their
 # `error` is still logged.
 _UNLOGGED_WARNINGS = ("prepare",)
+# `error` answers the user can act on themselves (the CV style part says to fix the Master CV), not a failure.
+_ACTIONABLE_ERRORS = ("cv_unreadable",)
 
 
 def _answer_of(result: CallToolResult) -> dict | None:
@@ -121,7 +123,7 @@ def _log_answer(tool: str, answer: dict | None) -> None:
     """A tool's ``{"error"}`` and the warnings it returned, to the problem log (never its arguments)."""
     if not answer or tool in _UNLOGGED_ANSWERS:
         return
-    if isinstance(answer.get("error"), str):
+    if isinstance(answer.get("error"), str) and answer["error"] not in _ACTIONABLE_ERRORS:
         problem_log.failure(f"tool {tool}", answer["error"])
     if tool in _UNLOGGED_WARNINGS:
         return
