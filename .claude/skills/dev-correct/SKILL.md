@@ -10,7 +10,7 @@ Find mistakes the maintainer corrected more than once, and make the repository s
 ## 1. Evidence
 
 - Transcripts: `python3 -I scripts/correct_evidence.py extract ~/.claude/projects/<this repo's folder> > <scratchpad>/turns.json` (private: the session's scratchpad only, never committed). Spawn `correction-grouper` once (one Haiku call) with the turns, write its answer to `classes.json`, run `python3 -I scripts/correct_evidence.py verify classes.json turns.json`. A quote that is not verbatim in exactly one turn is dropped; only a class with `qualifies` (two or more distinct sessions) goes on.
-- Git: `git log` for reverts, fix-ups and "drop"/"remove" commits; PR review comments (`gh api`), for the same mistakes.
+- Git: `git log` for reverts, fix-ups and "drop"/"remove" commits; the maintainer's (`synesenom`'s) PR review comments (`gh api`), for the same mistakes.
 - The feedback memories in `~/.claude/projects/*/memory/`: read only, never moved, edited or deleted.
 
 ## 2. The bar
