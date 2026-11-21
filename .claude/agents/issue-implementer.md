@@ -38,6 +38,7 @@ If `validation_feedback` is provided, read it carefully and identify every faili
 For each planned change, follow this loop strictly:
 
 **Red**: Write the failing test first.
+- Only for code. A step that changes only docs, prompts or skill text gets no test: a test asserts the behaviour of code, never the content of a shipped asset or doc.
 - Unit tests go in `tests/<area>/test_*_unit.py`, where `<area>` mirrors the package (`core/`, `matching/`, `scrapers/`, …) (pure helper functions, models).
 - Fixture tests go in `tests/scrapers/<boards|discovery|feeds>/test_*_scrape.py` + the `fixtures/<site>/` folder beside them (full scrape path, mocked HTTP). Command tests go in `tests/commands/test_<command>_cli.py`.
 - Run `./scripts/run-test.sh` and confirm the new test fails for the right reason (not a syntax error).
