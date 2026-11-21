@@ -138,7 +138,7 @@ On **PASS** only (on FAIL go to Step 6). Run the reviewers CLAUDE.md "Review" na
 
 ## Step 5: Open the pull request
 
-On **PASS**, open the PR without asking: run `/dev-pr` and follow it (branch name check, merge `main`, push, a body in its format built from the research, plan and validation reports and the review, so the release notes can use it). The body's Changes say each review finding and how it ended. A suite failure the validator showed also fails on a clean `main` goes in the body's test plan, said plainly. Pass on `base` and `epic` (`/dev-pr base=<base> epic=<epic>`), when given.
+On **PASS**, open the PR without asking: run `/dev-pr` and follow it (branch name check, merge `main`, push, a body in its format built from the research, plan and validation reports and the review, so the release notes can use it). The body's Changes say each review finding and how it ended. A suite failure the validator showed also fails on a clean `main` goes in the body's test plan as a plain line, never a box. Pass on `base` and `epic` (`/dev-pr base=<base> epic=<epic>`), when given.
 
 On **FAIL** after two attempts, do not open a PR: the branch stays local, and Step 6 says why.
 

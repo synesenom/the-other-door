@@ -57,4 +57,4 @@ Run the script before writing the comment, so its first line carries the state t
 
 ## Limits
 
-Never ask the maintainer anything. Never edit the PR's code, its text or its issues. Name any permission prompt you hit. End with a one-line verdict, and leave `git status` clean (worktree removed, throwaway journey deleted).
+Never ask the maintainer anything. Never edit the PR's code, its text or its issues, and never rerun or re-request a check. Name any permission prompt you hit. End with a one-line verdict, and leave `git status` clean (worktree removed, throwaway journey deleted).

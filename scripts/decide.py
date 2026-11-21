@@ -36,10 +36,8 @@ MAINTAINER = "Needs the maintainer: look at it"
 
 def decide(checks, body, files, head, author=OWNER, issues=(), edited=()):
     """Return (ok, reasons) for a head's check runs, the PR body, the changed file paths, the PR's
-    author, the closing issues as (number, author) and when each text was last edited as (what, time or None).
-
-    A text edited after the checks finished is held: the verifier starts only then, and it must never change
-    the PR or the issue it judges (tick a box, rewrite a goal)."""
+    author, the closing issues as (number, author) and when each text was last edited as (what, time or None):
+    one edited after the checks finished, when the verifier starts, is held."""
     reasons = []
     if author != OWNER:
         reasons.append(f"Needs the maintainer: opened by {author}")
@@ -53,7 +51,7 @@ def decide(checks, body, files, head, author=OWNER, issues=(), edited=()):
             reasons.append(f"check {c['name']} is pending")
         elif c["conclusion"] not in GREEN:
             reasons.append(f"check {c['name']} failed")
-    finished = max((c.get("completed_at") or "" for c in checks), default="")
+    finished = min((c.get("completed_at") or "" for c in checks), default="")  # every check after the edit
     reasons += [f"{what} changed after the checks finished: run them again"
                 for what, at in edited if at and finished and at > finished]
     text = _unfenced(body)
@@ -236,9 +234,9 @@ def _verdict_out(checks_file, gate_ok, reasons, sha, issue):
     return 0 if state == "success" else 1
 
 
-def _edited(pr, run):
+def _edited(number, run):
     owner, name = REPO.split("/")
-    query = (f'{{repository(owner:"{owner}",name:"{name}"){{pullRequest(number:{int(pr)}){{lastEditedAt '
+    query = (f'{{repository(owner:"{owner}",name:"{name}"){{pullRequest(number:{int(number)}){{lastEditedAt '
              'closingIssuesReferences(first:50){nodes{number lastEditedAt}}}}}')
     data = run(["api", "graphql", "-f", f"query={query}"])["data"]["repository"]["pullRequest"]
     return [("the PR text", data["lastEditedAt"])] + [
@@ -275,12 +273,13 @@ def main(argv=None, run=_gh):
         print("usage: decide.py <pr> --checks <file> | --checks <file> --issue <file> | --open | --trusted <n>", file=sys.stderr)
         return 2
     try:
-        view = run(["pr", "view", pr, "--json", "headRefOid,body,author,closingIssuesReferences"])
+        view = run(["pr", "view", pr, "--json", "number,headRefOid,body,author,closingIssuesReferences"])
         sha = view["headRefOid"]
         closing = [run(["issue", "view", str(i["number"]), "--json", "body,author"]) | {"number": i["number"]}
                    for i in view.get("closingIssuesReferences", [])]
         pages = run(["api", "--paginate", "--slurp", f"repos/{REPO}/commits/{sha}/check-runs?per_page=100"])
-        files = run(["api", "--paginate", "--slurp", f"repos/{REPO}/pulls/{pr}/files?per_page=100"])
+        files = run(["api", "--paginate", "--slurp", f"repos/{REPO}/pulls/{view['number']}/files?per_page=100"])
+        edited = _edited(view["number"], run)
     except subprocess.CalledProcessError as e:
         why = f"gh failed: {(e.stderr or '').strip()}"
         print(json.dumps({"state": "pending", "description": why[:140], "reasons": [why], "sha": None}))
@@ -288,7 +287,7 @@ def main(argv=None, run=_gh):
     checks = [c for page in pages for c in page["check_runs"] if c["name"] != "verify"]
     paths = [f["filename"] for page in files for f in page]
     issues = [(i["number"], i["author"]["login"]) for i in closing]
-    ok, reasons = decide(checks, view["body"], paths, sha, view["author"]["login"], issues, _edited(pr, run))
+    ok, reasons = decide(checks, view["body"], paths, sha, view["author"]["login"], issues, edited)
     text = "\n".join(i["body"] for i in closing) if closing else view["body"]
     return _verdict_out(checks_file, ok, reasons, sha, text)
 
