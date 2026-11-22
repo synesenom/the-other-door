@@ -358,7 +358,7 @@ describe('Posting', () => {
       render(<Posting jobId="jobindex.1" onChanged={() => {}} onOpenMaterials={onOpenMaterials} />)
       const see = await screen.findByRole('button', { name: 'See the application' })
       expect(see).toHaveClass('primary')
-      expect(screen.getByRole('button', { name: 'Prepare again…' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Prepare again…' })).toHaveClass('secondary')
       expect(screen.queryByRole('button', { name: 'Prepare application' })).toBeNull()
       // A job with an application is in play: "Not for me" moves into Status, so the row fits on one line.
       expect(screen.queryByRole('button', { name: 'Not for me…' })).toBeNull()

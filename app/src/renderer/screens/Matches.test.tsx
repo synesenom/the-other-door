@@ -32,14 +32,14 @@ describe('Matches, Find new jobs', () => {
     delete (window as { matchMedia?: unknown }).matchMedia
   })
 
-  it('a narrow window, which has no sidebar foot, has a pill beside Add a job that asks for a run', async () => {
+  it('a narrow window, which has no sidebar foot, has a text button beside Add a job that asks for a run', async () => {
     stubNarrow(true)
     setup()
     const onFindJobs = vi.fn()
     render(<Matches onFindJobs={onFindJobs} />)
     await screen.findAllByRole('listitem')
     const pill = screen.getByRole('button', { name: 'Find new jobs' })
-    expect(pill).toHaveClass('pill')
+    expect(pill).toHaveClass('secondary')
     await userEvent.click(pill)
     expect(onFindJobs).toHaveBeenCalledTimes(1)
   })

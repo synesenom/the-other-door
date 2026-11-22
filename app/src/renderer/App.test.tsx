@@ -98,16 +98,15 @@ describe('App', () => {
       delete (window as { matchMedia?: unknown }).matchMedia
     })
 
-    it('shows the same five destinations as a tab bar, the current one marked with a dash', async () => {
+    it('shows the same five destinations as a tab bar, the current one marked', async () => {
       stubNarrow(true)
       setup()
-      const { container } = render(<App />)
+      render(<App />)
       const nav = await screen.findByRole('navigation')
       expect(within(nav).getAllByRole('button').map((b) => b.textContent)).toEqual(['Matches', 'Applications', 'Profile', 'Settings', 'Analytics'])
       const current = within(nav).getByRole('button', { name: 'Matches' })
       await waitFor(() => expect(current).toHaveAttribute('aria-current', 'page'))
-      expect(current.querySelector('.tab-dash')).not.toBeNull()
-      expect(container.querySelectorAll('.tab-dash')).toHaveLength(1)
+      expect(within(nav).getAllByRole('button').filter((b) => b.getAttribute('aria-current') === 'page')).toHaveLength(1)
     })
 
     it('each tab has an icon', async () => {

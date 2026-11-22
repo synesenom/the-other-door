@@ -309,11 +309,9 @@ describe('Finding, the summary card of a run with no new matches', () => {
     expect(cb.onCheckSearch).toHaveBeenCalledTimes(1)
   })
 
-  it('makes the second action a bordered button in a narrow window, where the row stacks', () => {
-    stubNarrow(true)
+  it('the second action is a text button of the forward kind, narrow or wide', () => {
     open(none())
     expect(screen.getByRole('button', { name: 'Check your search terms' })).toHaveClass('secondary')
-    delete (window as { matchMedia?: unknown }).matchMedia
   })
 
   it('offers no action it cannot open', () => {

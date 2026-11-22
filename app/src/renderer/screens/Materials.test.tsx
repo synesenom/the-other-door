@@ -119,13 +119,13 @@ describe('Materials', () => {
     render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} />)
     await screen.findByRole('heading', { name: 'Ready to send' })
     expect(screen.queryAllByRole('note')).toHaveLength(0) // no caption repeating the switch
-    const save = within(figure()).getByRole('button', { name: 'Save letter' })
+    const save = within(figure()).getByRole('button', { name: 'Save letter…' })
     expect(save).toHaveClass('secondary') // bordered, as Find new jobs
     await userEvent.click(save)
     expect(saveMaterial).toHaveBeenLastCalledWith('jobindex.1', 'cover_letter', false, 'Jane Doe - Cover letter.pdf')
     expect(await screen.findByRole('status')).toHaveTextContent('Saved as Jane Doe - Cover letter.pdf in Downloads.')
     await pick('CV')
-    await userEvent.click(within(figure()).getByRole('button', { name: 'Save CV' }))
+    await userEvent.click(within(figure()).getByRole('button', { name: 'Save CV…' }))
     expect(saveMaterial).toHaveBeenLastCalledWith('jobindex.1', 'cv', false, 'Jane Doe - CV.pdf')
   })
 
@@ -144,7 +144,7 @@ describe('Materials', () => {
     saveMaterial.mockResolvedValueOnce({ ok: false, canceled: true })
     render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} />)
     await screen.findByRole('heading', { name: 'Ready to send' })
-    await userEvent.click(screen.getByRole('button', { name: 'Save letter' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Save letter…' }))
     await waitFor(() => expect(saveMaterial).toHaveBeenCalled())
     expect(screen.queryByRole('status')).toBeNull()
     expect(screen.queryByRole('alert')).toBeNull()
@@ -206,7 +206,7 @@ describe('Materials', () => {
       const saveMaterial = actions['save-material']
       render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} />)
       await screen.findByRole('heading', { name: 'What you sent' })
-      await userEvent.click(within(figure()).getByRole('button', { name: 'Save letter' }))
+      await userEvent.click(within(figure()).getByRole('button', { name: 'Save letter…' }))
       expect(saveMaterial).toHaveBeenCalledWith('jobindex.1', 'cover_letter', true, 'Jane Doe - Cover letter.pdf')
     })
 
@@ -217,7 +217,7 @@ describe('Materials', () => {
       render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} />)
       await screen.findByRole('heading', { name: 'What you sent' })
       expect(screen.getAllByRole('img').map((i) => i.getAttribute('src'))).toEqual(['door-file://output/jobindex.1/cover_letter_page_1.png?v=0'])
-      await userEvent.click(within(figure()).getByRole('button', { name: 'Save letter' }))
+      await userEvent.click(within(figure()).getByRole('button', { name: 'Save letter…' }))
       expect(saveMaterial).toHaveBeenCalledWith('jobindex.1', 'cover_letter', false, 'Jane Doe - Cover letter.pdf')
     })
 
@@ -234,7 +234,7 @@ describe('Materials', () => {
       mockDoor({ show: sent() })
       render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} />)
       await screen.findByRole('heading', { name: 'What you sent' })
-      expect(screen.getByRole('button', { name: 'Save letter' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Save letter…' })).toBeInTheDocument()
       expect(screen.queryByRole('button', { name: "I've applied" })).toBeNull()
     })
   })
@@ -245,7 +245,7 @@ describe('Materials', () => {
     saveMaterial.mockResolvedValueOnce({ ok: false, error: 'Could not save it: disk full' })
     render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} />)
     await screen.findByRole('heading', { name: 'Ready to send' })
-    await userEvent.click(within(figure()).getByRole('button', { name: 'Save letter' }))
+    await userEvent.click(within(figure()).getByRole('button', { name: 'Save letter…' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('Could not save it: disk full')
   })
 
@@ -361,7 +361,7 @@ describe('Materials', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Revise' }))
       expect(await screen.findByText('Revising…')).toBeInTheDocument()
       expect(screen.getByTestId('pages')).toHaveAttribute('aria-busy', 'true')
-      for (const name of ['Revise', 'Undo last change', "I've applied", 'Save letter']) {
+      for (const name of ['Revise', 'Undo last change', "I've applied", 'Save letter…']) {
         expect(screen.getByRole('button', { name })).toBeDisabled()
       }
       finish({ outcome: 'revised', job_id: 'jobindex.1', file: 'x', compile: [] })
@@ -408,7 +408,7 @@ describe('Materials', () => {
       expect(screen.getAllByRole('img')).toHaveLength(1)
       await userEvent.click(cv)
       expect(screen.getAllByRole('img')).toHaveLength(2)
-      await userEvent.click(screen.getByRole('button', { name: 'Save CV' }))
+      await userEvent.click(screen.getByRole('button', { name: 'Save CV…' }))
       expect(saveMaterial).toHaveBeenCalledWith('jobindex.1', 'cv', false, 'Jane Doe - CV.pdf')
       expect(screen.getByRole('button', { name: "I've applied" })).toBeInTheDocument()
       stubNarrow(false)

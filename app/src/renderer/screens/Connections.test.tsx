@@ -115,6 +115,7 @@ describe('Connections: Google Drive', () => {
 
   it('off: Connect connects, then syncs at once and says what it did', async () => {
     const { row, call, onDriveChanged } = show({ handlers: { connect_drive: { account: 'ada@gmail.com' }, sync_data: { action: 'push', version: 'v1' } } })
+    expect(row('Google Drive').getByRole('button', { name: 'Connect' })).toHaveClass('go') // it opens the browser to sign in
     await userEvent.click(row('Google Drive').getByRole('button', { name: 'Connect' }))
     expect(calls(call)).toEqual([
       ['connect_drive', {}],

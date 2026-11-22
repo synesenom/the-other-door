@@ -79,7 +79,7 @@ test.describe('claude missing', () => {
   test('an install that fails says why and offers Check again; installed by hand, Check again moves on', async ({ page, world }) => {
     await expect(connectHeading(page)).toBeVisible(LAUNCH)
     world.faults({ tools: { setup: { error: 'The download of claude failed: the network is unreachable' } } })
-    await page.getByRole('button', { name: 'Install Claude', exact: true }).click()
+    await page.getByRole('button', { name: 'Install Claude…', exact: true }).click()
     await page.getByRole('dialog', { name: 'Install Claude?' }).getByRole('button', { name: 'Install', exact: true }).click()
     await expect(page.getByRole('alert')).toHaveText('The download of claude failed: the network is unreachable')
     await expect(page.getByText('Installed it yourself?')).toBeVisible()
