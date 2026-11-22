@@ -161,7 +161,7 @@ for real (real runs too) on a throwaway folder (see Environments in [`app/README
 ## Finding new jobs
 
 "Find new jobs" (the button at the foot of the sidebar; in a window narrower than 900 px, where
-the sidebar is a tab bar, a pill beside "Add a job" on Matches) starts a run: the same five steps as `./door find`. The window shows them one under
+the sidebar is a tab bar, a text button beside "Add a job…" on Matches) starts a run: the same five steps as `./door find`. The window shows them one under
 the other.
 
 1. **Search** reads the job boards for your country.
@@ -269,11 +269,11 @@ what it asks of you, the salary to expect once the job is prepared (below), and 
   yet applied) tailors a CV and a cover letter for this posting (below).
 - **See the application** (the dark button once something is prepared) shows them. For a job
   you have already applied to, it is the only prepare button left.
-- **Prepare again** (quiet, next to it, only before you apply) tailors them anew; it asks
+- **Prepare again…** (quiet, next to it, only before you apply) tailors them anew; it asks
   first, because it replaces the CV and letter and any revisions.
 - **Apply on <the employer's site>** opens the employer's application page when the board's ad links to one (most LinkedIn and some Jobindex ads); otherwise **Open in browser** opens the ad where it was found.
-- **Status** changes where the job stands (below).
-- **Not for me** is the quick way to drop a job: it asks why, the job leaves the list, and the next match opens in its place. Once an application is prepared it is under **Status** instead.
+- **Status…** changes where the job stands (below).
+- **Not for me…** is the quick way to drop a job: it asks why, the job leaves the list, and the next match opens in its place. Once an application is prepared it is under **Status** instead.
 
 ## Prepare
 
@@ -368,7 +368,7 @@ to Not yet applied stays in Matches.
 
 ## Add a job
 
-**Add a job** (in Matches and in Applications) brings in a posting you found yourself.
+**Add a job…** (in Matches and in Applications) brings in a posting you found yourself.
 
 - **Link**: paste the address. *The other door* reads the page and finds the title and company. When
   it cannot read them, it asks for the title, company and location; a page behind a login or built only with
@@ -392,7 +392,7 @@ says "No answer in 45 days" on its card, with a **Mark ghosted** button under it
 ghosted, dated today. The line under the title counts
 the jobs in play and in interviews. Clicking a card opens its posting across the whole window,
 where you change its status or open a prepared job's application; "← Applications" goes back.
-**Add a job** imports an ad. When nothing is in play, the screen says so. On a narrow window
+**Add a job…** imports an ad. When nothing is in play, the screen says so. On a narrow window
 the board scrolls sideways in its own box.
 
 ## Notifications
@@ -473,7 +473,7 @@ and offers "Draft it from your CV file or pages", the wizard's screens. A `cv.md
 (another encoding, a Word file renamed) is said above an empty editor; what you write there replaces it, the file
 kept as `cv.md.bak`.
 
-- **Add a page** (the `/expand` skill as a button): a dialog asks for one page (your portfolio, GitHub,
+- **Add a page…** (the `/expand` skill as a button): a dialog asks for one page (your portfolio, GitHub,
   a publication list, a course page) and "Read it". One Claude call on your plan (a few minutes)
   proposes what the page shows and your CV does not, grouped by the section each would go into.
   Untick what should not go in and "Add … to my Master CV": they go under their sections, and the old CV
@@ -516,20 +516,20 @@ fine, an empty ring when not) and what you can do about it.
 - **Claude** (required): *The other door* scores jobs and writes applications with your Claude Pro or Max
   plan. Signed in, it says as whom and on which plan, with "Use another account" to switch accounts.
   Signed out (or signed in with an API key, which *The other door* never uses), "Sign in with Claude" runs
-  the same sign-in as the first launch. If the Claude command line is missing, "Install" puts it
+  the same sign-in as the first launch. If the Claude command line is missing, "Install…" puts it
   in for you only, after you say yes.
 - **Google Drive** (optional, off until you connect it): keeps this computer and another one in
   step through one archive in `My Drive/The other door/`. "Connect" opens your browser to allow access
   (it waits up to five minutes); the app never connects by itself. There is nothing to press to
   sync: it syncs as it connects, each time the app opens, around every change to your data, and
   before it disconnects. Connected, it shows the account, the last sync and the last error, with
-  "Disconnect". After you install a newer version on one computer, install it on the others that share
+  "Disconnect…". After you install a newer version on one computer, install it on the others that share
   Drive too: an older one shows "Google Drive has data from a newer version of The other door; install it on
   this computer too" and neither pulls nor pushes until it is upgraded. After a sync that brought Drive's data here, the screens read it again. When this
   computer and Drive both changed since the last sync, nothing is replaced until you choose
   ("Google Drive needs a choice" at the sidebar's foot opens it): "Keep this computer" (its data
   replaces the copy on Drive) or "Keep Drive" (Drive's data replaces this computer's, which is
-  kept in `backups/`). "Disconnect" asks first, sends the last changes, and the copy on Drive stays. In staging
+  kept in `backups/`). "Disconnect…" asks first, sends the last changes, and the copy on Drive stays. In staging
   and the sandbox Drive is not available (their throwaway data never reaches your Drive),
   and a build without *The other door*'s Google client says so.
 
@@ -666,7 +666,7 @@ Tailscale keeps it encrypted to your machine.
 **Share an ad to The other door.** On Android, Share → **The other door** from Chrome, the LinkedIn app or an email
 imports the ad and scores it against your CV, then opens it, with Prepare and Not for me as usual. On an
 iPhone (which does not offer web apps in the share sheet), copy the link and paste it in Matches →
-**Add a job**.
+**Add a job…**.
 
 `./door serve devices` lists the paired phones; `./door serve unpair "My phone"` takes one away
 (it shows the pairing screen again).
