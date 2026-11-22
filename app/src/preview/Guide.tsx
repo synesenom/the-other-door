@@ -171,7 +171,7 @@ export function Guide() {
           </Row>
           <Row label="board column">
             <div className="board-column" style={{ width: '100%' }}>
-              <div className="board-column-head"><h4 className="label">Interviewing · 1</h4></div>
+              <div className="board-column-head rule-heavy"><h4 className="label">Interviewing · 1</h4></div>
               <ul className="board-cards">
                 <li><div className="board-card"><span className="board-card-title">Head of Finance</span></div></li>
                 <li><div className="board-card"><span className="board-card-title">Finance Lead</span></div></li>
@@ -179,7 +179,7 @@ export function Guide() {
             </div>
           </Row>
           <Row label="summary-card">
-            <section className="summary-card" style={{ width: '100%' }}>
+            <section className="summary-card rule-heavy rule-top" style={{ width: '100%' }}>
               <h3 className="display-s">12 new matches</h3>
               <p className="body muted">The run took 41 minutes and read 9 boards.</p>
             </section>

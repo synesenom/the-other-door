@@ -218,7 +218,7 @@ export function Applications({
         <div className={narrow ? 'board-list' : 'board'} role="group" aria-label={narrow ? 'Applications' : 'Applications board'}>
           {shown.map((c) => (
               <section key={c.heading} className="board-column" aria-labelledby={`col-${c.heading}`}>
-                <div className="board-column-head">
+                <div className="board-column-head rule-heavy">
                   <h2 className="label" id={`col-${c.heading}`}>
                     {c.heading}
                   </h2>

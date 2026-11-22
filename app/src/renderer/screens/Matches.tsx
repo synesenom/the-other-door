@@ -304,7 +304,7 @@ export function Matches({
   return (
     <div className="matches">
       <section className="list-pane" ref={listRef}>
-        <div className="list-head">
+        <div className="list-head rule-heavy">
           {/* As Applications' head: the title on the left, adding a job on the right. */}
           <div className="board-head">
             <h1 className="display-l">Matches</h1>

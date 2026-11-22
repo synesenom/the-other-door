@@ -248,7 +248,7 @@ export function Posting({ jobId, onChanged, onOpenMaterials }: Props) {
         </div>
       )}
       {(matching.length > 0 || missing.length > 0) && (
-        <section className="columns">
+        <section className="columns rule-heavy rule-top">
           {matching.length > 0 && <SkillColumn name="Why it fits" skills={matching} fits />}
           {missing.length > 0 && <SkillColumn name="Gaps" skills={missing} fits={false} />}
         </section>
