@@ -85,10 +85,10 @@ describe('Reading', () => {
     expect(seen.warnings.basics).toBe('not logged in')
   })
 
-  it('what Claude could not do is kept for the review: details, titles, terms', async () => {
+  it('what Claude could not do is kept for the review: details and titles (a failed term proposal says nothing)', async () => {
     const h = setup({ infer_basics: { ...basics, warning: 'usage limit' }, suggest_titles: { ...titles, warning: 'overloaded' }, keywords: () => { throw new Error('quota') } })
     await waitFor(() => expect(h.onDone).toHaveBeenCalled())
-    expect(seen.warnings).toEqual({ basics: 'usage limit', titles: 'overloaded', terms: 'quota' })
+    expect(seen.warnings).toEqual({ basics: 'usage limit', titles: 'overloaded' })
   })
 
   it('a failed titles call goes on, leaving the titles for the review, and says why', async () => {
