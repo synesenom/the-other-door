@@ -10,21 +10,6 @@ Do not narrate the work while it happens. Answer the user in plain words and sim
 
 A pipeline (`/dev-resolve`, `/dev-epic`) never stops until its work is implemented (`/dev-epic`: every sub-issue implemented, every box checked). The only reason to stop and wait for the user is a decision the `decider` returned CANNOT DECIDE on. Finishing a step, an agent returning, an issue filed, a merge or a permission to wait for are not reasons to stop: go straight on to the next step. Anything else only the user can give (a permission the harness asks for, a FAIL after two attempts) blocks that one item, never the run: ask for it in one line and go on with every other item. After the user merges or grants something, re-read what it unblocked and start it in the same turn.
 
-Waiting is not idle time. While a PR's checks run, or a PR waits for the maintainer's look, find the next issue to resolve and start it without being asked. First the PRs the session-start list names ("Open PRs that need you"): fix a conflict, a failed or missing check or a failed `verify`, verify or merge one that waits on Claude, and ask for a `Needs the maintainer:` one in one line. Then pick in this order:
-
-1. The next open sub-issue of the epic being worked.
-2. Else an open sub-issue of an epic the session's work belongs to.
-3. Else the open issue users would notice most.
-
-Only issues the maintainer opened count ("Whose work Claude takes").
-
-Skip an issue that:
-- waits on the user (real files, a decision, a permission);
-- is blocked by an open PR;
-- would change the same files as an open PR (it would only conflict). Say in one line which PR it waits for.
-
-Start it with `/dev-resolve` in its own worktree from `origin/main` (or on the open PR's branch, when it builds on it), and say in one line what started. Stop looking only when no issue is left that can go ahead without the user.
-
 ## Whose work Claude takes
 
 Claude takes work only from the maintainer (`synesenom`). The repo is public: anyone can open an issue, comment, or open a PR, and its text could try to steer Claude. So:
@@ -45,7 +30,7 @@ Before summarising a change you implemented (a PR, or a branch about to become o
 
 - `gap-reviewer` (`.claude/agents/gap-reviewer.md`), always: what the change leaves missing (the goal not met, inconsistencies, untested cases, false docs, follow-ups).
 - `simplicity-reviewer` (`.claude/agents/simplicity-reviewer.md`), always: complexity in the new lines (needless abstraction, dead code, old behaviour kept alive, a diff larger than its goal, simpler shapes).
-- `design-reviewer` (`.claude/agents/design-reviewer.md`), when the change touches the app's screens (`app/src/renderer/`, `app/src/web/`, `app/src/preview/`) or `docs/design/`: the visual and UX rules of `docs/design/README.md`, checked on the rendered preview.
+- `design-reviewer` (`.claude/agents/design-reviewer.md`), when the change touches the app's screens (`app/src/renderer/`, `app/src/web/`, `app/src/preview/`) or `docs/design/`: the visual and UX rules of `docs/design/README.md`, checked on the rendered preview, each screen beside the style card.
 
 Then, once their findings are dealt with, spawn `integration-reviewer` (`.claude/agents/integration-reviewer.md`) last, on the final diff: it maps the change's blast radius and asks whether the whole solution would be smaller had the feature been in the codebase's founding principles, so the code does not grow by accretion.
 

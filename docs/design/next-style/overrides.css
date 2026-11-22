@@ -1,0 +1,67 @@
+/* The next style's rules, as layered over app/src/renderer/styles.css to render style-guide-next.png and
+   style-guide-next-dark.png (with tokens.json beside this file). A reference for the build: fold each rule into
+   styles.css itself, do not ship this file. Numbers in comments are the changes in ../next-style-review.md. */
+/* Buttons: one ink block per view; every other action is a word. */
+.primary, .secondary, .quiet { min-height: var(--size-button-height); padding: 0 var(--space-2); border-radius: var(--radius-m); font-weight: 600; font-size: var(--text-small-size); }
+.primary { padding: 0 var(--space-4); border: 0; }
+.secondary { background: none; border: 0; color: var(--color-accent); }
+/* Text buttons: no side padding; space only between neighbours. */
+.secondary, .quiet { padding: 0; }
+.primary + :is(.secondary, .quiet) { margin-left: var(--space-2); }
+:is(.secondary, .quiet) + :is(.secondary, .quiet) { margin-left: var(--space-3); }
+.quiet { color: var(--color-ink-muted); }
+.go::after { content: " →" / ""; }
+@media (hover: hover) {
+  .primary:hover:not(:disabled) { background: var(--color-ink-muted); }
+  .secondary:hover:not(:disabled) { background: none; text-decoration: underline; text-underline-offset: 3px; }
+  .quiet:hover:not(:disabled) { background: none; color: var(--color-ink); }
+  .pill:hover:not(:disabled):not([aria-pressed='true']) { color: var(--color-ink); }
+  .nav-item:hover:not([aria-current='page']) { background: none; color: var(--color-ink); }
+}
+.primary:active:not(:disabled) { background: var(--color-ink); }
+.secondary:active:not(:disabled), .quiet:active:not(:disabled) { background: none; color: var(--color-ink); }
+/* Filter pills: words, the chosen one underlined. */
+.pill { border: 0; border-radius: 0; padding: 0 2px; background: none; color: var(--color-ink); }
+.pill[aria-pressed='true'] { background: none; color: var(--color-ink); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 6px; }
+/* Lines, not boxes. */
+.nav-item[aria-current='page'] { background: none; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 6px; }
+.nav-item { padding: 0; }
+.rows { gap: 0; }
+.rows > li + li .row { border-top: 1px solid var(--color-border); }
+.list-head { border-bottom: 2px solid var(--color-ink); }
+.columns { border-top: 2px solid var(--color-ink); }
+/* The heavy rule opens the column; hairlines divide its cards. */
+.board-column-head { border-bottom: 2px solid var(--color-ink); padding-bottom: var(--space-2); }
+.board-cards { gap: 0; }
+.board-card { background: none; border: 0; border-radius: 0; padding: var(--space-3) 0; }
+.board-cards > li + li .board-card { border-top: 1px solid var(--color-border); }
+.score-l, .score-s { font-variant-numeric: lining-nums tabular-nums; }
+.label { color: var(--color-ink); }
+/* Chips: square tags, a fill and no outline. */
+.chip { border: 0; border-radius: var(--radius-m); }
+/* Notes and errors: a shaded strip, no outline. */
+.notice, .error { border: 0; }
+
+/* Review changes (docs/design/next-style-review.md). */
+.field-label { font-weight: 600; }
+.link-inline { text-underline-offset: 3px; }
+/* Notes, errors and chips: a fill and no outline. The fill is `page`, which `surface` folded into: 1.2:1 on
+   the ground, where `surface` was 1.1:1. */
+.notice, .error, .chip { background: var(--color-page); border: 0; }
+/* 5: the row a posting was opened from keeps no mark: the list opens the posting. */
+.row[aria-current='true'] { background: none; }
+/* 5: the page list beside Profile and Settings: the chosen part underlined, no side bar. */
+.page-aside a:is([aria-current='location'], [aria-current='page'])::before { content: none; }
+.page-aside a:is([aria-current='location'], [aria-current='page']) { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 6px; }
+/* 9: the run summary: a heavy rule on top, no box, no shadow. */
+.summary-card { background: none; border: 0; border-top: 2px solid var(--color-ink); border-radius: 0; box-shadow: none; padding: var(--space-3) 0 0; }
+/* Second review (docs/design/next-style-review.md, part 2). */
+/* 11: grey words mean only a quiet way out: a back link and the page list's entries are ink. */
+.back, .page-aside a { color: var(--color-ink); }
+/* 12: bold is the loaded semi-bold. */
+strong, b { font-weight: 600; }
+/* 13: the label is ink everywhere, as its token says. */
+.board-column-head .label, .settings-section > .label { color: var(--color-ink); }
+/* 14: the CV style's chosen tile: an ink ring, not a blue one. */
+.style-pick input:checked + .style-tile { box-shadow: 0 0 0 2px var(--color-ground), 0 0 0 4px var(--color-ink); }
+.style-pick input:checked + .style-font { box-shadow: inset 0 0 0 1px var(--color-border), 0 0 0 2px var(--color-ground), 0 0 0 4px var(--color-ink); }
