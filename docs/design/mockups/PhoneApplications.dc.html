@@ -17,12 +17,12 @@ button{font:inherit}
 <div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; background: #F1E6CF; color: #1E1A16; font-family: Figtree, system-ui, sans-serif; font-size: 14px; line-height: 1.5; overflow: hidden">
   <main style="flex: 1; min-height: 0; overflow: hidden; padding: 28px 20px 0; display: flex; flex-direction: column; gap: 18px">
     <div>
-      <h1 style="margin: 0; font-family: 'Young Serif', Georgia, serif; font-size: 36px; font-weight: 400; letter-spacing: -0.01em; line-height: 1.1">Applications</h1>
+      <h1 style="margin: 0; font-family: 'Young Serif', Georgia, serif; font-size: 32px; font-weight: 400; letter-spacing: -0.01em; line-height: 1.1">Applications</h1>
       <p style="margin: 4px 0 0; color: #5C5249">11 sent this month · 3 in interviews</p>
     </div>
     <sc-for list="{{groups}}" as="g" hint-placeholder-count="3">
       <section>
-        <h2 style="margin: 0 0 4px; display: flex; justify-content: space-between; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #5C5249; font-weight: 600"><span>{{g.name}}</span><span>{{g.n}}</span></h2>
+        <h2 style="margin: 0; padding-bottom: 8px; border-bottom: 2px solid #1E1A16; display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #1E1A16"><span>{{g.name}}</span><span>{{g.n}}</span></h2>
         <ul style="list-style: none; margin: 0; padding: 0">
           <sc-for list="{{g.items}}" as="c" hint-placeholder-count="2">
             <li style="border-bottom: 1px solid #D6C7A8; display: flex; flex-direction: column; align-items: flex-start">
@@ -36,13 +36,13 @@ button{font:inherit}
                   <span>{{c.note}}</span>
                 </span>
               </button>
-              <sc-if value="{{c.silent}}" hint-placeholder-val="{{ false }}"><button type="button" style="min-height: 44px; padding: 0; border: 0; background: none; color: #5C5249; font-size: 13px; font-weight: 600; text-align: left">Mark ghosted</button></sc-if>
+              <sc-if value="{{c.silent}}" hint-placeholder-val="{{ false }}"><button type="button" style="height: 32px; padding: 0; border: 0; background: none; color: #3D5798; font-size: 13px; font-weight: 600; text-align: left">Mark ghosted</button></sc-if>
             </li>
           </sc-for>
         </ul>
       </section>
     </sc-for>
-    <button type="button" style="align-self: flex-start; min-height: 44px; padding: 0; border: 0; background: transparent; color: #5C5249">Closed (2)</button>
+    <button type="button" style="align-self: flex-start; height: 32px; padding: 0; border: 0; background: none; color: #3D5798; font-weight: 600; font-size: 13px">Closed (2)</button>
   </main>
   <nav aria-label="Main" style="flex: none; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); padding: 6px 4px 22px; border-top: 1px solid #D6C7A8; background: #F1E6CF">
     <sc-for list="{{tabs}}" as="tab" hint-placeholder-count="5">

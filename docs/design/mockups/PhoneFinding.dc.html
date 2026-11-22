@@ -17,13 +17,12 @@ button{font:inherit}
 <div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; background: #F1E6CF; color: #1E1A16; font-family: Figtree, system-ui, sans-serif; font-size: 14px; line-height: 1.5; overflow: hidden">
   <main style="flex: 1; min-height: 0; overflow: hidden; padding: 40px 20px 0; display: flex; flex-direction: column; gap: 22px">
     <div>
-      <span aria-hidden="true" style="display: block; width: 32px; height: 4px; border-radius: 2px; background: #3D5798; margin-bottom: 14px"></span>
-      <h1 style="margin: 0; font-family: 'Young Serif', Georgia, serif; font-size: 36px; font-weight: 400; letter-spacing: -0.01em; line-height: 1.1">Finding jobs</h1>
+      <h1 style="margin: 0; font-family: 'Young Serif', Georgia, serif; font-size: 32px; font-weight: 400; letter-spacing: -0.01em; line-height: 1.1">Finding jobs</h1>
       <p style="margin: 6px 0 0; color: #5C5249">Started 08:02 on the computer running The other door. You can lock the phone.</p>
     </div>
-    <ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column">
+    <ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; border-top: 2px solid #1E1A16">
       <sc-for list="{{steps}}" as="s" hint-placeholder-count="5">
-        <li style="display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 13px 0; border-top: 1px solid #D6C7A8">
+        <li style="display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 13px 0; border-bottom: 1px solid #D6C7A8">
           <span aria-hidden="true" style="{{s.dot}}">{{s.mark}}</span>
           <span style="display: flex; flex-direction: column">
             <span style="{{s.nameStyle}}">{{s.name}}</span>
@@ -36,7 +35,7 @@ button{font:inherit}
         </li>
       </sc-for>
     </ol>
-    <button type="button" style="align-self: flex-start; height: 44px; padding: 0 16px; border: 1px solid #D6C7A8; border-radius: 2px; background: transparent; color: #1E1A16">Stop after this step</button>
+    <button type="button" style="align-self: flex-start; height: 32px; padding: 0; border: 0; background: none; color: #3D5798; font-weight: 600; font-size: 13px">Stop after this step</button>
   </main>
   <nav aria-label="Main" style="flex: none; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); padding: 6px 4px 22px; border-top: 1px solid #D6C7A8; background: #F1E6CF">
     <sc-for list="{{tabs}}" as="tab" hint-placeholder-count="5">
