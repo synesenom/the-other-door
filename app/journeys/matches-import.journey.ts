@@ -39,9 +39,11 @@ test.describe('the form', () => {
 
   test('Paste text asks for the ad, a title and a company, and keeps what was typed', async ({ page, world }) => {
     await openAdd(page)
-    await field(page, 'Title (optional)').fill('Junior Forecast Analyst')
-    await field(page, 'Location (optional)').fill('Copenhagen')
+    await expect(field(page, 'Link')).toBeVisible()
+    await expect(field(page, 'Title (optional)')).toHaveCount(0)
     await addDialog(page).getByRole('button', { name: 'Paste text' }).click()
+    await field(page, 'Title').fill('Junior Forecast Analyst')
+    await field(page, 'Location (optional)').fill('Copenhagen')
     await expect(addDialog(page).getByRole('button', { name: 'Paste text' })).toHaveAttribute('aria-pressed', 'true')
     await expect(addDialog(page).getByRole('button', { name: 'Link' })).toHaveAttribute('aria-pressed', 'false')
     await expect(field(page, 'Link')).toHaveCount(0)
@@ -52,10 +54,9 @@ test.describe('the form', () => {
     await expect(importButton(page)).toBeDisabled()
     await field(page, 'Company').fill('Lysholm Varme')
     await expect(importButton(page)).toBeEnabled()
-    // back to Link: the title is still there
+    // back to Link: only the link is asked
     await addDialog(page).getByRole('button', { name: 'Link' }).click()
-    await expect(field(page, 'Title (optional)')).toHaveValue('Junior Forecast Analyst')
-    await expect(field(page, 'Company (optional)')).toHaveValue('Lysholm Varme')
+    await expect(field(page, 'Title (optional)')).toHaveCount(0)
     expect(world.toolCalls('import_posting')).toEqual([])
   })
 })

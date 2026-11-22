@@ -191,7 +191,7 @@ describe('scenes', () => {
     const part = await screen.findByRole('region', { name: 'Applications' })
     expect(part).toHaveTextContent('of your applications with an outcome (an interview, a rejection or no reply) led to an interview: 6 of 12, likely between 36% and 64%.')
     expect(part).toHaveTextContent('Best-scored matches: 5 of 6 led to an interview, likely between 65% and 94%.')
-    expect(part).toHaveTextContent('Matches near your minimum score led to an interview less often: consider raising it.')
+    expect(part).toHaveTextContent('Matches near your threshold led to an interview less often: consider raising it.')
     expect(within(part).queryAllByRole('img')).toEqual([])
     const market = await screen.findByRole('region', { name: 'Market' })
     expect(await within(market).findByRole('listitem', { name: 'IFRS, in your CV' })).toHaveTextContent('46% of the ads')
@@ -227,8 +227,8 @@ describe('scenes', () => {
 
   it('finding-summary-none says the run in a line and offers the next steps', async () => {
     mount('finding-summary-none')
-    expect(await screen.findByText('46 jobs found, 40 close enough to score, none reached your bar (65%)')).toBeInTheDocument()
-    for (const name of ['Lower the bar', 'Check your search terms']) expect(screen.getByRole('button', { name })).toBeInTheDocument()
+    expect(await screen.findByText('46 jobs found, 40 close enough to score, none reached it (How close a match to show: 0.65 or better)')).toBeInTheDocument()
+    for (const name of ['Show broader matches', 'Check your search terms']) expect(screen.getByRole('button', { name })).toBeInTheDocument()
   })
 
   it('finding-first-run reminds about the discovery sources left off', async () => {

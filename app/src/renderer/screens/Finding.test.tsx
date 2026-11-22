@@ -294,12 +294,12 @@ describe('Finding, the summary card of a run with no new matches', () => {
 
   it('says the run in one line, counting only the sites that worked', () => {
     open(none())
-    expect(screen.getByText('917 jobs found, 40 close enough to score, none reached your bar (65%)')).toBeInTheDocument()
+    expect(screen.getByText('917 jobs found, 40 close enough to score, none reached it (How close a match to show: 0.65 or better)')).toBeInTheDocument()
   })
 
   it('offers the next steps as actions', async () => {
     const cb = open(none())
-    await userEvent.click(screen.getByRole('button', { name: 'Lower the bar' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Show broader matches' }))
     await userEvent.click(screen.getByRole('button', { name: 'Check your search terms' }))
     expect(cb.onLowerBar).toHaveBeenCalledTimes(1)
     expect(cb.onCheckSearch).toHaveBeenCalledTimes(1)
@@ -308,7 +308,7 @@ describe('Finding, the summary card of a run with no new matches', () => {
   it('offers no action it cannot open', () => {
     mockDoor({})
     show({ kind: 'summary', record: none() }, { active: false })
-    expect(screen.queryByRole('button', { name: 'Lower the bar' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Show broader matches' })).toBeNull()
   })
 
   it('says the next full run reads career sites only when this one skipped those steps', () => {
@@ -336,7 +336,7 @@ describe('Finding, the summary card of a run with no new matches', () => {
   it('has no account or actions when there are new matches', () => {
     open(record())
     expect(screen.queryByText(/jobs found/)).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Lower the bar' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Show broader matches' })).toBeNull()
   })
 })
 

@@ -72,7 +72,7 @@ test.describe('Replace CV file', () => {
     await openCv(page)
     await os.nextOpen([scratchFile(world, 'newer-cv.md', `${world.persona.cv}\n## Talks\n\n- ${second}\n`)])
     await page.getByRole('group', { name: 'Sources' }).getByRole('button', { name: /^(Add a CV file|Replace CV file)…$/ }).click()
-    const dialog = page.getByRole('dialog', { name: 'Add from your CV file' })
+    const dialog = page.getByRole('dialog', { name: 'Replace your CV file' })
     await expect(dialog.getByRole('checkbox', { name: first })).toBeChecked({ timeout: 60_000 })
     expect(argsOf(world, 'enrich')).toEqual([expect.objectContaining({ files: [expect.stringMatching(/newer-cv\.md$/)] })])
     expect(world.toolCalls('draft_cv')).toHaveLength(0) // nothing drafted over the Master CV

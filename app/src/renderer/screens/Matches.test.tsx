@@ -166,17 +166,17 @@ describe('Matches', () => {
     setup({}, [], counts)
     render(<Matches />)
     expect(await screen.findByText('Nothing scored yet. Find new jobs to start.')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Lower the bar' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Show broader matches' })).toBeNull()
   })
 
   it('with jobs scored below the bar and no review yet, says nothing reached the bar and offers to lower it', async () => {
     setup({}, [], { scored: 40 })
     const onLowerBar = vi.fn()
     render(<Matches newOnlyFirst onLowerBar={onLowerBar} />)
-    expect(await screen.findByText('Nothing has reached your bar (65%) yet.')).toBeInTheDocument()
+    expect(await screen.findByText('Nothing has reached it (How close a match to show: 0.65 or better) yet.')).toBeInTheDocument()
     expect(screen.queryByText(/since your last review/)).toBeNull()
     expect(screen.queryByText(/Nothing scored yet/)).toBeNull()
-    await userEvent.click(screen.getByRole('button', { name: 'Lower the bar' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Show broader matches' }))
     expect(onLowerBar).toHaveBeenCalledTimes(1)
   })
 
@@ -184,13 +184,13 @@ describe('Matches', () => {
     setup({}, [], { scored: 40, last_reviewed_at: '2026-10-29T08:00:00+00:00' })
     render(<Matches newOnlyFirst />)
     expect(await screen.findByText('Nothing new since your last review.')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Lower the bar' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Show broader matches' })).toBeNull()
   })
 
   it('after a review, without New only, nothing at the bar is said as such', async () => {
     setup({}, [], { scored: 40, last_reviewed_at: '2026-10-29T08:00:00+00:00' })
     render(<Matches />)
-    expect(await screen.findByText('Nothing has reached your bar (65%) yet.')).toBeInTheDocument()
+    expect(await screen.findByText('Nothing has reached it (How close a match to show: 0.65 or better) yet.')).toBeInTheDocument()
   })
 
   it('shows an {error} from the server plainly', async () => {
@@ -753,7 +753,7 @@ describe('Matches, weak matches before a first real one (issue 643)', () => {
     )
     expect(screen.getAllByRole('listitem')).toHaveLength(2)
     expect(screen.getAllByText('Weak match')).toHaveLength(2)
-    expect(screen.queryByText(/Nothing has reached your bar/)).toBeNull()
+    expect(screen.queryByText(/Nothing has reached it/)).toBeNull()
   })
 
   it('"Turn it on in Settings" goes to the employers', async () => {
@@ -793,16 +793,16 @@ describe('Matches, weak matches before a first real one (issue 643)', () => {
     expect(screen.getAllByRole('listitem')).toHaveLength(2)
   })
 
-  it('keeps Lower the bar', async () => {
+  it('keeps Show broader matches', async () => {
     setup({}, [], { scored: 5, weak: keywordsHint })
     render(<Matches onLowerBar={() => {}} />)
-    expect(await screen.findByRole('button', { name: 'Lower the bar' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Show broader matches' })).toBeInTheDocument()
   })
 
   it('without weak matches the empty state is the old one', async () => {
     setup({}, [], { scored: 5, weak: null })
     render(<Matches />)
-    expect(await screen.findByText('Nothing has reached your bar (65%) yet.')).toBeInTheDocument()
+    expect(await screen.findByText('Nothing has reached it (How close a match to show: 0.65 or better) yet.')).toBeInTheDocument()
   })
 
   it('New only after a review shows no weak block', async () => {

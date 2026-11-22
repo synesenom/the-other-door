@@ -147,7 +147,7 @@ with npm (`claude.cmd`) cannot be started from the app, so sign in from a termin
    on a first search of the boards. Without a CV of your own or Claude, it saves and opens Matches,
    and a line at the foot of the sidebar says what is missing.
 
-Companies and words to skip and the minimum score are not asked: they keep their defaults, and
+Companies and words to skip and "How close a match to show" are not asked: they keep their defaults, and
 Profile changes them.
 
 If you have no CV yet, a line at the foot of the sidebar says so and opens Profile on the CV. (The example CV needs no line: a run refuses it and says why.)
@@ -209,14 +209,14 @@ and says so when you point at it.
 
 ### When the run is done
 
-A card says how many new matches the run found ("2 new matches": the ads this run scored at or above your minimum score; a match an earlier run found is not counted again) and lists the best. It says nothing
+A card says how many new matches the run found ("2 new matches": the ads this run scored at or above "How close a match to show"; a match an earlier run found is not counted again) and lists the best. It says nothing
 about what did not work, because nothing there needs you: a site that could not be read is read
 again on the next run, and a posting that could not be scored is scored then. Every site's outcome
 and error is in the run record. "View matches" opens Matches on
 "New only", "Show run record" shows the run's file in your file manager. Matches and "Last run" are refreshed.
 
 When no match is new, the card says what the run did in one line ("917 jobs found, 40 close enough to
-score, none reached your bar (65%)") and offers what you can do about it: "Check your search terms" opens Profile at your search terms, "Lower the bar" at the minimum score. When the
+score, none reached it (How close a match to show: 0.65 or better)") and offers what you can do about it: "Check your search terms" opens Profile at your search terms, "Show broader matches" at "How close a match to show". When the
 run skipped Discover, Follow or Collect, it adds that the next full run also reads employers' own career sites.
 
 After the first run, if it found fewer than three new matches and every employer discovery source
@@ -233,17 +233,16 @@ resting, so every part of the screen can be seen. Stop works as in a real run.
 
 ## Matches
 
-The ranked list of postings that cleared your minimum score, best first. A dot marks a
+The ranked list of postings that cleared "How close a match to show", best first. A dot marks a
 posting you have not opened yet; opening it makes it seen, and the dot goes. The "New only"
 switch shows only the unopened ones. The header says how many are new, and shows a note for a
 board that failed on the last run.
 
 An empty list says why: "Nothing scored yet. Find new jobs to start." only when nothing has been
-scored; "Nothing has reached your bar (65%) yet." (with "Lower the bar", which opens Profile at the minimum
-score) when ads were scored but none cleared it; "Nothing new since your last review." only after a review,
+scored; "Nothing has reached it (How close a match to show: 0.65 or better) yet." (with "Show broader matches", which opens Profile at "How close a match to show") when ads were scored but none cleared it; "Nothing new since your last review." only after a review,
 on "New only".
 
-Until the first posting has reached your bar, that empty list also shows the three best ads below it as ordinary rows
+Until the first posting has reached it, that empty list also shows the three best ads below it as ordinary rows
 marked "Weak match" (open, prepare or discard them like any other), under one line: "3 weak matches found." and, when
 a discovery source serving your city is off, that the app can also find employers on LinkedIn and the other discovery sources, at your own
 risk, with the legal disclaimer and "Turn it on in Settings" (opens Risky sources); with every source on, "Broaden your
@@ -608,7 +607,7 @@ finds fit you. An application with no change for 45 days counts as no reply, whe
 marked it ghosted (the Applications board offers to); once you record what happened next, it counts as that. Until an application has
 an outcome it says only that the rate shows here then. Under it, once at least 5 applications in each
 half have an outcome, the same rate for the better-scored half of your sent applications and for the
-half near your minimum score (split near the median score), and a line "consider raising it" only when
+half near your threshold (split near the median score), and a line "consider raising it" only when
 the near-minimum half led to an interview clearly less often. Where each application stands is on the
 Applications board, and your matches are on Matches.
 

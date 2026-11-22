@@ -21,6 +21,8 @@ export function ImportDialog({ onClose, onOpen }: Props) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [duplicate, setDuplicate] = useState(false)
+  // the link asks only for itself; its page could not be read: now the details the page would have given
+  const [unread, setUnread] = useState(false)
   const [result, setResult] = useState<{ import: ImportResult; posting: Posting | null } | null>(null)
   const id = useId()
 
@@ -47,7 +49,10 @@ export function ImportDialog({ onClose, onOpen }: Props) {
     } catch (e) {
       const message = errorText(e)
       if (/already stored/i.test(message)) setDuplicate(true)
-      else setError(message)
+      else {
+        setError(message)
+        if (mode === 'link') setUnread(true)
+      }
     } finally {
       setBusy(false)
     }
@@ -114,8 +119,12 @@ export function ImportDialog({ onClose, onOpen }: Props) {
       {mode === 'link' ? (
         <>
           {field('Link', url, setUrl)}
-          {field('Title (optional)', title, setTitle)}
-          {field('Company (optional)', company, setCompany)}
+          {unread && (
+            <>
+              {field('Title (optional)', title, setTitle)}
+              {field('Company (optional)', company, setCompany)}
+            </>
+          )}
         </>
       ) : (
         <>
@@ -129,7 +138,7 @@ export function ImportDialog({ onClose, onOpen }: Props) {
           {field('Company', company, setCompany)}
         </>
       )}
-      {field('Location (optional)', location, setLocation)}
+      {(mode === 'text' || unread) && field('Location (optional)', location, setLocation)}
       {busy && <Spinner message="Reading and scoring the ad…" />}
       {duplicate && (
         <>

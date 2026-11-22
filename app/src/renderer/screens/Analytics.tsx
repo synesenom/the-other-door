@@ -47,14 +47,14 @@ function bandLine(label: string, rate: PassRate): string {
   return `${label}: ${rate.passed} of ${rate.decided} led to an interview${range}.`
 }
 
-/** The same rate for the better-scored half of the matches and the half near the minimum score (#90). */
+/** The same rate for the better-scored half of the matches and the half near the threshold (#90). */
 function ScoreBandsView({ bands }: { bands: ScoreBands }) {
   return (
     <div className="part-head">
       <p className="small">{bandLine('Best-scored matches', bands.top)}</p>
-      <p className="small">{bandLine('Matches near your minimum score', bands.near_min)}</p>
+      <p className="small">{bandLine('Matches near your threshold', bands.near_min)}</p>
       {bands.reading === 'near_min_lower' && (
-        <p className="small">Matches near your minimum score led to an interview less often: consider raising it.</p>
+        <p className="small">Matches near your threshold led to an interview less often: consider raising it.</p>
       )}
     </div>
   )

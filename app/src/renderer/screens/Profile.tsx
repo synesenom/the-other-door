@@ -24,7 +24,7 @@ export const LAYOUT = layout as Layout
 const CONFIG_ONLY = 'config'
 
 const REMOTE: Record<string, string> = { hybrid: 'Hybrid', yes: 'Remote only', no: 'On site' }
-/** The minimum score as three words; a value set by hand in config.json shows as a fourth choice. */
+/** "How close a match to show" as three words; a value set by hand in config.json shows as a fourth choice. */
 const MATCH: [number, string][] = [[0.5, 'Broad'], [0.65, 'Balanced'], [0.75, 'Strong']]
 
 type Profile = ShowProfile & { options: ShowProfile['options'] & { fields?: FieldSpec[]; cv_styles?: CvStyles }; config: Record<string, unknown> | null }

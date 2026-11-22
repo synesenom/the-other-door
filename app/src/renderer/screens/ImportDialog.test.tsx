@@ -19,12 +19,26 @@ function open(handlers: Record<string, unknown> = {}) {
 }
 
 describe('ImportDialog', () => {
-  it('Link sends only the url and the fields that were filled', async () => {
+  it('Link asks only for the link, and sends only it', async () => {
     const { call } = open()
     await userEvent.type(screen.getByLabelText('Link'), 'https://example.com/job/1')
-    await userEvent.type(screen.getByLabelText('Company (optional)'), 'Acme')
+    expect(screen.queryByLabelText('Title (optional)')).toBeNull()
+    expect(screen.queryByLabelText('Company (optional)')).toBeNull()
+    expect(screen.queryByLabelText('Location (optional)')).toBeNull()
     await userEvent.click(screen.getByRole('button', { name: 'Import' }))
-    await waitFor(() => expect(call).toHaveBeenCalledWith('import_posting', { url: 'https://example.com/job/1', company: 'Acme' }))
+    await waitFor(() => expect(call).toHaveBeenCalledWith('import_posting', { url: 'https://example.com/job/1' }))
+  })
+
+  it('after a link could not be read, Title, Company and Location are asked, and sent', async () => {
+    const h = mockDoor({ import_posting: () => { throw new Error('That page needs a sign-in. Paste the ad text instead.') } })
+    render(<ImportDialog onClose={vi.fn()} onOpen={vi.fn()} />)
+    await userEvent.type(screen.getByLabelText('Link'), 'https://example.com/job/1')
+    await userEvent.click(screen.getByRole('button', { name: 'Import' }))
+    await userEvent.type(await screen.findByLabelText('Company (optional)'), 'Acme')
+    expect(screen.getByLabelText('Title (optional)')).toBeInTheDocument()
+    expect(screen.getByLabelText('Location (optional)')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Import' }))
+    await waitFor(() => expect(h.call).toHaveBeenLastCalledWith('import_posting', { url: 'https://example.com/job/1', company: 'Acme' }))
   })
 
   it('Import waits for a link', () => {
