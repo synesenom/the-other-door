@@ -130,7 +130,7 @@
     {
       "key": "min_score",
       "section": "search",
-      "label": "Minimum score",
+      "label": "Match fit",
       "help": "Broad shows more jobs, some only a loose fit. Balanced is the usual choice. Strong shows only the jobs that fit you closely."
     },
     {

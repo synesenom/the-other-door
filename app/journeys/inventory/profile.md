@@ -92,7 +92,7 @@ The sections are rendered as `<section aria-labelledby="profile-<id>">`, i.e. **
 |---|---|---|---|---|
 | role_targets | Role targets | ChipInput: `textbox "Role targets"` (placeholder "Type, then press Enter"), Hint "About Role targets" ("The job titles you are after."), `list "Role targets, chosen"`, each chip with `button "Remove <v>"` | list, required, min 1 | Remove all chips and Save → "role_targets must contain at least one entry". | — unit: `app/src/renderer/screens/Profile.test.tsx`; ✓ each refusal is said under its field, and nothing is written
 | search_keywords, topic_terms | — | Not shown. On Save, a change of role targets or languages calls `keywords({role_targets, languages, save: true})` after init_profile, the bar saying "Updating what we search for (up to two minutes)…"; a failure keeps the terms saved before and says nothing. | list | — | — ✓ a change of role targets has Claude propose the search terms again on Save; ✓ a save that leaves the role targets and languages alone asks Claude nothing
-| min_score | Minimum score | `group` of three radios "Broad" (0.5), "Balanced" (0.65), "Strong" (0.75), plus "Your own (<n>)" checked when config.json holds another value; Hint "About Minimum score" | number, sent by name | — | — ✓ Save writes the changed text, flag and number fields and nothing else; unit: `app/src/renderer/screens/Profile.test.tsx`
+| min_score | Match fit | `group` of three radios "Broad" (0.5), "Balanced" (0.65), "Strong" (0.75), plus "Your own (<n>)" checked when config.json holds another value; Hint "About Match fit" | number, sent by name | — | — ✓ Save writes the changed text, flag and number fields and nothing else; unit: `app/src/renderer/screens/Profile.test.tsx`
 
 **region "What to skip"** (`profile-skip`). The `exclude` key's own label is never shown.
 
@@ -337,7 +337,7 @@ How the test world produces each part:
 **Surprises and bugs**
 1. **Enrich apply message bug.** The server returns `added` as a list, so the window says "Added [object Object],… to your CV." The unit test mocks a number. — not covered by a journey
 2. **A details Save re-creates a missing `cv.md` as the example CV** (and restores templates) through `_init_core`'s copy step. — ✓ saving the details does not make up a CV
-3. **Bad number typed into "Minimum score"** (or emptied) fails MCPServer argument validation. Four raw pydantic lines appear in the top alert instead of under the field. The other numeric fields go through `other` and get a clean under-field message. — not covered by a journey
+3. **Bad number typed into "Match fit"** (or emptied) fails MCPServer argument validation. Four raw pydantic lines appear in the top alert instead of under the field. The other numeric fields go through `other` and get a clean under-field message. — not covered by a journey
 4. Leaving Profile loses unsaved details and CV text. It does not prompt. — not tested: nothing on screen to assert
 5. The first CV written refreshes App's profile, so the "You have no CV yet" line goes. — ✓ the first CV saves itself, with no backup, and the sidebar line goes
 6. **Market "Add these titles"** does not refresh the Details form (stale values that a later details Save can overwrite). It also seeds an empty `search_keywords` with the role targets. — not covered by a journey; the seeding is right (the role targets are what an empty list searches for): unit: `tests/commands/test_market_cli.py`

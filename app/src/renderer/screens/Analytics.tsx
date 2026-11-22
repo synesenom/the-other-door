@@ -46,7 +46,7 @@ function bandLine(label: string, rate: PassRate): string {
   return `${label}: ${rate.passed} of ${rate.decided} led to an interview.`
 }
 
-/** The same rate for the better-scored half of the matches and the half near "Minimum score" (#90). */
+/** The same rate for the better-scored half of the matches and the half near "Match fit" (#90). */
 function ScoreBandsView({ bands }: { bands: ScoreBands }) {
   return (
     <div className="part-head">

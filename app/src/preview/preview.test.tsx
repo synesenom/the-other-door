@@ -233,14 +233,14 @@ describe('scenes', () => {
   it('finding-summary-none says the run in a line and offers the next steps', async () => {
     mount('finding-summary-none')
     expect(await screen.findByText('46 jobs found, 40 close enough to score, none scored 0.65 or better')).toBeInTheDocument()
-    expect(screen.getByText('Minimum score: Balanced')).toBeInTheDocument()
+    expect(screen.getByText('Match fit: Balanced')).toBeInTheDocument()
     for (const name of ['View matches', 'Check your search terms']) expect(screen.getByRole('button', { name })).toBeInTheDocument()
   })
 
   it('matches-none-reached names the setting the empty list waits on', async () => {
     mount('matches-none-reached')
     expect(await screen.findByText('Nothing has scored 0.65 or better yet.')).toBeInTheDocument()
-    expect(screen.getByText('Minimum score: Balanced')).toBeInTheDocument()
+    expect(screen.getByText('Match fit: Balanced')).toBeInTheDocument()
   })
 
   it('finding-first-run reminds about the discovery sources left off', async () => {

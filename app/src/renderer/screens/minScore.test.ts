@@ -9,8 +9,8 @@ describe('the minimum score has one name and the score format', () => {
   })
 
   it('names the choice Profile shows, or the value set by hand', () => {
-    expect(minScoreSetting(0.65)).toBe('Minimum score: Balanced')
-    expect(minScoreSetting(0.7)).toBe('Minimum score: Your own (0.70)')
+    expect(minScoreSetting(0.65)).toBe('Match fit: Balanced')
+    expect(minScoreSetting(0.7)).toBe('Match fit: Your own (0.70)')
   })
 
   it('the run summary and the empty Matches list say the value as a score', () => {

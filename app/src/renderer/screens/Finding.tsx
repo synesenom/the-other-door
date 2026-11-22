@@ -150,7 +150,7 @@ function postingsFound(record: RunRecord): number {
   return sites.filter((s) => s.outcome === 'ok').reduce((sum, s) => sum + (s.count ?? 0), 0)
 }
 
-/** The run in one line, for a run with nothing new at "Minimum score"; null when the record lacks the counts. */
+/** The run in one line, for a run with nothing new at "Match fit"; null when the record lacks the counts. */
 export function runAccount(record: RunRecord): string | null {
   const m = record.match
   if (!m || typeof m.scored !== 'number' || typeof m.min_score !== 'number') return null

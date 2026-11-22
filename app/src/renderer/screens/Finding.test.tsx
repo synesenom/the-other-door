@@ -293,7 +293,7 @@ describe('Finding, the summary card of a run with no new matches', () => {
   it('says the run in one line, counting only the sites that worked', () => {
     open(none())
     expect(screen.getByText('917 jobs found, 40 close enough to score, none scored 0.65 or better')).toBeInTheDocument()
-    expect(screen.getByText('Minimum score: Balanced').closest('p')).toBe(screen.getByText('917 jobs found, 40 close enough to score, none scored 0.65 or better').closest('p'))
+    expect(screen.getByText('Match fit: Balanced').closest('p')).toBe(screen.getByText('917 jobs found, 40 close enough to score, none scored 0.65 or better').closest('p'))
   })
 
   it('offers two actions: View matches, and Check your search terms', async () => {
