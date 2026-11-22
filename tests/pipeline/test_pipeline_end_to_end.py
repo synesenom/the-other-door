@@ -15,10 +15,6 @@ from pipeline_utils import fake_scraper, posting
 from profile_utils import write_config
 
 
-def _follow_done(events):
-    return any(e.stage == "step" and e.site == "follow" and e.outcome == "done" for e in list(events))
-
-
 @pytest.mark.parametrize("discover_late", [False, True], ids=["discover_on_time", "discover_after_follow"])
 def test_a_board_posting_leads_to_a_followed_feed_that_is_collected_and_scored(env, monkeypatch, scorer, progress_events, discover_late):
     write_config(env.profile_dir, {"role_targets": ["data scientist"], "location": "Copenhagen",
@@ -31,16 +27,16 @@ def test_a_board_posting_leads_to_a_followed_feed_that_is_collected_and_scored(e
     def discover_run(config, **kw):
         # discover runs on its own thread beside the other steps; held back, it ends after follow, as it may in a real run
         deadline = time.monotonic() + 10
-        while discover_late and not _follow_done(progress_events) and time.monotonic() < deadline:
+        while discover_late and time.monotonic() < deadline and not any(
+                e.stage == "step" and e.site == "follow" and e.outcome == "done" for e in list(progress_events)):
             time.sleep(0.01)
-        return discover_result(kw)
+        return {
+            "employers": [{"company": "Pleo", "titles": ["DS"], "job_ids": ["9"], "detailed": True, "first_seen": "2026-10-13T00:00:00+00:00",
+                           "links": ["https://jobs.lever.co/pleo/1", "https://www.linkedin.com/jobs/view/9"]}],
+            "details": 1, "pages": 1, "requests": 2, "stopped": None, "pushback": False, "outcome": "ok", "mode": "combined",
+            "mode_switched": False, "searched": [], "search_complete": True, "first_429": None, "budget": kw["budget"],
+            "pause": list(kw["pause"]), "seconds": 3}
 
-    discover_result = lambda kw: {
-        "employers": [{"company": "Pleo", "titles": ["DS"], "job_ids": ["9"], "detailed": True, "first_seen": "2026-10-13T00:00:00+00:00",
-                       "links": ["https://jobs.lever.co/pleo/1", "https://www.linkedin.com/jobs/view/9"]}],
-        "details": 1, "pages": 1, "requests": 2, "stopped": None, "pushback": False, "outcome": "ok", "mode": "combined",
-        "mode_switched": False, "searched": [], "search_complete": True, "first_429": None, "budget": kw["budget"],
-        "pause": list(kw["pause"]), "seconds": 3}
     monkeypatch.setattr(linkedin, "discover_run", discover_run)
     fake_scraper(monkeypatch, "lever", lambda config, **kw: [])
 
