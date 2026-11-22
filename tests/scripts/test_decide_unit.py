@@ -11,15 +11,13 @@ _spec = importlib.util.spec_from_file_location("decide", REPO_ROOT / "scripts" /
 decide = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(decide)
 
-FILES = ["src/door/x.py"]
-
 
 def _check(name, status="completed", conclusion="success", sha="H"):
     return {"name": name, "status": status, "conclusion": conclusion, "head_sha": sha}
 
 
-def _decide(checks=None, body="- [x] done", files=FILES):
-    return decide.decide(checks if checks is not None else [_check("tests")], body, files, head="H")
+def _decide(checks=None, body="- [x] done"):
+    return decide.decide(checks if checks is not None else [_check("tests")], body, head="H")
 
 
 def test_green_current_checks_and_ticked_boxes_are_ok():
@@ -39,9 +37,9 @@ def test_an_unticked_box_is_not_ok():
 def test_a_text_edited_after_the_checks_finished_is_not_ok():
     # the verifier starts only once the checks finished, so an edit after that may be the verifier ticking its own box
     checks = [_check("tests") | {"completed_at": "2026-11-21T13:39:41Z"}]
-    ok, reasons = decide.decide(checks, "- [x] done", FILES, head="H", edited=[("the PR text", "2026-11-21T13:41:27Z")])
+    ok, reasons = decide.decide(checks, "- [x] done", head="H", edited=[("the PR text", "2026-11-21T13:41:27Z")])
     assert not ok and "the PR text changed after the checks finished: run them again" in reasons
-    assert decide.decide(checks, "- [x] done", FILES, head="H", edited=[("the PR text", "2026-11-21T13:30:00Z"),
+    assert decide.decide(checks, "- [x] done", head="H", edited=[("the PR text", "2026-11-21T13:30:00Z"),
                                                                        ("issue #3", None)]) == (True, [])
 
 
@@ -49,7 +47,7 @@ def test_a_skipped_check_does_not_hold_an_edit_made_while_the_others_ran():
     # PR #507: the skipped dependabot job finished at once, 8 s before the description was edited
     checks = [_check("merge", conclusion="skipped") | {"completed_at": "2026-11-21T18:23:52Z"},
               _check("tests") | {"completed_at": "2026-11-21T18:27:33Z"}]
-    assert decide.decide(checks, "- [x] done", FILES, head="H",
+    assert decide.decide(checks, "- [x] done", head="H",
                          edited=[("the PR text", "2026-11-21T18:24:00Z")]) == (True, [])
 
 
@@ -57,7 +55,7 @@ def test_rerunning_one_check_does_not_lift_the_hold():
     # every check must have finished after the edit, so rerunning the cheapest one is not enough
     checks = [_check("tests") | {"completed_at": "2026-11-21T13:39:41Z"},
               _check("merge") | {"completed_at": "2026-11-21T13:50:00Z"}]
-    ok, reasons = decide.decide(checks, "- [x] done", FILES, head="H", edited=[("the PR text", "2026-11-21T13:41:27Z")])
+    ok, reasons = decide.decide(checks, "- [x] done", head="H", edited=[("the PR text", "2026-11-21T13:41:27Z")])
     assert not ok and "the PR text changed after the checks finished: run them again" in reasons
 
 
@@ -90,18 +88,10 @@ def test_no_checks_is_not_ok():
     assert not ok and "no checks yet" in reasons
 
 
-@pytest.mark.parametrize(
-    "path", ["app/src/renderer/a.tsx", "app/src/web/a.ts", "app/src/preview/a.tsx", "docs/design/README.md"]
-)
-def test_a_visible_change_needs_the_maintainer(path):
-    ok, reasons = _decide(files=[path])
-    assert not ok and reasons == ["Needs the maintainer: look at it"]
-
-
 ISSUE = "Running prepare twice keeps one folder."
 
 
-def _run(checks, body="Prepare twice keeps one folder.\n- [x] done", files=FILES, author="synesenom", issues=None,
+def _run(checks, body="Prepare twice keeps one folder.\n- [x] done", files=("src/door/x.py",), author="synesenom", issues=None,
          edited=None):
     issues = issues or {}
     edited = edited or {}
@@ -126,10 +116,48 @@ def _run(checks, body="Prepare twice keeps one folder.\n- [x] done", files=FILES
     return run, calls
 
 
-def _main7(tmp_path, run):
+def _main7(tmp_path, run, extra=()):
     f = tmp_path / "checks.json"
-    f.write_text(json.dumps([_c("twice keeps one folder")]))
+    f.write_text(json.dumps([_c("twice keeps one folder"), *extra]))
     return decide.main(["7", "--checks", str(f)], run)
+
+
+SHOT = {"goal": decide.SCREENS, "saw": "the card with two buttons, light, dark and 390 px", "matches_goal": True, "ran": True}
+
+
+@pytest.mark.parametrize(
+    "path", ["app/src/renderer/a.tsx", "app/src/web/a.ts", "app/src/preview/a.tsx", "docs/design/README.md"]
+)
+def test_a_screen_change_without_the_screens_check_fails_back_to_claude(tmp_path, capsys, path):
+    run, _ = _run([_check("tests")], files=[path])
+    assert _main7(tmp_path, run) == 1
+    out = json.loads(capsys.readouterr().out)
+    assert out["state"] == "failure" and out["description"] == f"FAIL: not checked: {decide.SCREENS}"
+
+
+def test_a_screen_change_whose_screens_passed_the_verifier_merges(tmp_path, capsys):
+    run, _ = _run([_check("tests")], files=["app/src/renderer/a.tsx"])
+    assert _main7(tmp_path, run, [SHOT]) == 0
+    assert json.loads(capsys.readouterr().out)["state"] == "success"
+
+
+def test_a_design_rule_broken_fails_a_screen_change_with_no_goal_about_screens(tmp_path, capsys):
+    run, _ = _run([_check("tests")], files=["app/src/renderer/a.tsx"])
+    broken = SHOT | {"saw": "two primary buttons in one view", "matches_goal": False}
+    assert _main7(tmp_path, run, [broken]) == 1
+    assert json.loads(capsys.readouterr().out)["description"] == f"FAIL: {decide.SCREENS}"
+
+
+def test_screens_not_shot_is_a_failure_not_run(tmp_path, capsys):
+    run, _ = _run([_check("tests")], files=["app/src/renderer/a.tsx"])
+    assert _main7(tmp_path, run, [SHOT | {"ran": False}]) == 1
+    assert json.loads(capsys.readouterr().out)["description"] == f"FAIL: not run: {decide.SCREENS}"
+
+
+def test_main_reads_every_changed_file_past_the_first_hundred(tmp_path, capsys):
+    run, _ = _run([_check("tests")], files=[f"src/door/f{i}.py" for i in range(150)] + ["app/src/web/x.ts"])
+    assert _main7(tmp_path, run) == 1
+    assert json.loads(capsys.readouterr().out)["description"] == f"FAIL: not checked: {decide.SCREENS}"
 
 
 def test_main_reports_ok_and_drops_the_verify_check(tmp_path, capsys):
@@ -151,13 +179,6 @@ def test_main_holds_a_pr_whose_text_or_issue_changed_after_the_checks(tmp_path, 
                        "issue #3 changed after the checks finished: run them again"]
 
 
-def test_main_exits_1_for_a_visible_file(tmp_path, capsys):
-    run, _ = _run([_check("tests")], files=["docs/design/README.md"])
-    assert _main7(tmp_path, run) == 1
-    out = json.loads(capsys.readouterr().out)
-    assert out["state"] == "pending" and out["reasons"] == ["Needs the maintainer: look at it"]
-
-
 def test_main_reads_every_page_of_check_runs(tmp_path, capsys):
     run, _ = _run([_check("tests"), _check("app", conclusion="failure")])
     assert _main7(tmp_path, run) == 1
@@ -176,12 +197,6 @@ def test_a_tilde_fence_hides_its_boxes():
 @pytest.mark.parametrize("line", ["- Needs the maintainer: try it", "**Needs the maintainer:** try it"])
 def test_a_needs_the_maintainer_line_in_a_list_or_in_bold_is_seen(line):
     assert _decide(body=line) == (False, ["Needs the maintainer: try it"])
-
-
-def test_main_reads_every_changed_file_past_the_first_hundred(tmp_path, capsys):
-    run, _ = _run([_check("tests")], files=[f"src/door/f{i}.py" for i in range(150)] + ["app/src/web/x.ts"])
-    assert _main7(tmp_path, run) == 1
-    assert json.loads(capsys.readouterr().out)["reasons"] == ["Needs the maintainer: look at it"]
 
 
 def test_main_says_when_gh_fails(tmp_path, capsys):
@@ -371,17 +386,17 @@ def test_offline_checks_read_the_issue_from_a_file_and_call_no_gh(tmp_path, caps
 
 # the author guard
 def test_a_pr_by_someone_else_needs_the_maintainer():
-    ok, reasons = decide.decide([_check("tests")], "- [x] a", FILES, head="H", author="mallory")
+    ok, reasons = decide.decide([_check("tests")], "- [x] a", head="H", author="mallory")
     assert not ok and reasons == ["Needs the maintainer: opened by mallory"]
 
 
 def test_an_issue_opened_by_someone_else_needs_the_maintainer():
-    ok, reasons = decide.decide([_check("tests")], "- [x] a", FILES, head="H", issues=[(5, "mallory")])
+    ok, reasons = decide.decide([_check("tests")], "- [x] a", head="H", issues=[(5, "mallory")])
     assert not ok and reasons == ["Needs the maintainer: issue #5 opened by mallory"]
 
 
 def test_the_owner_as_author_of_pr_and_issue_passes():
-    assert decide.decide([_check("tests")], "- [x] a", FILES, head="H", author="synesenom",
+    assert decide.decide([_check("tests")], "- [x] a", head="H", author="synesenom",
                          issues=[(5, "synesenom")]) == (True, [])
 
 

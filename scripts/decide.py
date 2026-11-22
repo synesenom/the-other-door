@@ -19,7 +19,9 @@ closing issue (a direct request) has its goals read from its own body.
 
 Exits 0 on success, 1 otherwise, 2 for a missing `--checks`. Reads the PR and its head's check
 runs through `gh`; the `verify` check (the verifier's own status) is left out. A PR that changes
-what a user sees is never ok: the maintainer looks at it.
+what a user sees needs one more goal, `SCREENS`, added to the issue's Done-when here: the verifier
+shot the changed screens, looked at them and judged them against docs/design/README.md
+(.claude/agents/verifier.md). Without it the PR fails back to Claude; it never waits for the maintainer.
 """
 
 import json
@@ -29,13 +31,13 @@ import sys
 
 REPO = "synesenom/the-other-door"
 GREEN = {"success", "skipped", "neutral"}
-VISIBLE = ("app/src/renderer/", "app/src/web/", "app/src/preview/", "docs/design/")
 OWNER = "synesenom"
-MAINTAINER = "Needs the maintainer: look at it"
+VISIBLE = ("app/src/renderer/", "app/src/web/", "app/src/preview/", "docs/design/")
+SCREENS = "the changed screens, shot and seen"
 
 
-def decide(checks, body, files, head, author=OWNER, issues=(), edited=()):
-    """Return (ok, reasons) for a head's check runs, the PR body, the changed file paths, the PR's
+def decide(checks, body, head, author=OWNER, issues=(), edited=()):
+    """Return (ok, reasons) for a head's check runs, the PR body, the PR's
     author, the closing issues as (number, author) and when each text was last edited as (what, time or None):
     one edited after the checks finished, when the verifier starts, is held."""
     reasons = []
@@ -59,8 +61,6 @@ def decide(checks, body, files, head, author=OWNER, issues=(), edited=()):
     if re.search(r"^\s*(?:[-*+]|\d+[.)])\s+\[ \]", text, re.M):
         reasons.append("unticked box")
     reasons += [f"Needs the maintainer: {why}" for why in _maintainer_lines(text)]
-    if any(f.startswith(VISIBLE) for f in files):
-        reasons.append(MAINTAINER)
     return not reasons, reasons
 
 
@@ -286,10 +286,11 @@ def main(argv=None, run=_gh):
         print(json.dumps({"state": "pending", "description": why[:140], "reasons": [why], "sha": None}))
         return 1
     checks = [c for page in pages for c in page["check_runs"] if c["name"] != "verify"]
-    paths = [f["filename"] for page in files for f in page]
     issues = [(i["number"], i["author"]["login"]) for i in closing]
-    ok, reasons = decide(checks, view["body"], paths, sha, view["author"]["login"], issues, edited)
+    ok, reasons = decide(checks, view["body"], sha, view["author"]["login"], issues, edited)
     text = "\n".join(i["body"] for i in closing) if closing else view["body"]
+    if any(f["filename"].startswith(VISIBLE) for page in files for f in page):
+        text += f"\nDone when: {SCREENS}"  # the verifier's look at the changed screens, asked of every such PR
     return _verdict_out(checks_file, ok, reasons, sha, text)
 
 
