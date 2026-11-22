@@ -45,7 +45,7 @@ Before summarising a change you implemented (a PR, or a branch about to become o
 
 - `gap-reviewer` (`.claude/agents/gap-reviewer.md`), always: what the change leaves missing (the goal not met, inconsistencies, untested cases, false docs, follow-ups).
 - `simplicity-reviewer` (`.claude/agents/simplicity-reviewer.md`), always: complexity in the new lines (needless abstraction, dead code, old behaviour kept alive, a diff larger than its goal, simpler shapes).
-- `design-reviewer` (`.claude/agents/design-reviewer.md`), when the change touches the app's screens (`app/src/renderer/`, `app/src/web/`, `app/src/preview/`) or `docs/design/`: the visual and UX rules of `docs/design/README.md`, checked on the rendered preview.
+- `design-reviewer` (`.claude/agents/design-reviewer.md`), when the change touches the app's screens (`app/src/renderer/`, `app/src/web/`, `app/src/preview/`) or `docs/design/`: the visual and UX rules of `docs/design/README.md`, checked on the rendered preview, each screen beside the style card.
 
 Then, once their findings are dealt with, spawn `integration-reviewer` (`.claude/agents/integration-reviewer.md`) last, on the final diff: it maps the change's blast radius and asks whether the whole solution would be smaller had the feature been in the codebase's founding principles, so the code does not grow by accretion.
 
