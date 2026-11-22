@@ -355,7 +355,30 @@ export function Profile({ onSaved, onDraft, start }: { onSaved: () => void; onDr
       </ul>
     </div>
   ) : (
-    shown.map(section)
+    <div className="profile-details">
+      {shown.map(section)}
+      {/* the details' bar: with the details only, and only while they have unsaved changes (the CV, the photo and the stories save themselves) */}
+      {(changes.length > 0 || saving || done) && (
+        <div className="profile-save">
+          <button type="button" className="quiet" disabled={changes.length === 0 || saving} onClick={() => {
+              setValues(saved)
+              setUndone((n) => n + 1)
+            }}>
+            Undo changes
+          </button>
+          <button type="button" className="primary" disabled={saving} onClick={() => void save()}>
+            Save
+          </button>
+          {saving ? (
+            <Spinner message={refreshing ? 'Updating what we search for (up to two minutes)…' : 'Saving…'} />
+          ) : changes.length > 0 ? (
+            <p className="small muted">{changes.length === 1 ? '1 unsaved change' : `${changes.length} unsaved changes`}</p>
+          ) : (
+            <p className="small">Saved.</p>
+          )}
+        </div>
+      )}
+    </div>
   )
 
   return (
@@ -370,26 +393,6 @@ export function Profile({ onSaved, onDraft, start }: { onSaved: () => void; onDr
         </h2>
         <Stories />
       </section>
-      {/* the details' bar, at the page's foot and always in reach (the CV, the photo and the stories save themselves) */}
-      <div className="profile-save">
-        {/* always there, so Save does not move when the first change makes Undo possible */}
-        <button type="button" className="quiet" disabled={changes.length === 0 || saving} onClick={() => {
-            setValues(saved)
-            setUndone((n) => n + 1)
-          }}>
-          Undo changes
-        </button>
-        <button type="button" className="primary" disabled={changes.length === 0 || saving} onClick={() => void save()}>
-          Save
-        </button>
-        {saving ? (
-          <Spinner message={refreshing ? 'Updating what we search for (up to two minutes)…' : 'Saving…'} />
-        ) : changes.length > 0 ? (
-          <p className="small muted">{changes.length === 1 ? '1 unsaved change' : `${changes.length} unsaved changes`}</p>
-        ) : done ? (
-          <p className="small">Saved.</p>
-        ) : null}
-      </div>
     </Wrap>
   )
 }

@@ -501,12 +501,10 @@ details.part > summary + * { margin-top: var(--space-4); }
 .connection-choice ul { padding-left: var(--space-5); }
 /* Profile (issue 222): the Settings column; the save bar stays in reach at the foot. */
 .profile-chips > * { margin: 0; }
-/* its foot 20 px from the bottom, the sidebar's: Save lines up with Find new jobs */
+/* with the details only, while they have unsaved changes: it sticks at the window's foot over the details, not over the CV and the Stories */
 .profile-save { position: sticky; bottom: 0; display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; padding: var(--space-4) 0 var(--space-5); background: var(--color-ground); }
 .profile-save > p { margin: 0; }
 .profile-save > .error { flex-basis: 100%; }
-/* a page that ends with its sticky save bar ends at the bar: no room to scroll below it */
-.settings:has(> .profile-save:last-child, > :last-child > .profile-save:last-child) { padding-bottom: 0; }
 /* In Profile an error is a sentence under its field. */
 .field-error { margin: 0; font-size: var(--text-small-size); font-weight: 600; color: var(--color-ink); }
 .field-error::before { content: '↳ '; color: var(--color-ink-muted); }
