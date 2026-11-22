@@ -27,7 +27,7 @@ export function emptyText(scored: number | undefined, minScore: number | undefin
 }
 
 /** Above the weak matches: how many, and what would widen the search. It informs, never recommends: the sources' terms forbid automated access. */
-function WeakLine({ weak, onChooseDiscovery, onCheckSearch }: { weak: NonNullable<MatchesResult['weak']>; onChooseDiscovery?: () => void; onCheckSearch?: () => void }) {
+function WeakLine({ weak, onChooseDiscovery }: { weak: NonNullable<MatchesResult['weak']>; onChooseDiscovery?: () => void }) {
   const n = weak.matches.length
   const head = `${n} weak ${n === 1 ? 'match' : 'matches'} found.`
   if (weak.hint === 'sources')
@@ -43,16 +43,7 @@ function WeakLine({ weak, onChooseDiscovery, onCheckSearch }: { weak: NonNullabl
         )}
       </p>
     )
-  return (
-    <p className="body muted">
-      {head}{' '}
-      {onCheckSearch ? (
-        <button type="button" className="link-inline" onClick={onCheckSearch}>Broaden your search keywords to find closer ones.</button>
-      ) : (
-        'Broaden your search keywords to find closer ones.'
-      )}
-    </p>
-  )
+  return <p className="body muted">{head}</p>
 }
 
 export function Matches({
@@ -65,7 +56,6 @@ export function Matches({
   onOpened,
   onLowerBar,
   onChooseDiscovery,
-  onCheckSearch,
 }: {
   onPushed?: (pushed: boolean) => void
   /** Starts a run (or, while one is going, goes to it): the "Find new jobs" pill of a narrow window, which has no sidebar foot. */
@@ -85,7 +75,6 @@ export function Matches({
   /** Opens Settings at Risky sources (the discovery sources); none given (the phone), the line is plain text. */
   onChooseDiscovery?: () => void
   /** Opens Profile at the search keywords; none given (the phone), the line is plain text. */
-  onCheckSearch?: () => void
 } = {}) {
   const narrow = useNarrow()
   const [pushed, setPushed] = useState(false)
@@ -336,7 +325,7 @@ export function Matches({
         {shown && shown.length === 0 && !error && (
           <div className="empty">
             {weak && weakRows.length > 0 ? (
-              <WeakLine weak={weak} onChooseDiscovery={onChooseDiscovery} onCheckSearch={onCheckSearch} />
+              <WeakLine weak={weak} onChooseDiscovery={onChooseDiscovery} />
             ) : (
               <p className="body muted">
                 <span>{emptyText(listed.scored, listed.minScore, listed.reviewedAt, newOnly)}</span>

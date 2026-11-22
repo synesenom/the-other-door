@@ -50,7 +50,7 @@ export function Guide() {
               <p className="body">Text above the row</p>
               <div className="actions flush">
                 <button type="button" className="quiet">Show broader matches</button>
-                <button type="button" className="quiet">Check your search terms</button>
+                <button type="button" className="quiet">View matches</button>
               </div>
             </div>
           </Row>

@@ -234,7 +234,7 @@ describe('scenes', () => {
     mount('finding-summary-none')
     expect(await screen.findByText('46 jobs found, 40 close enough to score, none scored 0.65 or better')).toBeInTheDocument()
     expect(screen.getByText('Match fit: Balanced')).toBeInTheDocument()
-    for (const name of ['View matches', 'Check your search terms']) expect(screen.getByRole('button', { name })).toBeInTheDocument()
+    for (const name of ['View matches', 'Show broader matches']) expect(screen.getByRole('button', { name })).toBeInTheDocument()
   })
 
   it('matches-none-reached names the setting the empty list waits on', async () => {

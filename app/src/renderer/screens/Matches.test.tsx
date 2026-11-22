@@ -766,12 +766,11 @@ describe('Matches, weak matches before a first real one (issue 643)', () => {
     expect(onChooseDiscovery).toHaveBeenCalledTimes(1)
   })
 
-  it('with every source on, says to broaden the keywords, linked to the search', async () => {
+  it('with every source on, says only how many weak matches there are, and sends nowhere', async () => {
     setup({}, [], { scored: 5, weak: keywordsHint })
-    const onCheckSearch = vi.fn()
-    render(<Matches onCheckSearch={onCheckSearch} />)
-    await userEvent.click(await screen.findByRole('button', { name: 'Broaden your search keywords to find closer ones.' }))
-    expect(onCheckSearch).toHaveBeenCalledTimes(1)
+    render(<Matches />)
+    expect(await screen.findByText(/weak match(es)? found\./)).toBeInTheDocument()
+    expect(screen.queryByText(/Broaden your search keywords/)).toBeNull()
   })
 
   it('says "1 weak match found" for one', async () => {
