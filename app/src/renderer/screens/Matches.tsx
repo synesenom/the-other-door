@@ -338,10 +338,15 @@ export function Matches({
             {weak && weakRows.length > 0 ? (
               <WeakLine weak={weak} onChooseDiscovery={onChooseDiscovery} onCheckSearch={onCheckSearch} />
             ) : (
-              <p className="body muted">{emptyText(listed.scored, listed.minScore, listed.reviewedAt, newOnly)}</p>
-            )}
-            {!(weak && weakRows.length > 0) && listed.minScore !== undefined && listed.scored !== undefined && listed.scored > 0 && !(newOnly && listed.reviewedAt) && (
-              <p className="body muted">{minScoreSetting(listed.minScore)}</p>
+              <p className="body muted">
+                <span>{emptyText(listed.scored, listed.minScore, listed.reviewedAt, newOnly)}</span>
+                {listed.minScore !== undefined && listed.scored !== undefined && listed.scored > 0 && !(newOnly && listed.reviewedAt) && (
+                  <>
+                    <br />
+                    <span>{minScoreSetting(listed.minScore)}</span>
+                  </>
+                )}
+              </p>
             )}
             {onLowerBar && listed.scored !== undefined && listed.scored > 0 && !(newOnly && listed.reviewedAt) && (
               <div className="actions flush">

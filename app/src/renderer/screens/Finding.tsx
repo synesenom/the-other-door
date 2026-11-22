@@ -214,8 +214,17 @@ function Summary({
           ))}
         </ul>
       )}
-      {account !== null && <p className="body">{account}</p>}
-      {account !== null && record.match!.scored! > 0 && <p className="body">{minScoreSetting(record.match!.min_score!)}</p>}
+      {account !== null && (
+        <p className="body">
+          <span>{account}</span>
+          {record.match!.scored! > 0 && (
+            <>
+              <br />
+              <span>{minScoreSetting(record.match!.min_score!)}</span>
+            </>
+          )}
+        </p>
+      )}
       {careerNote && <p className="small muted">The next full run also reads employers' own career sites.</p>}
       <p className="small muted">Took {elapsedText(record.elapsed_s)}</p>
       {reminder.length > 0 && <DiscoveryReminder sources={reminder} onChoose={onChooseDiscovery} />}
