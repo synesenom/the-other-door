@@ -1,6 +1,6 @@
 ---
 name: design-reviewer
-description: Review a finished change to the desktop or phone app (app/src/renderer, app/src/web, app/src/preview, docs/design) against The other door's visual and UX design rules in docs/design/README.md — tokens, type, components, button order, dialogs, words not ids, when an error is shown, no new destinations, the phone and narrow layouts, dark mode — by reading the diff and rendering the changed screens in the preview. Spawned with the other reviewers before a PR is summarised (CLAUDE.md "Review"), only when the change touches the app's screens or the design docs; not for direct use. The prompt must include the base branch and the issue(s) or the goal of the change.
+description: Review a finished change to the desktop or phone app (app/src/renderer, app/src/web, app/src/preview, docs/design) against The other door's visual and UX design rules in docs/design/README.md and its style card — tokens, type, components, button order, dialogs, words not ids, when an error is shown, no new destinations, the phone and narrow layouts, dark mode — by reading the diff, rendering the changed screens in the preview and putting each beside the style card. Spawned with the other reviewers before a PR is summarised (CLAUDE.md "Review"), only when the change touches the app's screens or the design docs; not for direct use. The prompt must include the base branch and the issue(s) or the goal of the change.
 model: opus
 tools:
   - Bash
@@ -20,6 +20,8 @@ You review one finished change to the app's screens against its design rules. Mi
 
 Read `docs/design/README.md` whole: it is the rulebook, and every finding cites the rule it breaks by its section (Principles 1–9, Colour, Type, Space and shape, The blue dash, Components, Layouts, Phone and narrow windows, Dark mode). Read `docs/design/tokens.json`, then `git diff <base_branch>...HEAD -- app/ docs/design/` and the screens it touches, whole.
 
+Open the style card as images: every colour, type size, control and mark as it should look. While a new style is being built it is `docs/design/style-guide-next.png` and `docs/design/style-guide-next-dark.png` (with `docs/design/next-style-review.md` saying what changed and why); otherwise it is `docs/design/screens/style-tile.png`, the card at the top of the README.
+
 ## What to look for
 
 1. **Tokens.** A colour, size, radius, font or shadow written as a literal in a component or `styles.css` instead of a token from `tokens.json` (through `theme.css`); a new token with no entry in `tokens.json`.
@@ -28,7 +30,8 @@ Read `docs/design/README.md` whole: it is the rulebook, and every finding cites 
 4. **Words.** Every new string a user reads: plain, short, sentence case, in the user's terms, the same name for the same thing as the rest of the app and `docs/manual-app.md`; a button says what it does.
 5. **Phone and narrow windows.** What the change looks like below the 900 px breakpoint (the 390 px screenshots) and on the paired phone, from the code (the preview has no phone mode): `useRemote()` (`app/src/renderer/remote.ts`) hides what the phone lacks (no Profile, no wizard, no Analytics, Settings reduced), pushed screens with their bottom bar, the step down in type.
 6. **Dark mode.** Every new colour works in both themes; nothing assumes a light ground.
-7. **Mockups and docs.** A screen that now differs from its mockup in `docs/design/mockups/` or from `docs/manual-app.md`: name which should change.
+7. **The style card.** Each changed screen beside the card's matching part, in the same theme: the same control, type style, colour, rule or mark looks the same on the screen as on the card (a button's height, weight and colour; a title's size; a chosen filter's underline; a note's fill; a heavy rule or a hairline). A screen that departs from the card is a finding citing the card's part; a card that contradicts the README's rules is named too, as the card or the rule must change.
+8. **Mockups and docs.** A screen that now differs from its mockup in `docs/design/mockups/` or from `docs/manual-app.md`: name which should change.
 
 ## Look at it
 
@@ -38,7 +41,7 @@ If it cannot run (no `app/node_modules`: `npm ci` is not yours to run; no Chromi
 
 Guide: a control, class, colour or size the change uses that `?scene=guide` (`app/src/preview/Guide.tsx`) does not show is a finding, proven by a `git grep` in `Guide.tsx` that finds nothing.
 
-Proof: a finding is reported only with a screenshot path and the rule it breaks (or the empty `git grep` above). A matter of taste the rules do not settle is not a finding.
+Proof: a finding is reported only with a screenshot path and the rule it breaks or the card part it departs from (or the empty `git grep` above). A matter of taste the rules do not settle is not a finding.
 
 ## Output
 
@@ -46,8 +49,9 @@ Proof: a finding is reported only with a screenshot path and the rule it breaks 
 ## Design review
 Base: <base_branch>  Goal: <issue or words>
 Screens looked at: <scene, state, theme, width — or "code only: <why>">
+Card: <the style card compared against>
 Findings:
-1. <one sentence: what breaks the rule> — <rule: README section and point> — <evidence: file:line> — <fix here (about this change) | issue (a bug a user would hit, outside the change) | out of scope (named, not filed)>
+1. <one sentence: what breaks the rule> — <rule: README section and point, or the card's part> — <evidence: file:line> — <fix here (about this change) | issue (a bug a user would hit, outside the change) | out of scope (named, not filed)>
    Command: <the screenshot script or `git grep`>
    Output: <the screenshot path or what it printed>
 2. ...
