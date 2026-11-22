@@ -82,9 +82,11 @@ describe('createMockDoor', () => {
 describe('the visual guide', () => {
   it('shows every kind of button, enabled and disabled', () => {
     render(<Guide />)
-    for (const kind of ['primary', 'secondary', 'quiet']) {
-      expect(document.querySelector(`button.${kind}:not(.sidebar-problem):not(.flush > *):not(:disabled)`)).not.toBeNull()
-      expect(document.querySelector(`button.${kind}:disabled`)).not.toBeNull()
+    const count = (sel: string) => document.querySelectorAll(sel).length
+    const counts = { primary: [2, 1], secondary: [3, 1], quiet: [1, 1] }
+    for (const [kind, [enabled, disabled]] of Object.entries(counts)) {
+      expect(count(`button.${kind}:not(.sidebar-problem):not(.flush > *):not(:disabled)`)).toBe(enabled)
+      expect(count(`button.${kind}:disabled`)).toBe(disabled)
     }
   })
 

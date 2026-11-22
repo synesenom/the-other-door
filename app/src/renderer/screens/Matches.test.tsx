@@ -44,6 +44,14 @@ describe('Matches, Find new jobs', () => {
     expect(onFindJobs).toHaveBeenCalledTimes(1)
   })
 
+  it('the list opens with a heavy rule under its head', async () => {
+    stubNarrow(false)
+    setup()
+    const { container } = render(<Matches onFindJobs={() => {}} />)
+    await screen.findAllByRole('listitem')
+    expect(container.querySelector('.list-head')).toHaveClass('rule-heavy')
+  })
+
   it('a wide window leaves it to the sidebar', async () => {
     stubNarrow(false)
     setup()

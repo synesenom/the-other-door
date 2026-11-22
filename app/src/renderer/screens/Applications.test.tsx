@@ -70,7 +70,7 @@ describe('Applications', () => {
     await screen.findByText('Prepared job')
     const heads = container.querySelectorAll('.board-column-head')
     expect(heads.length).toBeGreaterThan(0)
-    expect(heads[0].querySelector('h2')).not.toBeNull()
+    for (const head of heads) expect(head).toHaveClass('rule-heavy')
   })
 
   it('a card is the title, the company and a note; no score, no id', async () => {

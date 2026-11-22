@@ -250,7 +250,7 @@ describe('Finding, the summary card', () => {
   it('opens the summary with a heavy rule, not a box', () => {
     mockDoor({})
     show({ kind: 'summary', record: record() }, { active: false })
-    expect(screen.getByRole('region', { name: 'Run summary' })).toHaveClass('summary-card')
+    expect(screen.getByRole('region', { name: 'Run summary' })).toHaveClass('rule-heavy')
   })
 
   it.each([
