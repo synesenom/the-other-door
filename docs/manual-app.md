@@ -427,7 +427,7 @@ page's foot saves the settings; your CV saves itself as you type.
 
 The everyday settings of `profile/config.json` ([Configuration](configuration.md)), in sections:
 About you (name, email, city, whether you need a visa or work permit there, where you would work, the languages of the job ads), What to
-look for (role targets, what matters to you, as free text that applies from the next run, how close a match to show: Broad,
+look for (role targets, what matters to you, as free text that applies from the next run, Match fit: Broad,
 Balanced or Strong), and What to skip (companies and words).
 The settings for tuning a run (how many sites at once, the limits, how old an ad may be, when to stop following
 a quiet employer, asking Claude where a careers page is, the Claude config folder for people with two plans, the prescreen, the
