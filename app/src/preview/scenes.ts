@@ -38,6 +38,8 @@ export interface Scene {
   /** Google Drive as the scene starts it (default off): Connect and Disconnect, and the sync on opening, change it
    * as the real tools would. `failed`: connected, the last sync failed; `conflict`: the next sync finds both sides changed. */
   drive?: 'off' | 'connected' | 'failed' | 'conflict'
+  /** Matches scored, none at "How close a match to show": the empty list that names the setting. */
+  noneReached?: boolean
   /** The Master CV with gaps (TODO) where a draft found nothing: "to fill in" pills in its preview. */
   cvGaps?: boolean
   /** Tools (or actions: `export-data`, `report-problem`) that fail here, each with the words it fails with: an error the user sees. */
@@ -63,7 +65,7 @@ export const SAMPLE_RUN: RunRecord = {
   failures: ['thehub'],
 }
 
-/** A run that found jobs but none reached the bar. */
+/** A run that found jobs but none reached "How close a match to show". */
 export const SAMPLE_RUN_NONE: RunRecord = {
   ...SAMPLE_RUN,
   match: { scored: 40, above_threshold: 0, min_score: 0.65 },
@@ -162,6 +164,7 @@ export const SCENES: readonly Scene[] = [
   { id: 'splash', group: 'Start', title: 'Splash', hold: 'show_profile' },
   { id: 'matches', group: 'Matches', title: 'Matches' },
   { id: 'matches-add-job-failed', group: 'Matches', title: 'Add a job, an import that failed (type a link, Import: the error box)', fails: { import_posting: 'That page needs a sign-in. Paste the ad text instead.' }, press: ['Add a job'] },
+  { id: 'matches-none-reached', group: 'Matches', title: 'Matches, 40 scored and none at the setting', noneReached: true },
   { id: 'posting', group: 'Matches', title: 'Posting', open: { screen: 'posting', jobId: 'jobindex.demo-1', inPlay: false } },
   { id: 'applications', group: 'Applications', title: 'Applications board', start: { destination: 'Applications' } },
   { id: 'posting-prepared', group: 'Applications', title: 'Posting, prepared', open: { screen: 'posting', jobId: 'successfactors.demo-6', inPlay: true } },
@@ -191,7 +194,7 @@ export const SCENES: readonly Scene[] = [
   // LinkedIn chosen and read
   { id: 'finding-flow', group: 'Finding jobs', title: 'The whole run', play: true, start: { findOnOpen: true }, discoveryUnchosen: [] },
   { id: 'finding-summary', group: 'Finding jobs', title: 'Summary', start: { run: { kind: 'summary', record: SAMPLE_RUN } } },
-  { id: 'finding-summary-none', group: 'Finding jobs', title: 'Summary, nothing reached the bar', start: { run: { kind: 'summary', record: SAMPLE_RUN_NONE } } },
+  { id: 'finding-summary-none', group: 'Finding jobs', title: 'Summary, nothing reached the setting', start: { run: { kind: 'summary', record: SAMPLE_RUN_NONE } } },
   {
     id: 'finding-first-run',
     group: 'Finding jobs',

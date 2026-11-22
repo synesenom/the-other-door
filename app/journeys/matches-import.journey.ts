@@ -37,7 +37,7 @@ async function pasteAd(page: Page, text = PASTED) {
 
 test.describe('the form', () => {
 
-  test('Paste text asks for the ad, a title and a company, and keeps what was typed', async ({ page, world }) => {
+  test('Link asks only for the link, Paste text for the ad, a title and a company', async ({ page, world }) => {
     await openAdd(page)
     await expect(field(page, 'Link')).toBeVisible()
     await expect(field(page, 'Title (optional)')).toHaveCount(0)

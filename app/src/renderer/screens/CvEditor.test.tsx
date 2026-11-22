@@ -389,7 +389,7 @@ describe('CvEditor, the CV file', () => {
     await user.click(replace)
     const dialog = await screen.findByRole('dialog', { name: 'Replace your CV file' })
     expect(h.call).toHaveBeenCalledWith('enrich', {}, undefined, ['t1'])
-    expect(within(dialog).getByText(/becomes your CV file/)).toBeInTheDocument()
+    expect(within(dialog).getByText('The new file becomes your CV file.')).toBeInTheDocument()
     await user.click(await within(dialog).findByRole('checkbox', { name: /dbt/ }))
     await user.click(within(dialog).getByRole('button', { name: 'Add 1 to my Master CV' }))
     await waitFor(() => expect(h.call).toHaveBeenCalledWith('enrich', { apply: [1] }))

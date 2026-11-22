@@ -154,7 +154,7 @@ describe('Analytics', () => {
         const part = await screen.findByRole('region', { name: 'Applications' })
         expect(part).toHaveTextContent('Best-scored matches: 5 of 6 led to an interview, likely between 60% and 95%.')
         expect(part).toHaveTextContent('Matches near your "How close a match to show" setting: 1 of 6 led to an interview, likely between 5% and 35%.')
-        expect(within(part).getByText('Matches near your "How close a match to show" setting led to an interview less often: consider raising "How close a match to show".')).toBeInTheDocument()
+        expect(within(part).getByText('These led to an interview less often: consider raising that setting in Profile.')).toBeInTheDocument()
       })
 
       it('shows the bands without a sentence when the reading is null', async () => {

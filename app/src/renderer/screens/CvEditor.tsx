@@ -161,7 +161,7 @@ function Expand({ from, pages, blocked, onRead, onFile, onClose, onAdded }: { fr
   return (
     <Dialog title={label} onClose={onClose}>
       {result.unreachable.length > 0 && <p className="small muted">{`Could not read: ${result.unreachable.join(', ')}`}</p>}
-      {file && <p className="body">The new file becomes your CV file. What it has that your Master CV lacks is proposed below.</p>}
+      {file && <p className="body">The new file becomes your CV file.</p>}
       {errorLine}
       {result.proposals.length === 0 ? (
         <>

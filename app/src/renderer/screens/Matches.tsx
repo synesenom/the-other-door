@@ -13,7 +13,7 @@ import { statusNotice } from './statusNotice'
 import { Spinner } from './Spinner'
 import { runText } from './run-text'
 import { Switch } from './Switch'
-import { MIN_SCORE_NAME, minScoreValue } from './minScore'
+import { minScoreSetting, minScoreValue } from './minScore'
 
 /** Why Find new jobs is off while a Prepare runs (the sidebar's button and this header's pill). */
 export const PREPARING_TIP = 'Preparing an application. Find new jobs again when it is done.'
@@ -22,8 +22,8 @@ export const PREPARING_TIP = 'Preparing an application. Find new jobs again when
 export function emptyText(scored: number | undefined, minScore: number | undefined, reviewedAt: string | null, newOnly: boolean): string {
   if (scored === undefined || scored === 0) return 'Nothing scored yet. Find new jobs to start.'
   if (newOnly && reviewedAt) return 'Nothing new since your last review.'
-  const bar = minScore === undefined ? '' : ` (${MIN_SCORE_NAME}: ${minScoreValue(minScore)})`
-  return `Nothing has reached it${bar} yet.`
+  if (minScore === undefined) return 'No matches yet.'
+  return `Nothing has scored ${minScoreValue(minScore)} yet (${minScoreSetting(minScore)}).`
 }
 
 /** Above the weak matches: how many, and what would widen the search. It informs, never recommends: the sources' terms forbid automated access. */

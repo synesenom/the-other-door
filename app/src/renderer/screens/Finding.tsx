@@ -6,7 +6,7 @@ import type { RunBoard, RunRecord, StepRow } from '../api'
 import type { DiscoveryChoice } from './onboarding/reducer'
 import { andList, LegalLink } from './discovery-notice'
 import { activityText } from './run-text'
-import { MIN_SCORE_NAME, minScoreValue } from './minScore'
+import { minScoreSetting, minScoreValue } from './minScore'
 
 export type FindingState =
   /** A run of this window's own; `startedAt` is when it was asked for, until the board says. */
@@ -154,9 +154,9 @@ export function runAccount(record: RunRecord): string | null {
   const m = record.match
   if (!m || typeof m.scored !== 'number' || typeof m.min_score !== 'number') return null
   const found = postingsFound(record)
-  const bar = `${MIN_SCORE_NAME}: ${minScoreValue(m.min_score)}`
+  const value = minScoreValue(m.min_score)
   const seen = m.above_threshold ?? 0
-  const reached = seen > 0 ? `${seen} reached it (${bar}), none new` : `none reached it (${bar})`
+  const reached = `${seen > 0 ? `${seen} scored ${value}, none new` : `none scored ${value}`} (${minScoreSetting(m.min_score)})`
   const scored = m.scored === 0 ? 'none close enough to score' : `${m.scored} close enough to score`
   return `${found} ${found === 1 ? 'job' : 'jobs'} found, ${scored}${m.scored === 0 ? '' : `, ${reached}`}`
 }

@@ -55,7 +55,7 @@ function ScoreBandsView({ bands }: { bands: ScoreBands }) {
       <p className="small">{bandLine('Best-scored matches', bands.top)}</p>
       <p className="small">{bandLine(`Matches near your "${MIN_SCORE_NAME}" setting`, bands.near_min)}</p>
       {bands.reading === 'near_min_lower' && (
-        <p className="small">{`Matches near your "${MIN_SCORE_NAME}" setting led to an interview less often: consider raising "${MIN_SCORE_NAME}".`}</p>
+        <p className="small">These led to an interview less often: consider raising that setting in Profile.</p>
       )}
     </div>
   )

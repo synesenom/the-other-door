@@ -180,6 +180,7 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
         installed = true
         return { outcome: 'ok', results: [{ tool: 'claude', ok: true }] }
       case 'list_matches':
+        if (scene.noneReached) return { ...listFor(args), matches: [], scored: 40, last_reviewed_at: null }
         return state === 'empty' ? { ...listFor(args), matches: [] } : state === 'long' ? longRows(unseen(listFor(args), Boolean(args['new_only']))) : unseen(listFor(args), Boolean(args['new_only']))
       case 'mark_seen':
         seen.add(String(args['job_id']))

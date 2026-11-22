@@ -30,9 +30,10 @@ export function ImportDialog({ onClose, onOpen }: Props) {
 
   const send = async (force: boolean) => {
     const args: Record<string, unknown> = mode === 'link' ? { url: url.trim() } : { text: text.trim(), title: title.trim(), company: company.trim() }
-    if (mode === 'link' && title.trim()) args.title = title.trim()
-    if (mode === 'link' && company.trim()) args.company = company.trim()
-    if (location.trim()) args.location = location.trim()
+    // a link sends the details only once they are shown (its page could not be read)
+    if (mode === 'link' && unread && title.trim()) args.title = title.trim()
+    if (mode === 'link' && unread && company.trim()) args.company = company.trim()
+    if ((mode === 'text' || unread) && location.trim()) args.location = location.trim()
     if (force) args.force = true
     setBusy(true)
     setError(null)

@@ -216,7 +216,7 @@ and error is in the run record. "View matches" opens Matches on
 "New only", "Show run record" shows the run's file in your file manager. Matches and "Last run" are refreshed.
 
 When no match is new, the card says what the run did in one line ("917 jobs found, 40 close enough to
-score, none reached it (How close a match to show: 0.65 or better)") and offers what you can do about it: "Check your search terms" opens Profile at your search terms, "Show broader matches" at "How close a match to show". When the
+score, none scored 0.65 or better (How close a match to show: Balanced)") and offers what you can do about it: "Check your search terms" opens Profile at your search terms, "Show broader matches" at "How close a match to show". When the
 run skipped Discover, Follow or Collect, it adds that the next full run also reads employers' own career sites.
 
 After the first run, if it found fewer than three new matches and every employer discovery source
@@ -239,15 +239,15 @@ switch shows only the unopened ones. The header says how many are new, and shows
 board that failed on the last run.
 
 An empty list says why: "Nothing scored yet. Find new jobs to start." only when nothing has been
-scored; "Nothing has reached it (How close a match to show: 0.65 or better) yet." (with "Show broader matches", which opens Profile at "How close a match to show") when ads were scored but none cleared it; "Nothing new since your last review." only after a review,
+scored; "Nothing has scored 0.65 or better yet (How close a match to show: Balanced)." (with "Show broader matches", which opens Profile at "How close a match to show") when ads were scored but none cleared it; "Nothing new since your last review." only after a review,
 on "New only".
 
-Until the first posting has reached it, that empty list also shows the three best ads below it as ordinary rows
+Until the first posting has reached that setting, that empty list also shows the three best ads below it as ordinary rows
 marked "Weak match" (open, prepare or discard them like any other), under one line: "3 weak matches found." and, when
 a discovery source serving your city is off, that the app can also find employers on LinkedIn and the other discovery sources, at your own
 risk, with the legal disclaimer and "Turn it on in Settings" (opens Risky sources); with every source on, "Broaden your
 search keywords to find closer ones." (opens Profile at the search). On the phone the line is plain text. Once any
-posting has reached the bar, they are never shown again.
+posting has reached "How close a match to show", they are never shown again.
 
 Choosing a row opens the posting on the whole page, as a card does in Applications, with a
 "← Matches" link back (or Esc). Above the posting, "2 of 14" and ‹ › step to the previous and
@@ -370,8 +370,8 @@ to Not yet applied stays in Matches.
 
 **Add a job** (in Matches and in Applications) brings in a posting you found yourself.
 
-- **Link**: paste the address. *The other door* reads the page and finds the title and company; you
-  can fill them in if it gets them wrong. A page behind a login or built only with
+- **Link**: paste the address. *The other door* reads the page and finds the title and company. When
+  it cannot read them, it asks for the title, company and location; a page behind a login or built only with
   JavaScript fails: use Paste text.
 - **Paste text**: the ad's text, plus its title and company (both required).
 
@@ -607,7 +607,7 @@ finds fit you. An application with no change for 45 days counts as no reply, whe
 marked it ghosted (the Applications board offers to); once you record what happened next, it counts as that. Until an application has
 an outcome it says only that the rate shows here then. Under it, once at least 5 applications in each
 half have an outcome, the same rate for the better-scored half of your sent applications and for the
-half near your "How close a match to show" setting (split near the median score), and a line "consider raising it" only when
+half near your "How close a match to show" setting (split near the median score), and a line suggesting you raise that setting only when
 the near-minimum half led to an interview clearly less often. Where each application stands is on the
 Applications board, and your matches are on Matches.
 

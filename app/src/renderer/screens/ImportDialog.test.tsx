@@ -29,6 +29,19 @@ describe('ImportDialog', () => {
     await waitFor(() => expect(call).toHaveBeenCalledWith('import_posting', { url: 'https://example.com/job/1' }))
   })
 
+  it('a link sends no title, company or location typed in Paste text, which it does not show', async () => {
+    const h = mockDoor({ import_posting: { job_id: 'manual.a', path: '/x', replaced: false, score: 0.8 }, show: { id: 'manual.a', title: 'T', company: 'C', status: 'unapplied' } })
+    render(<ImportDialog onClose={vi.fn()} onOpen={vi.fn()} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Paste text' }))
+    await userEvent.type(screen.getByLabelText('Title'), 'Wrong Title')
+    await userEvent.type(screen.getByLabelText('Company'), 'Wrong Co')
+    await userEvent.type(screen.getByLabelText('Location (optional)'), 'Nowhere')
+    await userEvent.click(screen.getByRole('button', { name: 'Link' }))
+    await userEvent.type(screen.getByLabelText('Link'), 'https://example.com/job/1')
+    await userEvent.click(screen.getByRole('button', { name: 'Import' }))
+    await waitFor(() => expect(h.call).toHaveBeenCalledWith('import_posting', { url: 'https://example.com/job/1' }))
+  })
+
   it('after a link could not be read, Title, Company and Location are asked, and sent', async () => {
     const h = mockDoor({ import_posting: () => { throw new Error('That page needs a sign-in. Paste the ad text instead.') } })
     render(<ImportDialog onClose={vi.fn()} onOpen={vi.fn()} />)
