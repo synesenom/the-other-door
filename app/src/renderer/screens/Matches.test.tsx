@@ -174,7 +174,7 @@ describe('Matches', () => {
     const onLowerBar = vi.fn()
     render(<Matches newOnlyFirst onLowerBar={onLowerBar} />)
     expect(await screen.findByText('Nothing has scored 0.65 or better yet.')).toBeInTheDocument()
-    expect(screen.getByText('How close a match to show: Balanced').closest('p')).toBe(screen.getByText('Nothing has scored 0.65 or better yet.').closest('p'))
+    expect(screen.getByText('Minimum score: Balanced').closest('p')).toBe(screen.getByText('Nothing has scored 0.65 or better yet.').closest('p'))
     expect(screen.queryByText(/since your last review/)).toBeNull()
     expect(screen.queryByText(/Nothing scored yet/)).toBeNull()
     await userEvent.click(screen.getByRole('button', { name: 'Show broader matches' }))
@@ -192,7 +192,7 @@ describe('Matches', () => {
     setup({}, [], { scored: 40, last_reviewed_at: '2026-10-29T08:00:00+00:00' })
     render(<Matches />)
     expect(await screen.findByText('Nothing has scored 0.65 or better yet.')).toBeInTheDocument()
-    expect(screen.getByText('How close a match to show: Balanced').closest('p')).toBe(screen.getByText('Nothing has scored 0.65 or better yet.').closest('p'))
+    expect(screen.getByText('Minimum score: Balanced').closest('p')).toBe(screen.getByText('Nothing has scored 0.65 or better yet.').closest('p'))
   })
 
   it('shows an {error} from the server plainly', async () => {
@@ -805,7 +805,7 @@ describe('Matches, weak matches before a first real one (issue 643)', () => {
     setup({}, [], { scored: 5, weak: null })
     render(<Matches />)
     expect(await screen.findByText('Nothing has scored 0.65 or better yet.')).toBeInTheDocument()
-    expect(screen.getByText('How close a match to show: Balanced').closest('p')).toBe(screen.getByText('Nothing has scored 0.65 or better yet.').closest('p'))
+    expect(screen.getByText('Minimum score: Balanced').closest('p')).toBe(screen.getByText('Nothing has scored 0.65 or better yet.').closest('p'))
   })
 
   it('New only after a review shows no weak block', async () => {

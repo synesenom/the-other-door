@@ -13,5 +13,5 @@ export const minScoreValue = (minScore: number) => `${scoreText(minScore)} or be
 /** The choice Profile shows for a value: one of the three, or "Your own (0.70)" for a value set by hand. */
 export const minScoreChoice = (minScore: number) => MATCH.find(([n]) => n === minScore)?.[1] ?? `Your own (${scoreText(minScore)})`
 
-/** The setting as Profile shows it: "How close a match to show: Balanced". */
+/** The setting as Profile shows it: "Minimum score: Balanced". */
 export const minScoreSetting = (minScore: number) => `${MIN_SCORE_NAME}: ${minScoreChoice(minScore)}`

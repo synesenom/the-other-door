@@ -38,7 +38,7 @@ export interface Scene {
   /** Google Drive as the scene starts it (default off): Connect and Disconnect, and the sync on opening, change it
    * as the real tools would. `failed`: connected, the last sync failed; `conflict`: the next sync finds both sides changed. */
   drive?: 'off' | 'connected' | 'failed' | 'conflict'
-  /** Matches scored, none at "How close a match to show": the empty list that names the setting. */
+  /** Matches scored, none at "Minimum score": the empty list that names the setting. */
   noneReached?: boolean
   /** The Master CV with gaps (TODO) where a draft found nothing: "to fill in" pills in its preview. */
   cvGaps?: boolean
@@ -65,7 +65,7 @@ export const SAMPLE_RUN: RunRecord = {
   failures: ['thehub'],
 }
 
-/** A run that found jobs but none reached "How close a match to show". */
+/** A run that found jobs but none reached "Minimum score". */
 export const SAMPLE_RUN_NONE: RunRecord = {
   ...SAMPLE_RUN,
   match: { scored: 40, above_threshold: 0, min_score: 0.65 },

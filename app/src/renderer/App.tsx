@@ -456,7 +456,7 @@ export function App({ start }: { start?: AppStart } = {}) {
             onDraft={() => void setUpAgain().catch(() => undefined)}
             onSaved={() => {
               void call<ShowProfile>('show_profile').then(setProfile, () => undefined)
-              setRefreshKey((k) => k + 1) // the matches may change with "How close a match to show" or the age limit
+              setRefreshKey((k) => k + 1) // the matches may change with "Minimum score" or the age limit
             }}
           />
         ) : current === 'Settings' ? (

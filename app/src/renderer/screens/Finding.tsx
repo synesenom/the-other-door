@@ -1,6 +1,7 @@
 import { AppName, ErrorBox } from './AppName'
 import { CheckMark, CrossMark, WarningMark } from './CheckMark'
 import { useEffect, useState } from 'react'
+import { useNarrow } from '../useNarrow'
 import { scoreText } from '../api'
 import type { RunBoard, RunRecord, StepRow } from '../api'
 import type { DiscoveryChoice } from './onboarding/reducer'
@@ -149,7 +150,7 @@ function postingsFound(record: RunRecord): number {
   return sites.filter((s) => s.outcome === 'ok').reduce((sum, s) => sum + (s.count ?? 0), 0)
 }
 
-/** The run in one line, for a run with nothing new at "How close a match to show"; null when the record lacks the counts. */
+/** The run in one line, for a run with nothing new at "Minimum score"; null when the record lacks the counts. */
 export function runAccount(record: RunRecord): string | null {
   const m = record.match
   if (!m || typeof m.scored !== 'number' || typeof m.min_score !== 'number') return null
@@ -196,6 +197,8 @@ function Summary({
   const n = record.new_above_threshold.length
   const account = n === 0 ? runAccount(record) : null
   const careerNote = account !== null && SKIPPED_CAREER_STEPS.some((step) => step in (record.skipped ?? {}))
+  // a narrow window stacks the row: a quiet button alone on its line would not read as one
+  const narrow = useNarrow()
   return (
     <section className="summary-card" aria-label="Run summary">
       <h2 className="display-l">{n === 0 ? 'No new matches' : `${n} new ${n === 1 ? 'match' : 'matches'}`}</h2>
@@ -231,7 +234,7 @@ function Summary({
           View matches
         </button>
         {account !== null && onCheckSearch && (
-          <button type="button" className="quiet" onClick={onCheckSearch}>
+          <button type="button" className={narrow ? 'secondary' : 'quiet'} onClick={onCheckSearch}>
             Check your search terms
           </button>
         )}

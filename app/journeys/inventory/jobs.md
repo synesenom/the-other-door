@@ -526,6 +526,5 @@ Reached through:
 **IPC (not tools)**:
 - `open-external` action (url) → `{ok, error?}`, ignored.
 - `saveMaterial` → `{ok, path?, canceled?, error?}`.
-- `showRun` → ignored.
 - `stopRun` → ignored.
 - `info()` → `{demo, sandbox?, home?, checkout?, remote?, version?}`.
