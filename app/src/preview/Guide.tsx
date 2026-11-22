@@ -24,7 +24,7 @@ function Part({ title, children }: { title: string; children: ReactNode }) {
 const Row = ({ label, children }: { label: string; children: ReactNode }) => (
   <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', alignItems: 'center', gap: 16 }}>
     <span className="small muted">{label}</span>
-    <div className="actions">{children}</div>
+    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 16 }}>{children}</div>
   </div>
 )
 
@@ -40,21 +40,23 @@ export function Guide() {
 
         <Part title="Buttons">
           <Row label="primary">
-            <div style={{ display: 'flex', gap: 24 }}>
-              <button type="button" className="primary">Prepare application</button>
-              <button type="button" className="primary" disabled>Disabled</button>
-            </div>
+            <button type="button" className="primary">Prepare application</button>
+            <button type="button" className="primary" disabled>Disabled</button>
           </Row>
           <Row label="secondary">
-            <button type="button" className="secondary go">Open in browser</button>
-            <button type="button" className="secondary">Status…</button>
-            <button type="button" className="secondary">Check again</button>
-            <button type="button" className="secondary" disabled>Disabled</button>
+            <div className="actions">
+              <button type="button" className="secondary go">Open in browser</button>
+              <button type="button" className="secondary">Status…</button>
+              <button type="button" className="secondary">Check again</button>
+              <button type="button" className="secondary" disabled>Disabled</button>
+            </div>
           </Row>
           <Row label="quiet, the way out">
-            <button type="button" className="primary">Save</button>
-            <button type="button" className="quiet">Not for me</button>
-            <button type="button" className="quiet" disabled>Disabled</button>
+            <div className="actions">
+              <button type="button" className="primary">Save</button>
+              <button type="button" className="quiet">Not for me</button>
+              <button type="button" className="quiet" disabled>Disabled</button>
+            </div>
           </Row>
           <Row label="link-inline">
             <span className="small">
@@ -75,10 +77,8 @@ export function Guide() {
             </div>
           </Row>
           <Row label="switch">
-            <div style={{ display: 'flex', gap: 24 }}>
-              <Switch label="Preview" checked={on} onChange={setOn} />
-              <Switch label="Off" checked={false} onChange={() => undefined} />
-            </div>
+            <Switch label="Preview" checked={on} onChange={setOn} />
+            <Switch label="Off" checked={false} onChange={() => undefined} />
           </Row>
           <Row label="nav-item">
             <nav aria-label="Sidebar items" style={{ display: 'flex', flexDirection: 'column', gap: 2, width: 180 }}>
@@ -211,12 +211,12 @@ export function Guide() {
 
         <Part title="Figures">
           <Row label="bar">
-            <div className="bar" aria-hidden="true">
+            <div className="bar" aria-hidden="true" style={{ width: 240 }}>
               <span style={{ width: '62%' }} />
             </div>
           </Row>
           <Row label="usage-stack">
-            <div className="usage-stack" aria-hidden="true">
+            <div className="usage-stack" aria-hidden="true" style={{ width: 240 }}>
               <span className="usage-tone-0" style={{ flexGrow: 0.62 }} />
               <span className="usage-tone-1" style={{ flexGrow: 0.35 }} />
               <span className="usage-tone-2" style={{ flexGrow: 0.03 }} />
