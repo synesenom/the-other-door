@@ -19,8 +19,11 @@ the original logo, no underline on quiet buttons, the faded blue `#3D5798` as th
 4. **The black button stays black on hover.** It turned blue, against the rule that blue is never a button
    fill. It turns `ink-muted`, as before.
 5. **One way to show what is current.** It was shown five ways (underline, fill, dash, side bar, blue block).
-   Now: an underline for a chosen word (the sidebar, filters, the page list beside Profile and Settings), and
-   the blue dash above for the open row and the screen's title. The selected row loses its fill.
+   Now only an underline, for a chosen word (the sidebar, filters, the page list beside Profile and Settings).
+   The blue bar no longer marks what is current: clicking a match opens the posting, so no list row is shown as
+   open, and the row it came from keeps no fill. The bar stays the logo's own; the two places that still draw
+   it as decoration (above the phone's set-up title and above an answer in "Ask about your jobs") are left to
+   the change that builds this style.
 6. **Heavy rule on the column, not on every card.** The Applications board puts the heavy ink rule under the
    column's head and hairlines between its cards, as the phone layout already does.
 7. **Notes, errors and chips: a fill, no outline.** The review warned that without an outline the `surface`
