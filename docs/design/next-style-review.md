@@ -2,7 +2,8 @@
 
 An independent review of the next style (`style-guide-next.png`), run on 2026-11-22, looked for what can be
 removed, merged or simplified. Each finding below was checked against the code; the chosen change is what
-`style-guide-next.png` now shows. Nothing here is in the app yet.
+`style-guide-next.png` now shows. Nothing here is in the app yet: building it is #516, from
+`next-style/tokens.json` and `next-style/overrides.css`.
 
 Decisions taken before the review, not reopened: the parchment ground, Young Serif and Figtree, the switch,
 the original logo, no underline on quiet buttons, the faded blue `#3D5798` as the accent.
