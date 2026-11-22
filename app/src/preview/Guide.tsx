@@ -185,7 +185,7 @@ export function Guide() {
 
         <Part title="CV style tiles">
           <Row label="colour, chosen">
-            <div className="style-grid style-colours" style={{ width: 300 }}>
+            <div className="style-grid style-colours" style={{ width: '100%', maxWidth: 300 }}>
               {[['Blue', '#3D5798', true], ['Teal', '#2A7F7A', false], ['Rust', '#A8512C', false]].map(([name, hex, on]) => (
                 <label key={name as string} className="style-pick" title={name as string}>
                   <input type="radio" name="guide-accent" aria-label={name as string} defaultChecked={on as boolean} />
@@ -195,7 +195,7 @@ export function Guide() {
             </div>
           </Row>
           <Row label="fonts, chosen">
-            <div className="style-grid style-fonts" style={{ width: 300 }}>
+            <div className="style-grid style-fonts" style={{ width: '100%', maxWidth: 300 }}>
               {[['Editorial', 'Young Serif', true], ['Plain', 'Figtree', false]].map(([name, face, on]) => (
                 <label key={name as string} className="style-pick" title={name as string}>
                   <input type="radio" name="guide-fonts" aria-label={name as string} defaultChecked={on as boolean} />
