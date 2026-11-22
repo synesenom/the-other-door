@@ -11,6 +11,7 @@ _spec = importlib.util.spec_from_file_location("decide", REPO_ROOT / "scripts" /
 decide = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(decide)
 
+
 def _check(name, status="completed", conclusion="success", sha="H"):
     return {"name": name, "status": status, "conclusion": conclusion, "head_sha": sha}
 
@@ -90,7 +91,7 @@ def test_no_checks_is_not_ok():
 ISSUE = "Running prepare twice keeps one folder."
 
 
-def _run(checks, body="Prepare twice keeps one folder.\n- [x] done", files=(), author="synesenom", issues=None,
+def _run(checks, body="Prepare twice keeps one folder.\n- [x] done", files=("src/door/x.py",), author="synesenom", issues=None,
          edited=None):
     issues = issues or {}
     edited = edited or {}
@@ -115,10 +116,48 @@ def _run(checks, body="Prepare twice keeps one folder.\n- [x] done", files=(), a
     return run, calls
 
 
-def _main7(tmp_path, run):
+def _main7(tmp_path, run, extra=()):
     f = tmp_path / "checks.json"
-    f.write_text(json.dumps([_c("twice keeps one folder")]))
+    f.write_text(json.dumps([_c("twice keeps one folder"), *extra]))
     return decide.main(["7", "--checks", str(f)], run)
+
+
+SHOT = {"goal": decide.SCREENS, "saw": "the card with two buttons, light, dark and 390 px", "matches_goal": True, "ran": True}
+
+
+@pytest.mark.parametrize(
+    "path", ["app/src/renderer/a.tsx", "app/src/web/a.ts", "app/src/preview/a.tsx", "docs/design/README.md"]
+)
+def test_a_screen_change_without_the_screens_check_fails_back_to_claude(tmp_path, capsys, path):
+    run, _ = _run([_check("tests")], files=[path])
+    assert _main7(tmp_path, run) == 1
+    out = json.loads(capsys.readouterr().out)
+    assert out["state"] == "failure" and out["description"] == f"FAIL: not checked: {decide.SCREENS}"
+
+
+def test_a_screen_change_whose_screens_passed_the_verifier_merges(tmp_path, capsys):
+    run, _ = _run([_check("tests")], files=["app/src/renderer/a.tsx"])
+    assert _main7(tmp_path, run, [SHOT]) == 0
+    assert json.loads(capsys.readouterr().out)["state"] == "success"
+
+
+def test_a_design_rule_broken_fails_a_screen_change_with_no_goal_about_screens(tmp_path, capsys):
+    run, _ = _run([_check("tests")], files=["app/src/renderer/a.tsx"])
+    broken = SHOT | {"saw": "two primary buttons in one view", "matches_goal": False}
+    assert _main7(tmp_path, run, [broken]) == 1
+    assert json.loads(capsys.readouterr().out)["description"] == f"FAIL: {decide.SCREENS}"
+
+
+def test_screens_not_shot_is_a_failure_not_run(tmp_path, capsys):
+    run, _ = _run([_check("tests")], files=["app/src/renderer/a.tsx"])
+    assert _main7(tmp_path, run, [SHOT | {"ran": False}]) == 1
+    assert json.loads(capsys.readouterr().out)["description"] == f"FAIL: not run: {decide.SCREENS}"
+
+
+def test_main_reads_every_changed_file_past_the_first_hundred(tmp_path, capsys):
+    run, _ = _run([_check("tests")], files=[f"src/door/f{i}.py" for i in range(150)] + ["app/src/web/x.ts"])
+    assert _main7(tmp_path, run) == 1
+    assert json.loads(capsys.readouterr().out)["description"] == f"FAIL: not checked: {decide.SCREENS}"
 
 
 def test_main_reports_ok_and_drops_the_verify_check(tmp_path, capsys):
@@ -138,15 +177,6 @@ def test_main_holds_a_pr_whose_text_or_issue_changed_after_the_checks(tmp_path, 
     reasons = json.loads(capsys.readouterr().out)["reasons"]
     assert reasons == ["the PR text changed after the checks finished: run them again",
                        "issue #3 changed after the checks finished: run them again"]
-
-
-@pytest.mark.parametrize(
-    "path", ["app/src/renderer/a.tsx", "app/src/web/a.ts", "app/src/preview/a.tsx", "docs/design/README.md"]
-)
-def test_main_passes_a_screen_change_the_verifier_passed(tmp_path, capsys, path):
-    run, _ = _run([_check("tests")], files=[path])
-    assert _main7(tmp_path, run) == 0
-    assert json.loads(capsys.readouterr().out)["state"] == "success"
 
 
 def test_main_reads_every_page_of_check_runs(tmp_path, capsys):

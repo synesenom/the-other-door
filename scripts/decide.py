@@ -19,7 +19,9 @@ closing issue (a direct request) has its goals read from its own body.
 
 Exits 0 on success, 1 otherwise, 2 for a missing `--checks`. Reads the PR and its head's check
 runs through `gh`; the `verify` check (the verifier's own status) is left out. A PR that changes
-what a user sees passes like any other: the verifier looks at its screens (.claude/agents/verifier.md).
+what a user sees needs one more check, the goal `SCREENS`, which the issue need not name: the verifier
+shot the changed screens, looked at them and judged them against docs/design/README.md
+(.claude/agents/verifier.md). Without it the PR fails back to Claude; it never waits for the maintainer.
 """
 
 import json
@@ -30,6 +32,8 @@ import sys
 REPO = "synesenom/the-other-door"
 GREEN = {"success", "skipped", "neutral"}
 OWNER = "synesenom"
+VISIBLE = ("app/src/renderer/", "app/src/web/", "app/src/preview/", "docs/design/")
+SCREENS = "the changed screens, shot and seen"
 
 
 def decide(checks, body, head, author=OWNER, issues=(), edited=()):
@@ -64,17 +68,20 @@ def _norm(text):
     return " ".join(text.split())
 
 
-def verdict(checks, gate_ok, gate_reasons, issue):
+def verdict(checks, gate_ok, gate_reasons, issue, screens=False):
     """The verifier's (state, description) from its checks and the gate's result.
 
     A goal is grounded only with at least 3 words, verbatim in the issue text; otherwise it is not
     trusted. Every Done-when sentence needs a grounded check quoted from it, but for
     one marked `(by the maintainer)`, which waits for them. A check counts as run only when `ran`
-    is True and `matches_goal` a bool; a goal not run or not checked is a failure."""
+    is True and `matches_goal` a bool; a goal not run or not checked is a failure. With `screens` (the PR
+    changes what a user sees), a check of the goal `SCREENS` is needed too, grounded without the issue."""
     grounded, ungrounded = [], []
     for c in checks:
         goal = _norm(c["goal"])
-        if len(goal.split()) < 3 or goal not in _norm(issue):
+        if goal == SCREENS:
+            grounded.append(c)
+        elif len(goal.split()) < 3 or goal not in _norm(issue):
             ungrounded.append(c["goal"])
         else:
             grounded.append(c)
@@ -88,6 +95,8 @@ def verdict(checks, gate_ok, gate_reasons, issue):
     if not_run:  # an untested goal is a failure, so the session picks it up
         return "failure", "FAIL: not run: " + "; ".join(not_run)
     unchecked = _unchecked(issue, [_norm(c["goal"]) for c in grounded])
+    if screens and not any(_norm(c["goal"]) == SCREENS for c in grounded):
+        unchecked.append(SCREENS)
     if unchecked:
         return "failure", "FAIL: not checked: " + "; ".join(" ".join(i.split()[:8]) for i in unchecked)
     if theirs:
@@ -217,14 +226,14 @@ def _option(argv, name):
     return argv[argv.index(name) + 1] if name in argv else None
 
 
-def _verdict_out(checks_file, gate_ok, reasons, sha, issue):
+def _verdict_out(checks_file, gate_ok, reasons, sha, issue, screens=False):
     try:
         with open(checks_file) as f:
             checks = json.load(f)
     except (OSError, ValueError):
         checks = None
     if _well_formed(checks):
-        state, description = verdict(checks, gate_ok, reasons, issue)
+        state, description = verdict(checks, gate_ok, reasons, issue, screens)
     else:
         state, description = "pending", "bad checks file"
     print(json.dumps({"state": state, "description": description[:140], "reasons": reasons, "sha": sha}))
@@ -275,6 +284,7 @@ def main(argv=None, run=_gh):
         closing = [run(["issue", "view", str(i["number"]), "--json", "body,author"]) | {"number": i["number"]}
                    for i in view.get("closingIssuesReferences", [])]
         pages = run(["api", "--paginate", "--slurp", f"repos/{REPO}/commits/{sha}/check-runs?per_page=100"])
+        files = run(["api", "--paginate", "--slurp", f"repos/{REPO}/pulls/{view['number']}/files?per_page=100"])
         edited = _edited(view["number"], run)
     except subprocess.CalledProcessError as e:
         why = f"gh failed: {(e.stderr or '').strip()}"
@@ -284,7 +294,8 @@ def main(argv=None, run=_gh):
     issues = [(i["number"], i["author"]["login"]) for i in closing]
     ok, reasons = decide(checks, view["body"], sha, view["author"]["login"], issues, edited)
     text = "\n".join(i["body"] for i in closing) if closing else view["body"]
-    return _verdict_out(checks_file, ok, reasons, sha, text)
+    screens = any(f["filename"].startswith(VISIBLE) for page in files for f in page)
+    return _verdict_out(checks_file, ok, reasons, sha, text, screens)
 
 
 if __name__ == "__main__":
