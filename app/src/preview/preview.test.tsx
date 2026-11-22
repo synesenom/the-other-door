@@ -194,8 +194,8 @@ describe('scenes', () => {
   it('analytics shows the interview rate, and in the empty state one line', async () => {
     mount('analytics')
     const part = await screen.findByRole('region', { name: 'Applications' })
-    expect(part).toHaveTextContent('of your applications with an outcome (an interview, a rejection or no reply) led to an interview: 6 of 12, likely between 36% and 64%.')
-    expect(part).toHaveTextContent('Best-scored matches: 5 of 6 led to an interview, likely between 65% and 94%.')
+    expect(part).toHaveTextContent('of your applications with an outcome (an interview, a rejection or no reply) led to an interview: 6 of 12.')
+    expect(part).toHaveTextContent('Best-scored matches: 5 of 6 led to an interview.')
     expect(part).toHaveTextContent('These led to an interview less often: consider raising that setting in Profile.')
     expect(within(part).queryAllByRole('img')).toEqual([])
     const market = await screen.findByRole('region', { name: 'Market' })

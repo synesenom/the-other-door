@@ -602,7 +602,7 @@ How it is going, as figures: nothing here changes anything. Not on the phone.
 
 **Applications** is your interview rate: how many of your applications with an outcome (an
 interview, a rejection or no reply) led to an interview (offers count, since they passed one), with
-the range it likely lies in while there are few. It says how well the matches *The other door*
+how many that is. It says how well the matches *The other door*
 finds fit you. An application with no change for 45 days counts as no reply, whether or not you
 marked it ghosted (the Applications board offers to); once you record what happened next, it counts as that. Until an application has
 an outcome it says only that the rate shows here then. Under it, once at least 5 applications in each

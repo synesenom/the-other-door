@@ -11,7 +11,7 @@ test('the interview rate follows the ledger', { tag: '@core' }, async ({ page })
   const part = page.getByRole('region', { name: 'Applications' })
   await expect(part.getByRole('heading', { name: 'Applications', level: 2 })).toBeVisible()
   // FULL_LEDGER: five sent (an offer, one interviewing, one waiting, two rejected or ghosted); three of the four with an outcome led to an interview
-  await expect(part).toContainText('75%of your applications with an outcome (an interview, a rejection or no reply) led to an interview: 3 of 4, likely between 50% and 90%.')
+  await expect(part).toContainText('75%of your applications with an outcome (an interview, a rejection or no reply) led to an interview: 3 of 4.')
   await expect(part.getByRole('img')).toHaveCount(0) // where each stands is the Applications board's columns
 })
 

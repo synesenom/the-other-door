@@ -34,18 +34,16 @@ const pct = (x: number) => `${Math.round(x * 100)}%`
  */
 function Rate({ rate }: { rate: PassRate | undefined }) {
   if (!rate || !rate.decided || rate.rate === null) return <p className="small muted">Your interview rate shows here once an application has an outcome.</p>
-  const range = rate.low !== null && rate.high !== null ? `, likely between ${pct(rate.low)} and ${pct(rate.high)}` : ''
   return (
     <div className="part-head">
       <p className="display-s">{pct(rate.rate)}</p>
-      <p className="small">{`of your applications with an outcome (an interview, a rejection or no reply) led to an interview: ${rate.passed} of ${rate.decided}${range}.`}</p>
+      <p className="small">{`of your applications with an outcome (an interview, a rejection or no reply) led to an interview: ${rate.passed} of ${rate.decided}.`}</p>
     </div>
   )
 }
 
 function bandLine(label: string, rate: PassRate): string {
-  const range = rate.low !== null && rate.high !== null ? `, likely between ${pct(rate.low)} and ${pct(rate.high)}` : ''
-  return `${label}: ${rate.passed} of ${rate.decided} led to an interview${range}.`
+  return `${label}: ${rate.passed} of ${rate.decided} led to an interview.`
 }
 
 /** The same rate for the better-scored half of the matches and the half near "How close a match to show" (#90). */

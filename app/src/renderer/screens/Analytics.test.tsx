@@ -133,12 +133,13 @@ describe('Analytics', () => {
     const RATE = { application: { passed: 3, decided: 5, rate: 0.6, low: 0.4, high: 0.77 } }
     const APPLIED = { pass_rates: RATE }
 
-    it('is the interview rate of the applications with an outcome, with its likely range, and nothing else', async () => {
+    it('is the interview rate of the applications with an outcome, as a count with no range, and nothing else', async () => {
       mockDoor({ status_summary: summary({ ...APPLIED, cost: null }) })
       render(<Analytics />)
       const part = await screen.findByRole('region', { name: 'Applications' })
       expect(within(part).getByText('60%')).toBeInTheDocument()
-      expect(part).toHaveTextContent('of your applications with an outcome (an interview, a rejection or no reply) led to an interview: 3 of 5, likely between 40% and 77%.')
+      expect(part).toHaveTextContent('of your applications with an outcome (an interview, a rejection or no reply) led to an interview: 3 of 5.')
+      expect(part).not.toHaveTextContent('likely')
       // where each application stands is the Applications board's columns, not repeated here
       expect(within(part).queryAllByRole('group')).toEqual([])
       expect(within(part).queryAllByRole('img')).toEqual([])
@@ -148,12 +149,13 @@ describe('Analytics', () => {
       const band = (passed: number, decided: number, low: number, high: number) => ({ passed, decided, rate: passed / decided, low, high })
       const BANDS = { split: 0.75, top: band(5, 6, 0.6, 0.95), near_min: band(1, 6, 0.05, 0.35), reading: 'near_min_lower' }
 
-      it('shows both bands with their ranges and the reading when the server gives one', async () => {
+      it('shows both bands as counts with no range, and the reading when the server gives one', async () => {
         mockDoor({ status_summary: summary({ ...APPLIED, pass_rates_by_score: BANDS, cost: null }) })
         render(<Analytics />)
         const part = await screen.findByRole('region', { name: 'Applications' })
-        expect(part).toHaveTextContent('Best-scored matches: 5 of 6 led to an interview, likely between 60% and 95%.')
-        expect(part).toHaveTextContent('Matches near your "How close a match to show" setting: 1 of 6 led to an interview, likely between 5% and 35%.')
+        expect(part).toHaveTextContent('Best-scored matches: 5 of 6 led to an interview.')
+        expect(part).toHaveTextContent('Matches near your "How close a match to show" setting: 1 of 6 led to an interview.')
+        expect(part).not.toHaveTextContent('likely')
         expect(within(part).getByText('These led to an interview less often: consider raising that setting in Profile.')).toBeInTheDocument()
       })
 
