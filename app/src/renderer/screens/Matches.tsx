@@ -349,7 +349,7 @@ export function Matches({
               </p>
             )}
             {onLowerBar && listed.scored !== undefined && listed.scored > 0 && !(newOnly && listed.reviewedAt) && (
-              <div className="actions flush">
+              <div className="actions">
                 <button type="button" className="secondary" onClick={onLowerBar}>
                   Show broader matches
                 </button>

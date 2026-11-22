@@ -54,15 +54,6 @@ export function Guide() {
             <button type="button" className="quiet">Not for me</button>
             <button type="button" className="quiet" disabled>Disabled</button>
           </Row>
-          <Row label="actions flush">
-            <div>
-              <p className="body">Text above the row</p>
-              <div className="actions flush">
-                <button type="button" className="secondary">Show broader matches</button>
-                <button type="button" className="secondary">Check your search terms</button>
-              </div>
-            </div>
-          </Row>
           <Row label="link-inline">
             <span className="small">
               LinkedIn (not enabled, <button type="button" className="link-inline">enable</button>)

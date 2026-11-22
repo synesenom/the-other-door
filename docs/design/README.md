@@ -301,7 +301,7 @@ the table; the layouts and components stay the same.
 
 `docs/logo/door.svg` (512 × 512, with its parchment tile) is the app icon: the ink `d` with the
 blue (`#3D5798`) bar under it, a pill as wide as the `d`'s bowl and stem. `door-512.png` and `door-120.png` are it
-rendered (with Playwright's Chromium: open `door.svg` in a page at the size and screenshot it, `omitBackground` off); the social card is `mockups/social.js`'s (`node docs/design/mockups/social.js`); the phone app's icons (`app/src/web/public/icons/`) are the same, full-bleed for
+rendered (with Playwright's Chromium: open `door.svg` in a page at the size and screenshot it, `omitBackground` off); the social card is `mockups/social.html`, rendered with the screens by `node docs/design/mockups/render.js`; the phone app's icons (`app/src/web/public/icons/`) are the same, full-bleed for
 `apple-touch-icon.png` and inside the safe zone for `maskable-512.png`. Neither the logo nor the
 product's name appears inside the app's screens, except on the splash while the window starts, where
 the bar grows and shrinks.

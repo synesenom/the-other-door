@@ -1,5 +1,5 @@
 // Renders the mockups into ../screens: desktop at 1280x800, phone at 390x844, both at 2x,
-// plus phones.png, the phone screens side by side. Run: node docs/design/mockups/render.js
+// plus phones.png, the phone screens side by side, and the social card, docs/logo/door-social.png (social.html). Run: node docs/design/mockups/render.js
 // Deterministic: the shipped fonts from fonts.css (no network), no hinting, software rendering, no animation, so a second run
 // writes the same files and git status stays clean.
 const fs = require('fs');
@@ -40,5 +40,10 @@ const SHOTS = [
   await page.evaluate(() => Promise.all([...document.images].map(i => i.decode())));
   await page.screenshot({ path: path.join(out, 'phones.png') });
   console.log('wrote phones.png');
+  const card = await browser.newPage({ viewport: { width: 1280, height: 640 }, deviceScaleFactor: 1 });
+  await card.goto(pathToFileURL(path.join(dir, 'social.html')).href);
+  await card.evaluate(() => Promise.all([...document.fonts].map(f => f.load())));
+  await card.screenshot({ path: path.join(dir, '..', '..', 'logo', 'door-social.png') });
+  console.log('wrote door-social.png');
   await browser.close();
 })();
