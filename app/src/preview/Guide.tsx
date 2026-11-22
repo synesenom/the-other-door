@@ -40,8 +40,10 @@ export function Guide() {
 
         <Part title="Buttons">
           <Row label="primary">
-            <button type="button" className="primary">Prepare application</button>
-            <button type="button" className="primary" disabled>Disabled</button>
+            <div style={{ display: 'flex', gap: 24 }}>
+              <button type="button" className="primary">Prepare application</button>
+              <button type="button" className="primary" disabled>Disabled</button>
+            </div>
           </Row>
           <Row label="secondary">
             <button type="button" className="secondary go">Open in browser</button>
@@ -73,8 +75,10 @@ export function Guide() {
             </div>
           </Row>
           <Row label="switch">
-            <Switch label="Preview" checked={on} onChange={setOn} />
-            <Switch label="Off" checked={false} onChange={() => undefined} />
+            <div style={{ display: 'flex', gap: 24 }}>
+              <Switch label="Preview" checked={on} onChange={setOn} />
+              <Switch label="Off" checked={false} onChange={() => undefined} />
+            </div>
           </Row>
           <Row label="nav-item">
             <nav aria-label="Sidebar items" style={{ display: 'flex', flexDirection: 'column', gap: 2, width: 180 }}>
