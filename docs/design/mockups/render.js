@@ -1,5 +1,7 @@
 // Renders the mockups into ../screens: desktop at 1280x800, phone at 390x844, both at 2x,
 // plus phones.png, the phone screens side by side. Run: node docs/design/mockups/render.js
+// Deterministic: the shipped fonts from fonts.css (no network), no hinting, software rendering, no animation, so a second run
+// writes the same files and git status stays clean.
 const fs = require('fs');
 const path = require('path');
 const { pathToFileURL } = require('url');
@@ -15,16 +17,17 @@ const SHOTS = [
 ];
 (async () => {
   const proxy = process.env.HTTPS_PROXY ? { server: process.env.HTTPS_PROXY } : undefined;
-  const browser = await chromium.launch({ proxy });
+  const browser = await chromium.launch({ proxy, args: ['--font-render-hinting=none', '--disable-gpu', '--disable-lcd-text', '--force-color-profile=srgb'] });
   for (const [file, name, viewport, query = ''] of SHOTS) {
-    const ctx = await browser.newContext({ viewport, deviceScaleFactor: 2, ignoreHTTPSErrors: true });
+    const ctx = await browser.newContext({ viewport, deviceScaleFactor: 2, reducedMotion: 'reduce' });
     const page = await ctx.newPage();
     // The unfilled template's {{holes}} make the browser complain before support.js fills them.
     page.on('console', m => m.type() === 'error' && !m.text().includes('{{') && console.log(file, m.text()));
     await page.goto(pathToFileURL(path.join(dir, file + '.dc.html')).href + query);
     await page.waitForSelector('html[data-ready]');
     await page.evaluate(() => document.fonts.ready);
-    await page.screenshot({ path: path.join(out, name + '.png') });
+    await page.evaluate(() => Promise.all([...document.fonts].map(f => f.load())));
+    await page.screenshot({ path: path.join(out, name + '.png'), animations: 'disabled', caret: 'hide' });
     console.log('wrote', name + '.png');
     await ctx.close();
   }

@@ -8,7 +8,7 @@
 <body>
 <x-dc>
 <helmet>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&amp;family=Figtree:wght@400;600&amp;display=swap">
+<link rel="stylesheet" href="fonts.css">
 <style>
 body{margin:0}
 button{font:inherit}
@@ -46,9 +46,8 @@ button{font:inherit}
   <nav aria-label="Main" style="flex: none; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); padding: 6px 4px 22px; border-top: 1px solid {{t.rule}}; background: {{t.ground}}">
     <sc-for list="{{tabs}}" as="tab" hint-placeholder-count="5">
       <a href="#" style="min-height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 3px; text-decoration: none; font-size: 11px; color: {{tab.color}}; font-weight: {{tab.weight}}">
-        <span aria-hidden="true" style="width: 16px; height: 3px; border-radius: 2px; background: {{tab.dash}}"></span>
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{tab.icon}}"></path></svg>
-        <span>{{tab.label}}</span>
+        <span style="text-decoration: {{tab.deco}}; text-decoration-thickness: 2px; text-underline-offset: 4px">{{tab.label}}</span>
       </a>
     </sc-for>
   </nav>
@@ -81,7 +80,7 @@ class Component extends DCLogic {
       label, icon: icons[label],
       color: label === active ? t.ink : t.muted,
       weight: label === active ? '600' : '400',
-      dash: label === active ? t.accent : 'transparent'
+      deco: label === active ? 'underline' : 'none'
     }));
     return { t, jobs, tabs };
   }

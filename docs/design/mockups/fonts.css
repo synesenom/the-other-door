@@ -1,0 +1,4 @@
+/* The shipped fonts, so a render needs no network and the same files every time (render.js). */
+@font-face { font-family: "Young Serif"; font-weight: 400; src: url("../../../profile.example/fonts/YoungSerif-Regular.ttf"); }
+@font-face { font-family: "Figtree"; font-weight: 400; src: url("../../../profile.example/fonts/Figtree-Regular.ttf"); }
+@font-face { font-family: "Figtree"; font-weight: 600; src: url("../../../profile.example/fonts/Figtree-SemiBold.ttf"); }
