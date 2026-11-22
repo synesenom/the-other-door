@@ -34,7 +34,7 @@ The maintainer is told only when a PR needs them.
 
 - **Pass**: every goal was tried and matched, every box is ticked, CI is green.
 - **Fail**: a goal was tried and did not match, or a goal was not tried (not run, or a `Done when` sentence with no note). Claude picks a fail up by itself: it fixes the change, or makes the goal runnable, or rewrites it (and says so).
-- **Pending**: only for what needs the maintainer: a change to the app's screens (with before/after screenshots in the report), a `Needs the maintainer:` line, or a goal marked `(by the maintainer)`.
+- **Pending**: only for what needs the maintainer: a `Needs the maintainer:` line, a goal marked `(by the maintainer)`, or a PR or issue opened by someone else. A change to the app's screens is not one of them: the checker shoots each changed screen before and after, looks at the shots, judges them against the goals and the design rules (`docs/design/README.md`), and puts them in its report.
 
 ## Epics
 

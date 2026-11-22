@@ -104,7 +104,7 @@ From these, draft:
   <the PR attribution lines this session's system reminder gives>
   ```
 - The body and the issue are final once the checks finish: `scripts/decide.py` holds a PR whose text or closing issue was edited after that. An edit that cannot wait is followed by running every check again (a push, or `gh run rerun` of each run): one rerun is not enough.
-- Whatever needs a person goes on a `Needs the maintainer: …` line, never a box. A PR that changes `app/src/renderer/`, `app/src/web/`, `app/src/preview/` or `docs/design/` always carries `Needs the maintainer: look at it` (`scripts/decide.py` enforces it from the changed files); the verifier runs it and posts before/after screenshots of each changed screen (pushed to `verify-media/<pr>`, embedded in its comment so they show on a phone), and the maintainer merges it after looking. Every other PR merges itself once verified (Step 7).
+- Whatever needs a person goes on a `Needs the maintainer: …` line, never a box: only what no run can show (a real phone, a clean-machine install). A PR that changes the app's screens needs no such line: the verifier shoots each changed screen before and after, looks at the shots and judges them against the goals and `docs/design/README.md` (posted in its comment from `verify-media/<pr>`, so they show on a phone). Every PR merges itself once verified (Step 7).
 
 ---
 

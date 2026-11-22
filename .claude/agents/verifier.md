@@ -43,7 +43,12 @@ Never edit the PR's text or an issue: no box ticked, no goal reworded, even one 
 
 ## UI changes
 
-Before and after screenshots of each changed screen: base against head, the same state, light theme, embedded in the comment. Push them to the branch `verify-media/<pr>` (made from `main`; only these files) and embed them as `![what it shows](https://github.com/synesenom/the-other-door/blob/verify-media/<pr>/<name>.png?raw=true)`. With none, the status stays pending with "no screenshot of the change".
+A change to the app's screens (`app/src/renderer/`, `app/src/web/`, `app/src/preview/`, `docs/design/`) has no human look after you: you are the one who looks, and a screen that passes you merges.
+
+- **Shoot.** Before and after screenshots of each changed screen: base against head, the same state, light theme. Then the head alone in dark and at 390 px wide. Each shot shows the part that changed, scrolled to it (a page's top when the change is lower down is no shot of it). Render them in the preview (`npx vite --config vite.preview.config.mts` from `app/`, `?scene=…&state=…&theme=…`), or in the built app for what the preview cannot show.
+- **Look.** Open every shot with Read and look at it; a shot you did not open is a check not run. Write what you see, not what the code says.
+- **Judge.** For each goal about a screen, a check that it shows in the after shot (`saw`: what the shot shows). Then the after shots against `docs/design/README.md`: tokens and type, one primary per view, button order, a quiet button only beside a bordered one, words not ids, no new destination, dark mode legible, nothing cut off, overlapping or wrapped badly at 390 px. A rule broken is `matches_goal: false` on the check of that screen's goal, with the rule named in `saw`.
+- **Post.** Push the shots to the branch `verify-media/<pr>` (made from `main`; only these files) and embed them in the comment as `![what it shows](https://github.com/synesenom/the-other-door/blob/verify-media/<pr>/<name>.png?raw=true)`, before and after side by side. With none, the status stays pending with "no screenshot of the change".
 
 ## Status
 
