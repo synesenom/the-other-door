@@ -23,11 +23,12 @@ the original logo, no underline on quiet buttons, the faded blue `#3D5798` as th
    the blue dash above for the open row and the screen's title. The selected row loses its fill.
 6. **Heavy rule on the column, not on every card.** The Applications board puts the heavy ink rule under the
    column's head and hairlines between its cards, as the phone layout already does.
-7. **Notes, errors and chips stay visible.** Without an outline their fill was 1.1:1 on the ground, almost
-   invisible. Notes and errors become plain lines with their mark (a note in ink, an error after the red ✕),
-   like "needs you"; chips keep a hairline outline and no fill.
+7. **Notes, errors and chips: a fill, no outline.** The review warned that without an outline the `surface`
+   fill is 1.1:1 on the ground, almost invisible, and proposed plain lines and outlined chips. The owner keeps
+   the fill and drops the outline; the fill is `page` (into which `surface` folds, change 8), 1.2:1 on the
+   ground, which reads as a shaded strip.
 8. **Fewer near-duplicates.**
-   - `surface` folds into `page` (once notes, chips and rows lose their fill, little else uses it).
+   - `surface` folds into `page` (once rows lose their fill, notes and chips are what is left, and they take `page`).
    - `paper-muted` (one use) becomes `border`; `on-warning` and `paper-ink` (1.09:1 apart) become one dark ink.
    - One corner radius, 2 px, besides the round ends of bars, the dash and the switch.
    - `score-s` (20) merges into `display-s` (22): list scores take the heading size.
