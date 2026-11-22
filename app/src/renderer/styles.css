@@ -48,7 +48,7 @@ strong, b { font-weight: 600; }
 .nav-item {
   min-height: 40px;
   text-align: left;
-  padding: 0; border-radius: var(--radius-m);
+  border-radius: var(--radius-m);
 }
 .nav-item[aria-current='page'] { font-weight: 600; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 6px; }
 .sidebar-foot { margin-top: auto; display: flex; flex-direction: column; gap: var(--space-2); }
@@ -118,14 +118,13 @@ strong, b { font-weight: 600; }
 .actions { display: flex; align-items: center; flex-wrap: wrap; }
 .actions button { white-space: nowrap; }
 .primary, .secondary, .quiet {
-  min-height: var(--size-button-height); padding: 0 var(--space-2);
+  min-height: var(--size-button-height);
   border-radius: var(--radius-m); font-weight: 600; font-size: var(--text-small-size);
 }
 .primary { background: var(--color-ink); color: var(--color-ground); border: 0; padding: 0 var(--space-4); }
 .photo-preview { display: block; height: auto; border-radius: var(--radius-m); }
-.secondary { background: none; border: 0; color: var(--color-accent); }
-/* Text buttons: no side padding; space only between neighbours. */
-.secondary, .quiet { padding: 0; }
+.secondary { background: none; border: 0; padding: 0; color: var(--color-accent); }
+/* Text buttons: no side padding (the reset above); space only between neighbours. */
 .primary + :is(.secondary, .quiet) { margin-left: var(--space-2); }
 :is(.secondary, .quiet) + :is(.secondary, .quiet) { margin-left: var(--space-3); }
 .quiet { color: var(--color-ink-muted); }
@@ -323,7 +322,7 @@ textarea { resize: none; }
 .primary:disabled, .secondary:disabled, .quiet:disabled, .pill:disabled { opacity: 0.4; }
 /* Buttons answer the pointer: a quick colour change, the same for each kind everywhere; a disabled one stays still.
    Only where there is a pointer to hover with: a tap on a phone leaves nothing lit. */
-.primary, .secondary, .quiet, .pill, .nav-item, .back { transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease, opacity 120ms ease; }
+.primary, .secondary, .quiet, .pill, .nav-item, .back { transition: background-color 120ms ease, color 120ms ease, opacity 120ms ease; }
 @media (hover: hover) {
   .primary:hover:not(:disabled) { background: var(--color-ink-muted); }
   .secondary:hover:not(:disabled) { text-decoration: underline; text-underline-offset: 3px; }
@@ -331,10 +330,9 @@ textarea { resize: none; }
   .pill:hover:not(:disabled):not([aria-pressed='true']) { color: var(--color-ink); }
   .nav-item:hover:not([aria-current='page']) { color: var(--color-ink); }
   .switch:hover .switch-track { box-shadow: 0 0 0 1px var(--color-ink); }
-  /* a line of text, not a box: it underlines instead (below) */
 }
-.primary:active:not(:disabled) { background: var(--color-ink); border-color: var(--color-ink); }
-.secondary:active:not(:disabled), .quiet:active:not(:disabled) { background: var(--color-border); }
+.primary:active:not(:disabled) { background: var(--color-ink); }
+.secondary:active:not(:disabled), .quiet:active:not(:disabled) { color: var(--color-ink); }
 
 .materials { display: flex; flex-direction: column; gap: var(--space-5); }
 .materials > * { margin: 0; }
