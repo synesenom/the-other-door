@@ -185,14 +185,12 @@ function Summary({
   onViewMatches,
   reminder,
   onChooseDiscovery,
-  onLowerBar,
   onCheckSearch,
 }: {
   record: RunRecord
   onViewMatches: () => void
   reminder: DiscoveryChoice[]
   onChooseDiscovery?: () => void
-  onLowerBar?: () => void
   onCheckSearch?: () => void
 }) {
   const n = record.new_above_threshold.length
@@ -232,24 +230,12 @@ function Summary({
         <button type="button" className="primary" onClick={onViewMatches}>
           View matches
         </button>
-        <button type="button" className="quiet" onClick={() => void window.door.invoke('show-run', record.started_at)}>
-          Show run record
-        </button>
+        {account !== null && onCheckSearch && (
+          <button type="button" className="quiet" onClick={onCheckSearch}>
+            Check your search terms
+          </button>
+        )}
       </div>
-      {account !== null && (onLowerBar || onCheckSearch) && (
-        <div className="actions flush">
-          {onLowerBar && (
-            <button type="button" className="quiet" onClick={onLowerBar}>
-              Show broader matches
-            </button>
-          )}
-          {onCheckSearch && (
-            <button type="button" className="quiet" onClick={onCheckSearch}>
-              Check your search terms
-            </button>
-          )}
-        </div>
-      )}
     </section>
   )
 }
@@ -263,7 +249,6 @@ export function Finding({
   discoveryUnchosen = [],
   discoveryOff = [],
   onChooseDiscovery,
-  onLowerBar,
   onCheckSearch,
 }: {
   /** null only while watching a run started elsewhere: this window has none of its own */
@@ -275,8 +260,7 @@ export function Finding({
   discoveryOff?: DiscoveryChoice[]
   /** Opens Profile, where they are chosen. */
   onChooseDiscovery?: () => void
-  /** The zero-match card's actions, each opening a Profile section; none given, no button (the phone has no Profile). */
-  onLowerBar?: () => void
+  /** The zero-match card's second action, opening Profile at what to look for; none given, no button (the phone has no Profile). */
   onCheckSearch?: () => void
   onStart: () => void
   onStop: () => void
@@ -342,7 +326,6 @@ export function Finding({
           onViewMatches={onViewMatches}
           reminder={state.firstRun && state.record.new_above_threshold.length < FEW_MATCHES ? discoveryOff : []}
           onChooseDiscovery={onChooseDiscovery}
-          onLowerBar={onLowerBar}
           onCheckSearch={onCheckSearch}
         />
       )}

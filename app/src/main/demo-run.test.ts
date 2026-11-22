@@ -82,7 +82,7 @@ describe('startDemoRun', () => {
     const outcomes = Object.fromEntries(r.search!.sites.map((s) => [s.site, s]))
     expect(Object.values(outcomes).map((s) => s.outcome).sort()).toEqual(['empty', 'ok', 'resting'])
     expect(Object.values(outcomes).find((s) => s.outcome === 'resting')?.until).toBeTruthy()
-    // the record is on disk where "Show run record" looks
+    // the record is on disk, as a real run leaves it
     expect(existsSync(join(dir, 'jobs', 'runs', '2026-10-29T08-00-00-000Z.json'))).toBe(true)
   })
 

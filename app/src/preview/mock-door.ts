@@ -331,7 +331,6 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
       stopPlay = null
       return { ok: true }
     },
-    'show-run': done,
     'current-board': async () => scene.board ?? { active: false },
   }
   const subscribers: { [E in keyof Events]: (cb: (payload: Events[E]) => void) => () => void } = {

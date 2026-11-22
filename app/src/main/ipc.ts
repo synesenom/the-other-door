@@ -12,7 +12,7 @@ import { copyFile } from 'node:fs/promises'
 import { basename, join } from 'node:path'
 import tools from '../generated/tools.json'
 import { DoorError, type Candidate } from './door-server'
-import { isJobId, isMaterialName, materialPath, runRecordPath } from './files'
+import { isJobId, isMaterialName, materialPath } from './files'
 import { inPlayStatus, needsJob, noticeFor, type Notice, type NoticeEvent, type NoticeTarget } from './notices'
 import { type RunBoard } from './run-board'
 import { checkUrls, type CvSources, type PickResult } from './cv-sources'
@@ -242,12 +242,6 @@ export function buildActions(deps: IpcDeps, server: ServerLike, state: { runs: (
       const demo = state.demo()
       if (demo) demo.stop()
       else if (state.runs() > 0) await server.stop()
-      return { ok: true }
-    },
-    'show-run': async (startedAt: string): Promise<{ ok: boolean; error?: string }> => {
-      const path = runRecordPath(deps.home, startedAt)
-      if (!path) return { ok: false, error: 'that run record is not on disk' }
-      deps.showItemInFolder(path)
       return { ok: true }
     },
     'current-board': async (): Promise<RunBoard> => deps.currentBoard?.() ?? { active: false },

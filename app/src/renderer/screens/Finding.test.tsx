@@ -264,13 +264,11 @@ describe('Finding, the summary card', () => {
     expect(screen.queryByRole('alert')).toBeNull()
   })
 
-  it('shows how long it took, opens the run record', async () => {
-    const { actions } = mockDoor({})
-    const showRun = actions['show-run']
+  it('shows how long it took, and one action: View matches', () => {
+    mockDoor({})
     show({ kind: 'summary', record: record() }, { active: false })
     expect(screen.getByText(/19 min/)).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: 'Show run record' }))
-    expect(showRun).toHaveBeenCalledWith(STARTED)
+    expect(screen.getAllByRole('button').map((b) => b.textContent)).toEqual(['View matches'])
   })
 
 })
@@ -287,7 +285,7 @@ describe('Finding, the summary card of a run with no new matches', () => {
     })
   const open = (r: RunRecord, extra: Record<string, unknown> = {}) => {
     mockDoor({})
-    const cb = { onLowerBar: vi.fn(), onCheckSearch: vi.fn() }
+    const cb = { onCheckSearch: vi.fn() }
     render(<Finding state={{ kind: 'summary', record: r }} board={{ active: false }} {...handlers()} {...cb} {...extra} />)
     return cb
   }
@@ -298,18 +296,17 @@ describe('Finding, the summary card of a run with no new matches', () => {
     expect(screen.getByText('How close a match to show: Balanced').closest('p')).toBe(screen.getByText('917 jobs found, 40 close enough to score, none scored 0.65 or better').closest('p'))
   })
 
-  it('offers the next steps as actions', async () => {
+  it('offers two actions: View matches, and Check your search terms', async () => {
     const cb = open(none())
-    await userEvent.click(screen.getByRole('button', { name: 'Show broader matches' }))
+    expect(screen.getAllByRole('button').map((b) => b.textContent)).toEqual(['View matches', 'Check your search terms'])
     await userEvent.click(screen.getByRole('button', { name: 'Check your search terms' }))
-    expect(cb.onLowerBar).toHaveBeenCalledTimes(1)
     expect(cb.onCheckSearch).toHaveBeenCalledTimes(1)
   })
 
   it('offers no action it cannot open', () => {
     mockDoor({})
     show({ kind: 'summary', record: none() }, { active: false })
-    expect(screen.queryByRole('button', { name: 'Show broader matches' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Check your search terms' })).toBeNull()
   })
 
   it('says the next full run reads career sites only when this one skipped those steps', () => {
@@ -337,7 +334,7 @@ describe('Finding, the summary card of a run with no new matches', () => {
   it('has no account or actions when there are new matches', () => {
     open(record())
     expect(screen.queryByText(/jobs found/)).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Show broader matches' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Check your search terms' })).toBeNull()
   })
 })
 

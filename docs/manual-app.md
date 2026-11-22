@@ -213,10 +213,10 @@ A card says how many new matches the run found ("2 new matches": the ads this ru
 about what did not work, because nothing there needs you: a site that could not be read is read
 again on the next run, and a posting that could not be scored is scored then. Every site's outcome
 and error is in the run record. "View matches" opens Matches on
-"New only", "Show run record" shows the run's file in your file manager. Matches and "Last run" are refreshed.
+"New only". Matches and "Last run" are refreshed.
 
 When no match is new, the card says what the run did in one line ("917 jobs found, 40 close enough to
-score, none scored 0.65 or better", then on its own line "How close a match to show: Balanced") and offers what you can do about it: "Check your search terms" opens Profile at your search terms, "Show broader matches" at "How close a match to show". When the
+score, none scored 0.65 or better", then on its own line "How close a match to show: Balanced") and offers what you can do about it: "Check your search terms" opens Profile at What to look for, your search terms and "How close a match to show". When the
 run skipped Discover, Follow or Collect, it adds that the next full run also reads employers' own career sites.
 
 After the first run, if it found fewer than three new matches and every employer discovery source

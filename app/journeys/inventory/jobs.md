@@ -126,7 +126,7 @@ These only reach the window as IPC. They can be faked with `app.evaluate(({Brows
   - A list of `top` with title, company and a score with 2 decimals (omitted when `top` is empty). — ✓ Find new jobs runs the five steps…
   - "Took N s" / "Took N min" from `elapsed_s`. — ✓ Find new jobs runs the five steps…
   - **btn "View matches"** → Matches with **New only on** (remounted), refreshKey++. — ✓ View matches opens Matches on New only, with the ads the run found
-  - **btn "Show run record"** → IPC `showRun(started_at)` → shows `jobs/runs/<started_at with [^A-Za-z0-9_-]→->.json` in the OS file manager. Failure ("that run record is not on disk") is silently ignored. Likely untestable beyond "no error". — unit: `app/src/renderer/screens/Finding.test.tsx`
+  - **btn "Check your search terms"** (quiet, only beside an account of a run with no new matches, not on the phone) → Profile at What to look for. — unit: `app/src/renderer/screens/Finding.test.tsx`
   - **Not shown**: `failures`, per-site outcomes, `match.failed`, `skipped`. A run with failed sites looks the same as a clean one (#478). — unit: `app/src/renderer/screens/Finding.test.tsx` (says nothing of a site it could not read or ads it could not score) (disk: ✓ a board that fails: the run still ends in a summary and its record names the board; ✓ scoring that fails: the ads stay on disk unscored and the record lists them as failed)
 - **Error state** (not running, state error): **alert** "The other door could not start the run: <message>" and **btn "Find new jobs"** (primary) → startRun(). — ✓ find_jobs answering an error…; ✓ the server dying during the run…
 - The idle "Find new jobs" button with no error is unreachable: the screen is hidden when the state is null. — not tested: unreachable
@@ -517,7 +517,7 @@ Reached through:
 
 **`import_posting`** (ImportDialog): `job_id`, `score` (number or null), `score_reason`, `score_error`. Errors matching `/already stored/i` give the duplicate branch. Notices fire only when `args.url` is a string.
 
-**`find_jobs`** (App / Finding): `started_at` (Show run record), `elapsed_s`, `new_above_threshold[]` (length only), `top: [{id, title, company, score}]`. Error text regexes: `/another long-running tool/`, `/is in progress/`; envelope `stopped`.
+**`find_jobs`** (App / Finding): `elapsed_s`, `new_above_threshold[]` (length only), `top: [{id, title, company, score}]`. Error text regexes: `/another long-running tool/`, `/is in progress/`; envelope `stopped`.
 
 **`mark_seen`**: the result is ignored; a rejection keeps the id queued for the next list load.
 

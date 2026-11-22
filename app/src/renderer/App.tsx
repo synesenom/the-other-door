@@ -425,7 +425,6 @@ export function App({ start }: { start?: AppStart } = {}) {
             discoveryUnchosen={sandbox || remote ? [] : (profile?.discovery_unchosen ?? [])}
             discoveryOff={sandbox || remote || !profile ? [] : discoveryOff(profile)}
             onChooseDiscovery={openRisky}
-            onLowerBar={remote ? undefined : () => openProfile('search')}
             onCheckSearch={remote ? undefined : () => openProfile('search')}
           />
         ) : current === 'Matches' ? (

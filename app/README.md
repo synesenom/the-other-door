@@ -224,8 +224,7 @@ renderer (React) -- window.door.call / onProgress / invoke / on --> main (ipc.ts
   `find_jobs` call with a 15 minute idle limit (progress restarts it) and progress coalesced to
   one message per 200 ms. **Stop** is `door:stop-run`: it kills the Python child
   (`DoorServer.stop()`), the call rejects as stopped and the next call starts a new child; a
-  run started elsewhere cannot be stopped from here. "Show run record" is `door:show-run` (the
-  run's `started_at`, mapped to `jobs/runs/<name>.json` like `find.py` does).
+  run started elsewhere cannot be stopped from here.
 - A main-process action (anything the window asks of main that is not a tool: open a link, save a
   PDF, pick a file, the sign-in, the update) is **one entry of `buildActions` in `src/main/ipc.ts`**:
   its handler, and by its parameters and answer its type. `window.door.invoke(action, ...args)`
