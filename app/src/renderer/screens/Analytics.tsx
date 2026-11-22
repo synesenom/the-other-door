@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { statusSummary, type CostBlock, type PassRate, type ScoreBands, type StatusSummary } from '../api'
 import { Market } from './Market'
 import { PageSections } from './PageSections'
+import { MIN_SCORE_NAME } from './minScore'
 
 /** Dollars and cents, "<$0.01" for a sliver above nothing. */
 export function usd(amount: number): string {
@@ -47,14 +48,14 @@ function bandLine(label: string, rate: PassRate): string {
   return `${label}: ${rate.passed} of ${rate.decided} led to an interview${range}.`
 }
 
-/** The same rate for the better-scored half of the matches and the half near the threshold (#90). */
+/** The same rate for the better-scored half of the matches and the half near "How close a match to show" (#90). */
 function ScoreBandsView({ bands }: { bands: ScoreBands }) {
   return (
     <div className="part-head">
       <p className="small">{bandLine('Best-scored matches', bands.top)}</p>
-      <p className="small">{bandLine('Matches near your threshold', bands.near_min)}</p>
+      <p className="small">{bandLine(`Matches near your "${MIN_SCORE_NAME}" setting`, bands.near_min)}</p>
       {bands.reading === 'near_min_lower' && (
-        <p className="small">Matches near your threshold led to an interview less often: consider raising it.</p>
+        <p className="small">{`Matches near your "${MIN_SCORE_NAME}" setting led to an interview less often: consider raising "${MIN_SCORE_NAME}".`}</p>
       )}
     </div>
   )

@@ -607,7 +607,7 @@ finds fit you. An application with no change for 45 days counts as no reply, whe
 marked it ghosted (the Applications board offers to); once you record what happened next, it counts as that. Until an application has
 an outcome it says only that the rate shows here then. Under it, once at least 5 applications in each
 half have an outcome, the same rate for the better-scored half of your sent applications and for the
-half near your threshold (split near the median score), and a line "consider raising it" only when
+half near your "How close a match to show" setting (split near the median score), and a line "consider raising it" only when
 the near-minimum half led to an interview clearly less often. Where each application stands is on the
 Applications board, and your matches are on Matches.
 

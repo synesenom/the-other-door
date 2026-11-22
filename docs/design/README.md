@@ -246,7 +246,7 @@ wide buttons with their keys: Not for me (X), Later (Space), Prepare (P).
 right, nothing in it changes anything. Applications first (#66, #87): the interview rate. It leads
 like Claude usage, with the interview rate in `display-s` (the applications with an outcome, an interview, a
 rejection or no reply, that led to an interview) and one `small` line saying so with "3 of 5,
-likely between 40% and 77%" (the Wilson range); before any outcome, one muted line instead (no reply: marked ghosted, or no change for 45 days). Under the rate (#90), when the server sends `pass_rates_by_score`, two `small` lines (best-scored matches, matches near your minimum score, each "5 of 6 led to an interview, likely between 60% and 95%") and, only when the ranges separate, a third saying to consider raising the minimum score.
+likely between 40% and 77%" (the Wilson range); before any outcome, one muted line instead (no reply: marked ghosted, or no change for 45 days). Under the rate (#90), when the server sends `pass_rates_by_score`, two `small` lines (best-scored matches, matches near your "How close a match to show" setting, each "5 of 6 led to an interview, likely between 60% and 95%") and, only when the ranges separate, a third saying to consider raising "How close a match to show".
 Nothing else: where each application stands is the Applications board's columns and the matches
 are the Matches list, so neither is drawn again here. Claude usage next: the total of the last 7 days in
 `display-s` marked "≈", then one `small` line in ink that starts in bold "You don't pay this." (the

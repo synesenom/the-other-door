@@ -191,7 +191,7 @@ describe('scenes', () => {
     const part = await screen.findByRole('region', { name: 'Applications' })
     expect(part).toHaveTextContent('of your applications with an outcome (an interview, a rejection or no reply) led to an interview: 6 of 12, likely between 36% and 64%.')
     expect(part).toHaveTextContent('Best-scored matches: 5 of 6 led to an interview, likely between 65% and 94%.')
-    expect(part).toHaveTextContent('Matches near your threshold led to an interview less often: consider raising it.')
+    expect(part).toHaveTextContent('Matches near your "How close a match to show" setting led to an interview less often: consider raising "How close a match to show".')
     expect(within(part).queryAllByRole('img')).toEqual([])
     const market = await screen.findByRole('region', { name: 'Market' })
     expect(await within(market).findByRole('listitem', { name: 'IFRS, in your CV' })).toHaveTextContent('46% of the ads')

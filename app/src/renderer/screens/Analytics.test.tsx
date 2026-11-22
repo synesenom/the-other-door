@@ -153,8 +153,8 @@ describe('Analytics', () => {
         render(<Analytics />)
         const part = await screen.findByRole('region', { name: 'Applications' })
         expect(part).toHaveTextContent('Best-scored matches: 5 of 6 led to an interview, likely between 60% and 95%.')
-        expect(part).toHaveTextContent('Matches near your threshold: 1 of 6 led to an interview, likely between 5% and 35%.')
-        expect(within(part).getByText('Matches near your threshold led to an interview less often: consider raising it.')).toBeInTheDocument()
+        expect(part).toHaveTextContent('Matches near your "How close a match to show" setting: 1 of 6 led to an interview, likely between 5% and 35%.')
+        expect(within(part).getByText('Matches near your "How close a match to show" setting led to an interview less often: consider raising "How close a match to show".')).toBeInTheDocument()
       })
 
       it('shows the bands without a sentence when the reading is null', async () => {
@@ -169,12 +169,12 @@ describe('Analytics', () => {
         mockDoor({ status_summary: summary({ ...APPLIED, pass_rates_by_score: null, cost: null }) })
         render(<Analytics />)
         const part = await screen.findByRole('region', { name: 'Applications' })
-        expect(part).not.toHaveTextContent('threshold')
+        expect(part).not.toHaveTextContent('How close a match to show')
         cleanup()
         mockDoor({ status_summary: summary({ pass_rates: { application: { passed: 0, decided: 0, rate: null, low: null, high: null } }, pass_rates_by_score: BANDS, cost: null }) })
         render(<Analytics />)
         const empty = await screen.findByRole('region', { name: 'Applications' })
-        expect(empty).not.toHaveTextContent('threshold')
+        expect(empty).not.toHaveTextContent('How close a match to show')
       })
     })
 
