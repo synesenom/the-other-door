@@ -1,7 +1,7 @@
 // The visual guide (`?scene=guide`): every control and mark of the renderer on one page, in its real
 // classes, so a change to a shared style is seen (and hovered, pressed, focused) in one place.
 // Its own layout is inline: a development page, in no build of the app.
-import { useState, type ReactNode } from 'react'
+import { useState, type CSSProperties, type ReactNode } from 'react'
 import { CheckMark, CrossMark, WarningMark } from '../renderer/screens/CheckMark'
 import { Switch } from '../renderer/screens/Switch'
 import { ErrorBox } from '../renderer/screens/AppName'
@@ -160,13 +160,15 @@ export function Guide() {
 
         <Part title="Heavy rules and hairlines">
           <Row label="list head">
-            <div style={{ width: '100%' }}>
-              <h3 className="display-s" style={{ paddingBottom: 12, borderBottom: '2px solid var(--color-ink)' }}>Matches</h3>
-              <ul className="rows" style={{ padding: 0 }}>
-                {['Senior Financial Controller', 'Økonomichef'].map((t) => (
-                  <li key={t}><button type="button" className="row"><span className="title">{t}</span><span className="score-s">0.88</span></button></li>
-                ))}
-              </ul>
+            <div className="matches" style={{ width: '100%', height: 'auto' }}>
+              <div className="list-pane" style={{ minWidth: 0, overflow: 'visible', padding: 0 }}>
+                <div className="list-head rule-heavy" style={{ paddingTop: 0 }}><h3 className="display-s">Matches</h3></div>
+                <ul className="rows">
+                  {['Senior Financial Controller', 'Økonomichef'].map((t) => (
+                    <li key={t}><button type="button" className="row"><span className="title">{t}</span><span className="score-s">0.88</span></button></li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </Row>
           <Row label="board column">
@@ -183,6 +185,32 @@ export function Guide() {
               <h3 className="display-s">12 new matches</h3>
               <p className="body muted">The run took 41 minutes and read 9 boards.</p>
             </section>
+          </Row>
+        </Part>
+
+        <Part title="CV style tiles">
+          <Row label="colour, chosen">
+            <div className="style-grid style-colours" style={{ width: 300 }}>
+              {[['Blue', '#3D5798', true], ['Teal', '#2A7F7A', false], ['Rust', '#A8512C', false]].map(([name, hex, on]) => (
+                <label key={name as string} className="style-pick" title={name as string}>
+                  <input type="radio" name="guide-accent" aria-label={name as string} defaultChecked={on as boolean} />
+                  <span className="style-tile" style={{ '--c': hex } as CSSProperties} />
+                </label>
+              ))}
+            </div>
+          </Row>
+          <Row label="fonts, chosen">
+            <div className="style-grid style-fonts" style={{ width: 300 }}>
+              {[['Editorial', 'Young Serif', true], ['Plain', 'Figtree', false]].map(([name, face, on]) => (
+                <label key={name as string} className="style-pick" title={name as string}>
+                  <input type="radio" name="guide-fonts" aria-label={name as string} defaultChecked={on as boolean} />
+                  <span className="style-font" style={{ '--h': face, '--hw': 400, '--t': 'Figtree' } as CSSProperties}>
+                    <span><span className="h">A</span><span className="t">a</span></span>
+                  </span>
+                  <span className="style-name">{name as string}</span>
+                </label>
+              ))}
+            </div>
           </Row>
         </Part>
 

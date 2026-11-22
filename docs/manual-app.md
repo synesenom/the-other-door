@@ -98,7 +98,7 @@ version of `/onboard` in Claude Code and of `./door init` in a shell, and it fol
 three rules: nothing is written before you press Save, your CV is never overwritten without
 your say (the old one is kept as `cv.md.bak`), and Claude is installed only after your yes.
 
-**Connect Claude** comes first, and only if Claude is missing or signed out: "Install Claude" after
+**Connect Claude** comes first, and only if Claude is missing or signed out: "Install Claude…" after
 one yes, and "Sign in with Claude", which runs Claude's own sign-in: your browser opens on
 claude.ai, you approve, and the wizard moves on by itself. If the page shows a code instead of
 finishing by itself, click "The page showed a code?" and paste it. The login is the one the `claude`
@@ -269,11 +269,11 @@ what it asks of you, the salary to expect once the job is prepared (below), and 
   yet applied) tailors a CV and a cover letter for this posting (below).
 - **See the application** (the dark button once something is prepared) shows them. For a job
   you have already applied to, it is the only prepare button left.
-- **Prepare again…** (quiet, next to it, only before you apply) tailors them anew; it asks
+- **Prepare again…** (a text button, next to it, only before you apply) tailors them anew; it asks
   first, because it replaces the CV and letter and any revisions.
 - **Apply on <the employer's site>** opens the employer's application page when the board's ad links to one (most LinkedIn and some Jobindex ads); otherwise **Open in browser** opens the ad where it was found.
 - **Status…** changes where the job stands (below).
-- **Not for me…** is the quick way to drop a job: it asks why, the job leaves the list, and the next match opens in its place. Once an application is prepared it is under **Status** instead.
+- **Not for me…** is the quick way to drop a job: it asks why, the job leaves the list, and the next match opens in its place. Once an application is prepared it is under **Status…** instead.
 
 ## Prepare
 
@@ -319,7 +319,7 @@ column comes under the pages.
   asked the tailor once to trim the CV before it shows this.
 - A CV is meant to be within its page limit, as your profile stands now (the job country's convention, usually 2), a letter 1 page and 250 to 350 words. When one is over,
   a note under the page says so in words ("(limit is 2)", "(aim for 250–350)").
-- **Save CV** or **Save letter** under the page saves the document shown, named for you
+- **Save CV…** or **Save letter…** under the page saves the document shown, named for you
   ("Jane Doe - CV.pdf", "Jane Doe - Cover letter.pdf": what an employer sees when you upload
   it). On the computer a save dialog opens in your Downloads folder; on the phone the browser
   saves it.
@@ -352,7 +352,7 @@ pages out of date.
 
 ## Status
 
-**Status** lists the eight states in words: Not yet applied, Prepared, Applied, Interview,
+**Status…** lists the eight states in words: Not yet applied, Prepared, Applied, Interview,
 Ghosted, Rejected, Offer and Not for me. The current one is chosen.
 
 - **Interview** asks which kind, one per round: Screening (a pre-screening or recruiter
@@ -499,7 +499,7 @@ move within a group. A choice is saved at once (nothing to Save) and the sample 
 
 The story bank the tailor draws on when it prepares an application (`profile/story_bank.md`): each story is CARL: the context (what happened and what was asked), what you did (action), what came of it (result) and what you learned. Every story is shown whole: its title, then its four parts, each name beside its text, with **Edit**, which opens it in a dialog and changes it in place (renaming it too), and **Remove**, which asks first.
 
-- **Write a story**: in a dialog, describe something you did in your own words and "Draft it". One Claude call (a minute or two) turns what you wrote into a story, read beside your CV, and the same dialog shows it in its four parts, to check like a story you edit: where your text and the CV differ it keeps your text and says what differs; a part it could not fill is left empty and marked, and you fill it before **Save**, which adds it and goes back to your stories. One text is one story: your CV only fills in facts, it never adds stories of its own.
+- **Write a story…**: in a dialog, describe something you did in your own words and "Draft it". One Claude call (a minute or two) turns what you wrote into a story, read beside your CV, and the same dialog shows it in its four parts, to check like a story you edit: where your text and the CV differ it keeps your text and says what differs; a part it could not fill is left empty and marked, and you fill it before **Save**, which adds it and goes back to your stories. One text is one story: your CV only fills in facts, it never adds stories of its own.
 
 Stories are not on the phone.
 

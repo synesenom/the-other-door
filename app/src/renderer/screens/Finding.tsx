@@ -234,7 +234,7 @@ function Summary({
           View matches
         </button>
         {account !== null && onCheckSearch && (
-          <button type="button" className={narrow ? 'secondary' : 'quiet'} onClick={onCheckSearch}>
+          <button type="button" className="secondary" onClick={onCheckSearch}>
             Check your search terms
           </button>
         )}

@@ -70,7 +70,6 @@ strong, b { font-weight: 600; }
 .posting > * { margin: 0; }
 .posting-head { display: flex; flex-direction: column; gap: var(--space-2); }
 .posting-head > * { margin: 0; }
-.posting-head .dash { margin-bottom: var(--space-2); }
 .reason { max-width: 60ch; }
 .score-line { position: relative; display: flex; align-items: center; gap: var(--size-gap-s); }
 .score-line .hint-pop { left: 0; right: auto; }
@@ -92,7 +91,6 @@ strong, b { font-weight: 600; }
 .hint-pop { position: absolute; z-index: 10; bottom: calc(100% + var(--space-1)); right: 0; width: 280px; max-width: calc(100vw - var(--space-8)); padding: var(--space-2) var(--space-3); background: var(--color-ink); border-radius: var(--radius-m); color: var(--color-ground); }
 .hint-pop::before { content: ""; position: absolute; left: 0; right: 0; bottom: calc(-1 * var(--space-1) - 1px); height: var(--space-1); }
 .app-name { font-family: var(--font-display); }
-.dash { width: var(--size-dash-width); height: var(--size-dash-height); border-radius: var(--radius-pill); background: var(--color-accent); }
 .new-dot { display: inline-block; width: 6px; height: 6px; border-radius: var(--radius-pill); background: var(--color-accent); margin-right: var(--space-2); }
 
 .pills { display: flex; gap: var(--size-gap-s); margin-top: var(--space-4); }
@@ -102,13 +100,12 @@ strong, b { font-weight: 600; }
 }
 .pill[aria-pressed='true'] { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 6px; }
 
-.rows { list-style: none; margin: 0; padding: 0 calc(var(--size-screen-gutter) - 16px); /* a row's text on the gutter */ display: flex; flex-direction: column; gap: 0; }
+.rows { list-style: none; margin: 0; padding: 0 var(--size-screen-gutter); /* the hairlines run from the heavy rule's edge to its other */ display: flex; flex-direction: column; gap: 0; }
 .rows > li + li .row { border-top: 1px solid var(--color-border); }
 .row {
   width: 100%; min-height: 64px;
   display: flex; justify-content: space-between; align-items: center; gap: var(--space-4);
-  padding: var(--space-3) var(--space-4); text-align: left;
-  border-radius: var(--radius-l);
+  padding: var(--space-3) 0; text-align: left;
 }
 .row-main { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
 .row-title { display: flex; align-items: center; }
@@ -126,7 +123,7 @@ strong, b { font-weight: 600; }
 .secondary { background: none; border: 0; padding: 0; color: var(--color-accent); }
 /* Text buttons: no side padding (the reset above); space only between neighbours. */
 .primary + :is(.secondary, .quiet) { margin-left: var(--space-2); }
-:is(.secondary, .quiet) + :is(.secondary, .quiet) { margin-left: var(--space-3); }
+:is(.secondary, .quiet) + :is(.primary, .secondary, .quiet) { margin-left: var(--space-3); }
 .quiet { color: var(--color-ink-muted); }
 /* An action that leaves the app ends in an arrow, drawn here and left out of the spoken name. */
 .go::after { content: " →" / ""; }
@@ -245,7 +242,6 @@ textarea { resize: none; }
 .summary-top li { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); padding: var(--space-3) 0; border-top: 1px solid var(--color-border); }
 .summary-job { display: flex; flex-direction: column; min-width: 0; }
 
-.tab-dash { display: none; }
 .tab-icon { display: none; }
 /* Navigation, not what is current: ink, the blue is for links in text (docs/design/README.md). */
 .back { margin-bottom: var(--space-4); color: var(--color-ink); }
@@ -257,7 +253,9 @@ textarea { resize: none; }
 .quiet.step:disabled { opacity: 0.35; }
 /* The list alone on the screen: no rule beside it, and rows no wider than they read. */
 .matches:not(.pushed) .list-pane { border-right: 0; }
-.matches:not(.pushed) .list-pane > :not(.list-head) { max-width: 620px; }
+.matches:not(.pushed) .list-pane > :not(.list-head):not(.rows) { max-width: 620px; }
+.matches:not(.pushed) .list-head { max-width: 620px; }
+.matches:not(.pushed) .rows { max-width: calc(620px + 2 * var(--size-screen-gutter)); }
 
 @media (max-width: 899px) {
   .story-text > div { grid-template-columns: minmax(0, 1fr); row-gap: var(--space-1); }
@@ -279,12 +277,11 @@ textarea { resize: none; }
   .narrow-top { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4) var(--phone-gutter) 0; }
   .nav-item[aria-current='page'] { background: none; color: var(--color-ink); font-weight: 600; }
   .nav-item:not([aria-current='page']) { color: var(--color-ink-muted); }
-  .tab-dash { display: block; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: var(--phone-tab-bar-dash-width); height: var(--phone-tab-bar-dash-height); border-radius: var(--radius-pill); background: var(--color-accent); }
   .list-pane { min-width: 0; border-right: 0; }
-  .list-head { padding: var(--space-6) var(--phone-gutter) var(--space-4); }
+  .list-head { margin: 0 var(--phone-gutter); padding: var(--space-6) 0 var(--space-4); }
   .list-pane > .notice, .list-pane > .error, .list-pane > .body, .list-pane > .empty, .list-pane > .spinner-line { margin-left: var(--phone-gutter); margin-right: var(--phone-gutter); }
   .rows { padding: 0 var(--phone-gutter); gap: 0; }
-  .row { min-height: var(--phone-row-min-height); border-radius: 0; padding: var(--space-3) 0; border-bottom: 1px solid var(--color-border); }
+  .row { min-height: var(--phone-row-min-height); border-bottom: 1px solid var(--color-border); }
   .reading-pane { padding: var(--space-6) var(--phone-gutter); }
   .step-name { font-size: var(--phone-text-display-s-size); }
   .finding { padding: var(--space-6) var(--phone-gutter); }
@@ -692,5 +689,5 @@ details[open] > summary::before { transform: rotate(90deg); }
 .style-sample img { display: block; width: 100%; height: auto; }
 .style-sample:has(img)::after { content: ""; position: absolute; inset: auto 0 0; height: 72px; background: linear-gradient(to bottom, transparent, var(--color-paper)); pointer-events: none; }
 .style-sample[aria-busy="true"] img { opacity: 0.5; }
-.style-sample-wait { position: absolute; inset: 0; display: grid; place-items: center; color: var(--color-ink-muted); background: var(--color-surface); }
+.style-sample-wait { position: absolute; inset: 0; display: grid; place-items: center; color: var(--color-ink-muted); background: var(--color-page); }
 .style-sample-column { display: grid; gap: var(--space-2); min-width: 0; align-content: start; max-width: 390px; }

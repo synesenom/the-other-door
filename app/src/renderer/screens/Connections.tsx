@@ -230,7 +230,7 @@ function DriveConnection({
     if (busy === 'connect') body = <Spinner message="Waiting for you to allow access in the browser (up to five minutes), then syncing…" />
     else
       actions = (
-        <button type="button" className="secondary" onClick={() => void connect()}>
+        <button type="button" className="secondary go" onClick={() => void connect()}>
           Connect
         </button>
       )

@@ -316,7 +316,6 @@ export function App({ start }: { start?: AppStart } = {}) {
     // The phone app cannot run the wizard: it needs that computer's files and its Claude sign-in.
     return (
       <main className="onb">
-        <span className="dash" aria-hidden="true" />
         <h1 className="display-l">Set up The other door first</h1>
         <p className="body"><AppName /> has no profile yet. Set it up on the computer where it is installed (open the desktop app there, or run its setup), then come back here.</p>
       </main>
@@ -401,7 +400,6 @@ export function App({ start }: { start?: AppStart } = {}) {
               }}>
               <TabIcon name={name} />
               {name}
-              {narrow && name === current && !finding && <span className="tab-dash" aria-hidden="true" />}
             </button>
           ))}
         </nav>

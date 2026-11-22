@@ -190,7 +190,7 @@ export function Posting({ jobId, onChanged, onOpenMaterials }: Props) {
   ) : null
   const prepareAgain =
     hasMaterials && preparable && !running ? (
-      <button type="button" className="quiet" onClick={() => setAgain(true)}>
+      <button type="button" className="secondary" onClick={() => setAgain(true)}>
         Prepare again…
       </button>
     ) : null

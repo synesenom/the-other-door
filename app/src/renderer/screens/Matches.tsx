@@ -314,7 +314,7 @@ export function Matches({
               </button>
               {/* The sidebar's button starts a run; a narrow window has no sidebar foot, so it is here instead. */}
               {narrow && onFindJobs && (
-                <button type="button" className="pill" disabled={finding === 'elsewhere' || preparing} title={preparing ? PREPARING_TIP : undefined} onClick={onFindJobs}>
+                <button type="button" className="secondary" disabled={finding === 'elsewhere' || preparing} title={preparing ? PREPARING_TIP : undefined} onClick={onFindJobs}>
                   {finding ? 'Finding jobs…' : 'Find new jobs'}
                 </button>
               )}

@@ -95,7 +95,6 @@ export function Ask({ onGo }: { onGo: (to: AskGoTo) => void }) {
       )}
       {state.kind === 'done' && (
         <div className="ask-answer">
-          <span className="dash" aria-hidden="true" />
           <p className="body">{state.a.answer}</p>
           {state.a.go_to && (
             <button type="button" className="secondary" onClick={() => onGo(state.a.go_to!)}>
