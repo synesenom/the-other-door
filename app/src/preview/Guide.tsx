@@ -211,12 +211,12 @@ export function Guide() {
 
         <Part title="Figures">
           <Row label="bar">
-            <div className="bar" aria-hidden="true" style={{ width: 240 }}>
+            <div className="bar" aria-hidden="true" style={{ width: '100%', maxWidth: 240 }}>
               <span style={{ width: '62%' }} />
             </div>
           </Row>
           <Row label="usage-stack">
-            <div className="usage-stack" aria-hidden="true" style={{ width: 240 }}>
+            <div className="usage-stack" aria-hidden="true" style={{ width: '100%', maxWidth: 240 }}>
               <span className="usage-tone-0" style={{ flexGrow: 0.62 }} />
               <span className="usage-tone-1" style={{ flexGrow: 0.35 }} />
               <span className="usage-tone-2" style={{ flexGrow: 0.03 }} />
