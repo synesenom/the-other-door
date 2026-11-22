@@ -1550,6 +1550,32 @@
     "rounds": []
    },
    {
+    "id": "jobindex.demo-11",
+    "score": 0.79,
+    "title": "Group Controller",
+    "title_en": null,
+    "company": "Globex Energy",
+    "location": "Esbjerg",
+    "work_permit": null,
+    "status": "applied",
+    "is_new": false,
+    "updated_at": "2026-10-28T18:04:12.319Z",
+    "rounds": []
+   },
+   {
+    "id": "thehub.demo-12",
+    "score": 0.72,
+    "title": "Finance Business Partner",
+    "title_en": null,
+    "company": "Hooli Software",
+    "location": "København",
+    "work_permit": null,
+    "status": "applied",
+    "is_new": false,
+    "updated_at": "2026-10-20T18:04:12.319Z",
+    "rounds": []
+   },
+   {
     "id": "jobindex.demo-7",
     "score": 0.74,
     "title": "Accounting Manager",

@@ -51,8 +51,7 @@ strong, b { font-weight: 600; }
   border-radius: var(--radius-m);
 }
 .nav-item[aria-current='page'] { font-weight: 600; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 6px; }
-.sidebar-foot { margin-top: auto; display: flex; flex-direction: column; gap: var(--space-2); }
-.sidebar-foot .secondary { width: 100%; }
+.sidebar-foot { margin-top: auto; display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2); }
 .sidebar-foot .sidebar-problems { margin-bottom: var(--space-4); }
 
 .rule-heavy { border: 0 solid var(--color-ink); border-bottom-width: 2px; }
@@ -122,7 +121,7 @@ strong, b { font-weight: 600; }
 .photo-preview { display: block; height: auto; border-radius: var(--radius-m); }
 .secondary { background: none; border: 0; padding: 0; color: var(--color-accent); }
 /* Text buttons: no side padding (the reset above); space only between neighbours. */
-.primary + :is(.secondary, .quiet) { margin-left: var(--space-2); }
+.primary + :is(.secondary, .quiet) { margin-left: var(--space-5); }
 :is(.secondary, .quiet) + :is(.primary, .secondary, .quiet) { margin-left: var(--space-3); }
 .quiet { color: var(--color-ink-muted); }
 /* An action that leaves the app ends in an arrow, drawn here and left out of the spoken name. */
