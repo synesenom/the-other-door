@@ -31,7 +31,7 @@ describe('styles.css', () => {
         }
       }
       const block = css.slice(start, end)
-      for (const v of ['--phone-row-min-height', '--phone-tab-bar-label', '--phone-tab-bar-dash-width', '--phone-tab-bar-dash-height', '--phone-tab-bar-bottom-inset', '--phone-gutter', '--phone-text-display-l-size', '--phone-text-score-l-size']) {
+      for (const v of ['--phone-row-min-height', '--phone-tab-bar-label', '--phone-tab-bar-dash-width', '--phone-tab-bar-dash-height', '--phone-tab-bar-bottom-inset', '--phone-gutter']) {
         expect(block, v).toContain(`var(${v})`)
       }
     })

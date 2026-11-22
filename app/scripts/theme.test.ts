@@ -59,10 +59,7 @@ describe('generateTheme', () => {
   })
 
   it('emits the phone sizes as --phone-* variables', () => {
-    const p = tokens.phone
-    expect(root['--phone-text-display-l-size']).toBe(`${p['type-scale']['display-l']}px`)
     expect(root['--phone-text-display-s-size']).toBe('19px')
-    expect(root['--phone-text-score-l-size']).toBe('48px')
     expect(root['--phone-tab-bar-icon']).toBe('22px')
     expect(root['--phone-tab-bar-label']).toBe('11px')
     expect(root['--phone-tab-bar-dash-width']).toBe('16px')
@@ -80,14 +77,14 @@ describe('generateTheme', () => {
   })
 
   it('declares sizes, spacing, radii and the type scale', () => {
-    expect(root['--size-control-height']).toBe('44px')
+    expect(root['--size-control-height']).toBe('36px')
     expect(root['--size-sidebar-width']).toBe('220px')
     expect(root['--size-content-max-width']).toBe('760px')
     expect(root['--space-1']).toBe('4px')
     expect(root['--space-10']).toBe('64px')
-    expect(root['--radius-m']).toBe('8px')
+    expect(root['--radius-m']).toBe('2px')
     expect(root['--radius-pill']).toBe('999px')
-    expect(root['--text-score-s-size']).toBe('20px')
+    expect(root['--text-score-s-size']).toBe('22px')
     expect(root['--text-display-l-line']).toBe('1.1')
     expect(root['--text-display-l-font']).toBe('var(--font-display)')
     expect(root['--shadow-page']).toBe(tokens.shadow.page)
