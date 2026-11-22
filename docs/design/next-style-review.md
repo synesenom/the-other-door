@@ -54,3 +54,26 @@ the original logo, no underline on quiet buttons, the faded blue `#3D5798` as th
 One black button per view; blue words for actions (5.6:1, 7.7:1 in dark); `ink-muted` (4.9:1); a box around
 text fields; success, danger and warning as marks only; the spacing scale; body 14 and small 13; the heavy
 rule with hairlines.
+
+## Second review
+
+A second independent review, on 2026-11-22, read the next style again and the app's structure as a user meets
+it. Its style findings are changes 11–15, now in `style-guide-next.png` and `style-guide-next-dark.png`; its
+structural findings are filed as issues (listed below).
+
+11. **Grey means only a quiet way out.** Eight kinds of clickable word were in use, and grey meant both a
+    quiet action and a back link or a page-list entry. Now: a quiet button only as the way out beside the black
+    button; an action standing alone ("Mark ghosted", "Lower the bar", a photo's Remove) is a blue text button;
+    the back link and the page list's entries are ink. `.link` folds into the text button or the inline link.
+12. **Bold is the loaded semi-bold.** `<strong>` had no rule and rendered at a faked 700 (the CV preview,
+    Analytics). `strong, b` take 600.
+13. **The label is ink.** Its two uses (the board's column heads, Settings' parts) overrode it to grey, against
+    its own token. The overrides go.
+14. **One mark for "chosen".** The CV style's chosen colour and font had a blue ring; it is an ink ring, as
+    blue marks nothing chosen.
+15. **One control height on desktop.** Fields and the switch were 44 px beside 32 px buttons; they are 36 px.
+    The phone keeps its own, larger sizes.
+
+Also to finish in the build: the folds of change 8 into the token file (`surface`, the three radii, `score-s`,
+`button-height`/`chip-height`, `paper-ink`/`on-warning`, weight 500, `content-max-width`), the Connections'
+"connected" mark as the small check used everywhere else, and the Matches heavy rule as wide as its list.
