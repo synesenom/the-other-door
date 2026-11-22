@@ -216,7 +216,7 @@ and error is in the run record. "View matches" opens Matches on
 "New only", "Show run record" shows the run's file in your file manager. Matches and "Last run" are refreshed.
 
 When no match is new, the card says what the run did in one line ("917 jobs found, 40 close enough to
-score, none scored 0.65 or better (How close a match to show: Balanced)") and offers what you can do about it: "Check your search terms" opens Profile at your search terms, "Show broader matches" at "How close a match to show". When the
+score, none scored 0.65 or better", then on its own line "How close a match to show: Balanced") and offers what you can do about it: "Check your search terms" opens Profile at your search terms, "Show broader matches" at "How close a match to show". When the
 run skipped Discover, Follow or Collect, it adds that the next full run also reads employers' own career sites.
 
 After the first run, if it found fewer than three new matches and every employer discovery source
@@ -239,7 +239,7 @@ switch shows only the unopened ones. The header says how many are new, and shows
 board that failed on the last run.
 
 An empty list says why: "Nothing scored yet. Find new jobs to start." only when nothing has been
-scored; "Nothing has scored 0.65 or better yet (How close a match to show: Balanced)." (with "Show broader matches", which opens Profile at "How close a match to show") when ads were scored but none cleared it; "Nothing new since your last review." only after a review,
+scored; "Nothing has scored 0.65 or better yet.", then on its own line "How close a match to show: Balanced" (with "Show broader matches", which opens Profile at "How close a match to show") when ads were scored but none cleared it; "Nothing new since your last review." only after a review,
 on "New only".
 
 Until the first posting has reached that setting, that empty list also shows the three best ads below it as ordinary rows

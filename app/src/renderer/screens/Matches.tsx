@@ -23,7 +23,7 @@ export function emptyText(scored: number | undefined, minScore: number | undefin
   if (scored === undefined || scored === 0) return 'Nothing scored yet. Find new jobs to start.'
   if (newOnly && reviewedAt) return 'Nothing new since your last review.'
   if (minScore === undefined) return 'No matches yet.'
-  return `Nothing has scored ${minScoreValue(minScore)} yet (${minScoreSetting(minScore)}).`
+  return `Nothing has scored ${minScoreValue(minScore)} yet.`
 }
 
 /** Above the weak matches: how many, and what would widen the search. It informs, never recommends: the sources' terms forbid automated access. */
@@ -340,8 +340,11 @@ export function Matches({
             ) : (
               <p className="body muted">{emptyText(listed.scored, listed.minScore, listed.reviewedAt, newOnly)}</p>
             )}
+            {!(weak && weakRows.length > 0) && listed.minScore !== undefined && listed.scored !== undefined && listed.scored > 0 && !(newOnly && listed.reviewedAt) && (
+              <p className="body muted">{minScoreSetting(listed.minScore)}</p>
+            )}
             {onLowerBar && listed.scored !== undefined && listed.scored > 0 && !(newOnly && listed.reviewedAt) && (
-              <div className="actions">
+              <div className="actions flush">
                 <button type="button" className="quiet" onClick={onLowerBar}>
                   Show broader matches
                 </button>

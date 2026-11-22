@@ -114,6 +114,8 @@ button:disabled { cursor: default; }
 
 .actions { display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; }
 .actions button { white-space: nowrap; }
+/* A row of text actions under a line of text: its first starts at the text's edge. */
+.actions.flush > .quiet:first-child { padding-left: 0; }
 .primary, .secondary, .quiet {
   min-height: var(--size-control-height); padding: 0 var(--space-5);
   border-radius: var(--radius-m); font-weight: 600;

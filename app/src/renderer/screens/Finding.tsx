@@ -156,7 +156,7 @@ export function runAccount(record: RunRecord): string | null {
   const found = postingsFound(record)
   const value = minScoreValue(m.min_score)
   const seen = m.above_threshold ?? 0
-  const reached = `${seen > 0 ? `${seen} scored ${value}, none new` : `none scored ${value}`} (${minScoreSetting(m.min_score)})`
+  const reached = seen > 0 ? `${seen} scored ${value}, none new` : `none scored ${value}`
   const scored = m.scored === 0 ? 'none close enough to score' : `${m.scored} close enough to score`
   return `${found} ${found === 1 ? 'job' : 'jobs'} found, ${scored}${m.scored === 0 ? '' : `, ${reached}`}`
 }
@@ -215,6 +215,7 @@ function Summary({
         </ul>
       )}
       {account !== null && <p className="body">{account}</p>}
+      {account !== null && record.match!.scored! > 0 && <p className="body">{minScoreSetting(record.match!.min_score!)}</p>}
       {careerNote && <p className="small muted">The next full run also reads employers' own career sites.</p>}
       <p className="small muted">Took {elapsedText(record.elapsed_s)}</p>
       {reminder.length > 0 && <DiscoveryReminder sources={reminder} onChoose={onChooseDiscovery} />}
@@ -227,7 +228,7 @@ function Summary({
         </button>
       </div>
       {account !== null && (onLowerBar || onCheckSearch) && (
-        <div className="actions">
+        <div className="actions flush">
           {onLowerBar && (
             <button type="button" className="quiet" onClick={onLowerBar}>
               Show broader matches
