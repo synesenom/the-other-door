@@ -8,7 +8,7 @@
 <body>
 <x-dc>
 <helmet>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&amp;family=Figtree:wght@400;500;600&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&amp;family=Figtree:wght@400;600&amp;display=swap">
 <style>
 body{margin:0}
 button{font:inherit}
@@ -23,8 +23,8 @@ button{font:inherit}
     <h1 style="margin: 20px 0 0; font-family: 'Young Serif', Georgia, serif; font-size: 36px; font-weight: 400; letter-spacing: -0.01em; line-height: 1.1">Matches</h1>
     <p style="margin: 4px 0 0; color: {{t.muted}}">12 new since your last review</p>
     <div style="display: flex; gap: 6px; margin: 16px 0 8px">
-      <button type="button" style="height: 32px; padding: 0 14px; border-radius: 16px; border: 1px solid {{t.ink}}; background: {{t.ink}}; color: {{t.ground}}; font-size: 13px">New</button>
-      <button type="button" style="height: 32px; padding: 0 14px; border-radius: 16px; border: 1px solid {{t.border}}; background: transparent; color: {{t.ink}}; font-size: 13px">All</button>
+      <button type="button" style="height: 32px; padding: 0 14px; border-radius: 2px; border: 1px solid {{t.ink}}; background: {{t.ink}}; color: {{t.ground}}; font-size: 13px">New</button>
+      <button type="button" style="height: 32px; padding: 0 14px; border-radius: 2px; border: 1px solid {{t.border}}; background: transparent; color: {{t.ink}}; font-size: 13px">All</button>
     </div>
     <ul style="list-style: none; margin: 0 -8px; padding: 0; display: flex; flex-direction: column">
       <sc-for list="{{jobs}}" as="job" hint-placeholder-count="6">
@@ -60,7 +60,7 @@ class Component extends DCLogic {
     const dark = !!this.props.dark;
     const t = dark
       ? { ground: '#1E1A16', ink: '#F1E6CF', muted: '#B5A890', rule: '#3A332C', border: '#4A423A', accent: '#6F8FEF' }
-      : { ground: '#F1E6CF', ink: '#1E1A16', muted: '#5C5249', rule: '#E2D5BA', border: '#D6C7A8', accent: '#4169E1' };
+      : { ground: '#F1E6CF', ink: '#1E1A16', muted: '#5C5249', rule: '#D6C7A8', border: '#D6C7A8', accent: '#3D5798' };
     const jobs = [
       { title: 'Senior Data Scientist', company: 'Hooli Labs', place: 'Copenhagen', score: '0.86', isNew: true },
       { title: 'Machine Learning Engineer', company: 'Contoso Pay', place: 'Copenhagen', score: '0.81', isNew: true },
