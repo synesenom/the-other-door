@@ -59,7 +59,9 @@ rule with hairlines.
 
 A second independent review, on 2026-11-22, read the next style again and the app's structure as a user meets
 it. Its style findings are changes 11–15, now in `style-guide-next.png` and `style-guide-next-dark.png`; its
-structural findings are filed as issues (listed below).
+structural findings are filed as issues: #512 (one name for the minimum score, controls that say what
+they do), #513 (the set-up review and Profile as one form, saved one way), #514 (fewer steps to a job), #515
+(Settings' Help part, Analytics' actions).
 
 11. **Grey means only a quiet way out.** Eight kinds of clickable word were in use, and grey meant both a
     quiet action and a back link or a page-list entry. Now: a quiet button only as the way out beside the black
