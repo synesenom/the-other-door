@@ -36,7 +36,7 @@ export function FromDrive({ onPulled }: { onPulled: () => void }) {
     <div className="onb-drive">
       <p className="small muted">
         Already use The other door on another computer?{' '}
-        <button type="button" className="quiet" disabled={step !== 'idle'} onClick={() => void run()}>
+        <button type="button" className="secondary" disabled={step !== 'idle'} onClick={() => void run()}>
           Bring my profile from Google Drive
         </button>
       </p>

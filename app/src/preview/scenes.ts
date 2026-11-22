@@ -163,7 +163,7 @@ export const SCENES: readonly Scene[] = [
   { id: 'guide', group: 'Visual guide', title: 'Buttons, fields, marks, type and colours', guide: true },
   { id: 'splash', group: 'Start', title: 'Splash', hold: 'show_profile' },
   { id: 'matches', group: 'Matches', title: 'Matches' },
-  { id: 'matches-add-job-failed', group: 'Matches', title: 'Add a job, an import that failed (type a link, Import: the error box)', fails: { import_posting: 'That page needs a sign-in. Paste the ad text instead.' }, press: ['Add a job'] },
+  { id: 'matches-add-job-failed', group: 'Matches', title: 'Add a job, an import that failed (type a link, Import: the error box)', fails: { import_posting: 'That page needs a sign-in. Paste the ad text instead.' }, press: ['Add a job…'] },
   { id: 'matches-none-reached', group: 'Matches', title: 'Matches, 40 scored and none at the setting', noneReached: true },
   { id: 'posting', group: 'Matches', title: 'Posting', open: { screen: 'posting', jobId: 'jobindex.demo-1', inPlay: false } },
   { id: 'applications', group: 'Applications', title: 'Applications board', start: { destination: 'Applications' } },

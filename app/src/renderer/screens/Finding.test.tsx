@@ -247,6 +247,12 @@ describe('Finding, the summary card', () => {
     expect(h.onViewMatches).toHaveBeenCalledTimes(1)
   })
 
+  it('opens the summary with a heavy rule, not a box', () => {
+    mockDoor({})
+    show({ kind: 'summary', record: record() }, { active: false })
+    expect(screen.getByRole('region', { name: 'Run summary' })).toHaveClass('summary-card')
+  })
+
   it.each([
     [['a.1'], '1 new match'],
     [[], 'No new matches'],

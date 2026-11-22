@@ -310,7 +310,7 @@ export function Matches({
             <h1 className="display-l">Matches</h1>
             <div className="actions head-actions">
               <button type="button" className="secondary" onClick={() => setImporting(true)}>
-                Add a job
+                Add a job…
               </button>
               {/* The sidebar's button starts a run; a narrow window has no sidebar foot, so it is here instead. */}
               {narrow && onFindJobs && (
@@ -350,7 +350,7 @@ export function Matches({
             )}
             {onLowerBar && listed.scored !== undefined && listed.scored > 0 && !(newOnly && listed.reviewedAt) && (
               <div className="actions flush">
-                <button type="button" className="quiet" onClick={onLowerBar}>
+                <button type="button" className="secondary" onClick={onLowerBar}>
                   Show broader matches
                 </button>
               </div>

@@ -94,7 +94,7 @@ function ClaudeConnection({ doctor, email, onRecheck }: { doctor: DoctorReport |
     else
       actions = (
         <button type="button" className="secondary" onClick={() => setAsking(true)}>
-          Install
+          Install…
         </button>
       )
   } else if (row.kind === 'unknown') {
@@ -246,7 +246,7 @@ function DriveConnection({
     if (!busy && !conflict)
       actions = (
         <button type="button" className="secondary" onClick={() => setConfirming(true)}>
-          Disconnect
+          Disconnect…
         </button>
       )
     body = busy ? (
@@ -265,7 +265,7 @@ function DriveConnection({
           <button type="button" className="secondary" onClick={() => void keep({ keep_drive: true })}>
             Keep Drive
           </button>
-          <button type="button" className="quiet" onClick={() => onConflict(false)}>
+          <button type="button" className="secondary" onClick={() => onConflict(false)}>
             Not now
           </button>
         </div>
@@ -350,17 +350,17 @@ export function PhoneConnection() {
   const actions = running ? (
     <>
       <button type="button" className="secondary" disabled={busy} onClick={() => setConfirming(true)}>
-        Disconnect
+        Disconnect…
       </button>
       {!paired && (
         <button type="button" className="secondary" disabled={busy} onClick={() => setSetup('pair')}>
-          Pair your phone
+          Pair your phone…
         </button>
       )}
     </>
   ) : status !== null ? (
     <button type="button" className="secondary" onClick={() => setSetup('how')}>
-      Set up your phone
+      Set up your phone…
     </button>
   ) : error ? (
     // the state could not be read: no setup to offer yet, only another read

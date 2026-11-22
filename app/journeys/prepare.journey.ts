@@ -79,8 +79,8 @@ test('while Prepare runs: the progress line, the elapsed time, locked actions an
   await expect(page.getByText(LEAVE)).toBeVisible()
   await expect(page.getByRole('button', { name: 'Prepare application' })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Open in browser' })).toBeDisabled()
-  await expect(page.getByRole('button', { name: 'Status', exact: true })).toBeDisabled()
-  await expect(page.getByRole('button', { name: 'Not for me' })).toBeDisabled()
+  await expect(page.getByRole('button', { name: 'Status…', exact: true })).toBeDisabled()
+  await expect(page.getByRole('button', { name: 'Not for me…' })).toBeDisabled()
   await expect(findButton(page)).toBeDisabled()
   await expect(findButton(page)).toHaveAttribute('title', PREPARING_TIP)
 
@@ -120,14 +120,14 @@ test('Prepare again asks first; Cancel and Escape leave the application as it is
   await expect(postingHeading(page, KRONVEJ)).toBeVisible()
   const before = readFileSync(join(outDir(world, KRONVEJ_KEY), 'cv.html'), 'utf8')
 
-  await page.getByRole('button', { name: 'Prepare again', exact: true }).click()
+  await page.getByRole('button', { name: 'Prepare again…', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: 'Prepare again?' })
   await expect(dialog).toBeVisible()
   await expect(dialog.getByText('This replaces the tailored CV and letter, and any revisions.')).toBeVisible()
   await dialog.getByRole('button', { name: 'Cancel' }).click()
   await expect(dialog).toHaveCount(0)
 
-  await page.getByRole('button', { name: 'Prepare again', exact: true }).click()
+  await page.getByRole('button', { name: 'Prepare again…', exact: true }).click()
   await expect(dialog).toBeVisible()
   await page.keyboard.press('Escape')
   await expect(dialog).toHaveCount(0)
@@ -141,7 +141,7 @@ test('Prepare again replaces the application with a new one', async ({ page, wor
   world.faults({ claude: { tailor: { cover_letter: letterHtml(300, world.persona.name) } } })
   await toApplications(page)
   await card(page, KRONVEJ).click()
-  await page.getByRole('button', { name: 'Prepare again', exact: true }).click()
+  await page.getByRole('button', { name: 'Prepare again…', exact: true }).click()
   await page.getByRole('dialog', { name: 'Prepare again?' }).getByRole('button', { name: 'Prepare again' }).click()
 
   await expect(readyHeading(page)).toBeVisible({ timeout: 90_000 })
@@ -257,8 +257,8 @@ test('What you sent: the copy kept when it went out, read only, and saved from t
   await toApplications(page)
   await card(page, SUNDLINE).click()
   await expect(postingHeading(page, SUNDLINE)).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Prepare again' })).toHaveCount(0)
-  await expect(page.getByRole('button', { name: 'Not for me' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Prepare again…' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Not for me…' })).toHaveCount(0)
   await page.getByRole('button', { name: 'See what you sent', exact: true }).click()
 
   await expect(page.getByRole('heading', { name: 'What you sent', level: 1 })).toBeVisible()

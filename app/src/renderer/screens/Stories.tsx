@@ -266,7 +266,7 @@ export function Stories() {
                   Edit
                 </button>
                 <button type="button" className="secondary" onClick={() => setRemoving(s)}>
-                  Remove
+                  Remove…
                 </button>
               </div>
             </li>

@@ -48,7 +48,7 @@ export function postingHeading(page: Page, world: World, key: string): Locator {
 export async function openRow(page: Page, world: World, key: string): Promise<void> {
   await row(page, world, key).click()
   await expect(postingHeading(page, world, key)).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Status', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Status…', exact: true })).toBeVisible()
 }
 
 /** What the user reads as the title of a posting in dialogs and notices: the English one when there is one. */

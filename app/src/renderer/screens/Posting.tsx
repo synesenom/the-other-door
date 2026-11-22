@@ -191,11 +191,11 @@ export function Posting({ jobId, onChanged, onOpenMaterials }: Props) {
   const prepareAgain =
     hasMaterials && preparable && !running ? (
       <button type="button" className="quiet" onClick={() => setAgain(true)}>
-        Prepare again
+        Prepare again…
       </button>
     ) : null
   const openIsPrimary = narrow && !primary && !running
-  const openClass = openIsPrimary ? 'primary' : 'secondary'
+  const openClass = openIsPrimary ? 'primary' : 'secondary go'
   const matching = posting.matching_skills ?? []
   const missing = posting.missing_skills ?? []
   return (
@@ -236,13 +236,13 @@ export function Posting({ jobId, onChanged, onOpenMaterials }: Props) {
             </button>
           )}
           <button type="button" className="secondary" disabled={locked} onClick={() => setDialog('status')}>
-            Status
+            Status…
           </button>
           {prepareAgain}
           {/* With an application the job is in play: "Not for me" stays in Status. */}
           {!hasMaterials && (
             <button type="button" className="quiet" disabled={locked} onClick={() => setDialog('discarded')}>
-              Not for me
+              Not for me…
             </button>
           )}
         </div>
@@ -264,11 +264,11 @@ export function Posting({ jobId, onChanged, onOpenMaterials }: Props) {
         // The phone layout: the actions sit in a bar at the bottom, one ink button.
         <div className="action-bar">
           <button type="button" className="secondary" disabled={locked} onClick={() => setDialog('status')}>
-            Status
+            Status…
           </button>
           {!hasMaterials && (
             <button type="button" className="secondary" disabled={locked} onClick={() => setDialog('discarded')}>
-              Not for me
+              Not for me…
             </button>
           )}
           {prepareAgain}

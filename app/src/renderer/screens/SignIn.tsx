@@ -75,7 +75,7 @@ export function SignIn({ email, onDone }: { email?: string; onDone: () => void |
       <div className="onb-field field">
         <Spinner message="Finish signing in in your browser. The other door waits here." />
         <div className="actions">
-          <button type="button" className="secondary" disabled={!login.canOpen} onClick={() => void window.door.invoke('claude-login-open')}>
+          <button type="button" className="secondary go" disabled={!login.canOpen} onClick={() => void window.door.invoke('claude-login-open')}>
             Open the sign-in page again
           </button>
           <button type="button" className="quiet" onClick={() => void window.door.invoke('claude-login-cancel')}>
@@ -83,7 +83,7 @@ export function SignIn({ email, onDone }: { email?: string; onDone: () => void |
           </button>
         </div>
         {!codeOpen ? (
-          <button type="button" className="quiet signin-code-link" onClick={() => setCodeOpen(true)}>
+          <button type="button" className="secondary signin-code-link" onClick={() => setCodeOpen(true)}>
             The page showed a code?
           </button>
         ) : (

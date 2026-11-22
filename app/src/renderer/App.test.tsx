@@ -669,7 +669,7 @@ describe('App, the first-launch gate', () => {
       await userEvent.click(await screen.findByRole('button', { name: 'Settings' }))
       const row = within(await screen.findByRole('listitem', { name: 'Google Drive' }))
       await userEvent.click(await row.findByRole('button', { name: 'Connect' }))
-      await row.findByRole('button', { name: 'Disconnect' })
+      await row.findByRole('button', { name: 'Disconnect…' })
       await act(() => new Promise((r) => setTimeout(r, 50)))
       expect(h.call.mock.calls.filter((c) => c[0] === 'sync_data')).toHaveLength(1) // the connect's own
     })

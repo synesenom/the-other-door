@@ -50,7 +50,7 @@ describe('Stories', () => {
   it('asks before removing, then removes', async () => {
     const user = userEvent.setup()
     const { call } = show()
-    await user.click((await row('Ran the migration')).getByRole('button', { name: 'Remove' }))
+    await user.click((await row('Ran the migration')).getByRole('button', { name: 'Remove…' }))
     expect(call.mock.calls.some((c) => c[0] === 'remove_story')).toBe(false)
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Remove' }))
     await waitFor(() => expect(call).toHaveBeenCalledWith('remove_story', { title: 'Ran the migration' }))
@@ -192,7 +192,7 @@ describe('Stories', () => {
         throw new Error('Your story could not be removed. Try again.')
       },
     })
-    await user.click((await row('Ran the migration')).getByRole('button', { name: 'Remove' }))
+    await user.click((await row('Ran the migration')).getByRole('button', { name: 'Remove…' }))
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Remove' }))
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('Your story could not be removed. Try again.')

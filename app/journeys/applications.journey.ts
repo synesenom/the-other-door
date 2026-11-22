@@ -25,8 +25,8 @@ test('the board: five columns, a job in each, counts and how many are in play', 
 test('a prepared card opens its application and comes back through its posting', async ({ page }) => {
   await toApplications(page)
   await openCard(page, KRONVEJ)
-  await expect(page.getByRole('button', { name: 'Prepare again', exact: true })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Not for me' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Prepare again…', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Not for me…' })).toHaveCount(0)
   await page.getByRole('button', { name: 'See the application', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Ready to send', level: 1 })).toBeVisible()
   await expect(page.getByRole('button', { name: '← Applications' })).toHaveCount(0)
@@ -40,7 +40,7 @@ test('a prepared card opens its application and comes back through its posting',
 test('an interview round moves an applied card to Interviewing', { tag: '@core' }, async ({ page, world }) => {
   await toApplications(page)
   await openCard(page, SUNDLINE)
-  await page.getByRole('button', { name: 'Status', exact: true }).click()
+  await page.getByRole('button', { name: 'Status…', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: `Status: ${SUNDLINE}` })
   await dialog.getByRole('radio', { name: 'Interview', exact: true }).check()
   await dialog.getByRole('radio', { name: /^Screening/ }).check()
@@ -56,7 +56,7 @@ test('an interview round moves an applied card to Interviewing', { tag: '@core' 
 test('a rejection ends the last round and moves the card to Closed', async ({ page, world }) => {
   await toApplications(page)
   await openCard(page, PAKKEPOST)
-  await page.getByRole('button', { name: 'Status', exact: true }).click()
+  await page.getByRole('button', { name: 'Status…', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: `Status: ${PAKKEPOST}` })
   await dialog.getByRole('radio', { name: 'Rejected', exact: true }).check()
   await dialog.getByRole('button', { name: 'Save' }).click()
@@ -71,7 +71,7 @@ test('a rejection ends the last round and moves the card to Closed', async ({ pa
 test('Not for me on a prepared job, through Status, closes it as withdrawn', async ({ page, world }) => {
   await toApplications(page)
   await openCard(page, KRONVEJ)
-  await page.getByRole('button', { name: 'Status', exact: true }).click()
+  await page.getByRole('button', { name: 'Status…', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: `Status: ${KRONVEJ}` })
   await dialog.getByRole('radio', { name: 'Not for me', exact: true }).check()
   await expect(dialog.getByRole('button', { name: 'Save' })).toBeDisabled()
@@ -93,7 +93,7 @@ const KRONVEJ_KEY = 'kronvej-ml-engineer-mlops'
 test('Not yet applied takes a job off the board and back to Matches', async ({ page, world }) => {
   await toApplications(page)
   await openCard(page, KRONVEJ)
-  await page.getByRole('button', { name: 'Status', exact: true }).click()
+  await page.getByRole('button', { name: 'Status…', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: `Status: ${KRONVEJ}` })
   await dialog.getByRole('radio', { name: 'Not yet applied', exact: true }).check()
   await dialog.getByRole('button', { name: 'Save' }).click()

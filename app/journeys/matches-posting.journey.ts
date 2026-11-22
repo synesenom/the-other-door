@@ -21,7 +21,7 @@ test.describe('what the posting shows', () => {
     // Mette speaks Danish: the language is named, nothing asked of her
     await expect(article(page).getByText('Danish', { exact: true })).toBeVisible()
     await expect(article(page).getByText(ad.description.slice(0, 60))).toBeVisible()
-    await expect(actions(page)).toHaveText(['Prepare application', 'Apply on job.fjordpension.example', 'Status', 'Not for me'])
+    await expect(actions(page)).toHaveText(['Prepare application', 'Apply on job.fjordpension.example', 'Status…', 'Not for me…'])
     expect(world.toolCalls('show').map((c) => c.args?.job_id)).toContain(world.jobId('fjordpension-senior-ds'))
   })
 })

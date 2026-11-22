@@ -16,7 +16,7 @@ const importButton = (page: Page) => addDialog(page).getByRole('button', { name:
 
 async function openAdd(page: Page) {
   await matchesLoaded(page)
-  await page.getByRole('button', { name: 'Add a job' }).click()
+  await page.getByRole('button', { name: 'Add a job…' }).click()
   await expect(addDialog(page)).toBeVisible()
 }
 
@@ -117,7 +117,7 @@ test.describe('importing', () => {
     await pasteAd(page)
     await importButton(page).click()
     await imported(page).getByRole('button', { name: 'Close' }).click()
-    await page.getByRole('button', { name: 'Add a job' }).click()
+    await page.getByRole('button', { name: 'Add a job…' }).click()
     await pasteAd(page)
     await importButton(page).click()
     await expect(addDialog(page).getByText('You already imported this ad.', { exact: true })).toBeVisible()

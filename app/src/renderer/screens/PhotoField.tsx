@@ -38,7 +38,7 @@ export function PhotoField({ src, pending, help, error, busy, onChoose, onRemove
           {has ? 'Change photo…' : 'Choose a photo…'}
         </button>
         {has && (
-          <button type="button" className="quiet" disabled={busy} onClick={onRemove}>
+          <button type="button" className="secondary" disabled={busy} onClick={onRemove}>
             Remove
           </button>
         )}

@@ -187,7 +187,7 @@ describe('discarding from the Matches screen', () => {
     })
     render(<Matches />)
     await userEvent.click(await screen.findByRole('button', { name: /Drop me/ }))
-    await userEvent.click(await screen.findByRole('button', { name: 'Not for me' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Not for me…' }))
     await userEvent.type(screen.getByLabelText('Why not?'), 'too far')
     await userEvent.click(screen.getByRole('button', { name: 'Discard' }))
     await waitFor(() => expect(screen.queryByRole('heading', { name: 'Drop me', level: 2 })).toBeNull())
