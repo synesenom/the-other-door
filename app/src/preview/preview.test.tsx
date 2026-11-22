@@ -83,14 +83,14 @@ describe('the visual guide', () => {
   it('shows every kind of button, enabled and disabled', () => {
     render(<Guide />)
     for (const kind of ['primary', 'secondary', 'quiet']) {
-      expect(document.querySelectorAll(`button.${kind}:not(.sidebar-problem):not(.flush > *)`)).toHaveLength(2)
+      expect(document.querySelector(`button.${kind}:not(.sidebar-problem):not(.flush > *):not(:disabled)`)).not.toBeNull()
       expect(document.querySelector(`button.${kind}:disabled`)).not.toBeNull()
     }
   })
 
   it('shows a flush row of text actions', () => {
     render(<Guide />)
-    expect(document.querySelectorAll('.actions.flush > button.quiet')).toHaveLength(2)
+    expect(document.querySelectorAll('.actions.flush > button.secondary')).toHaveLength(2)
   })
 })
 

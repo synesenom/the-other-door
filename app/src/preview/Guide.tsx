@@ -39,18 +39,27 @@ export function Guide() {
         <p className="subtitle">Every control in its real classes. Hover, press and tab through them; switch the theme in the scene list.</p>
 
         <Part title="Buttons">
-          {(['primary', 'secondary', 'quiet'] as const).map((kind) => (
-            <Row key={kind} label={kind}>
-              <button type="button" className={kind}>View matches</button>
-              <button type="button" className={kind} disabled>Disabled</button>
-            </Row>
-          ))}
+          <Row label="primary">
+            <button type="button" className="primary">Prepare application</button>
+            <button type="button" className="primary" disabled>Disabled</button>
+          </Row>
+          <Row label="secondary">
+            <button type="button" className="secondary go">Open in browser</button>
+            <button type="button" className="secondary">Status…</button>
+            <button type="button" className="secondary">Check again</button>
+            <button type="button" className="secondary" disabled>Disabled</button>
+          </Row>
+          <Row label="quiet, the way out">
+            <button type="button" className="primary">Save</button>
+            <button type="button" className="quiet">Not for me</button>
+            <button type="button" className="quiet" disabled>Disabled</button>
+          </Row>
           <Row label="actions flush">
             <div>
               <p className="body">Text above the row</p>
               <div className="actions flush">
-                <button type="button" className="quiet">Show broader matches</button>
-                <button type="button" className="quiet">Check your search terms</button>
+                <button type="button" className="secondary">Show broader matches</button>
+                <button type="button" className="secondary">Check your search terms</button>
               </div>
             </div>
           </Row>
@@ -146,6 +155,34 @@ export function Guide() {
               <h3 className="body item-name">Claude</h3>
               <span className="small muted">Required</span>
             </div>
+          </Row>
+        </Part>
+
+        <Part title="Heavy rules and hairlines">
+          <Row label="list head">
+            <div style={{ width: '100%' }}>
+              <h3 className="display-s" style={{ paddingBottom: 12, borderBottom: '2px solid var(--color-ink)' }}>Matches</h3>
+              <ul className="rows" style={{ padding: 0 }}>
+                {['Senior Financial Controller', 'Økonomichef'].map((t) => (
+                  <li key={t}><button type="button" className="row"><span className="title">{t}</span><span className="score-s">0.88</span></button></li>
+                ))}
+              </ul>
+            </div>
+          </Row>
+          <Row label="board column">
+            <div className="board-column" style={{ width: '100%' }}>
+              <div className="board-column-head"><h4 className="label">Interviewing · 1</h4></div>
+              <ul className="board-cards">
+                <li><div className="board-card"><span className="board-card-title">Head of Finance</span></div></li>
+                <li><div className="board-card"><span className="board-card-title">Finance Lead</span></div></li>
+              </ul>
+            </div>
+          </Row>
+          <Row label="summary-card">
+            <section className="summary-card" style={{ width: '100%' }}>
+              <h3 className="display-s">12 new matches</h3>
+              <p className="body muted">The run took 41 minutes and read 9 boards.</p>
+            </section>
           </Row>
         </Part>
 
