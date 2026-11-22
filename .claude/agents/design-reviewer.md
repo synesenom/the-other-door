@@ -20,7 +20,7 @@ You review one finished change to the app's screens against its design rules. Mi
 
 Read `docs/design/README.md` whole: it is the rulebook, and every finding cites the rule it breaks by its section (Principles 1–9, Colour, Type, Space and shape, The blue dash, Components, Layouts, Phone and narrow windows, Dark mode). Read `docs/design/tokens.json`, then `git diff <base_branch>...HEAD -- app/ docs/design/` and the screens it touches, whole.
 
-Open the style card as images: every colour, type size, control and mark as it should look. While a new style is being built it is `docs/design/style-guide-next.png` and `docs/design/style-guide-next-dark.png` (with `docs/design/next-style-review.md` saying what changed and why); otherwise it is `docs/design/screens/style-tile.png`, the card at the top of the README.
+Open the style card as images: every colour, type size, control and mark as it should look. While a new style is being built it is `docs/design/style-guide-next.png` and `docs/design/style-guide-next-dark.png` (with `docs/design/next-style-review.md` saying what changed and why); otherwise it is `docs/design/screens/style-tile.png`, the card at the top of the README, and its dark twin `docs/design/screens/style-tile-dark.png` (until there is one, a dark screen is compared with the light card's parts and its colours with `tokens.json`'s dark values).
 
 ## What to look for
 
