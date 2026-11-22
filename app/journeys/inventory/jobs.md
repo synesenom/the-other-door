@@ -419,13 +419,13 @@ Reached through:
 
 ### Form
 - **dialog "Add a job"**. Focus starts on the first input. — unit: `app/src/renderer/screens/ImportDialog.test.tsx`
-- **btn "Link"** / **btn "Paste text"** (pills, `aria-pressed`). Link mode is the default. — unit: `app/src/renderer/screens/ImportDialog.test.tsx`; ✓ Paste text asks for the ad, a title and a company, and keeps what was typed
+- **btn "Link"** / **btn "Paste text"** (pills, `aria-pressed`). Link mode is the default. — unit: `app/src/renderer/screens/ImportDialog.test.tsx`; ✓ Link asks only for the link, Paste text for the ad, a title and a company
 - Every field as in the other dialogs: its name above its own box (`.field.onb-field`, `label.field-label`, `.onb-input`).
-- Link mode: textboxes **"Link"**, **"Title (optional)"**, **"Company (optional)"**. — unit: `app/src/renderer/screens/ImportDialog.test.tsx`
-- Text mode: textbox **"Ad text"** (textarea), **"Title"**, **"Company"**. Use `exact: true`, since "Title (optional)" exists in the other mode. — ✓ Paste text asks for the ad, a title and a company…
-- Both modes: **"Location (optional)"**. — unit: `app/src/renderer/screens/ImportDialog.test.tsx`; ✓ Paste text asks…
-- Title, company and location are kept when switching modes. — ✓ Paste text asks for the ad, a title and a company, and keeps what was typed
-- **btn "Cancel"** (quiet), then **btn "Import"** (primary), disabled while busy and until the form is ready: link needs a non-blank URL; text needs text, title and company. — unit: `app/src/renderer/screens/ImportDialog.test.tsx`; ✓ Paste text asks…; unit: `app/src/renderer/screens/Dialog.test.tsx`
+- Link mode: textbox **"Link"** only; after a link could not be read, **"Title (optional)"**, **"Company (optional)"** and **"Location (optional)"** too, and only then are they sent. — unit: `app/src/renderer/screens/ImportDialog.test.tsx`
+- Text mode: textbox **"Ad text"** (textarea), **"Title"**, **"Company"**. Use `exact: true`, since "Title (optional)" exists in the other mode. — ✓ Link asks only for the link…
+- Text mode: **"Location (optional)"**. — unit: `app/src/renderer/screens/ImportDialog.test.tsx`; ✓ Link asks only for the link…
+- Title and location typed in Text mode are kept while it is shown. — ✓ Link asks only for the link, Paste text for the ad, a title and a company
+- **btn "Cancel"** (quiet), then **btn "Import"** (primary), disabled while busy and until the form is ready: link needs a non-blank URL; text needs text, title and company. — unit: `app/src/renderer/screens/ImportDialog.test.tsx`; ✓ Link asks only for the link…; unit: `app/src/renderer/screens/Dialog.test.tsx`
 - While busy: the spinner "Reading and scoring the ad…"; inputs disabled. Cancel stays enabled; the server call carries on after closing. — ✓ a link is read, scored and shown; unit: `app/src/renderer/screens/ImportDialog.test.tsx`
 
 ### Failure branches

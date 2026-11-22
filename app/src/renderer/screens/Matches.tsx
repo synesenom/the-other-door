@@ -13,6 +13,7 @@ import { statusNotice } from './statusNotice'
 import { Spinner } from './Spinner'
 import { runText } from './run-text'
 import { Switch } from './Switch'
+import { minScoreSetting, minScoreValue } from './minScore'
 
 /** Why Find new jobs is off while a Prepare runs (the sidebar's button and this header's pill). */
 export const PREPARING_TIP = 'Preparing an application. Find new jobs again when it is done.'
@@ -21,8 +22,8 @@ export const PREPARING_TIP = 'Preparing an application. Find new jobs again when
 export function emptyText(scored: number | undefined, minScore: number | undefined, reviewedAt: string | null, newOnly: boolean): string {
   if (scored === undefined || scored === 0) return 'Nothing scored yet. Find new jobs to start.'
   if (newOnly && reviewedAt) return 'Nothing new since your last review.'
-  const bar = minScore === undefined ? '' : ` (${Math.round(minScore * 100)}%)`
-  return `Nothing has reached your bar${bar} yet.`
+  if (minScore === undefined) return 'No matches yet.'
+  return `Nothing has scored ${minScoreValue(minScore)} yet.`
 }
 
 /** Above the weak matches: how many, and what would widen the search. It informs, never recommends: the sources' terms forbid automated access. */
@@ -337,12 +338,20 @@ export function Matches({
             {weak && weakRows.length > 0 ? (
               <WeakLine weak={weak} onChooseDiscovery={onChooseDiscovery} onCheckSearch={onCheckSearch} />
             ) : (
-              <p className="body muted">{emptyText(listed.scored, listed.minScore, listed.reviewedAt, newOnly)}</p>
+              <p className="body muted">
+                <span>{emptyText(listed.scored, listed.minScore, listed.reviewedAt, newOnly)}</span>
+                {listed.minScore !== undefined && listed.scored !== undefined && listed.scored > 0 && !(newOnly && listed.reviewedAt) && (
+                  <>
+                    <br />
+                    <span>{minScoreSetting(listed.minScore)}</span>
+                  </>
+                )}
+              </p>
             )}
             {onLowerBar && listed.scored !== undefined && listed.scored > 0 && !(newOnly && listed.reviewedAt) && (
-              <div className="actions">
+              <div className="actions flush">
                 <button type="button" className="quiet" onClick={onLowerBar}>
-                  Lower the bar
+                  Show broader matches
                 </button>
               </div>
             )}

@@ -196,7 +196,7 @@ describe('Profile', () => {
     expect(call).toHaveBeenCalledWith('init_profile', { min_score: 0.75 })
     cleanup()
     await open({}, { min_score: 0.7 })
-    expect(screen.getByRole('radio', { name: 'Your own (0.7)' })).toBeChecked()
+    expect(screen.getByRole('radio', { name: 'Your own (0.70)' })).toBeChecked()
   })
 
   it('an error is said under its field, and nothing is lost', async () => {

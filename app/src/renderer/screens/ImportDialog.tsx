@@ -21,6 +21,8 @@ export function ImportDialog({ onClose, onOpen }: Props) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [duplicate, setDuplicate] = useState(false)
+  // the link asks only for itself; its page could not be read: now the details the page would have given
+  const [unread, setUnread] = useState(false)
   const [result, setResult] = useState<{ import: ImportResult; posting: Posting | null } | null>(null)
   const id = useId()
 
@@ -28,9 +30,10 @@ export function ImportDialog({ onClose, onOpen }: Props) {
 
   const send = async (force: boolean) => {
     const args: Record<string, unknown> = mode === 'link' ? { url: url.trim() } : { text: text.trim(), title: title.trim(), company: company.trim() }
-    if (mode === 'link' && title.trim()) args.title = title.trim()
-    if (mode === 'link' && company.trim()) args.company = company.trim()
-    if (location.trim()) args.location = location.trim()
+    // a link sends the details only once they are shown (its page could not be read)
+    if (mode === 'link' && unread && title.trim()) args.title = title.trim()
+    if (mode === 'link' && unread && company.trim()) args.company = company.trim()
+    if ((mode === 'text' || unread) && location.trim()) args.location = location.trim()
     if (force) args.force = true
     setBusy(true)
     setError(null)
@@ -47,7 +50,10 @@ export function ImportDialog({ onClose, onOpen }: Props) {
     } catch (e) {
       const message = errorText(e)
       if (/already stored/i.test(message)) setDuplicate(true)
-      else setError(message)
+      else {
+        setError(message)
+        if (mode === 'link') setUnread(true)
+      }
     } finally {
       setBusy(false)
     }
@@ -114,8 +120,12 @@ export function ImportDialog({ onClose, onOpen }: Props) {
       {mode === 'link' ? (
         <>
           {field('Link', url, setUrl)}
-          {field('Title (optional)', title, setTitle)}
-          {field('Company (optional)', company, setCompany)}
+          {unread && (
+            <>
+              {field('Title (optional)', title, setTitle)}
+              {field('Company (optional)', company, setCompany)}
+            </>
+          )}
         </>
       ) : (
         <>
@@ -129,7 +139,7 @@ export function ImportDialog({ onClose, onOpen }: Props) {
           {field('Company', company, setCompany)}
         </>
       )}
-      {field('Location (optional)', location, setLocation)}
+      {(mode === 'text' || unread) && field('Location (optional)', location, setLocation)}
       {busy && <Spinner message="Reading and scoring the ad…" />}
       {duplicate && (
         <>

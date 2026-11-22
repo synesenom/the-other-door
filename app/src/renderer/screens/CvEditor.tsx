@@ -118,7 +118,7 @@ function Expand({ from, pages, blocked, onRead, onFile, onClose, onAdded }: { fr
   const errorLine = error && (
     <ErrorBox text={error} />
   )
-  const label = file ? 'Add from your CV file' : again ? 'Check your pages again' : 'Add a page'
+  const label = file ? 'Replace your CV file' : again ? 'Check your pages again' : 'Add a page'
   const reading = file ? `Reading ${file.name} (a minute or two)…` : again ? 'Reading your pages again (a few minutes)…' : 'Reading the page (a few minutes)…'
 
   if (step.kind === 'reading') return <Dialog title={label} onClose={onClose}><Spinner message={reading} /></Dialog>
@@ -161,6 +161,7 @@ function Expand({ from, pages, blocked, onRead, onFile, onClose, onAdded }: { fr
   return (
     <Dialog title={label} onClose={onClose}>
       {result.unreachable.length > 0 && <p className="small muted">{`Could not read: ${result.unreachable.join(', ')}`}</p>}
+      {file && <p className="body">The new file becomes your CV file.</p>}
       {errorLine}
       {result.proposals.length === 0 ? (
         <>

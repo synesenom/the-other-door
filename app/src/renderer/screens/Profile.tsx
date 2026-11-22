@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useId, useState, type CSSProperties, type ReactNode } from 'react'
+import { MATCH, minScoreChoice } from './minScore'
 import { ErrorBox, ErrorList, named } from './AppName'
 import { call, errorText } from '../api'
 import { ChipInput, CityField, TextAreaField, TextField } from './onboarding/parts'
@@ -24,8 +25,6 @@ export const LAYOUT = layout as Layout
 const CONFIG_ONLY = 'config'
 
 const REMOTE: Record<string, string> = { hybrid: 'Hybrid', yes: 'Remote only', no: 'On site' }
-/** The minimum score as three words; a value set by hand in config.json shows as a fourth choice. */
-const MATCH: [number, string][] = [[0.5, 'Broad'], [0.65, 'Balanced'], [0.75, 'Strong']]
 
 type Profile = ShowProfile & { options: ShowProfile['options'] & { fields?: FieldSpec[]; cv_styles?: CvStyles }; config: Record<string, unknown> | null }
 
@@ -218,7 +217,7 @@ export function Profile({ onSaved, onDraft, start }: { onSaved: () => void; onDr
     }
     if (f.key === 'min_score') {
       const now = Number(value)
-      const own = MATCH.some(([n]) => n === now) ? [] : [[now, `Your own (${String(value)})`] as [number, string]]
+      const own = MATCH.some(([n]) => n === now) ? [] : [[now, minScoreChoice(now)] as [number, string]]
       return (
         <fieldset key={f.key} className="choices onb-field">
           <legend className="field-label">

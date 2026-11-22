@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { statusSummary, type CostBlock, type PassRate, type ScoreBands, type StatusSummary } from '../api'
 import { Market } from './Market'
 import { PageSections } from './PageSections'
+import { MIN_SCORE_NAME } from './minScore'
 
 /** Dollars and cents, "<$0.01" for a sliver above nothing. */
 export function usd(amount: number): string {
@@ -33,28 +34,26 @@ const pct = (x: number) => `${Math.round(x * 100)}%`
  */
 function Rate({ rate }: { rate: PassRate | undefined }) {
   if (!rate || !rate.decided || rate.rate === null) return <p className="small muted">Your interview rate shows here once an application has an outcome.</p>
-  const range = rate.low !== null && rate.high !== null ? `, likely between ${pct(rate.low)} and ${pct(rate.high)}` : ''
   return (
     <div className="part-head">
       <p className="display-s">{pct(rate.rate)}</p>
-      <p className="small">{`of your applications with an outcome (an interview, a rejection or no reply) led to an interview: ${rate.passed} of ${rate.decided}${range}.`}</p>
+      <p className="small">{`of your applications with an outcome (an interview, a rejection or no reply) led to an interview: ${rate.passed} of ${rate.decided}.`}</p>
     </div>
   )
 }
 
 function bandLine(label: string, rate: PassRate): string {
-  const range = rate.low !== null && rate.high !== null ? `, likely between ${pct(rate.low)} and ${pct(rate.high)}` : ''
-  return `${label}: ${rate.passed} of ${rate.decided} led to an interview${range}.`
+  return `${label}: ${rate.passed} of ${rate.decided} led to an interview.`
 }
 
-/** The same rate for the better-scored half of the matches and the half near the minimum score (#90). */
+/** The same rate for the better-scored half of the matches and the half near "How close a match to show" (#90). */
 function ScoreBandsView({ bands }: { bands: ScoreBands }) {
   return (
     <div className="part-head">
       <p className="small">{bandLine('Best-scored matches', bands.top)}</p>
-      <p className="small">{bandLine('Matches near your minimum score', bands.near_min)}</p>
+      <p className="small">{bandLine(`Matches near your "${MIN_SCORE_NAME}" setting`, bands.near_min)}</p>
       {bands.reading === 'near_min_lower' && (
-        <p className="small">Matches near your minimum score led to an interview less often: consider raising it.</p>
+        <p className="small">These led to an interview less often: consider raising that setting in Profile.</p>
       )}
     </div>
   )

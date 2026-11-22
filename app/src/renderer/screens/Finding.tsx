@@ -6,6 +6,7 @@ import type { RunBoard, RunRecord, StepRow } from '../api'
 import type { DiscoveryChoice } from './onboarding/reducer'
 import { andList, LegalLink } from './discovery-notice'
 import { activityText } from './run-text'
+import { minScoreSetting, minScoreValue } from './minScore'
 
 export type FindingState =
   /** A run of this window's own; `startedAt` is when it was asked for, until the board says. */
@@ -148,14 +149,14 @@ function postingsFound(record: RunRecord): number {
   return sites.filter((s) => s.outcome === 'ok').reduce((sum, s) => sum + (s.count ?? 0), 0)
 }
 
-/** The run in one line, for a run with nothing new above the bar; null when the record lacks the counts. */
+/** The run in one line, for a run with nothing new at "How close a match to show"; null when the record lacks the counts. */
 export function runAccount(record: RunRecord): string | null {
   const m = record.match
   if (!m || typeof m.scored !== 'number' || typeof m.min_score !== 'number') return null
   const found = postingsFound(record)
-  const bar = `${Math.round(m.min_score * 100)}%`
+  const value = minScoreValue(m.min_score)
   const seen = m.above_threshold ?? 0
-  const reached = seen > 0 ? `${seen} reached your bar (${bar}), none new` : `none reached your bar (${bar})`
+  const reached = seen > 0 ? `${seen} scored ${value}, none new` : `none scored ${value}`
   const scored = m.scored === 0 ? 'none close enough to score' : `${m.scored} close enough to score`
   return `${found} ${found === 1 ? 'job' : 'jobs'} found, ${scored}${m.scored === 0 ? '' : `, ${reached}`}`
 }
@@ -213,7 +214,17 @@ function Summary({
           ))}
         </ul>
       )}
-      {account !== null && <p className="body">{account}</p>}
+      {account !== null && (
+        <p className="body">
+          <span>{account}</span>
+          {record.match!.scored! > 0 && (
+            <>
+              <br />
+              <span>{minScoreSetting(record.match!.min_score!)}</span>
+            </>
+          )}
+        </p>
+      )}
       {careerNote && <p className="small muted">The next full run also reads employers' own career sites.</p>}
       <p className="small muted">Took {elapsedText(record.elapsed_s)}</p>
       {reminder.length > 0 && <DiscoveryReminder sources={reminder} onChoose={onChooseDiscovery} />}
@@ -226,10 +237,10 @@ function Summary({
         </button>
       </div>
       {account !== null && (onLowerBar || onCheckSearch) && (
-        <div className="actions">
+        <div className="actions flush">
           {onLowerBar && (
             <button type="button" className="quiet" onClick={onLowerBar}>
-              Lower the bar
+              Show broader matches
             </button>
           )}
           {onCheckSearch && (

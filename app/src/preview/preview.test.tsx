@@ -83,9 +83,14 @@ describe('the visual guide', () => {
   it('shows every kind of button, enabled and disabled', () => {
     render(<Guide />)
     for (const kind of ['primary', 'secondary', 'quiet']) {
-      expect(document.querySelectorAll(`button.${kind}:not(.sidebar-problem)`)).toHaveLength(2)
+      expect(document.querySelectorAll(`button.${kind}:not(.sidebar-problem):not(.flush > *)`)).toHaveLength(2)
       expect(document.querySelector(`button.${kind}:disabled`)).not.toBeNull()
     }
+  })
+
+  it('shows a flush row of text actions', () => {
+    render(<Guide />)
+    expect(document.querySelectorAll('.actions.flush > button.quiet')).toHaveLength(2)
   })
 })
 
@@ -189,9 +194,9 @@ describe('scenes', () => {
   it('analytics shows the interview rate, and in the empty state one line', async () => {
     mount('analytics')
     const part = await screen.findByRole('region', { name: 'Applications' })
-    expect(part).toHaveTextContent('of your applications with an outcome (an interview, a rejection or no reply) led to an interview: 6 of 12, likely between 36% and 64%.')
-    expect(part).toHaveTextContent('Best-scored matches: 5 of 6 led to an interview, likely between 65% and 94%.')
-    expect(part).toHaveTextContent('Matches near your minimum score led to an interview less often: consider raising it.')
+    expect(part).toHaveTextContent('of your applications with an outcome (an interview, a rejection or no reply) led to an interview: 6 of 12.')
+    expect(part).toHaveTextContent('Best-scored matches: 5 of 6 led to an interview.')
+    expect(part).toHaveTextContent('These led to an interview less often: consider raising that setting in Profile.')
     expect(within(part).queryAllByRole('img')).toEqual([])
     const market = await screen.findByRole('region', { name: 'Market' })
     expect(await within(market).findByRole('listitem', { name: 'IFRS, in your CV' })).toHaveTextContent('46% of the ads')
@@ -227,8 +232,15 @@ describe('scenes', () => {
 
   it('finding-summary-none says the run in a line and offers the next steps', async () => {
     mount('finding-summary-none')
-    expect(await screen.findByText('46 jobs found, 40 close enough to score, none reached your bar (65%)')).toBeInTheDocument()
-    for (const name of ['Lower the bar', 'Check your search terms']) expect(screen.getByRole('button', { name })).toBeInTheDocument()
+    expect(await screen.findByText('46 jobs found, 40 close enough to score, none scored 0.65 or better')).toBeInTheDocument()
+    expect(screen.getByText('How close a match to show: Balanced')).toBeInTheDocument()
+    for (const name of ['Show broader matches', 'Check your search terms']) expect(screen.getByRole('button', { name })).toBeInTheDocument()
+  })
+
+  it('matches-none-reached names the setting the empty list waits on', async () => {
+    mount('matches-none-reached')
+    expect(await screen.findByText('Nothing has scored 0.65 or better yet.')).toBeInTheDocument()
+    expect(screen.getByText('How close a match to show: Balanced')).toBeInTheDocument()
   })
 
   it('finding-first-run reminds about the discovery sources left off', async () => {
