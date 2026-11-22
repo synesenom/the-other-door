@@ -361,22 +361,6 @@ describe('the sandbox\'s run', () => {
   })
 })
 
-describe('door:show-run', () => {
-  it('reveals the run record named by its started_at, when it exists', async () => {
-    const { invoke, showItemInFolder, home } = setup()
-    expect(await invoke('door:show-run', '2026-10-29T08:00:00+00:00')).toEqual({ ok: true })
-    expect(showItemInFolder).toHaveBeenCalledWith(join(home, 'jobs', 'runs', '2026-10-29T08-00-00-00-00.json'))
-  })
-
-  it('refuses a missing record, a path and anything that is not a string', async () => {
-    const { invoke, showItemInFolder } = setup()
-    for (const bad of ['2030-01-01T00:00:00+00:00', '../../etc/passwd', '', 7, null, 'x'.repeat(200)]) {
-      expect((await invoke('door:show-run', bad)).ok).toBe(false)
-    }
-    expect(showItemInFolder).not.toHaveBeenCalled()
-  })
-})
-
 describe('security helpers', () => {
   it('allows navigation only within the app itself', () => {
     expect(isAllowedNavigation('http://localhost:5173/', 'http://localhost:5173/')).toBe(true)

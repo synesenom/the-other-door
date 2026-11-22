@@ -78,7 +78,7 @@ test.describe('a run', () => {
     await expect(top.filter({ hasText: 'Nordlys Retail' })).toHaveCount(0)
     await expect(summary(page).getByText(/^Took \d+ s$/)).toBeVisible()
     await expect(summary(page).getByRole('button', { name: 'View matches' })).toBeVisible()
-    await expect(summary(page).getByRole('button', { name: 'Show run record' })).toBeVisible()
+    await expect(summary(page).getByRole('button')).toHaveCount(1)
     await expect(runButton(page)).toHaveText('Find new jobs')
     await expect(runButton(page)).toBeEnabled()
     await expect(page.getByRole('complementary').getByText(/^Last run /)).toHaveText(/^Last run Oct 26, \d\d:\d\d (AM|PM)$/)

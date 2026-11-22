@@ -190,7 +190,6 @@ export function createWebDoor(deps: WebDeps) {
       const r = await rpc('cancel_job', {})
       return r.ok ? { ok: true } : { ok: false, error: r.error }
     },
-    'show-run': machineOnly,
     'current-board': board,
   }
 

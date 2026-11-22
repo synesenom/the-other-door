@@ -1,6 +1,7 @@
 import { AppName, ErrorBox } from './AppName'
 import { CheckMark, CrossMark, WarningMark } from './CheckMark'
 import { useEffect, useState } from 'react'
+import { useNarrow } from '../useNarrow'
 import { scoreText } from '../api'
 import type { RunBoard, RunRecord, StepRow } from '../api'
 import type { DiscoveryChoice } from './onboarding/reducer'
@@ -149,7 +150,7 @@ function postingsFound(record: RunRecord): number {
   return sites.filter((s) => s.outcome === 'ok').reduce((sum, s) => sum + (s.count ?? 0), 0)
 }
 
-/** The run in one line, for a run with nothing new at "How close a match to show"; null when the record lacks the counts. */
+/** The run in one line, for a run with nothing new at "Match fit"; null when the record lacks the counts. */
 export function runAccount(record: RunRecord): string | null {
   const m = record.match
   if (!m || typeof m.scored !== 'number' || typeof m.min_score !== 'number') return null
@@ -185,19 +186,19 @@ function Summary({
   onViewMatches,
   reminder,
   onChooseDiscovery,
-  onLowerBar,
   onCheckSearch,
 }: {
   record: RunRecord
   onViewMatches: () => void
   reminder: DiscoveryChoice[]
   onChooseDiscovery?: () => void
-  onLowerBar?: () => void
   onCheckSearch?: () => void
 }) {
   const n = record.new_above_threshold.length
   const account = n === 0 ? runAccount(record) : null
   const careerNote = account !== null && SKIPPED_CAREER_STEPS.some((step) => step in (record.skipped ?? {}))
+  // a narrow window stacks the row: a quiet button alone on its line would not read as one
+  const narrow = useNarrow()
   return (
     <section className="summary-card" aria-label="Run summary">
       <h2 className="display-l">{n === 0 ? 'No new matches' : `${n} new ${n === 1 ? 'match' : 'matches'}`}</h2>
@@ -232,24 +233,12 @@ function Summary({
         <button type="button" className="primary" onClick={onViewMatches}>
           View matches
         </button>
-        <button type="button" className="quiet" onClick={() => void window.door.invoke('show-run', record.started_at)}>
-          Show run record
-        </button>
+        {account !== null && onCheckSearch && (
+          <button type="button" className={narrow ? 'secondary' : 'quiet'} onClick={onCheckSearch}>
+            Check your search terms
+          </button>
+        )}
       </div>
-      {account !== null && (onLowerBar || onCheckSearch) && (
-        <div className="actions flush">
-          {onLowerBar && (
-            <button type="button" className="quiet" onClick={onLowerBar}>
-              Show broader matches
-            </button>
-          )}
-          {onCheckSearch && (
-            <button type="button" className="quiet" onClick={onCheckSearch}>
-              Check your search terms
-            </button>
-          )}
-        </div>
-      )}
     </section>
   )
 }
@@ -263,7 +252,6 @@ export function Finding({
   discoveryUnchosen = [],
   discoveryOff = [],
   onChooseDiscovery,
-  onLowerBar,
   onCheckSearch,
 }: {
   /** null only while watching a run started elsewhere: this window has none of its own */
@@ -275,8 +263,7 @@ export function Finding({
   discoveryOff?: DiscoveryChoice[]
   /** Opens Profile, where they are chosen. */
   onChooseDiscovery?: () => void
-  /** The zero-match card's actions, each opening a Profile section; none given, no button (the phone has no Profile). */
-  onLowerBar?: () => void
+  /** The zero-match card's second action, opening Profile at what to look for; none given, no button (the phone has no Profile). */
   onCheckSearch?: () => void
   onStart: () => void
   onStop: () => void
@@ -342,7 +329,6 @@ export function Finding({
           onViewMatches={onViewMatches}
           reminder={state.firstRun && state.record.new_above_threshold.length < FEW_MATCHES ? discoveryOff : []}
           onChooseDiscovery={onChooseDiscovery}
-          onLowerBar={onLowerBar}
           onCheckSearch={onCheckSearch}
         />
       )}

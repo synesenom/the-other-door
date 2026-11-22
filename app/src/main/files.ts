@@ -68,13 +68,6 @@ export function contained(candidate: string, root: string): string | null {
   }
 }
 
-/** `home/jobs/runs/<started_at>.json` when it exists; the name follows `_run_record_filename` in src/door/commands/find.py. */
-export function runRecordPath(home: string, startedAt: unknown): string | null {
-  if (typeof startedAt !== 'string' || startedAt.length === 0 || startedAt.length > 64) return null
-  const path = join(home, 'jobs', 'runs', `${startedAt.replace(/[^A-Za-z0-9_-]/g, '-')}.json`)
-  return existsSync(path) ? path : null
-}
-
 /** Whether the name ends in one of `exts` (without the dot, e.g. `pdf`, `tar.gz`), without regard to case. */
 export const hasExtension = (p: string, exts: string[]) => exts.some((e) => p.toLowerCase().endsWith(`.${e}`))
 
