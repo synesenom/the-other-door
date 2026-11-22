@@ -69,7 +69,7 @@ test('Go on without a draft: the review asks for everything and for the CV itsel
   await expect(notice(page)).toHaveText('These could not be found in your sources: your name, your email, your city, job titles. Fill them in below to finish.')
   expect(world.toolCalls('keywords')).toEqual([]) // no title, nothing to choose terms for
   // The CV fold is open, on the box, empty.
-  await expect(fold(page, 'CV').locator('summary')).toContainText('No CV yet')
+  await expect(fold(page, 'Master CV').locator('summary')).toContainText('No CV yet')
   await expect(page.getByLabel('Your CV', { exact: true })).toHaveValue('')
   await expect(page.getByRole('switch', { name: 'Preview' })).toHaveAttribute('aria-checked', 'false')
   await expect(saveAndSearch(page)).toBeDisabled()

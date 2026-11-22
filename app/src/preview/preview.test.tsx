@@ -176,6 +176,10 @@ describe('scenes', () => {
   it('profile-stories lists the stories', async () => {
     mount('profile-stories')
     expect(await screen.findByRole('listitem', { name: 'Rebuilt the cash forecast at Acme Foods' })).toBeInTheDocument()
+    // no Save bar until a detail is edited
+    expect(screen.queryByRole('button', { name: 'Save' })).toBeNull()
+    await userEvent.type(screen.getByLabelText('Name'), 'x')
+    expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument()
   })
 
   it('sent opens what was sent, read only', async () => {

@@ -15,7 +15,8 @@ import {
   reviewHeading,
   saveButton,
   sourcesHeading,
-  titleBox,
+  addTitle,
+  titleChip,
   toReview,
 } from './helpers/onboarding'
 import { type World } from '../test/world/build'
@@ -48,9 +49,9 @@ test.describe('set up again', () => {
     await continueButton(page).click()
     await expect(reviewHeading(page)).toBeVisible(LAUNCH)
     await expect(page.getByLabel('Name', { exact: true })).toHaveValue('Mette Kjær Larsen')
-    await expect(fold(page, 'CV').locator('summary')).toContainText('Ready')
+    await expect(fold(page, 'Master CV').locator('summary')).toContainText('Ready')
     // The saved titles come first, the new suggestions after them.
-    await expect(titleBox(page, 'Senior Data Scientist')).toBeChecked()
+    await expect(titleChip(page, 'Senior Data Scientist')).toBeVisible()
     expect(world.toolCalls('suggest_titles')[0].args?.titles).toEqual(world.persona.roleTargets)
     await saveButton(page).click()
     await expect(page.getByRole('heading', { name: 'Matches', level: 1 })).toBeVisible(LAUNCH)
@@ -98,8 +99,7 @@ test.describe('a config.json the app cannot read', () => {
     await page.getByLabel('Name', { exact: true }).fill('Mette Kjær Larsen')
     await page.getByLabel('Email', { exact: true }).fill('mette.kjaer.larsen@example.com')
     await page.getByLabel('City', { exact: true }).selectOption('Copenhagen')
-    await page.getByLabel('Add your own title', { exact: true }).fill('Senior Data Scientist')
-    await page.getByLabel('Add your own title', { exact: true }).press('Enter')
+    await addTitle(page, 'Senior Data Scientist')
     await page.getByRole('button', { name: 'Save and start searching', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'Finding jobs', level: 1 })).toBeVisible({ timeout: 20_000 })
     expect(world.readJson('profile/config.json')).not.toHaveProperty('foo')

@@ -130,13 +130,13 @@ with npm (`claude.cmd`) cannot be started from the app, so sign in from a termin
    could not be found in your sources, and Save waits until it is filled in; a city in a country not
    covered yet is named, and you choose a city or keep yours under Other, where only the worldwide
    boards are searched:
-   **You** (name, email, city, hybrid, remote only or on site, a photo for your CV where your city's country may carry one, held until you save, the job-ad languages);
-   **Titles** (each with why it fits, the best ones ticked, and your own to add, as pills you can remove; changing them
-   proposes the search terms again);
-   **What matters to you** (optional, a text box: the kind of employer and job you want and anything you rule out, in your own words, for example "medical or green energy, maybe robotics; a smaller company, little travel; not banking or gambling"; when in doubt, scoring still shows the job);
-   **Search** and **CV**, folded (the CV formatted, with a switch to its Markdown text; what the draft could not find is marked "to fill in", and a click on a marker selects that gap in the text; a file with no text, such as a scanned PDF, is named;
+   the same parts, names and controls as [Profile](#profile), fewer of them:
+   **About you** (name, email, city, hybrid, remote only or on site, a photo for your CV where your city's country may carry one, held until you save, the job-ad languages);
+   **What to look for** (the role targets, the best titles found already picked, and your own to add, as pills you can remove; changing them
+   chooses the search terms again, which are shown nowhere; and what matters to you, optional, a text box: the kind of employer and job you want and anything you rule out, in your own words; when in doubt, scoring still shows the job);
+   **Master CV**, folded (the CV formatted, with a switch to its Markdown text; what the draft could not find is marked "to fill in", and a click on a marker selects that gap in the text; a file with no text, such as a scanned PDF, is named;
    the pages you used become the profile's enrich sources);
-   **Your story bank** (on a first set-up: one story drafted from your CV, to show what a story is. Your CV lists
+   **Stories** (on a first set-up: one story drafted from your CV, to show what a story is. Your CV lists
    what you did; a story tells what was behind it, and the tailor draws on your stories for every application.
    Fill in what the CV could not say, usually what you learned, or untick "Keep this story"; Save waits for one or the other.
    More stories go in Profile → [Stories](#your-stories));
@@ -216,7 +216,7 @@ and error is in the run record. "View matches" opens Matches on
 "New only". Matches and "Last run" are refreshed.
 
 When no match is new, the card says what the run did in one line ("917 jobs found, 40 close enough to
-score, none scored 0.65 or better", then on its own line "Match fit: Balanced") and offers what you can do about it: "Check your search terms" opens Profile at What to look for, your search terms and "Match fit". When the
+score, none scored 0.65 or better", then on its own line "Match fit: Balanced") and offers what you can do about it: "Show broader matches" opens Profile at What to look for, where "Match fit" is. When the
 run skipped Discover, Follow or Collect, it adds that the next full run also reads employers' own career sites.
 
 After the first run, if it found fewer than three new matches and every employer discovery source
@@ -245,8 +245,7 @@ on "New only".
 Until the first posting has reached that setting, that empty list also shows the three best ads below it as ordinary rows
 marked "Weak match" (open, prepare or discard them like any other), under one line: "3 weak matches found." and, when
 a discovery source serving your city is off, that the app can also find employers on LinkedIn and the other discovery sources, at your own
-risk, with the legal disclaimer and "Turn it on in Settings" (opens Where to find employers); with every source on, "Broaden your
-search keywords to find closer ones." (opens Profile at the search). On the phone the line is plain text. Once any
+risk, with the legal disclaimer and "Turn it on in Settings" (opens Where to find employers); with every source on, the line is only the count. On the phone the line is plain text. Once any
 posting has reached your "Match fit" setting, they are never shown again.
 
 Choosing a row opens the posting on the whole page, as a card does in Applications, with a
@@ -422,8 +421,8 @@ on macOS they are shown as coming from "Electron" until the app has its own name
 
 Who you are and the jobs you want (how the app works is in [Settings](#settings)). One page: the settings below,
 then your [Master CV](#master-cv), the [CV style](#cv-style) and your [Stories](#your-stories). The list on the right names its sections, the one you
-are reading marked; a click jumps to it (a window narrower than 900 px leaves the list out). The Save bar at the
-page's foot saves the settings; your CV saves itself as you type.
+are reading marked; a click jumps to it (a window narrower than 900 px leaves the list out). The Save bar
+appears at the foot of the settings once you change one, and saves them; your CV and your stories save themselves.
 
 The everyday settings of `profile/config.json` ([Configuration](configuration.md)), in sections:
 About you (name, email, city, whether you need a visa or work permit there, where you would work, the languages of the job ads), What to

@@ -203,7 +203,7 @@ export function Profile({ onSaved, onDraft, start }: { onSaved: () => void; onDr
             }}>
             Undo changes
           </button>
-          <button type="button" className="primary" disabled={saving} onClick={() => void save()}>
+          <button type="button" className="primary" disabled={changes.length === 0 || saving} onClick={() => void save()}>
             Save
           </button>
           {saving ? (

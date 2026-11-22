@@ -30,9 +30,9 @@ test.describe('the Details form', () => {
     // how the app works is in Settings, not here
     await expect(page.getByRole('checkbox', { name: 'LinkedIn' })).toHaveCount(0)
     await expect(page.getByLabel('Claude config folder', { exact: true })).toHaveCount(0)
-    // the save bar: nothing to save yet
-    await expect(saveButton(page)).toBeDisabled()
-    await expect(page.getByRole('button', { name: 'Undo changes' })).toBeDisabled()
+    // the save bar: nothing to save yet, so no bar
+    await expect(saveButton(page)).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Undo changes' })).toHaveCount(0)
     // the sections aside
     const sections = page.getByRole('navigation', { name: 'Sections' })
     await expect(sections.getByRole('link')).toHaveText(['About you', 'What to look for', 'What to skip', 'Master CV', 'CV style', 'Stories'])
