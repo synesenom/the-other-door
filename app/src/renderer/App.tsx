@@ -342,7 +342,7 @@ export function App({ start }: { start?: AppStart } = {}) {
     setProfileStart((s) => ({ n: (s?.n ?? 0) + 1, at: { section } }))
     setCurrent('Profile')
   }
-  /** Opens Settings at Risky sources, where the discovery sources are turned on. */
+  /** Opens Settings at Where to find employers, where the discovery sources are turned on. */
   const openRisky = () => {
     setFinding(false)
     setSettingsStart((s) => ({ n: (s?.n ?? 0) + 1, at: 'risky' }))

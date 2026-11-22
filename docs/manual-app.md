@@ -142,7 +142,7 @@ with npm (`claude.cmd`) cannot be started from the app, so sign in from a termin
    More stories go in Profile → [Stories](#your-stories));
    **Where to find employers** (LinkedIn, and profession.hu, HelloWork or Jobbsafari where they serve your city:
    each stays off unless you tick it, because their terms forbid automated access; see the
-   [legal disclaimer](../LEGAL_DISCLAIMER.md), which opens from there; Settings → Risky sources changes it later).
+   [legal disclaimer](../LEGAL_DISCLAIMER.md), which opens from there; Settings → Where to find employers changes it later).
    "Save and start searching" writes the profile and the CV and opens [Finding jobs](#finding-new-jobs)
    on a first search of the boards. Without a CV of your own or Claude, it saves and opens Matches,
    and a line at the foot of the sidebar says what is missing.
@@ -185,7 +185,7 @@ refused *The other door* is not listed. Discover lists its sources
 (LinkedIn, profession.hu, …) the same way; they are read one after the other, and Discover
 starts at once and works beside the other steps. A list goes away once everything in it is read.
 A source serving your city that you never turned on is listed there too, with a warning mark:
-"LinkedIn (not enabled, enable)"; "enable" opens Settings at Risky sources, where it is switched on.
+"LinkedIn (not enabled, enable)"; "enable" opens Settings at Where to find employers, where it is switched on.
 
 You can switch screens while it runs: the button then reads "Finding jobs…" and takes you
 back (on the Finding jobs screen itself it is greyed out), and Matches says above its list which
@@ -223,7 +223,7 @@ After the first run, if it found fewer than three new matches and every employer
 serving your city is off, the card adds one line: *The other door* can also find employers on
 LinkedIn (and the other discovery sources serving your city), at your own risk, with the
 [legal disclaimer](../LEGAL_DISCLAIMER.md) and "Turn it on in Settings", which opens Settings at
-Risky sources. It is said only on that card, never again, and not on the phone.
+Where to find employers. It is said only on that card, never again, and not on the phone.
 
 ### In the sandbox
 
@@ -245,7 +245,7 @@ on "New only".
 Until the first posting has reached that setting, that empty list also shows the three best ads below it as ordinary rows
 marked "Weak match" (open, prepare or discard them like any other), under one line: "3 weak matches found." and, when
 a discovery source serving your city is off, that the app can also find employers on LinkedIn and the other discovery sources, at your own
-risk, with the legal disclaimer and "Turn it on in Settings" (opens Risky sources); with every source on, "Broaden your
+risk, with the legal disclaimer and "Turn it on in Settings" (opens Where to find employers); with every source on, "Broaden your
 search keywords to find closer ones." (opens Profile at the search). On the phone the line is plain text. Once any
 posting has reached your "Match fit" setting, they are never shown again.
 
@@ -506,7 +506,7 @@ Stories are not on the phone.
 ## Settings
 
 How *The other door* works for you (who you are and what you want is in [Profile](#profile)). One column of
-sections: **Connections**, **Risky sources**, **Your data**, **Appearance**, **Version** (installed builds), **Documentation** (with the
+sections: **Connections**, **Where to find employers**, **Your data**, **Appearance**, **Version** (installed builds), **Documentation** (with the
 legal disclaimer) and, last, **Report a problem**. The same list as Profile's sits on the right.
 Opening it checks Claude's sign-in again; nothing else runs until you click.
 
@@ -533,7 +533,7 @@ fine, an empty ring when not) and what you can do about it.
   and the sandbox Drive is not available (their throwaway data never reaches your Drive),
   and a build without *The other door*'s Google client says so.
 
-**Risky sources**: sites whose terms forbid automated reading (LinkedIn and the others),
+**Where to find employers**: sites whose terms forbid automated reading (LinkedIn and the others),
 which *The other door* can still read for employers to follow, if you choose to. Only the ones serving your city
 are listed, each with what its terms say. Off until you tick one; a tick is saved at once.
 

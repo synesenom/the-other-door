@@ -72,7 +72,7 @@ export function Matches({
   onOpened?: () => void
   /** Opens Profile at the bar (`min_score`); none given (the phone), no button. */
   onLowerBar?: () => void
-  /** Opens Settings at Risky sources (the discovery sources); none given (the phone), the line is plain text. */
+  /** Opens Settings at Where to find employers (the discovery sources); none given (the phone), the line is plain text. */
   onChooseDiscovery?: () => void
   /** Opens Profile at the search keywords; none given (the phone), the line is plain text. */
 } = {}) {

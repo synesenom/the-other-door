@@ -38,7 +38,7 @@ describe('Settings', () => {
     const { onRecheck, call } = show()
     expect(screen.getByRole('heading', { name: 'Settings', level: 1 })).toBeInTheDocument()
     expect(onRecheck).toHaveBeenCalledTimes(1)
-    expect(calls(call).map((c) => c[0])).toEqual(['show_profile']) // Risky sources
+    expect(calls(call).map((c) => c[0])).toEqual(['show_profile']) // Where to find employers
   })
 
   it('has the Connections section with Claude and Google Drive', () => {
@@ -66,7 +66,7 @@ describe('Settings', () => {
   it('lists its parts beside them', () => {
     show()
     const parts = screen.getByRole('navigation', { name: 'Sections' })
-    expect(within(parts).getAllByRole('link').map((a) => a.textContent)).toEqual(['Connections', 'Risky sources', 'Your data', 'Appearance', 'Documentation', 'Report a problem'])
+    expect(within(parts).getAllByRole('link').map((a) => a.textContent)).toEqual(['Connections', 'Where to find employers', 'Your data', 'Appearance', 'Documentation', 'Report a problem'])
   })
 
   it('opened at Report a problem (the sidebar\'s line): scrolled to it', () => {

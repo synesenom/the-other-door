@@ -23,7 +23,7 @@ Conventions used below:
 |---|---|---|
 | Open Profile | sidebar `nav "Main"` → `button "Profile"` (exact; it has an icon plus text) | Mounts `<Profile key={profileStart.n}>`: one page, the details, the CV and the Stories; scrolled to `start.section` when given. | — ✓ opens with every section and the saved values
 | Open Profile from the problem line "You have no CV yet" | `group "Needs you"` → `button "You have no CV yet"` (sidebar foot; wide window only) | Profile opens scrolled to the **CV** section (`start={section:'cv'}`) and remounts (key n+1). The line shows only when `show_profile.config` is non-null **and** `cv.exists === false`. It is not shown in demo mode. The example CV gets no line. | — ✓ the sidebar line opens the CV, which says there is none
-| Open Settings → Risky sources from Finding | Finding screen's "choose discovery" action (`discovery_unchosen` non-empty) | Settings opens scrolled to `#settings-risky` | — ✓ the sources never chosen are said under Discover, and Enable opens Settings on Risky sources
+| Open Settings → Where to find employers from Finding | Finding screen's "choose discovery" action (`discovery_unchosen` non-empty) | Settings opens scrolled to `#settings-risky` | — ✓ the sources never chosen are said under Discover, and Enable opens Settings on Where to find employers
 | `onDraft` (the CV section's buttons) | see §4 | `setUpAgain()`: calls `show_profile`, then the onboarding wizard opens prefilled with Cancel available (config exists). If `show_profile` fails, **nothing happens** (silent). | — unit: `app/src/renderer/screens/CvEditor.test.tsx`; the silent show_profile failure is not tested (nothing on screen to assert)
 | `onSaved` (after a details Save, the first CV written, or the editor left after a write) | — | App re-reads `show_profile` (sidebar lines, `discovery_unchosen`) and bumps `refreshKey`, which remounts Matches. | — ✓ the first CV saves itself, with no backup, and the sidebar line goes
 | Leave Profile (any nav button, Find new jobs) | — | Profile unmounts. **Unsaved details are dropped silently**; CV text typed since the last pause is written as the editor goes. | — not tested: nothing on screen to assert
@@ -103,7 +103,7 @@ The sections are rendered as `<section aria-labelledby="profile-<id>">`, i.e. **
 
 Errors for `exclude.*` appear under the **keywords** chips only. A real server cannot produce them from the UI (lists of strings). — not tested: unreachable (lists of strings)
 
-Discovery switches are not on Profile: they are how the app works, in Settings (`SettingsFields.tsx`, Risky sources; saved at once) — ✓ offers the sources serving the city; a tick is saved at once (Copenhagen: LinkedIn only; ticked and unticked, `linkedin_discovery` follows); unit: `app/src/renderer/screens/SettingsFields.test.tsx`. "Ask Claude where a careers page is" and the Claude config folder are left to config.json.
+Discovery switches are not on Profile: they are how the app works, in Settings (`SettingsFields.tsx`, Where to find employers; saved at once) — ✓ offers the sources serving the city; a tick is saved at once (Copenhagen: LinkedIn only; ticked and unticked, `linkedin_discovery` follows); unit: `app/src/renderer/screens/SettingsFields.test.tsx`. "Ask Claude where a careers page is" and the Claude config folder are left to config.json.
 
 **region "Other"** (`profile-advanced`)
 

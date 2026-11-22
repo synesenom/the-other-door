@@ -44,7 +44,7 @@ change a colour or a size there, not in a component.
 7. **Profile is what, Settings is how.** Profile holds who you are and the jobs you want: your details, the
    city and languages, what to look for and what to skip, the CV and the stories; changing it changes which
    jobs you get. Settings holds how *The other door* works for you: what it connects to, where it looks and
-   what it may spend on your plan (Connections, Risky sources, your data). Where a
+   what it may spend on your plan (Connections, Where to find employers, your data). Where a
    key is stored (`profile/config.json` or not) does not decide it. A key nobody needs to touch is left to
    `config.json` (its default) and shown nowhere.
 8. **No new destinations.** The sidebar is Matches, Applications, Profile, Settings and Analytics,
