@@ -1,0 +1,32 @@
+{
+  "id": "jobindex.1005",
+  "title": "\u00d8konomichef",
+  "company": "Nordic Foods A/S",
+  "location": "Copenhagen",
+  "url": "https://example.com/jobs/1005",
+  "description": "\u00d8konomichef at Nordic Foods A/S. You own the month-end close and the forecast. Excel and IFRS required.",
+  "description_condensed": null,
+  "source": "jobindex",
+  "scraped_at": "2026-03-15T09:00:00Z",
+  "platform_id": "1005",
+  "posted_at": "2026-03-14T09:00:00Z",
+  "score": 0.71,
+  "score_reason": "fits",
+  "prescreen_score": null,
+  "scored_by": "haiku",
+  "scored_at": "2026-03-16T09:00:00+00:00",
+  "matching_skills": [
+    "Excel",
+    "IFRS"
+  ],
+  "missing_skills": [
+    "SAP"
+  ],
+  "liveness_status": null,
+  "duplicate_of": null,
+  "apply_type": "unknown",
+  "apply_url": null,
+  "employer": null,
+  "integrity": null,
+  "title_en": "Head of Finance (Economy Manager)"
+}

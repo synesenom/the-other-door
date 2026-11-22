@@ -415,6 +415,9 @@ A rule that only lives in prose gets forgotten; this table lists the ones someth
 | A PR Claude opened is watched until it is green and merged | `/dev-pr` Step 7's background watch; the session-start list (`scripts/decide.py --open`) | #480, #481 |
 | Auto-merge only for the maintainer's own PRs and issues | `scripts/decide.py` (author and closing-issue reasons), `verifier` refuses a stranger's PR | #478 |
 | Claude works only issues and sub-issues the maintainer opened | `scripts/decide.py --trusted`, run first by `/dev-resolve` and `/dev-epic` | #478 |
+| A removal leaves no code, test, doc or open issue naming what it removed | `gap-reviewer` item 7 | v0.3.0 |
+| No option, control, step or fallback that nothing asks for | `simplicity-reviewer` ("options and fallbacks nothing asks for") | #482 |
+| An issue is filed only for a bug a user would hit outside the change, or an epic's own box | `/dev-file-issue`, "Review" above | #401, #457 |
 
 ## Docs maintenance
 

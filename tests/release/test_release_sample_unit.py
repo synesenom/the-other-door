@@ -22,18 +22,13 @@ from release_gate_utils import DEFAULT, releases
 
 # Fields and files that exist in the current code but not in the newest saved release, as `<Model>.<field>` or the
 # inventory pattern. Emptied when a release is saved (docs/development/releasing.md).
-NEW_SINCE_RELEASE: set[str] = {
-    # the CV and letter are HTML bodies since #146 (the sample the generator writes has them; the saved 0.2.0 holds .tex)
-    "jobs/output/*/cv.html", "jobs/output/*/cover_letter.html", "jobs/output/*/*.html.bak",
-    # the fact check's round counter: v0.2.0 wrote it, but its saved sample was made without it (#140)
-    "jobs/output/*/.facts_rounds",
-    # the CV style (#465)
-    "Profile.cv_accent", "Profile.cv_fonts",
-}
+NEW_SINCE_RELEASE: set[str] = set()
 
 # Files the inventory names that a release's own sample does not hold, and why (never for lack of effort).
 ABSENT_BY_DESIGN = {
     "upskill/**": "not in profile/ or jobs/, the two folders a sample holds",
+    "jobs/output/*/*.tex": "a job prepared with LaTeX by 0.2.0 keeps it, unread; no release since writes one (#182)",
+    "jobs/output/*/*.tex.bak": "the same: only 0.2.0 and earlier wrote it (#182)",
 }
 # Inventory kinds that are the user's own data: a sample holds a file for each pattern of them.
 _KINDS = (stored.CONFIG, stored.DATA, stored.LEDGER, stored.RECORD, stored.GENERATED)

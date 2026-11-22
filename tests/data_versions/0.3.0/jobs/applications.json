@@ -1,0 +1,163 @@
+{
+  "jobindex.1002": {
+    "status": "prepared",
+    "updated_at": "2026-03-16T09:00:00+00:00",
+    "history": [
+      {
+        "status": "unapplied",
+        "at": "2026-03-15T09:00:00+00:00"
+      },
+      {
+        "status": "prepared",
+        "at": "2026-03-16T09:00:00+00:00"
+      }
+    ]
+  },
+  "jobindex.1003": {
+    "status": "unapplied",
+    "updated_at": "2026-03-15T09:00:00+00:00",
+    "notes": "later",
+    "history": [
+      {
+        "status": "unapplied",
+        "at": "2026-03-15T09:00:00+00:00",
+        "notes": "later"
+      }
+    ]
+  },
+  "jobindex.1004": {
+    "status": "applied",
+    "updated_at": "2026-03-16T09:00:00+00:00",
+    "notes": "sent through their site",
+    "history": [
+      {
+        "status": "applied",
+        "at": "2026-03-16T09:00:00+00:00",
+        "notes": "sent through their site"
+      }
+    ],
+    "materials": {
+      "cv.pdf": "f67926f6790e8a58ba674ac185c5f042a5a6afdef2975af1265da2e4fb6d2c3d",
+      "cover_letter.pdf": "62c5cbecb49fde3893a24ed8dece26b741c8e0a8b91f1c541b319731375f41a9",
+      "cv.html": "7a25c754ced6c316a3b991f5b9cb616e4283e583a829b5b2c38202a248f648cb",
+      "cover_letter.html": "bdb152d508aaeeee7937a4bb146c0fefa1ef46effd411e6a5959f090b971503b",
+      "photo.jpg": "3b0a79a5925200f97f239206c78f601e9d8641ba70015ee8032e5b5de40b3987"
+    }
+  },
+  "jobindex.1005": {
+    "status": "offer",
+    "updated_at": "2026-03-19T09:00:00+00:00",
+    "notes": "verbal",
+    "history": [
+      {
+        "status": "applied",
+        "at": "2026-03-16T09:00:00+00:00"
+      },
+      {
+        "status": "interview:screening",
+        "at": "2026-03-17T09:00:00+00:00",
+        "notes": "recruiter call went well"
+      },
+      {
+        "status": "interview:impression",
+        "at": "2026-03-18T09:00:00+00:00"
+      },
+      {
+        "status": "interview:technical",
+        "at": "2026-03-19T09:00:00+00:00",
+        "notes": "case study"
+      },
+      {
+        "status": "offer",
+        "at": "2026-03-19T09:00:00+00:00",
+        "notes": "verbal"
+      }
+    ]
+  },
+  "jobindex.1006": {
+    "status": "rejected",
+    "updated_at": "2026-03-18T09:00:00+00:00",
+    "notes": "went with an internal candidate",
+    "history": [
+      {
+        "status": "applied",
+        "at": "2026-03-16T09:00:00+00:00"
+      },
+      {
+        "status": "interview:screening",
+        "at": "2026-03-17T09:00:00+00:00"
+      },
+      {
+        "status": "rejected",
+        "at": "2026-03-18T09:00:00+00:00",
+        "notes": "went with an internal candidate"
+      }
+    ]
+  },
+  "jobindex.1007": {
+    "status": "ghosted",
+    "updated_at": "2026-03-19T09:00:00+00:00",
+    "history": [
+      {
+        "status": "applied",
+        "at": "2026-03-16T09:00:00+00:00"
+      },
+      {
+        "status": "interview:assessment",
+        "at": "2026-03-17T09:00:00+00:00",
+        "notes": "personality test"
+      },
+      {
+        "status": "ghosted",
+        "at": "2026-03-19T09:00:00+00:00"
+      }
+    ]
+  },
+  "jobindex.1008": {
+    "status": "discarded",
+    "updated_at": "2026-03-18T09:00:00+00:00",
+    "notes": "withdrew: the role moved to Aarhus",
+    "history": [
+      {
+        "status": "applied",
+        "at": "2026-03-14T09:00:00+00:00",
+        "logged_at": "2026-03-16T09:00:00+00:00"
+      },
+      {
+        "status": "interview:screening",
+        "at": "2026-03-17T09:00:00+00:00"
+      },
+      {
+        "status": "discarded",
+        "at": "2026-03-18T09:00:00+00:00",
+        "notes": "withdrew: the role moved to Aarhus"
+      }
+    ]
+  },
+  "jobindex.1009": {
+    "status": "discarded",
+    "updated_at": "2026-03-17T09:00:00+00:00",
+    "notes": "not for me",
+    "history": [
+      {
+        "status": "discarded",
+        "at": "2026-03-17T09:00:00+00:00",
+        "notes": "not for me"
+      }
+    ]
+  },
+  "thehub.2001": {
+    "status": "ghosted",
+    "updated_at": "2026-03-18T09:00:00+00:00",
+    "history": [
+      {
+        "status": "applied",
+        "at": "2026-03-16T09:00:00+00:00"
+      },
+      {
+        "status": "ghosted",
+        "at": "2026-03-18T09:00:00+00:00"
+      }
+    ]
+  }
+}
