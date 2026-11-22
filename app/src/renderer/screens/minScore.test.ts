@@ -10,7 +10,7 @@ describe('the minimum score has one name and the score format', () => {
 
   it('names the choice Profile shows, or the value set by hand', () => {
     expect(minScoreSetting(0.65)).toBe('How close a match to show: Balanced')
-    expect(minScoreSetting(0.7)).toBe('How close a match to show: 0.70')
+    expect(minScoreSetting(0.7)).toBe('How close a match to show: Your own (0.70)')
   })
 
   it('the run summary and the empty Matches list use both', () => {

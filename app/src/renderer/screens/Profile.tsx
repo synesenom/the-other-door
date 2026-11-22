@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useId, useState, type CSSProperties, type ReactNode } from 'react'
-import { MATCH } from './minScore'
+import { MATCH, minScoreChoice } from './minScore'
 import { ErrorBox, ErrorList, named } from './AppName'
 import { call, errorText } from '../api'
 import { ChipInput, CityField, TextAreaField, TextField } from './onboarding/parts'
@@ -217,7 +217,7 @@ export function Profile({ onSaved, onDraft, start }: { onSaved: () => void; onDr
     }
     if (f.key === 'min_score') {
       const now = Number(value)
-      const own = MATCH.some(([n]) => n === now) ? [] : [[now, `Your own (${String(value)})`] as [number, string]]
+      const own = MATCH.some(([n]) => n === now) ? [] : [[now, minScoreChoice(now)] as [number, string]]
       return (
         <fieldset key={f.key} className="choices onb-field">
           <legend className="field-label">
