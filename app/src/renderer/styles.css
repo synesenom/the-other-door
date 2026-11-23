@@ -488,9 +488,8 @@ details.part > summary + * { margin-top: var(--space-4); }
 .connection-choice { display: flex; flex-direction: column; gap: var(--space-2); }
 .connection-choice > * { margin: 0; }
 .connection-choice ul { padding-left: var(--space-5); }
-/* Profile (issue 222): the Settings column; the save bar stays in reach at the foot. */
+/* Profile (issue 222): the Settings column. */
 .profile-chips > * { margin: 0; }
-/* with the details only, while they have unsaved changes: it sticks at the window's foot over the details, not over the CV and the Stories */
 /* In Profile an error is a sentence under its field. */
 .field-error { margin: 0; font-size: var(--text-small-size); font-weight: 600; color: var(--color-ink); }
 .field-error::before { content: '↳ '; color: var(--color-ink-muted); }

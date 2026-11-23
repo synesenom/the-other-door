@@ -221,9 +221,9 @@ describe('Profile', () => {
     await userEvent.tab()
     expect(call.mock.calls.filter((c) => c[0] === 'init_profile')).toHaveLength(1)
     refuse = false
-    await userEvent.type(screen.getByLabelText('Email'), '@lovelace.org')
+    await userEvent.type(screen.getByLabelText('Email'), '@example.net')
     await userEvent.tab()
-    await waitFor(() => expect(call).toHaveBeenLastCalledWith('init_profile', { email: 'ada@lovelace.org' }))
+    await waitFor(() => expect(call).toHaveBeenLastCalledWith('init_profile', { email: 'ada@example.net' }))
     await waitFor(() => expect(within(field).queryByText('value is not a valid email address')).toBeNull())
   })
 
