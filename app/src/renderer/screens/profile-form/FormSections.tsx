@@ -81,17 +81,17 @@ interface Props {
   photo?: ReactNode
   /** What a section says under its name before its fields: a note or the errors of the part, by section id. */
   notes?: Record<string, ReactNode>
-  /** Counts Undo: the city field holds whether "Other…" is chosen, so Undo starts it afresh. */
-  undone?: number
+  /** A text field was left. */
+  onBlur?: () => void
 }
 
-export function FormSections({ specs, options, values, set, errors = {}, keys, idPrefix, photo, notes = {}, undone = 0 }: Props) {
+export function FormSections({ specs, options, values, set, errors = {}, keys, idPrefix, photo, notes = {}, onBlur }: Props) {
   const control = (f: LayoutField): ReactNode => {
     const spec = specs.find((s) => s.key === f.key)
     if (!spec) return null
     const err = errors[f.key]
     const value = values[f.key]
-    if (f.key === 'location') return <CityField key={`${f.key}-${undone}`} label={f.label} help={f.help} errors={err} location={String(value)} options={options} onChange={(v) => set(f.key, v)} />
+    if (f.key === 'location') return <CityField key={f.key} label={f.label} help={f.help} errors={err} location={String(value)} options={options} onChange={(v) => set(f.key, v)} onBlur={onBlur} />
     if (f.key === 'languages') {
       const chosen = value as string[]
       const offered = [...options.languages, ...chosen.filter((l) => !options.languages.some((o) => o.toLowerCase() === l.toLowerCase()))]
@@ -188,8 +188,8 @@ export function FormSections({ specs, options, values, set, errors = {}, keys, i
         )
       }
       default:
-        if (f.multiline) return <TextAreaField key={f.key} label={f.label} help={f.help} errors={err} value={String(value)} onChange={(v) => set(f.key, v)} />
-        return <TextField key={f.key} label={f.label} help={f.help} errors={err} value={String(value)} numeric={spec.type === 'integer' || spec.type === 'number'} onChange={(v) => set(f.key, v)} />
+        if (f.multiline) return <TextAreaField key={f.key} label={f.label} help={f.help} errors={err} value={String(value)} onChange={(v) => set(f.key, v)} onBlur={onBlur} />
+        return <TextField key={f.key} label={f.label} help={f.help} errors={err} value={String(value)} numeric={spec.type === 'integer' || spec.type === 'number'} onChange={(v) => set(f.key, v)} onBlur={onBlur} />
     }
   }
 

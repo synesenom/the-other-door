@@ -139,3 +139,37 @@ def test_core_works_before_the_profile_exists(tmp_path, monkeypatch):
     result = keywords_cmd._keywords_core(["Quant"], languages=["Danish"], profile_dir=profile_dir)
     assert result["keywords"] == ["quant"] and not profile_dir.exists()
     assert "English, Danish" in calls[0]["input"]
+
+
+def _fail(monkeypatch):
+    def boom(*a, **k):
+        raise claude_cli.ClaudeError("offline")
+    monkeypatch.setattr(claude_cli, "run", boom)
+
+
+def test_a_failed_saving_proposal_leaves_the_search_terms_marked_out_of_date(env, monkeypatch):
+    _fail(monkeypatch)
+    with pytest.raises(claude_cli.ClaudeError):
+        keywords_cmd._keywords_core(save=True, profile_dir=env.profile_dir)
+    assert keywords_cmd.stale(env.profile_dir) is True
+
+
+def test_a_saving_proposal_that_works_clears_the_mark(env, monkeypatch):
+    _fail(monkeypatch)
+    with pytest.raises(claude_cli.ClaudeError):
+        keywords_cmd._keywords_core(save=True, profile_dir=env.profile_dir)
+    _answer(monkeypatch, ["data science"])
+    keywords_cmd._keywords_core(save=True, profile_dir=env.profile_dir)
+    assert keywords_cmd.stale(env.profile_dir) is False
+
+
+def test_a_proposal_that_saves_nothing_neither_sets_nor_clears_the_mark(env, monkeypatch):
+    _fail(monkeypatch)
+    with pytest.raises(claude_cli.ClaudeError):
+        keywords_cmd._keywords_core(profile_dir=env.profile_dir)
+    assert keywords_cmd.stale(env.profile_dir) is False
+    with pytest.raises(claude_cli.ClaudeError):
+        keywords_cmd._keywords_core(save=True, profile_dir=env.profile_dir)
+    _answer(monkeypatch, ["data science"])
+    keywords_cmd._keywords_core(profile_dir=env.profile_dir)
+    assert keywords_cmd.stale(env.profile_dir) is True

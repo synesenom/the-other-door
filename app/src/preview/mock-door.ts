@@ -167,6 +167,7 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
         return {
           ...fixtures.status_summary,
           drive,
+          search_terms_outdated: scene.searchTermsStale === true,
           since_last_review: { ...fixtures.status_summary.since_last_review, new_matches: state === 'empty' ? 0 : newCount() },
           ...(state === 'empty' ? { plan: null, cost: null, pass_rates: {}, pass_rates_by_score: null } : {}),
           // the plan's window nearly full: a line under the sidebar's menu says so

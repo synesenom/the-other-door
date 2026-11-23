@@ -147,3 +147,13 @@ describe('the plan line', () => {
     expect(problems({ ...calm, plan: plan({ room: { find: 9, prepare: 9 } }), now })).toEqual([])
   })
 })
+
+describe('problems, the search terms', () => {
+  it('out of date: one line that opens What to look for; up to date or unknown: none', () => {
+    expect(problems({ ...calm, searchTermsStale: true })).toEqual([
+      { key: 'search-terms', text: 'Your search terms could not be updated to your new role targets', target: 'profile-search' },
+    ])
+    expect(problems({ ...calm, searchTermsStale: false })).toEqual([])
+    expect(problems({ ...calm, searchTermsStale: null })).toEqual([])
+  })
+})

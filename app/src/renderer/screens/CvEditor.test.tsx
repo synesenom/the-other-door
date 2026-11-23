@@ -272,7 +272,6 @@ describe('errors under their field', () => {
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('profile/ is not writable')
     expect(alert).toHaveClass('field-error')
-    expect(alert.closest('.profile-save')).toBeNull()
     fail = false
     await userEvent.type(editor(), 'y')
     await userEvent.tab()

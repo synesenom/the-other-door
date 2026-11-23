@@ -51,6 +51,7 @@ INVENTORY: tuple[Stored, ...] = (
     Stored("profile/cv.md.bak", SCRATCH, "the CV before the last save_cv"),
     Stored("profile/.enrich_proposals.json", SCRATCH, "enrich's pending proposals"),
     Stored("profile/.data_version", LEDGER, "door.core.migrations: `<major>.<n>`, the profile's data version"),
+    Stored("profile/.search_terms_stale", LEDGER, "empty marker: a saving `keywords` call started and did not finish (door.commands.keywords)"),
     Stored("profile/.upgrading", TRANSIENT, "door.core.migrations: the backup's path while an upgrade runs; left out of export"),
     # --- jobs/ ledgers ---
     Stored("jobs/history.json", LEDGER, "door.core.jobs.history: {job_id: entry}"),

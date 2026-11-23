@@ -33,6 +33,8 @@ export interface Scene {
   guide?: boolean
   /** A run starts on opening and plays the desktop demo's scripted run (demo-script.ts) through to its summary; Stop ends it. */
   play?: boolean
+  /** The role targets changed and the search terms could not be made again: a line under the sidebar's menu opens What to look for. */
+  searchTermsStale?: boolean
   /** The discovery sources never chosen, in place of the fixtures' (`show_profile`). */
   discoveryUnchosen?: { key: string; label: string }[]
   /** Google Drive as the scene starts it (default off): Connect and Disconnect, and the sync on opening, change it
@@ -171,6 +173,7 @@ export const SCENES: readonly Scene[] = [
   { id: 'materials', group: 'Applications', title: 'Ready to send (Revise)', open: { screen: 'materials', jobId: 'successfactors.demo-6', inPlay: true } },
   { id: 'sent', group: 'Applications', title: 'What you sent', open: { screen: 'materials', jobId: 'jobindex.demo-7', inPlay: true } },
   { id: 'profile', group: 'Profile', title: 'Profile form', start: { destination: 'Profile' } },
+  { id: 'profile-search-stale', group: 'Profile', title: 'The search terms could not follow new role targets (a line under the sidebar menu)', start: { destination: 'Matches' }, searchTermsStale: true },
   { id: 'profile-cv', group: 'Profile', title: 'CV', start: { destination: 'Profile', cv: true } },
   { id: 'profile-cv-forget-failed', group: 'Profile', title: 'CV, a page that could not be forgotten (under Sources)', start: { destination: 'Profile', cv: true }, fails: { init_profile: 'Your pages could not be saved. Try again.' }, press: ['Forget https://janedoe.example/portfolio'] },
   { id: 'profile-cv-gaps', group: 'Profile', title: 'CV with gaps: "to fill in" pills in the preview', start: { destination: 'Profile', cv: true }, cvGaps: true },
