@@ -40,7 +40,7 @@ strong, b { font-weight: 600; }
 .shell { display: grid; grid-template-columns: var(--size-sidebar-width) 1fr; height: 100%; }
 .sidebar {
   display: flex; flex-direction: column; gap: 28px;
-  padding: 28px 20px 20px; /* the foot as far from the bottom as from the side */
+  padding: var(--space-2) 20px 20px; /* the first item's word 20 px from the top, as from the side and the foot from the bottom */
   border-right: 1px solid var(--color-border);
 }
 .demo-tag { align-self: flex-start; margin: 0; padding: 2px 0; color: var(--color-ink-muted); cursor: help; }
