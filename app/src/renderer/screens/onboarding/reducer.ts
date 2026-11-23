@@ -202,7 +202,6 @@ export interface WizardState {
   keywords: string[]
   topicTerms: string[]
   /** Where the keywords came from: proposed by Claude, skipped (the titles stand in), or already in the config. */
-  keywordsState: 'none' | 'proposed' | 'skipped' | 'config'
   /** The CV photo, held until Save (`save_photo` is its own tool, called after the profile is written). */
   photo: PhotoChoice
   /** The CV text to save, or null to leave profile/cv.md as it is. */
@@ -246,7 +245,6 @@ export function initialState(profile: ShowProfile): WizardState {
     },
     keywords: [...(c?.search_keywords ?? [])],
     topicTerms: [...(c?.topic_terms ?? [])],
-    keywordsState: c?.search_keywords?.length ? 'config' : 'none',
     photo: { kind: 'keep' },
     cvText: null,
     enrichSources: [...(c?.enrich_sources ?? profile.enrich_sources ?? [])],
@@ -446,9 +444,9 @@ export function wizardReducer(state: WizardState, action: Action): WizardState {
       return { ...state, titles: action.titles, roleTargets, missing, warnings: warned(state, 'titles', action.warning) }
     }
     case 'keywords':
-      return { ...state, keywords: action.keywords, topicTerms: action.topicTerms, keywordsState: 'proposed' }
+      return { ...state, keywords: action.keywords, topicTerms: action.topicTerms }
     case 'skipKeywords':
-      return { ...state, keywords: [], topicTerms: [], keywordsState: 'skipped' }
+      return { ...state, keywords: [], topicTerms: [] }
     case 'draftDone': {
       const kept = state.enrichSources.filter((u) => !state.cvUrls.includes(u))
       const added: string[] = []

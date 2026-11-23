@@ -17,7 +17,7 @@ afterEach(() => {
 const answers: Partial<WizardState> = {
   step: 'review', name: 'Ada', email: 'ada@x.dk', location: 'Aarhus', languages: ['English'], roleTargets: ['Lead'],
   titles: [{ title: 'Lead', reason: 'you led a team', recommended: true }, { title: 'Quant', reason: 'maths', recommended: false }],
-  keywords: ['lead'], topicTerms: ['data'], keywordsState: 'proposed', cvText: '# Ada\n',
+  keywords: ['lead'], topicTerms: ['data'], cvText: '# Ada\n',
 }
 let seen: WizardState
 function setup(start: Partial<WizardState> = answers, handlers: Record<string, unknown> = {}, profile: ShowProfile = freshProfile, before?: (h: ReturnType<typeof mockDoor>) => void) {
@@ -179,7 +179,7 @@ describe('Review', () => {
     await act(async () => {
       await vi.advanceTimersByTimeAsync(TERMS_DEBOUNCE_MS + 10)
     })
-    await waitFor(() => expect(seen.keywordsState).toBe('skipped'))
+    await waitFor(() => expect(seen.keywords).toEqual([]))
     expect(screen.queryByText(/quota/)).toBeNull()
     expect(screen.queryByRole('alert')).toBeNull()
   })

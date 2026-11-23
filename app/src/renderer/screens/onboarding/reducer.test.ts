@@ -39,7 +39,6 @@ describe('the three screens', () => {
     expect(s.mode).toBe('redo')
     expect(s.step).toBe('sources')
     expect(s.name).toBe(savedConfig.name)
-    expect(s.keywordsState).toBe('config')
     expect(s.titles).toEqual([{ title: 'Data Scientist', reason: 'In your profile', recommended: true }])
   })
 
@@ -177,10 +176,8 @@ describe('the form of the review, the same keys as Profile\'s', () => {
 
   it('takes the proposed terms; skipping falls back to the titles', () => {
     let s = wizardReducer(filled(), { type: 'keywords', keywords: ['ml'], topicTerms: ['data'] })
-    expect(s.keywordsState).toBe('proposed')
     expect(toInitArgs(s)['search_keywords']).toEqual(['ml'])
     s = wizardReducer(s, { type: 'skipKeywords' })
-    expect(s.keywordsState).toBe('skipped')
     expect(toInitArgs(s)['search_keywords']).toEqual(['Dev'])
     expect(toInitArgs(s)['topic_terms']).toEqual([])
   })

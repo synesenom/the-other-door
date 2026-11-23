@@ -129,7 +129,7 @@ describe('Reading', () => {
   it('failed terms: the titles stand in, and it still goes on', async () => {
     const h = setup({ keywords: () => { throw new Error('quota') } })
     await waitFor(() => expect(h.onDone).toHaveBeenCalled())
-    expect(seen.keywordsState).toBe('skipped')
+    expect(seen.keywords).toEqual([])
   })
 
   it('names a file it found no text in, while it reads on', async () => {

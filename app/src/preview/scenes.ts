@@ -152,7 +152,6 @@ const ANSWERED: Partial<WizardState> = {
   roleTargets: ['Financial Controller', 'Finance Business Partner'],
   keywords: ['financial controller', 'controller', 'økonomimedarbejder', 'business partner'],
   topicTerms: ['controller', 'finance', 'økonomi*', 'regnskab*'],
-  keywordsState: 'proposed',
   cvText: CV,
   cvDraft: {
     sources: [{ source: 'jane-doe-cv.pdf', kind: 'file', chars: 5400 }],
@@ -209,7 +208,7 @@ export const SCENES: readonly Scene[] = [
   { id: 'onboarding-reading', group: 'Onboarding', title: '2. Reading, slowed down (reload to watch again)', fresh: true, start: { wizard: { step: 'reading', files: [FILE] } }, slow: { draft_cv: 8_000, infer_basics: 2_000, suggest_titles: 3_000, keywords: 3_000 } },
   { id: 'onboarding-reading-last', group: 'Onboarding', title: '2. Reading, stays on the last step', fresh: true, start: { wizard: { step: 'reading', files: [FILE] } }, hold: 'keywords' },
   { id: 'onboarding-review', group: 'Onboarding', title: '3. Review', fresh: true, start: { wizard: { ...ANSWERED, step: 'review' } } },
-  { id: 'onboarding-review-unfound', group: 'Onboarding', title: '3. Review, details not found', fresh: true, start: { wizard: { ...ANSWERED, step: 'review', name: '', email: '', location: '', titles: [], roleTargets: [], keywords: [], topicTerms: [], keywordsState: 'none', missing: ['name', 'email', 'location', 'titles'] } } },
+  { id: 'onboarding-review-unfound', group: 'Onboarding', title: '3. Review, details not found', fresh: true, start: { wizard: { ...ANSWERED, step: 'review', name: '', email: '', location: '', titles: [], roleTargets: [], keywords: [], topicTerms: [], missing: ['name', 'email', 'location', 'titles'] } } },
   { id: 'onboarding-review-gaps', group: 'Onboarding', title: '3. Review, the CV has gaps', fresh: true, start: { wizard: { ...ANSWERED, step: 'review', cvText: CV.replace('+45 00 00 00 00', 'TODO').replace(/(BSc in Business Administration.*— ).*/, '$1TODO') } } },
   { id: 'onboarding-review-no-cv', group: 'Onboarding', title: '3. Review, the draft failed', fresh: true, start: { wizard: { ...ANSWERED, cvText: null, cvDraft: null, step: 'review' } } },
 ]
