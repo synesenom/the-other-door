@@ -46,7 +46,7 @@ Sources I read in full: `app/src/renderer/screens/{Settings,Connections,SignIn,D
 
 ### Getting there
 - Sidebar `nav "Main"` → `getByRole('button', {name:'Settings', exact:true})`. — ✓ Settings shows who is signed in and the plan, with Use another account
-- Or a problem line at the sidebar foot: `getByRole('group', {name:'Needs you'})` → button `Claude is not signed in`, `Claude is not installed` or `Google Drive sync failed` (all target Settings). The plan's window line (`Claude's usage limit is reached…`, `Room for about N more applications…`) is a `<p>` there and opens nothing. `You have no CV yet` targets Profile instead. — ✓ the sidebar line opens Settings, where the row says Claude is not signed in; ✓ the sidebar says Google Drive sync failed and opens Settings, where the row says why; unit: `app/src/renderer/screens/Connections.test.tsx`; You have no CV yet is the Profile area's
+- Or a problem line under the sidebar's menu: `getByRole('group', {name:'Needs you'})` → button `Claude is not signed in`, `Claude is not installed` or `Google Drive sync failed` (all target Settings). The plan's window line (`Claude's usage limit is reached…`, `Room for about N more applications…`) is a `<p>` there and opens nothing. `You have no CV yet` targets Profile instead. — ✓ the sidebar line opens Settings, where the row says Claude is not signed in; ✓ the sidebar says Google Drive sync failed and opens Settings, where the row says why; unit: `app/src/renderer/screens/Connections.test.tsx`; You have no CV yet is the Profile area's
 
 ### On mount
 - `onRecheck()` runs once, unless on the phone, and calls `doctor` with `{}`. While it is in flight the previous doctor answer stays on screen; the very first time it is `null`. — unit: `app/src/renderer/screens/Connections.test.tsx`
@@ -83,7 +83,7 @@ Sources I read in full: `app/src/renderer/screens/{Settings,Connections,SignIn,D
 
 ### Narrow window (< 900 px; Electron `minWidth` is 720, so 720–899 px is testable)
 - There is no "Sections" nav on Settings at any width. — ✓ Settings has no side nav and no sidebar lines; Matches says Claude is not signed in on top
-- The sidebar becomes a bottom tab bar and its foot is hidden: no "Find new jobs" button and **no problem lines**. Problem lines only appear on top of **Matches** (`.narrow-top`), never on Settings. — ✓ Settings has no side nav and no sidebar lines; Matches says Claude is not signed in on top
+- The sidebar becomes a bottom tab bar and its foot and the block under its menu are hidden: no "Find new jobs" button and **no problem lines**. Problem lines only appear on top of **Matches** (`.narrow-top`), never on Settings. — ✓ Settings has no side nav and no sidebar lines; Matches says Claude is not signed in on top
 - `h2.display-s` and `h1.display-l` use the phone font sizes. Nothing else in Settings changes; Settings has no pushed or back state. — ✓ Settings has no side nav and no sidebar lines; Matches says Claude is not signed in on top
 
 ---

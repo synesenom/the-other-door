@@ -169,7 +169,7 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
           drive,
           since_last_review: { ...fixtures.status_summary.since_last_review, new_matches: state === 'empty' ? 0 : newCount() },
           ...(state === 'empty' ? { plan: null, cost: null, pass_rates: {}, pass_rates_by_score: null } : {}),
-          // the plan's window nearly full: the sidebar's foot says so
+          // the plan's window nearly full: a line under the sidebar's menu says so
           ...(state === 'plan-low' ? { plan: { ...fixtures.status_summary.plan, five_hour: { used: 0.9, resets_at: new Date(Date.now() + 90 * 60_000).toISOString() }, room: { find: 1, prepare: 2 } } } : {}),
         }
       case 'doctor':

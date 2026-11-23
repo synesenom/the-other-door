@@ -6,7 +6,7 @@ Conventions used below:
 - **btn "X"** = `getByRole('button', { name: 'X' })`. **radio "X"**, **switch "X"**, **dialog "X"** and so on work the same way.
 - **status** = `role="status"`, **alert** = `role="alert"`.
 - "named()" means a string containing "The other door" is split around an `<span class="app-name">`. `getByText` on the whole `<p>` still matches the full text.
-- Narrow means `(max-width: 899px)` (`useNarrow`). CSS hides `.sidebar-foot` there: the Find button, "Last run" and the problem lines.
+- Narrow means `(max-width: 899px)` (`useNarrow`). CSS hides `.sidebar-foot` (the Find button and "Last run") and the problem lines' block under the menu there.
 - How errors reach the renderer: the server returns `{"error": msg, candidates?, conflict?}`. `door-server.ts` turns that into a `DoorError`, `ipc.ts` wraps it in the envelope `{ok:false,error,candidates?,stopped?,conflict?}`, and `api.call` throws `ApiError(message)`. `errorText(e)` is `e.message`. Other main-side messages: `"stopped"` (stopped=true), `"The other door took too long to answer"` (timedOut; for find_jobs it is replaced by `"The run stopped: The other door heard nothing for 15 minutes."` and the child is killed), `"The other door's server stopped; try again"`, `"could not start the door server: …"`, `"unknown tool"`.
 - Call timeouts (main side, idle and restarted by progress where there is any): import_posting 180 s, prepare 180 s (it reports every 30 s), revise 420 s, find_jobs 900 s idle. Every other tool in this area (show, list_matches, set_status, mark_seen, status_summary, show_profile, doctor 600 s) uses the server default.
 
@@ -461,7 +461,7 @@ Reached through:
 
 ## 9. Narrow (`<900px`) differences, collected
 
-- Sidebar foot hidden (Find button, Last run, Needs-you lines). The sidebar is entirely hidden while a posting is pushed (App `pushed`). — ✓ Matches has its own "Find new jobs", and the sidebar keeps only the tabs; unit: `app/src/renderer/screens/Posting.test.tsx`
+- Sidebar foot (Find button, Last run) and the Needs-you lines under the menu hidden. The sidebar is entirely hidden while a posting is pushed (App `pushed`). — ✓ Matches has its own "Find new jobs", and the sidebar keeps only the tabs; unit: `app/src/renderer/screens/Posting.test.tsx`
 - Matches: a "Find new jobs" pill in its head; the Needs-you group on top of the list (not pushed); a `.tab-dash` on the current tab. — ✓ Matches has its own "Find new jobs"…; unit: `app/src/renderer/App.test.tsx`; the tab dash: not tested (aria-hidden styling)
 - Posting: the actions move to the bottom `.action-bar` in a different order. "Not for me" becomes secondary. "Open" is primary when there is no primary. — unit: `app/src/renderer/screens/Applications.test.tsx`; unit: `app/src/renderer/screens/Posting.test.tsx`
 - Materials: Save goes from under the figure into the action bar (current doc only). "I've applied" moves from the header to the action bar, and shows even when remote. — ✓ narrow: Ready to send saves the shown document and has I’ve applied in the bar

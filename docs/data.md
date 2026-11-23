@@ -38,7 +38,7 @@ the last five run records (counts, outcomes and errors only), `doctor`'s checks,
 and OS into one `door-report-<date>.zip` to send to whoever helps you. Emails, the data folder and
 your home folder are masked in it, and nothing from `profile/`, no postings and no ledger go in.
 
-When something keeps going wrong, the app says so with one line at the foot of its sidebar,
+When something keeps going wrong, the app says so with one line under its sidebar's menu,
 "Something keeps going wrong. Send a report" (`status_summary`'s `recurring_problem`,
 `src/door/core/recurring.py`): the same job site failed in each of the last 3 runs that tried it,
 ads were left unscored in each of the last 2 runs, the server stopped or would not start in the last
@@ -82,7 +82,7 @@ app, `./door` or the MCP server), before anything reads it, with no hand edit:
   app and Claude Code), upgrade once.
 - **A step that fails** puts the folder back from the backup and leaves its version as it was. Every tool then
   answers "Your data could not be upgraded to this version: <step>. Nothing was changed. Send a report from
-  Settings." (the app says so at the sidebar's foot, opening Settings at Help's report button), except `report_problem` and
+  Settings." (the app says so in a line under the sidebar's menu, opening Settings at Help's report button), except `report_problem` and
   `doctor`. One line goes to the problem log.
 - **Newer data** (a folder whose version is above the app's, say after using a newer release on another
   computer) is refused and never changed: "This data was written by a newer version of The other door.

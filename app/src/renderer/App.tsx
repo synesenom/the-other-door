@@ -333,7 +333,7 @@ export function App({ start }: { start?: AppStart } = {}) {
     )
   }
   // What is wrong and needs you (Claude, the Claude plan's window, the CV, Drive, something that keeps going wrong):
-  // a short line each at the sidebar's foot (the plan's opens nothing). On the phone they are said, not buttons: what fixes them is on the computer running
+  // a short line each in its own block under the sidebar's menu (the plan's opens nothing). On the phone they are said, not buttons: what fixes them is on the computer running
   // The other door; a problem report is made there too, so the phone does not say that one.
   const lines = problems({ doctor, drive, driveConflict, cv: profile?.config ? profile.cv : null, recurring: remote ? null : recurring, plan })
   const destinations = remote ? PHONE_DESTINATIONS : DESTINATIONS
@@ -405,8 +405,8 @@ export function App({ start }: { start?: AppStart } = {}) {
             </button>
           ))}
         </nav>
+        {lines.length > 0 && problemLines}
         <div className="sidebar-foot">
-          {lines.length > 0 && problemLines}
           <button type="button" className="secondary" disabled={foreign || (own && finding) || (!own && preparingNow)} title={!own && preparingNow ? PREPARING_TIP : undefined} onClick={() => (own ? setFinding(true) : void startRun())}>
             {own || foreign ? 'Finding jobs…' : 'Find new jobs'}
           </button>
@@ -431,7 +431,7 @@ export function App({ start }: { start?: AppStart } = {}) {
         ) : current === 'Matches' ? (
           <>
           {narrow && !pushed && lines.length > 0 && (
-            // The phone has no sidebar foot: what needs the user sits on top of Matches instead.
+            // The phone has no sidebar: what needs the user sits on top of Matches instead.
             <div className="narrow-top">{problemLines}</div>
           )}
           <Matches

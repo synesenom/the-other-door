@@ -603,10 +603,10 @@ describe('App, the first-launch gate', () => {
     const info = actions['info']
     info.mockResolvedValue({ environment: 'production', remote: true })
     render(<App />)
-    const foot = await screen.findByRole('group', { name: 'Needs you' })
-    expect(within(foot).getByText('You have no CV yet')).toBeInTheDocument()
-    expect(within(foot).queryByRole('button')).toBeNull()
-    expect(within(foot).queryByText(/LinkedIn/)).toBeNull()
+    const needs = await screen.findByRole('group', { name: 'Needs you' })
+    expect(within(needs).getByText('You have no CV yet')).toBeInTheDocument()
+    expect(within(needs).queryByRole('button')).toBeNull()
+    expect(within(needs).queryByText(/LinkedIn/)).toBeNull()
     await userEvent.click(screen.getByRole('button', { name: 'Settings' }))
     await screen.findByRole('heading', { name: 'Settings', level: 1 })
     expect(call.mock.calls.map((c) => c[0])).not.toContain('doctor')
@@ -651,7 +651,7 @@ describe('App, the first-launch gate', () => {
     await waitFor(() => expect(document.title).toBe('The other door (staging)'))
   })
 
-  describe('the lines that need you, at the sidebar\'s foot', () => {
+  describe('the lines that need you, under the sidebar\'s menu', () => {
     const lines = () => within(screen.getByRole('complementary'))
     const sidebar = async () => within(await screen.findByRole('complementary'))
 
@@ -814,13 +814,15 @@ describe('App, the first-launch gate', () => {
       expect(line.closest('button')).toBeNull()
     })
 
-    it('what needs you stands above Find new jobs, read before a search starts', async () => {
+    it('what needs you has its own place right under the menu, apart from Find new jobs at the foot', async () => {
       const low = { as_of: new Date().toISOString(), status: 'allowed', five_hour: { used: 0.9 }, room: { find: 1, prepare: 2 }, binding: 'five_hour' }
       mockDoor({ show_profile: profile(), status_summary: summary({ plan: low }), list_matches: matchesResult([]), doctor: doctorReport('ok') })
       render(<App />)
       const group = await (await sidebar()).findByRole('group', { name: 'Needs you' })
-      const find = sidebarButton()
-      expect(group.compareDocumentPosition(find) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      const menu = screen.getByRole('navigation', { name: 'Main' })
+      expect(group.previousElementSibling).toBe(menu)
+      expect(group.parentElement).toBe(screen.getByRole('complementary'))
+      expect(group.contains(sidebarButton())).toBe(false)
     })
 
     it('the plan line goes by itself once the window resets, by one read at that time', async () => {

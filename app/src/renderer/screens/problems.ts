@@ -1,4 +1,4 @@
-// What is wrong and needs the user, for the short lines at the foot of the sidebar: the data folders, Claude, the CV,
+// What is wrong and needs the user, for the short lines in their own block under the sidebar's menu: the data folders, Claude, the CV,
 // the Claude plan's window when it is nearly full (waited out: it opens nothing), Google Drive, something that keeps going wrong,
 // in that order, each with where it is fixed. A site a run
 // could not read once is not here: the user can do nothing about it but run again (docs/design/README.md,

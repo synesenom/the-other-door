@@ -1,7 +1,7 @@
 """Something that keeps going wrong (#593): the one failure the app says, so the user sends a report.
 
 A one-off failure the next run retries is said nowhere (docs/design/README.md, principle 8); the same one
-again and again is a line at the sidebar's foot until a report is saved or it stops.
+again and again is a line under the sidebar's menu until a report is saved or it stops.
 """
 
 from datetime import datetime, timedelta, timezone
