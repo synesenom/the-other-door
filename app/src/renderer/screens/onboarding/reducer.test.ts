@@ -14,7 +14,7 @@ import {
   toInitArgs,
   wizardReducer,
   type Basics,
-  type WizardState, ownTitles, isLinkedIn, photoPolicy,
+  type WizardState, isLinkedIn, photoPolicy, reviewValues,
 } from './reducer'
 import { cvState, doctorReport, existingProfile, freshProfile, savedConfig } from './testing'
 
@@ -39,8 +39,7 @@ describe('the three screens', () => {
     expect(s.mode).toBe('redo')
     expect(s.step).toBe('sources')
     expect(s.name).toBe(savedConfig.name)
-    expect(s.keywordsState).toBe('config')
-    expect(s.titles).toEqual([{ title: 'Data Scientist', reason: 'In your profile', recommended: true }])
+    expect(s.roleTargets).toEqual(['Data Scientist'])
   })
 
   it('goes sources, reading, review and no further', () => {
@@ -97,7 +96,7 @@ describe('what reading finds', () => {
     expect(stillUnfound(s)).toEqual(['your email', 'your city', 'job titles'])
     s = wizardReducer(s, { type: 'set', field: 'email', value: 'ada@x.dk' })
     s = wizardReducer(s, { type: 'set', field: 'location', value: 'Aarhus' })
-    s = wizardReducer(s, { type: 'addTitle', title: 'Lead' })
+    s = wizardReducer(s, { type: 'form', key: 'role_targets', value: ['Lead'] })
     expect(stillUnfound(s)).toEqual([])
   })
 
@@ -118,7 +117,6 @@ describe('what reading finds', () => {
 
   it('pre-selects the recommended titles', () => {
     const s = wizardReducer(fresh(), { type: 'titles', titles: [title('Lead'), title('Quant', false)] })
-    expect(s.titles.map((t) => t.title)).toEqual(['Lead', 'Quant'])
     expect(s.roleTargets).toEqual(['Lead'])
     expect(s.missing).toEqual([])
   })
@@ -131,8 +129,7 @@ describe('what reading finds', () => {
   it('keeps what Claude could not do for the review, each step its own line, gone when the step is done again', () => {
     let s = wizardReducer(fresh(), { type: 'basics', basics: basics({ warning: 'usage limit' }) })
     s = wizardReducer(s, { type: 'titles', titles: [], warning: 'overloaded' })
-    s = wizardReducer(s, { type: 'skipKeywords', warning: 'quota' })
-    expect(s.warnings).toEqual({ basics: 'usage limit', titles: 'overloaded', terms: 'quota' })
+    expect(s.warnings).toEqual({ basics: 'usage limit', titles: 'overloaded' })
     s = wizardReducer(s, { type: 'basics', basics: basics() })
     s = wizardReducer(s, { type: 'titles', titles: [title('Lead')] })
     s = wizardReducer(s, { type: 'keywords', keywords: ['lead'], topicTerms: [] })
@@ -147,48 +144,39 @@ describe('what reading finds', () => {
   })
 })
 
-describe('titles and chips', () => {
-  it('toggling a title picks and unpicks it, and keeps it on the list', () => {
-    let s = wizardReducer(fresh(), { type: 'titles', titles: [title('Lead'), title('Quant', false)] })
-    s = wizardReducer(s, { type: 'toggleTitle', title: 'Quant' })
-    expect(s.roleTargets).toEqual(['Lead', 'Quant'])
-    s = wizardReducer(s, { type: 'toggleTitle', title: 'Lead' })
-    expect(s.roleTargets).toEqual(['Quant'])
-    expect(s.titles).toHaveLength(2)
+describe('the form of the review, the same keys as Profile\'s', () => {
+  it('reads its values from the answers, by the config key', () => {
+    const s = filled({ languages: ['English'], remote: 'no', preferences: 'green', roleTargets: ['Lead', 'Quant'] })
+    expect(reviewValues(s)).toMatchObject({ name: 'Ada', email: 'ada@x.dk', location: 'Aarhus', remote: 'no', languages: ['English'], role_targets: ['Lead', 'Quant'], preferences: 'green' })
   })
 
-  it('adding a title picks it, once, trimmed, as the user\'s own and droppable', () => {
-    let s = wizardReducer(fresh(), { type: 'addTitle', title: '  Actuary ' })
-    s = wizardReducer(s, { type: 'addTitle', title: 'actuary' })
-    s = wizardReducer(s, { type: 'addTitle', title: '   ' })
-    expect(s.roleTargets).toEqual(['Actuary'])
-    expect(s.titles).toEqual([])
-    expect(ownTitles(s)).toEqual(['Actuary'])
-    s = wizardReducer(s, { type: 'dropTitle', title: 'Actuary' })
-    expect(s.roleTargets).toEqual([])
+  it('a change of a key lands in its answer', () => {
+    let s = fresh()
+    s = wizardReducer(s, { type: 'form', key: 'name', value: 'Ada' })
+    s = wizardReducer(s, { type: 'form', key: 'email', value: 'ada@x.dk' })
+    s = wizardReducer(s, { type: 'form', key: 'location', value: 'Aarhus' })
+    s = wizardReducer(s, { type: 'form', key: 'remote', value: 'no' })
+    s = wizardReducer(s, { type: 'form', key: 'languages', value: ['Danish'] })
+    s = wizardReducer(s, { type: 'form', key: 'role_targets', value: ['Actuary'] })
+    s = wizardReducer(s, { type: 'form', key: 'preferences', value: 'little travel' })
+    expect(s).toMatchObject({ name: 'Ada', email: 'ada@x.dk', location: 'Aarhus', remote: 'no', languages: ['Danish'], roleTargets: ['Actuary'], preferences: 'little travel' })
   })
 
-  it('adding a suggested title ticks the suggestion instead of making a pill', () => {
-    let s = wizardReducer(fresh(), { type: 'titles', titles: [{ title: 'Lead', reason: 'r', recommended: false }] })
-    s = wizardReducer(s, { type: 'addTitle', title: 'lead' })
-    expect(s.roleTargets).toEqual(['Lead'])
-    expect(ownTitles(s)).toEqual([])
+  it('a change clears the errors its part showed', () => {
+    let s = wizardReducer(filled(), { type: 'saveFailed', error: 'profile/config.json: role_targets — at least one\nprofile/config.json: name — required' })
+    s = wizardReducer(s, { type: 'form', key: 'role_targets', value: ['Lead'] })
+    expect(s.errors).toEqual({ you: ['required'] })
   })
 
-  it('adds and drops chips, trimmed, without empties or case-insensitive duplicates', () => {
-    let s = wizardReducer(fresh(), { type: 'add', list: 'keywords', value: ' ml ' })
-    s = wizardReducer(s, { type: 'add', list: 'keywords', value: 'ML' })
-    s = wizardReducer(s, { type: 'add', list: 'keywords', value: ' ' })
-    expect(s.keywords).toEqual(['ml'])
-    expect(wizardReducer(s, { type: 'drop', list: 'keywords', value: 'ml' }).keywords).toEqual([])
+  it('the titles suggested are picked, the unrecommended ones left out', () => {
+    const s = wizardReducer(fresh(), { type: 'titles', titles: [title('Lead'), title('Quant', false)] })
+    expect(reviewValues(s)['role_targets']).toEqual(['Lead'])
   })
 
   it('takes the proposed terms; skipping falls back to the titles', () => {
     let s = wizardReducer(filled(), { type: 'keywords', keywords: ['ml'], topicTerms: ['data'] })
-    expect(s.keywordsState).toBe('proposed')
     expect(toInitArgs(s)['search_keywords']).toEqual(['ml'])
     s = wizardReducer(s, { type: 'skipKeywords' })
-    expect(s.keywordsState).toBe('skipped')
     expect(toInitArgs(s)['search_keywords']).toEqual(['Dev'])
     expect(toInitArgs(s)['topic_terms']).toEqual([])
   })
@@ -290,7 +278,7 @@ describe('routeErrors', () => {
       routeErrors(
         ['profile/config.json: name — required', 'profile/config.json: role_targets — at least one', 'profile/config.json: topic_terms.0 — not text', 'profile/config.json: linkedin_discovery — a boolean', 'profile/config.json: min_score — too low'].join('\n'),
       ),
-    ).toEqual({ you: ['required'], titles: ['at least one'], terms: ['not text'], employers: ['a boolean'], review: ['min_score: too low'] })
+    ).toEqual({ you: ['required'], titles: ['at least one'], employers: ['a boolean'], review: ['topic_terms.0: not text', 'min_score: too low'] })
   })
 
   it('a text with no config line stays whole at the top', () => {

@@ -110,7 +110,7 @@ describe('Stories', () => {
   it('an empty bank offers only writing a story, never a draft from the CV', async () => {
     show({ list_stories: { ...BANK, stories: [] } })
     expect(await screen.findByText(/No stories yet/)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Write a story…' })).toHaveClass('primary')
+    expect(screen.getByRole('button', { name: 'Write a story…' })).toHaveClass('secondary')
     expect(screen.queryByRole('button', { name: /from my CV/ })).toBeNull()
   })
 

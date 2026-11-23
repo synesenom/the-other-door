@@ -23,7 +23,7 @@ Conventions used below:
 |---|---|---|
 | Open Profile | sidebar `nav "Main"` → `button "Profile"` (exact; it has an icon plus text) | Mounts `<Profile key={profileStart.n}>`: one page, the details, the CV and the Stories; scrolled to `start.section` when given. | — ✓ opens with every section and the saved values
 | Open Profile from the problem line "You have no CV yet" | `group "Needs you"` → `button "You have no CV yet"` (sidebar foot; wide window only) | Profile opens scrolled to the **CV** section (`start={section:'cv'}`) and remounts (key n+1). The line shows only when `show_profile.config` is non-null **and** `cv.exists === false`. It is not shown in demo mode. The example CV gets no line. | — ✓ the sidebar line opens the CV, which says there is none
-| Open Settings → Risky sources from Finding | Finding screen's "choose discovery" action (`discovery_unchosen` non-empty) | Settings opens scrolled to `#settings-risky` | — ✓ the sources never chosen are said under Discover, and Enable opens Settings on Risky sources
+| Open Settings → Where to find employers from Finding | Finding screen's "choose discovery" action (`discovery_unchosen` non-empty) | Settings opens scrolled to `#settings-risky` | — ✓ the sources never chosen are said under Discover, and Enable opens Settings on Where to find employers
 | `onDraft` (the CV section's buttons) | see §4 | `setUpAgain()`: calls `show_profile`, then the onboarding wizard opens prefilled with Cancel available (config exists). If `show_profile` fails, **nothing happens** (silent). | — unit: `app/src/renderer/screens/CvEditor.test.tsx`; the silent show_profile failure is not tested (nothing on screen to assert)
 | `onSaved` (after a details Save, the first CV written, or the editor left after a write) | — | App re-reads `show_profile` (sidebar lines, `discovery_unchosen`) and bumps `refreshKey`, which remounts Matches. | — ✓ the first CV saves itself, with no backup, and the sidebar line goes
 | Leave Profile (any nav button, Find new jobs) | — | Profile unmounts. **Unsaved details are dropped silently**; CV text typed since the last pause is written as the editor goes. | — not tested: nothing on screen to assert
@@ -39,7 +39,7 @@ There is no gate into the wizard for an invalid config while the app runs. At la
 Always present: `heading level 1 "Profile"`.
 
 ### 1.1 One page
-- No switch between parts: the details' sections, then `region "Master CV"` (the CV file, the pages, the editor), and `region "Stories"`, each with its `heading level 2`, and the details' save bar at the page's foot. — ✓ opens with every section and the saved values; unit: `app/src/renderer/screens/Profile.test.tsx`
+- No switch between parts: the details' sections with their save bar (only while changed) at the details' foot, then `region "Master CV"` (the CV file, the pages, the editor), and `region "Stories"`, each with its `heading level 2`. — ✓ opens with every section and the saved values; unit: `app/src/renderer/screens/Profile.test.tsx`
 - `region "CV style"` sits between Master CV and Stories (listed beside the page only when the details could be read): the sample of the CV, a Colour row of nine radios (Blue is the default) and a Fonts row of four; a pick is saved at once with only its key (`init_profile` `other.cv_accent` / `cv_fonts`) and the sample is printed again (`cv_style_sample`); a CV that cannot be read is one line under the sample; a print failure is said nowhere; a pick that cannot be saved is said under its row. — ✓ shows a sample of the CV, and a pick is saved at once and printed again; unit: `app/src/renderer/screens/CvStyle.test.tsx`
 - The CV and the Stories read their own data: a details part that cannot be read (error, spinner, invalid config) leaves them on the page. — ✓ a part that could not be read says so, and the rest of the page is there
 
@@ -103,7 +103,7 @@ The sections are rendered as `<section aria-labelledby="profile-<id>">`, i.e. **
 
 Errors for `exclude.*` appear under the **keywords** chips only. A real server cannot produce them from the UI (lists of strings). — not tested: unreachable (lists of strings)
 
-Discovery switches are not on Profile: they are how the app works, in Settings (`SettingsFields.tsx`, Risky sources; saved at once) — ✓ offers the sources serving the city; a tick is saved at once (Copenhagen: LinkedIn only; ticked and unticked, `linkedin_discovery` follows); unit: `app/src/renderer/screens/SettingsFields.test.tsx`. "Ask Claude where a careers page is" and the Claude config folder are left to config.json.
+Discovery switches are not on Profile: they are how the app works, in Settings (`SettingsFields.tsx`, Where to find employers; saved at once) — ✓ offers the sources serving the city; a tick is saved at once (Copenhagen: LinkedIn only; ticked and unticked, `linkedin_discovery` follows); unit: `app/src/renderer/screens/SettingsFields.test.tsx`. "Ask Claude where a careers page is" and the Claude config folder are left to config.json.
 
 **region "Other"** (`profile-advanced`)
 
@@ -120,13 +120,13 @@ Discovery switches are not on Profile: they are how the app works, in Settings (
 - `button "Remove <v>"` drops the chip. A chip whose text is long is truncated with an ellipsis and has `title=<v>`. — unit: `app/src/renderer/screens/Profile.test.tsx` (the ellipsis of a long chip: not tested, visual only)
 - The chips list is not rendered when empty. — ✓ opens with every section and the saved values
 
-### 2.5 Save bar (`.profile-save`, sticky at the bottom)
+### 2.5 Save bar (`.profile-save`, sticky at the bottom of the details)
 
-The details' bar (the CV's text saves itself, §4.2). `button "Save"` is disabled when there are no changes or a save is running. — ✓ opens with every section and the saved values
+The details' bar, inside the details and shown only while they have unsaved changes (or are saving, or just saved), so it never sits over the CV and the Stories, which save themselves (§4.2). With no changes there is no `button "Save"` and no `button "Undo changes"`. — ✓ opens with every section and the saved values
 
 | Condition | Visible |
 |---|---|
-| Changes > 0 | `button "Undo changes"` (disabled while saving) and `p` "1 unsaved change" / "N unsaved changes". N counts **keys** (the CV saves itself and is not counted): both exclude parts count as one, and a hidden discovery key that changed still counts. | — unit: `app/src/renderer/screens/Profile.test.tsx` (5 changes, the two skip lists one key)
+| Changes > 0 | `button "Save"`, `button "Undo changes"` (both disabled while saving) and `p` "1 unsaved change" / "N unsaved changes". N counts **keys** (the CV saves itself and is not counted): both exclude parts count as one, and a hidden discovery key that changed still counts. | — unit: `app/src/renderer/screens/Profile.test.tsx` (5 changes, the two skip lists one key)
 | Saving | status "Saving…" | — not tested: a passing state
 | After success, with no further edits | `p` "Saved." (not a status role). It is cleared by the next edit. | — ✓ Save writes the changed text, flag and number fields and nothing else
 

@@ -300,7 +300,7 @@ describe('Finding, the summary card of a run with no new matches', () => {
     })
   const open = (r: RunRecord, extra: Record<string, unknown> = {}) => {
     mockDoor({})
-    const cb = { onCheckSearch: vi.fn() }
+    const cb = { onLowerBar: vi.fn() }
     render(<Finding state={{ kind: 'summary', record: r }} board={{ active: false }} {...handlers()} {...cb} {...extra} />)
     return cb
   }
@@ -311,22 +311,23 @@ describe('Finding, the summary card of a run with no new matches', () => {
     expect(screen.getByText('Match fit: Balanced').closest('p')).toBe(screen.getByText('917 jobs found, 40 close enough to score, none scored 0.65 or better').closest('p'))
   })
 
-  it('offers two actions: View matches, and Check your search terms', async () => {
+  it('offers two actions: View matches, and Show broader matches', async () => {
     const cb = open(none())
-    expect(screen.getAllByRole('button').map((b) => b.textContent)).toEqual(['View matches', 'Check your search terms'])
-    await userEvent.click(screen.getByRole('button', { name: 'Check your search terms' }))
-    expect(cb.onCheckSearch).toHaveBeenCalledTimes(1)
+    expect(screen.getAllByRole('button').map((b) => b.textContent)).toEqual(['View matches', 'Show broader matches'])
+    expect(screen.queryByText('Check your search terms')).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Show broader matches' }))
+    expect(cb.onLowerBar).toHaveBeenCalledTimes(1)
   })
 
   it('the second action is a text button of the forward kind, narrow or wide', () => {
     open(none())
-    expect(screen.getByRole('button', { name: 'Check your search terms' })).toHaveClass('secondary')
+    expect(screen.getByRole('button', { name: 'Show broader matches' })).toHaveClass('secondary')
   })
 
   it('offers no action it cannot open', () => {
     mockDoor({})
     show({ kind: 'summary', record: none() }, { active: false })
-    expect(screen.queryByRole('button', { name: 'Check your search terms' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Show broader matches' })).toBeNull()
   })
 
   it('says the next full run reads career sites only when this one skipped those steps', () => {
@@ -354,7 +355,7 @@ describe('Finding, the summary card of a run with no new matches', () => {
   it('has no account or actions when there are new matches', () => {
     open(record())
     expect(screen.queryByText(/jobs found/)).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Check your search terms' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Show broader matches' })).toBeNull()
   })
 })
 

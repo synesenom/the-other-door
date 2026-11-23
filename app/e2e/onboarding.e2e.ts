@@ -91,8 +91,9 @@ test('a good CV goes from the sources to the review, Save and a first run, askin
     await expect(page.getByLabel('Name', { exact: true })).toHaveValue('Ada Lovelace')
     await expect(page.getByLabel('Email')).toHaveValue('ada@example.com')
     await expect(page.getByLabel('City', { exact: true })).toHaveValue('Copenhagen')
-    await expect(page.getByRole('checkbox', { name: /Data Scientist your latest title/ })).toBeChecked()
-    await expect(page.getByRole('checkbox', { name: /Quant your maths/ })).not.toBeChecked()
+    const targets = page.getByRole('list', { name: 'Role targets, chosen' })
+    await expect(targets).toContainText('Data Scientist')
+    await expect(targets).not.toContainText('Quant')
     await expect(page.getByRole('checkbox', { name: 'LinkedIn' })).not.toBeChecked()
     expect(existsSync(join(sandbox, 'profile', 'config.json'))).toBe(false) // still nothing written
 
@@ -159,8 +160,8 @@ test('with a failing claude, what it would have read is left to fill in at the r
     await page.getByLabel('Name', { exact: true }).fill('Ada Lovelace')
     await page.getByLabel('Email', { exact: true }).fill('ada@example.com')
     await page.getByLabel('City', { exact: true }).selectOption('Copenhagen')
-    await page.getByLabel('Add your own title').fill('Data Scientist')
-    await page.getByLabel('Add your own title').press('Enter')
+    await page.getByLabel('Role targets', { exact: true }).fill('Data Scientist')
+    await page.getByLabel('Role targets', { exact: true }).press('Enter')
 
     // Nothing could draft a CV: it is asked for here, and only then does Save start the run.
     await expect(page.getByRole('button', { name: 'Save and start searching' })).toBeDisabled()

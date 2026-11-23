@@ -4,7 +4,9 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mockDoor } from '../../testing'
 import { basename, cvOverview, Review, TERMS_DEBOUNCE_MS } from './Review'
-import { cvState, existingProfile, freshProfile, Host } from './testing'
+import { Profile } from '../Profile'
+import { formSections } from '../profile-form/FormSections'
+import { cvState, existingProfile, fields, freshProfile, Host } from './testing'
 import type { ShowProfile, WizardState } from './reducer'
 
 afterEach(() => {
@@ -14,8 +16,7 @@ afterEach(() => {
 
 const answers: Partial<WizardState> = {
   step: 'review', name: 'Ada', email: 'ada@x.dk', location: 'Aarhus', languages: ['English'], roleTargets: ['Lead'],
-  titles: [{ title: 'Lead', reason: 'you led a team', recommended: true }, { title: 'Quant', reason: 'maths', recommended: false }],
-  keywords: ['lead'], topicTerms: ['data'], keywordsState: 'proposed', cvText: '# Ada\n',
+  keywords: ['lead'], topicTerms: ['data'], cvText: '# Ada\n',
 }
 let seen: WizardState
 function setup(start: Partial<WizardState> = answers, handlers: Record<string, unknown> = {}, profile: ShowProfile = freshProfile, before?: (h: ReturnType<typeof mockDoor>) => void) {
@@ -33,12 +34,18 @@ function setup(start: Partial<WizardState> = answers, handlers: Record<string, u
   return { ...h, onSaved }
 }
 const part = (name: string) => screen.getByRole('region', { name })
+const addTitle = (title: string) => {
+  const box = within(part('What to look for')).getByLabelText('Role targets')
+  fireEvent.change(box, { target: { value: title } })
+  fireEvent.keyDown(box, { key: 'Enter' })
+}
+const dropTitle = (title: string) => fireEvent.click(within(part('What to look for')).getByRole('button', { name: `Remove ${title}` }))
 
 describe('Review, the CV photo', () => {
   it('asks for a photo where the city\'s country has one optional, and holds the pick until Save', async () => {
     const h = setup(answers, { save_photo: { photo_path: '/p/photo.jpg' } })
     h.actions['pick-photo'].mockResolvedValueOnce({ token: 't1', name: 'portrait.jpg' })
-    await userEvent.click(within(part('You')).getByRole('button', { name: 'Choose a photo…' }))
+    await userEvent.click(within(part('About you')).getByRole('button', { name: 'Choose a photo…' }))
     expect(await screen.findByText('portrait.jpg')).toBeInTheDocument()
     expect(seen.photo).toEqual({ kind: 'new', token: 't1', name: 'portrait.jpg' })
     expect(h.call).not.toHaveBeenCalledWith('save_photo', expect.anything(), undefined, expect.anything())
@@ -59,21 +66,21 @@ describe('Review, the CV photo', () => {
     },
     })
     await userEvent.click(screen.getByRole('button', { name: 'Save and start searching' }))
-    expect(await within(part('You')).findByText(/too small/)).toBeInTheDocument()
+    expect(await within(part('About you')).findByText(/too small/)).toBeInTheDocument()
     expect(h.onSaved).not.toHaveBeenCalled()
   })
 
   it('Remove drops a pick that was not saved', async () => {
     setup({ ...answers, photo: { kind: 'new', token: 't1', name: 'me.png' } })
-    await userEvent.click(within(part('You')).getByRole('button', { name: 'Remove' }))
+    await userEvent.click(within(part('About you')).getByRole('button', { name: 'Remove' }))
     expect(seen.photo).toEqual({ kind: 'keep' })
   })
 
   it('a photo already kept is shown, and Remove marks it for removal on Save', async () => {
     const kept = { ...existingProfile, photo: { exists: true, path: '/p/profile/photo.jpg' } }
     setup({ ...answers }, {}, kept)
-    expect(within(part('You')).getByRole('img', { name: 'Your photo' })).toBeInTheDocument()
-    await userEvent.click(within(part('You')).getByRole('button', { name: 'Remove' }))
+    expect(within(part('About you')).getByRole('img', { name: 'Your photo' })).toBeInTheDocument()
+    await userEvent.click(within(part('About you')).getByRole('button', { name: 'Remove' }))
     expect(seen.photo).toEqual({ kind: 'none' })
   })
 })
@@ -113,21 +120,21 @@ describe('Review', () => {
     expect(seen.name).toBe('Ada L')
   })
 
-  it('titles show their reasons, the best ones ticked, and take the user\'s own', async () => {
+  it('the titles are chips, the recommended ones picked, and take the user\'s own', async () => {
     setup()
-    const titles = within(part('Titles'))
-    expect(titles.getByRole('checkbox', { name: /Lead you led a team/ })).toBeChecked()
-    expect(titles.getByRole('checkbox', { name: /Quant maths/ })).not.toBeChecked()
-    await userEvent.type(titles.getByLabelText('Add your own title'), 'Actuary{Enter}')
-    expect(titles.queryByRole('checkbox', { name: /Actuary/ })).toBeNull()
-    await userEvent.click(titles.getByRole('button', { name: 'Remove Actuary' }))
-    expect(titles.queryByText('Actuary')).toBeNull()
+    const search = within(part('What to look for'))
+    expect(search.getByRole('list', { name: 'Role targets, chosen' })).toHaveTextContent('Lead')
+    expect(search.queryByText('Quant')).toBeNull()
+    await userEvent.type(search.getByLabelText('Role targets'), 'Actuary{Enter}')
+    expect(seen.roleTargets).toEqual(['Lead', 'Actuary'])
+    await userEvent.click(search.getByRole('button', { name: 'Remove Actuary' }))
+    expect(seen.roleTargets).toEqual(['Lead'])
   })
 
   it('has an optional What matters to you part: a text area with the example, held until Save', async () => {
     const h = setup()
-    const preferences = within(part('What matters to you'))
-    expect(preferences.getByText(/a smaller company, little travel; not banking or gambling/)).toBeInTheDocument()
+    const preferences = within(part('What to look for'))
+    expect(preferences.getByRole('button', { name: 'About What matters to you' })).toBeInTheDocument()
     const box = preferences.getByRole('textbox', { name: 'What matters to you' })
     expect(box.tagName).toBe('TEXTAREA')
     expect(box).toHaveValue('')
@@ -141,8 +148,8 @@ describe('Review', () => {
   it('changing the titles proposes the terms again, debounced, and holds Save until then', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     const h = setup()
-    fireEvent.click(within(part('Titles')).getByRole('checkbox', { name: /Quant/ }))
-    fireEvent.click(within(part('Titles')).getByRole('checkbox', { name: /Lead/ }))
+    addTitle('Quant')
+    dropTitle('Lead')
     expect(screen.getByRole('button', { name: 'Save and start searching' })).toBeDisabled()
     expect(h.call).not.toHaveBeenCalledWith('keywords', expect.anything())
     await act(async () => {
@@ -156,55 +163,46 @@ describe('Review', () => {
   it('going back to the same titles asks nothing', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     const h = setup()
-    fireEvent.click(within(part('Titles')).getByRole('checkbox', { name: /Lead/ }))
-    fireEvent.click(within(part('Titles')).getByRole('checkbox', { name: /Lead/ }))
+    dropTitle('Lead')
+    addTitle('Lead')
     await act(async () => {
       await vi.advanceTimersByTimeAsync(TERMS_DEBOUNCE_MS + 10)
     })
     expect(h.call).not.toHaveBeenCalledWith('keywords', expect.anything())
   })
 
-  it('a failed proposal says the titles stand in', async () => {
+  it('a failed proposal says nothing: the titles stand in', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     setup(answers, { keywords: () => { throw new Error('quota') } })
-    fireEvent.click(within(part('Titles')).getByRole('checkbox', { name: /Quant/ }))
+    addTitle('Quant')
     await act(async () => {
       await vi.advanceTimersByTimeAsync(TERMS_DEBOUNCE_MS + 10)
     })
-    await waitFor(() => expect(seen.keywordsState).toBe('skipped'))
-    expect(screen.getByText(/searched as they are: quota/)).toBeInTheDocument()
+    await waitFor(() => expect(seen.keywords).toEqual([]))
+    expect(screen.queryByText(/quota/)).toBeNull()
+    expect(screen.queryByRole('alert')).toBeNull()
   })
 
   it('says what Claude could not do while reading, each where it belongs', () => {
-    setup({ ...answers, warnings: { basics: 'usage limit', titles: 'overloaded', terms: 'quota' } })
-    expect(within(part('You')).getByText('Claude could not read your details: usage limit')).toBeInTheDocument()
-    expect(within(part('Titles')).getByText('Claude could not suggest titles: overloaded')).toBeInTheDocument()
-    const terms = screen.getByText('Search', { selector: 'summary span' }).closest('details')!
-    expect(terms.open).toBe(true)
-    expect(within(terms).getByText('Claude could not propose search terms, so your titles are searched as they are: quota')).toBeInTheDocument()
+    setup({ ...answers, warnings: { basics: 'usage limit', titles: 'overloaded' } })
+    expect(within(part('About you')).getByText('Claude could not read your details: usage limit')).toBeInTheDocument()
+    expect(within(part('What to look for')).getByText('Claude could not suggest titles: overloaded')).toBeInTheDocument()
   })
 
   it('every title unticked while new terms are on their way: Save asks for a title, and the late terms are dropped', async () => {
     let answer: (v: unknown) => void = () => undefined
     vi.useFakeTimers({ shouldAdvanceTime: true })
     setup(answers, { keywords: () => new Promise((r) => { answer = r }) })
-    fireEvent.click(within(part('Titles')).getByRole('checkbox', { name: /Quant/ }))
+    addTitle('Quant')
     await act(async () => {
       await vi.advanceTimersByTimeAsync(TERMS_DEBOUNCE_MS + 10)
     })
     expect(screen.getByText('Choosing search terms for your titles…')).toBeInTheDocument()
-    fireEvent.click(within(part('Titles')).getByRole('checkbox', { name: /Lead/ }))
-    fireEvent.click(within(part('Titles')).getByRole('checkbox', { name: /Quant/ }))
+    dropTitle('Lead')
+    dropTitle('Quant')
     expect(screen.getByText('Choose at least one title.')).toBeInTheDocument()
     await act(async () => answer({ keywords: ['late'], topic_terms: [] }))
     expect(seen.keywords).toEqual(['lead'])
-  })
-
-  it('search terms are folded by default', () => {
-    setup()
-    const terms = screen.getByText('Search', { selector: 'summary span' }).closest('details')!
-    expect(terms.open).toBe(false)
-    expect(within(terms).getByText('1 search terms, 1 title terms')).toBeInTheDocument()
   })
 
   it('the CV names a file with no text, and is editable', async () => {
@@ -279,10 +277,10 @@ describe('Review', () => {
     expect(employers.queryByText(/Their terms forbid automated access/)).toBeNull()
   })
 
-  it('with no suggested titles, has no empty list before the box', () => {
-    setup({ ...answers, titles: [], roleTargets: [] })
-    expect(within(part('Titles')).queryByRole('group')).toBeNull()
-    expect(within(part('Titles')).getByRole('textbox', { name: 'Add your own title' })).toBeInTheDocument()
+  it('with no titles, has no empty list before the box', () => {
+    setup({ ...answers, roleTargets: [] })
+    expect(within(part('What to look for')).queryByRole('list', { name: 'Role targets, chosen' })).toBeNull()
+    expect(within(part('What to look for')).getByRole('textbox', { name: 'Role targets' })).toBeInTheDocument()
   })
 
   it('opens the legal disclaimer in place, and the answers stay', async () => {
@@ -314,13 +312,11 @@ describe('Review', () => {
     expect(screen.getByText('Choose at least one title.')).toBeInTheDocument()
   })
 
-  it('a refused Save stays here with each line under its section', async () => {
+  it('a refused Save stays here with each line under its section, a refused search term in the general alert', async () => {
     setup(answers, { init_profile: () => { throw new Error('profile/config.json: name — too odd\nprofile/config.json: search_keywords — bad') } })
     await userEvent.click(screen.getByRole('button', { name: 'Save and start searching' }))
-    expect(await within(part('You')).findByRole('alert')).toHaveTextContent('too odd')
-    const terms = screen.getByText('Search', { selector: 'summary span' }).closest('details')!
-    expect(terms.open).toBe(true)
-    expect(within(terms).getByRole('alert')).toHaveTextContent('bad')
+    expect(await within(part('About you')).findByRole('alert')).toHaveTextContent('too odd')
+    expect(screen.getAllByRole('alert').map((a) => a.textContent).join(' ')).toContain('search_keywords: bad')
   })
 
   it('a failed CV save says the answers are saved', async () => {
@@ -375,7 +371,7 @@ describe('Review, the example story', () => {
 
   it('shows the story bank with one story from the CV, kept, its empty part to fill in before Save', async () => {
     const h = setup(withStory, { save_story: { outcome: 'added' } })
-    const bank = part('Your story bank')
+    const bank = part('Stories')
     expect(within(bank).getByText(/A story tells what was behind it/)).toBeInTheDocument()
     expect(within(bank).getByRole('checkbox', { name: 'Keep this story' })).toBeChecked()
     expect(within(bank).getByLabelText('Context')).toHaveValue('A slow close.')
@@ -388,8 +384,8 @@ describe('Review, the example story', () => {
 
   it('unticked, its fields go and nothing is saved', async () => {
     const h = setup(withStory)
-    await userEvent.click(within(part('Your story bank')).getByRole('checkbox', { name: 'Keep this story' }))
-    expect(within(part('Your story bank')).queryByLabelText('Context')).toBeNull()
+    await userEvent.click(within(part('Stories')).getByRole('checkbox', { name: 'Keep this story' }))
+    expect(within(part('Stories')).queryByLabelText('Context')).toBeNull()
     await userEvent.click(screen.getByRole('button', { name: 'Save and start searching' }))
     await waitFor(() => expect(h.onSaved).toHaveBeenCalled())
     expect(h.call.mock.calls.map((c) => c[0])).not.toContain('save_story')
@@ -397,6 +393,52 @@ describe('Review, the example story', () => {
 
   it('without one, no story bank part', () => {
     setup()
-    expect(screen.queryByRole('region', { name: 'Your story bank' })).toBeNull()
+    expect(screen.queryByRole('region', { name: 'Stories' })).toBeNull()
+  })
+})
+
+describe('Review and Profile, one form', () => {
+  const headings = () => screen.getAllByRole('heading', { level: 2 }).filter((h) => h.closest('section.part') && !h.closest('.cv-preview')).map((h) => h.textContent)
+  const NO_STORIES = { list_stories: { exists: false, stories: [] }, cv_style_sample: { png_base64: 'PNG', own_cv: true } }
+
+  it('show the same part names in the same order, the review fewer of them', async () => {
+    const profile = { ...existingProfile, config: { ...existingProfile.config, location: 'Aarhus', preferences: '', languages: ['English'] } }
+    mockDoor({ show_profile: profile, ...NO_STORIES })
+    render(<Profile onSaved={() => {}} onDraft={() => {}} />)
+    await screen.findByRole('region', { name: 'About you' })
+    const inProfile = headings()
+    cleanup()
+    setup({ ...answers, story: null }, {}, profile)
+    const inReview = headings().filter((h) => h !== 'Where to find employers')
+    expect(inReview).toEqual(['About you', 'What to look for'])
+    expect(inProfile.filter((h) => inReview.includes(h))).toEqual(inReview)
+    // the CV part is Profile's, under its name
+    expect(screen.getByText('Master CV', { selector: 'summary span' })).toBeInTheDocument()
+    expect(headings()).toContain('Where to find employers')
+  })
+
+  it('the names come from the one layout', () => {
+    setup()
+    const names = formSections(fields, new Set(['name', 'role_targets'])).map(({ section }) => section.label)
+    for (const name of names) expect(part(name)).toBeInTheDocument()
+  })
+
+  it('ask the same things the same way', async () => {
+    const profile = { ...existingProfile, config: { ...existingProfile.config, location: 'Aarhus', languages: ['English'] } }
+    mockDoor({ show_profile: profile, ...NO_STORIES })
+    render(<Profile onSaved={() => {}} onDraft={() => {}} />)
+    await screen.findByRole('region', { name: 'About you' })
+    const labels = (root: HTMLElement) => ['Name', 'Email', 'City', 'Role targets', 'What matters to you'].map((l) => within(root).getByLabelText(l).tagName)
+    const radios = (root: HTMLElement) => within(root).getAllByRole('radio').map((r) => r.parentElement!.textContent)
+    const inProfile = { labels: labels(document.body), radios: radios(part('About you')), languages: within(part('About you')).getByText('Languages of the job ads') !== null }
+    cleanup()
+    setup({ ...answers }, {}, profile)
+    expect({ labels: labels(document.body), radios: radios(part('About you')), languages: within(part('About you')).getByText('Languages of the job ads') !== null }).toEqual(inProfile)
+  })
+
+  it('show no search terms part', () => {
+    setup()
+    expect(screen.queryByText(/Search terms|Title terms/)).toBeNull()
+    expect(screen.queryByRole('region', { name: 'Search' })).toBeNull()
   })
 })

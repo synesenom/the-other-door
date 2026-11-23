@@ -57,9 +57,9 @@ export function Reading({ state, dispatch, onDone, onBack }: Props) {
     try {
       const r = await call<Proposal>('keywords', { role_targets: targets, languages })
       answer = { type: 'keywords', keywords: r.keywords ?? [], topicTerms: r.topic_terms ?? [] }
-    } catch (e) {
-      // The titles themselves are searched; the review says so.
-      answer = { type: 'skipKeywords', warning: errorText(e) }
+    } catch {
+      // The titles themselves are searched; nothing for the user to act on, so nothing is said.
+      answer = { type: 'skipKeywords' }
     }
     if (left.current) return
     dispatch(answer)

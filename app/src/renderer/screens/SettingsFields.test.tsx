@@ -45,7 +45,7 @@ function open(section: string, config: Record<string, unknown> = {}, handlers: R
 }
 const switches = async () => (await screen.findAllByRole('checkbox')).map((c) => c.closest('label')?.textContent ?? '').join(' | ')
 
-describe('SettingsFields, Risky sources', () => {
+describe('SettingsFields, Where to find employers', () => {
   it('only the sources serving your city, even one switched on that does not', async () => {
     open('risky', { profession_discovery: true })
     const shown = await switches()

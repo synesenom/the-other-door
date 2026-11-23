@@ -3,7 +3,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { expect, test } from './fixtures'
-import { employerSources, fold, LAUNCH, reason, saveAndSearch, titleBox, toReview } from './helpers/onboarding'
+import { employerSources, fold, LAUNCH, reason, saveAndSearch, titleChip, toReview } from './helpers/onboarding'
 import type { World } from '../test/world/build'
 import type { Page } from '@playwright/test'
 
@@ -38,9 +38,9 @@ test.describe('mette, Copenhagen', () => {
     await expect(page.getByLabel('City', { exact: true })).toHaveValue('Copenhagen')
     expect(await checkedLanguages(page)).toEqual(['English', 'Danish'])
     await expect(page.getByText(/could not be found in your sources/)).toHaveCount(0)
-    await expect(titleBox(page, 'Senior Data Scientist')).toBeChecked()
+    await expect(titleChip(page, 'Senior Data Scientist')).toBeVisible()
     expect(await employerSources(page)).toEqual([{ label: 'LinkedIn', on: false }])
-    await expect(fold(page, 'CV').locator('summary')).toContainText('Ready')
+    await expect(fold(page, 'Master CV').locator('summary')).toContainText('Ready')
     await expect(reason(page)).toHaveCount(0)
     await saveAndCheck(
       page,
@@ -67,9 +67,9 @@ test.describe('lea, Lyon', () => {
     await expect(page.getByLabel('Email', { exact: true })).toHaveValue('lea.moreau@example.com')
     await expect(page.getByLabel('City', { exact: true })).toHaveValue('Lyon')
     expect(await checkedLanguages(page)).toEqual(['English', 'French'])
-    await expect(titleBox(page, 'Contrôleuse de gestion')).toBeChecked()
-    await expect(titleBox(page, 'Contrôleur de gestion industriel')).toBeChecked()
-    await expect(titleBox(page, 'Business Controller')).not.toBeChecked()
+    await expect(titleChip(page, 'Contrôleuse de gestion')).toBeVisible()
+    await expect(titleChip(page, 'Contrôleur de gestion industriel')).toBeVisible()
+    await expect(titleChip(page, 'Business Controller')).toHaveCount(0)
     expect(await employerSources(page)).toEqual([
       { label: 'LinkedIn', on: false },
       { label: 'HelloWork', on: false },
@@ -106,7 +106,7 @@ test.describe('bence, Budapest', () => {
       { label: 'LinkedIn', on: false },
       { label: 'profession.hu', on: false },
     ])
-    await expect(titleBox(page, 'Backend Engineer')).toBeChecked()
+    await expect(titleChip(page, 'Backend Engineer')).toBeVisible()
     await page.getByRole('radio', { name: 'Remote only', exact: true }).check()
     await saveAndCheck(
       page,
@@ -148,7 +148,7 @@ test.describe('jonas, a CV with gaps', () => {
 
   test('jonas’ CV has three things to fill in: each marker opens the box on its gap, and what is typed there is saved', async ({ page, world, os }) => {
     await toReview(page, world, os)
-    const cv = fold(page, 'CV')
+    const cv = fold(page, 'Master CV')
     await expect(cv.locator('summary')).toContainText('3 things to fill in')
     await cv.locator('summary').click()
     const marks = cv.getByRole('button', { name: 'to fill in', exact: true })

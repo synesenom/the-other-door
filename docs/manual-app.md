@@ -130,19 +130,19 @@ with npm (`claude.cmd`) cannot be started from the app, so sign in from a termin
    could not be found in your sources, and Save waits until it is filled in; a city in a country not
    covered yet is named, and you choose a city or keep yours under Other, where only the worldwide
    boards are searched:
-   **You** (name, email, city, hybrid, remote only or on site, a photo for your CV where your city's country may carry one, held until you save, the job-ad languages);
-   **Titles** (each with why it fits, the best ones ticked, and your own to add, as pills you can remove; changing them
-   proposes the search terms again);
-   **What matters to you** (optional, a text box: the kind of employer and job you want and anything you rule out, in your own words, for example "medical or green energy, maybe robotics; a smaller company, little travel; not banking or gambling"; when in doubt, scoring still shows the job);
-   **Search** and **CV**, folded (the CV formatted, with a switch to its Markdown text; what the draft could not find is marked "to fill in", and a click on a marker selects that gap in the text; a file with no text, such as a scanned PDF, is named;
+   the same parts, names and controls as [Profile](#profile), fewer of them:
+   **About you** (name, email, city, hybrid, remote only or on site, a photo for your CV where your city's country may carry one, held until you save, the job-ad languages);
+   **What to look for** (the role targets, the best titles found already picked, and your own to add, as pills you can remove; changing them
+   chooses the search terms again, which are shown nowhere; and what matters to you, optional, a text box: the kind of employer and job you want and anything you rule out, in your own words; when in doubt, scoring still shows the job);
+   **Master CV**, folded (the CV formatted, with a switch to its Markdown text; what the draft could not find is marked "to fill in", and a click on a marker selects that gap in the text; a file with no text, such as a scanned PDF, is named;
    the pages you used become the profile's enrich sources);
-   **Your story bank** (on a first set-up: one story drafted from your CV, to show what a story is. Your CV lists
+   **Stories** (on a first set-up: one story drafted from your CV, to show what a story is. Your CV lists
    what you did; a story tells what was behind it, and the tailor draws on your stories for every application.
    Fill in what the CV could not say, usually what you learned, or untick "Keep this story"; Save waits for one or the other.
    More stories go in Profile → [Stories](#your-stories));
    **Where to find employers** (LinkedIn, and profession.hu, HelloWork or Jobbsafari where they serve your city:
    each stays off unless you tick it, because their terms forbid automated access; see the
-   [legal disclaimer](../LEGAL_DISCLAIMER.md), which opens from there; Settings → Risky sources changes it later).
+   [legal disclaimer](../LEGAL_DISCLAIMER.md), which opens from there; Settings → Where to find employers changes it later).
    "Save and start searching" writes the profile and the CV and opens [Finding jobs](#finding-new-jobs)
    on a first search of the boards. Without a CV of your own or Claude, it saves and opens Matches,
    and a line at the foot of the sidebar says what is missing.
@@ -185,7 +185,7 @@ refused *The other door* is not listed. Discover lists its sources
 (LinkedIn, profession.hu, …) the same way; they are read one after the other, and Discover
 starts at once and works beside the other steps. A list goes away once everything in it is read.
 A source serving your city that you never turned on is listed there too, with a warning mark:
-"LinkedIn (not enabled, enable)"; "enable" opens Settings at Risky sources, where it is switched on.
+"LinkedIn (not enabled, enable)"; "enable" opens Settings at Where to find employers, where it is switched on.
 
 You can switch screens while it runs: the button then reads "Finding jobs…" and takes you
 back (on the Finding jobs screen itself it is greyed out), and Matches says above its list which
@@ -216,14 +216,14 @@ and error is in the run record. "View matches" opens Matches on
 "New only". Matches and "Last run" are refreshed.
 
 When no match is new, the card says what the run did in one line ("917 jobs found, 40 close enough to
-score, none scored 0.65 or better", then on its own line "Match fit: Balanced") and offers what you can do about it: "Check your search terms" opens Profile at What to look for, your search terms and "Match fit". When the
+score, none scored 0.65 or better", then on its own line "Match fit: Balanced") and offers what you can do about it: "Show broader matches" opens Profile at What to look for, where "Match fit" is. When the
 run skipped Discover, Follow or Collect, it adds that the next full run also reads employers' own career sites.
 
 After the first run, if it found fewer than three new matches and every employer discovery source
 serving your city is off, the card adds one line: *The other door* can also find employers on
 LinkedIn (and the other discovery sources serving your city), at your own risk, with the
 [legal disclaimer](../LEGAL_DISCLAIMER.md) and "Turn it on in Settings", which opens Settings at
-Risky sources. It is said only on that card, never again, and not on the phone.
+Where to find employers. It is said only on that card, never again, and not on the phone.
 
 ### In the sandbox
 
@@ -243,10 +243,9 @@ scored; "Nothing has scored 0.65 or better yet.", then on its own line "Match fi
 on "New only".
 
 Until the first posting has reached that setting, that empty list also shows the three best ads below it as ordinary rows
-marked "Weak match" (open, prepare or discard them like any other), under one line: "3 weak matches found." and, when
-a discovery source serving your city is off, that the app can also find employers on LinkedIn and the other discovery sources, at your own
-risk, with the legal disclaimer and "Turn it on in Settings" (opens Risky sources); with every source on, "Broaden your
-search keywords to find closer ones." (opens Profile at the search). On the phone the line is plain text. Once any
+marked "Weak match" (open, prepare or discard them like any other), under one line: "3 weak matches found." with
+"Show broader matches" right after it and, when a discovery source serving your city is off, that the app can also find employers on LinkedIn and the other discovery sources, at your own
+risk, with the legal disclaimer and "Turn it on in Settings" (opens Where to find employers); with every source on, the line is only the count and "Show broader matches". On the phone the line is plain text. Once any
 posting has reached your "Match fit" setting, they are never shown again.
 
 Choosing a row opens the posting on the whole page, as a card does in Applications, with a
@@ -423,8 +422,8 @@ on macOS they are shown as coming from "Electron" until the app has its own name
 
 Who you are and the jobs you want (how the app works is in [Settings](#settings)). One page: the settings below,
 then your [Master CV](#master-cv), the [CV style](#cv-style) and your [Stories](#your-stories). The list on the right names its sections, the one you
-are reading marked; a click jumps to it (a window narrower than 900 px leaves the list out). The Save bar at the
-page's foot saves the settings; your CV saves itself as you type.
+are reading marked; a click jumps to it (a window narrower than 900 px leaves the list out). The Save bar
+appears at the foot of the settings once you change one, and saves them; your CV and your stories save themselves.
 
 The everyday settings of `profile/config.json` ([Configuration](configuration.md)), in sections:
 About you (name, email, city, whether you need a visa or work permit there, where you would work, the languages of the job ads), What to
@@ -507,7 +506,7 @@ Stories are not on the phone.
 ## Settings
 
 How *The other door* works for you (who you are and what you want is in [Profile](#profile)). One column of
-sections: **Connections**, **Risky sources**, **Your data**, **Appearance**, **Version** (installed builds), **Documentation** (with the
+sections: **Connections**, **Where to find employers**, **Your data**, **Appearance**, **Version** (installed builds), **Documentation** (with the
 legal disclaimer) and, last, **Report a problem**. The same list as Profile's sits on the right.
 Opening it checks Claude's sign-in again; nothing else runs until you click.
 
@@ -534,7 +533,7 @@ fine, an empty ring when not) and what you can do about it.
   and the sandbox Drive is not available (their throwaway data never reaches your Drive),
   and a build without *The other door*'s Google client says so.
 
-**Risky sources**: sites whose terms forbid automated reading (LinkedIn and the others),
+**Where to find employers**: sites whose terms forbid automated reading (LinkedIn and the others),
 which *The other door* can still read for employers to follow, if you choose to. Only the ones serving your city
 are listed, each with what its terms say. Off until you tick one; a tick is saved at once.
 

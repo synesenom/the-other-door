@@ -2,7 +2,7 @@ import { useEffect, useState, type CSSProperties } from 'react'
 import { named } from './AppName'
 import { call, errorText } from '../api'
 import { discoveryKeys, sourcesForCity, type ShowProfile } from './onboarding/reducer'
-import { LAYOUT } from './Profile'
+import { LAYOUT } from './profile-form/FormSections'
 import { fieldErrors, formValues, toInitArgs, type FieldSpec, type FormValues } from './profile-form/form'
 
 type Shown = ShowProfile & { options: ShowProfile['options'] & { fields?: FieldSpec[] }; config: Record<string, unknown> | null }

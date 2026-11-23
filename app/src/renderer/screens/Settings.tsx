@@ -14,7 +14,7 @@ import type { DoctorReport } from './onboarding/reducer'
 
 /**
  * Settings: how The other door works for you (Profile is who you are and what you want). One reading-width
- * column. Connections (Claude, Google Drive, the phone), Risky sources (where it looks), Your data (the data folder, export,
+ * column. Connections (Claude, Google Drive, the phone), Where to find employers (where it looks), Your data (the data folder, export,
  * import), Appearance (the theme), Documentation and, last, Report a problem. Opening it reads doctor again (Claude's sign-in may have changed); nothing else
  * runs by itself. On the phone it is Appearance and where the data is, and it reads nothing.
  */
@@ -43,7 +43,7 @@ export function Settings({
   onDriveConflict?: (conflict: boolean) => void
   onDriveChanged: () => void
   onDataChanged: () => void
-  /** Where it opens: at Report a problem (the sidebar's "Something keeps going wrong"), or at Risky sources (sources never chosen). */
+  /** Where it opens: at Report a problem (the sidebar's "Something keeps going wrong"), or at Where to find employers (sources never chosen). */
   at?: 'report' | 'risky'
   /** A problem report was saved. */
   onReported?: () => void
@@ -89,7 +89,7 @@ export function Settings({
           </section>
           <section className="part" aria-labelledby="settings-risky">
             <h2 className="display-s" id="settings-risky">
-              Risky sources
+              Where to find employers
             </h2>
             <div className="data-moves">
               <p className="small muted">
@@ -192,7 +192,7 @@ export function Settings({
 
 const PARTS = [
   { id: 'settings-connections', label: 'Connections' },
-  { id: 'settings-risky', label: 'Risky sources' },
+  { id: 'settings-risky', label: 'Where to find employers' },
   { id: 'settings-data', label: 'Your data' },
   { id: 'settings-appearance', label: 'Appearance' },
   { id: 'settings-docs', label: 'Documentation' },
