@@ -11,7 +11,8 @@ import pytest
 
 import door.mcp_server as server
 from door.commands import keywords as keywords_cmd
-from door.core import claude_cli, workspace
+from door.commands import profile as profile_cmd
+from door.core import claude_cli, profile_loader, workspace
 from profile_utils import write_config
 
 
@@ -139,3 +140,53 @@ def test_core_works_before_the_profile_exists(tmp_path, monkeypatch):
     result = keywords_cmd._keywords_core(["Quant"], languages=["Danish"], profile_dir=profile_dir)
     assert result["keywords"] == ["quant"] and not profile_dir.exists()
     assert "English, Danish" in calls[0]["input"]
+
+
+def _fail(monkeypatch):
+    def boom(*a, **k):
+        raise claude_cli.ClaudeError("offline")
+    monkeypatch.setattr(claude_cli, "run", boom)
+
+
+def test_a_failed_saving_proposal_leaves_the_search_terms_marked_out_of_date(env, monkeypatch):
+    _fail(monkeypatch)
+    with pytest.raises(claude_cli.ClaudeError):
+        keywords_cmd._keywords_core(save=True, profile_dir=env.profile_dir)
+    assert keywords_cmd.stale(env.profile_dir) is True
+
+
+def test_a_saving_proposal_that_works_clears_the_mark(env, monkeypatch):
+    _fail(monkeypatch)
+    with pytest.raises(claude_cli.ClaudeError):
+        keywords_cmd._keywords_core(save=True, profile_dir=env.profile_dir)
+    _answer(monkeypatch, ["data science"])
+    keywords_cmd._keywords_core(save=True, profile_dir=env.profile_dir)
+    assert keywords_cmd.stale(env.profile_dir) is False
+
+
+def test_a_proposal_that_saves_nothing_neither_sets_nor_clears_the_mark(env, monkeypatch):
+    _fail(monkeypatch)
+    with pytest.raises(claude_cli.ClaudeError):
+        keywords_cmd._keywords_core(profile_dir=env.profile_dir)
+    assert keywords_cmd.stale(env.profile_dir) is False
+    with pytest.raises(claude_cli.ClaudeError):
+        keywords_cmd._keywords_core(save=True, profile_dir=env.profile_dir)
+    _answer(monkeypatch, ["data science"])
+    keywords_cmd._keywords_core(profile_dir=env.profile_dir)
+    assert keywords_cmd.stale(env.profile_dir) is True
+
+
+def test_changing_role_targets_or_languages_marks_the_search_terms_out_of_date(env):
+    profile_cmd._init_core({"role_targets": ["Brand new title"]}, profile_dir=env.profile_dir, example_dir=workspace.PROFILE_EXAMPLE_DIR)
+    assert keywords_cmd.stale(env.profile_dir) is True
+    (env.profile_dir / ".search_terms_stale").unlink()
+    profile_cmd._init_core({"languages": ["Danish"]}, profile_dir=env.profile_dir, example_dir=workspace.PROFILE_EXAMPLE_DIR)
+    assert keywords_cmd.stale(env.profile_dir) is True
+
+
+def test_a_write_that_changes_no_role_target_or_sets_the_terms_too_does_not_mark(env):
+    cfg = profile_loader.load_config_or_defaults(env.profile_dir)
+    profile_cmd._init_core({"role_targets": cfg["role_targets"], "min_score": 0.5}, profile_dir=env.profile_dir, example_dir=workspace.PROFILE_EXAMPLE_DIR)
+    assert keywords_cmd.stale(env.profile_dir) is False
+    profile_cmd._init_core({"role_targets": ["Other"], "search_keywords": ["other"]}, profile_dir=env.profile_dir, example_dir=workspace.PROFILE_EXAMPLE_DIR)
+    assert keywords_cmd.stale(env.profile_dir) is False

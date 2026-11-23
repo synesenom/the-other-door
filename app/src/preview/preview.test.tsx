@@ -173,10 +173,24 @@ describe('scenes', () => {
   it('profile-stories lists the stories', async () => {
     mount('profile-stories')
     expect(await screen.findByRole('listitem', { name: 'Rebuilt the cash forecast at Acme Foods' })).toBeInTheDocument()
-    // no Save bar until a detail is edited
+    // the details save themselves: no Save bar, before or after an edit
     expect(screen.queryByRole('button', { name: 'Save' })).toBeNull()
     await userEvent.type(screen.getByLabelText('Name'), 'x')
-    expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Save' })).toBeNull()
+  })
+
+  it('profile-detail-refused says why a detail was refused, under its field', async () => {
+    mount('profile-detail-refused')
+    const field = await screen.findByLabelText('Name')
+    await userEvent.type(field, 'x')
+    await userEvent.tab()
+    expect(await screen.findByText('name must not be empty')).toBeInTheDocument()
+  })
+
+  it('profile-search-stale has a line that opens Profile at What to look for', async () => {
+    mount('profile-search-stale')
+    await userEvent.click(await screen.findByRole('button', { name: 'Search not updated to your role targets' }))
+    expect(await screen.findByRole('region', { name: 'What to look for' })).toBeInTheDocument()
   })
 
   it('sent opens what was sent, read only', async () => {

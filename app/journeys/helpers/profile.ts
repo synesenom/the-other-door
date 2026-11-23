@@ -1,4 +1,4 @@
-// Profile's journeys: getting to Details or the CV, the save bar, and the files of the world's home they read.
+// Profile's journeys: getting to Details or the CV, and the files of the world's home they read.
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import type { ElectronApplication, Locator, Page } from '@playwright/test'
@@ -35,7 +35,7 @@ export async function editCv(page: Page): Promise<void> {
 /** The editor's textarea. */
 export const cvBox = (page: Page): Locator => page.getByRole('textbox', { name: 'Your CV (Markdown)' })
 
-/** The save bar's Save (Details and CV each have one; never two on screen). */
+/** A Save button (Profile has none: its parts save themselves, so a journey asserts there is no such button). */
 export const saveButton = (page: Page): Locator => page.getByRole('button', { name: 'Save', exact: true })
 
 /** A chip list's input: type, then Enter. */

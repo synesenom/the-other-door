@@ -83,6 +83,13 @@ export function App({ start }: { start?: AppStart } = {}) {
   const [driveConflict, setDriveConflict] = useState(false)
   // Something keeps going wrong since the last problem report (status_summary's recurring_problem)
   const [recurring, setRecurring] = useState<boolean | null>(null)
+  // The role targets changed and the search terms could not be made again (status_summary's search_terms_outdated)
+  const [searchStale, setSearchStale] = useState<boolean | null>(null)
+  // The search terms are being proposed after leaving Profile: one call at a time (the ref is read by the leave handler,
+  // the state by the render: no line while the call runs); a role-target change left during a call asks once more after it
+  const proposing = useRef(false)
+  const [proposingNow, setProposingNow] = useState(false)
+  const proposeAgain = useRef(false)
   // The Claude plan's window (status_summary's plan): a sidebar line only when it is nearly full
   const [plan, setPlan] = useState<PlanBlock | null>(null)
   // Bumped when a Prepare ends, to read the summary again (refreshKey would remount Matches)
@@ -254,6 +261,7 @@ export function App({ start }: { start?: AppStart } = {}) {
         setLastRun(lastRunText(s.since_last_review?.last_run?.finished_at))
         setDrive(s.drive && typeof s.drive.connected === 'boolean' ? s.drive : null)
         setRecurring(typeof s.recurring_problem === 'boolean' ? s.recurring_problem : null)
+        setSearchStale(typeof s.search_terms_outdated === 'boolean' ? s.search_terms_outdated : null)
         setPlan(s.plan ?? null)
       },
       () => undefined, // the caption is optional; Matches shows the failure
@@ -335,13 +343,44 @@ export function App({ start }: { start?: AppStart } = {}) {
   // What is wrong and needs you (Claude, the Claude plan's window, the CV, Drive, something that keeps going wrong):
   // a short line each in its own block under the sidebar's menu (the plan's opens nothing). On the phone they are said, not buttons: what fixes them is on the computer running
   // The other door; a problem report is made there too, so the phone does not say that one.
-  const lines = problems({ doctor, drive, driveConflict, cv: profile?.config ? profile.cv : null, recurring: remote ? null : recurring, plan })
+  const lines = problems({ doctor, drive, driveConflict, cv: profile?.config ? profile.cv : null, recurring: remote ? null : recurring, searchTermsStale: remote ? null : searchStale === null ? null : searchStale && !proposingNow, plan })
   const destinations = remote ? PHONE_DESTINATIONS : DESTINATIONS
   /** Opens Profile at one of its sections (the same way for every link into it). */
   const openProfile = (section: string) => {
     setFinding(false)
     setProfileStart((s) => ({ n: (s?.n ?? 0) + 1, at: { section } }))
     setCurrent('Profile')
+  }
+  /** Profile was left after it wrote something: the matches may change (the age limit, "Match fit"), and when the role
+   * targets or ad languages changed Claude proposes the search terms again, in the background (one call at a time;
+   * a failure leaves the sidebar's line, which the summary read afterwards shows). */
+  /** The profile changed: read it again, and redraw the matches ("Match fit" or the age limit may change them). */
+  const profileChanged = () => {
+    void call<ShowProfile>('show_profile').then(setProfile, () => undefined)
+    setRefreshKey((k) => k + 1)
+  }
+  const propose = () => {
+    proposing.current = true
+    setProposingNow(true)
+    void call('keywords', { save: true })
+      .catch(() => undefined)
+      .finally(() => {
+        proposing.current = false
+        setProposingNow(false)
+        if (proposeAgain.current) {
+          proposeAgain.current = false
+          propose()
+        } else setSummaryKey((k) => k + 1)
+      })
+  }
+  const profileLeft = (termsChanged: boolean, wrote: boolean) => {
+    if (wrote) profileChanged()
+    // Also when the sidebar's line sent the user here: leaving Profile tries the proposal again
+    if (proposing.current) {
+      if (termsChanged) proposeAgain.current = true
+      return
+    }
+    if (termsChanged || searchStale) propose()
   }
   /** Opens Settings at Where to find employers, where the discovery sources are turned on. */
   const openRisky = () => {
@@ -354,7 +393,8 @@ export function App({ start }: { start?: AppStart } = {}) {
     if (p.target === 'profile-cv') {
       setProfileStart((s) => ({ n: (s?.n ?? 0) + 1, at: { section: 'cv' } }))
       setCurrent('Profile')
-    } else if (p.target === 'profile') setCurrent('Profile')
+    } else if (p.target === 'profile-search') openProfile('search')
+    else if (p.target === 'profile') setCurrent('Profile')
     else {
       if (p.target === 'settings-report') setSettingsStart((s) => ({ n: (s?.n ?? 0) + 1, at: 'report' }))
       setCurrent('Settings')
@@ -454,10 +494,8 @@ export function App({ start }: { start?: AppStart } = {}) {
             key={profileStart?.n ?? 0}
             start={profileStart?.at}
             onDraft={() => void setUpAgain().catch(() => undefined)}
-            onSaved={() => {
-              void call<ShowProfile>('show_profile').then(setProfile, () => undefined)
-              setRefreshKey((k) => k + 1) // the matches may change with "Match fit" or the age limit
-            }}
+            onSaved={profileChanged}
+            onLeave={profileLeft}
           />
         ) : current === 'Settings' ? (
           <Settings

@@ -53,8 +53,6 @@ async function open(handlers: Record<string, unknown> = {}, config: Record<strin
   return { ...h, onSaved }
 }
 
-const saveButton = () => screen.getByRole('button', { name: 'Save' })
-
 describe('Profile, the CV photo', () => {
   const fields: FieldSpec[] = [...FIELDS, { key: 'photo', type: 'path', required: false, nullable: true, default: null }]
   const cv = (photo: string) => ({ photo, date_of_birth: false, max_pages: 2, date_format: 'DD.MM.YYYY' })
@@ -160,31 +158,36 @@ describe('Profile', () => {
     expect(screen.queryByRole('button', { name: 'Save' })).toBeNull()
   })
 
-  it('saves only what changed, by name or in other, and reads the profile again', async () => {
-    const { call, onSaved } = await open({ init_profile: { config_path: '/x' } })
-    await screen.findByRole('group', { name: 'Sources' })
-    const reads = () => call.mock.calls.filter((c) => c[0] === 'show_profile').length
-    const before = reads()
-    await userEvent.clear(screen.getByLabelText('Name'))
-    await userEvent.type(screen.getByLabelText('Name'), 'Ada King')
-    await userEvent.click(screen.getByRole('checkbox', { name: 'I need a visa or work permit' }))
-    expect(screen.getByText('2 unsaved changes')).toBeInTheDocument()
-    await userEvent.click(saveButton())
-    expect(call).toHaveBeenCalledWith('init_profile', { name: 'Ada King', other: { needs_work_permit: true } })
-    expect(await screen.findByText('Saved.')).toBeInTheDocument()
-    expect(reads()).toBe(before + 1)
-    expect(call.mock.calls.some((c) => c[0] === 'save_cv')).toBe(false)
-    expect(onSaved).toHaveBeenCalled()
+  it('saves a typed key alone, a second after typing stops, and a choice at once; no Save, no Undo', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      const { call, onSaved } = await open({ init_profile: { config_path: '/x' } })
+      await screen.findByRole('group', { name: 'Sources' })
+      await user.clear(screen.getByLabelText('Name'))
+      await user.type(screen.getByLabelText('Name'), 'Ada King')
+      expect(call.mock.calls.filter((c) => c[0] === 'init_profile')).toHaveLength(0)
+      await vi.advanceTimersByTimeAsync(1000)
+      expect(call.mock.calls.filter((c) => c[0] === 'init_profile')).toEqual([['init_profile', { name: 'Ada King' }]])
+      await user.click(screen.getByRole('checkbox', { name: 'I need a visa or work permit' }))
+      await waitFor(() => expect(call).toHaveBeenCalledWith('init_profile', { other: { needs_work_permit: true } }))
+      expect(screen.queryByRole('button', { name: 'Save' })).toBeNull()
+      expect(screen.queryByRole('button', { name: 'Undo changes' })).toBeNull()
+      expect(screen.queryByText(/unsaved/)).toBeNull()
+      expect(call.mock.calls.some((c) => c[0] === 'save_cv')).toBe(false)
+      expect(onSaved).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
-  it('the preferences are a text area saved as written, with a line that it applies from the next run', async () => {
+  it('leaving a field saves it at once', async () => {
     const { call } = await open({ init_profile: {} })
     const box = screen.getByLabelText('What matters to you')
     expect(box.tagName).toBe('TEXTAREA')
-    expect(box).toHaveValue('')
     await userEvent.type(box, 'medical; not banking')
-    await userEvent.click(saveButton())
-    expect(call).toHaveBeenCalledWith('init_profile', { other: { preferences: 'medical; not banking' } })
+    await userEvent.tab()
+    await waitFor(() => expect(call).toHaveBeenCalledWith('init_profile', { other: { preferences: 'medical; not banking' } }))
     expect(screen.getByRole('button', { name: 'About What matters to you' })).toBeInTheDocument()
   })
 
@@ -192,54 +195,42 @@ describe('Profile', () => {
     const { call } = await open({ init_profile: {} })
     expect(screen.getByRole('radio', { name: 'Balanced' })).toBeChecked()
     await userEvent.click(screen.getByRole('radio', { name: 'Strong' }))
-    await userEvent.click(saveButton())
-    expect(call).toHaveBeenCalledWith('init_profile', { min_score: 0.75 })
+    await waitFor(() => expect(call).toHaveBeenCalledWith('init_profile', { min_score: 0.75 }))
     cleanup()
     await open({}, { min_score: 0.7 })
     expect(screen.getByRole('radio', { name: 'Your own (0.70)' })).toBeChecked()
   })
 
-  it('an error is said under its field, and nothing is lost', async () => {
-    await open({
+  it('an error is said under its field, the value stays, and a later valid edit is sent again', async () => {
+    let refuse = true
+    const { call } = await open({
       init_profile: () => {
-        throw { message: 'profile/config.json: email — value is not a valid email address\nprofile/config.json: bogus — Extra inputs are not permitted' }
+        if (refuse) throw { message: 'profile/config.json: email — value is not a valid email address\nprofile/config.json: bogus — Extra inputs are not permitted' }
+        return {}
       },
     })
     await userEvent.clear(screen.getByLabelText('Email'))
     await userEvent.type(screen.getByLabelText('Email'), 'ada')
-    await userEvent.click(saveButton())
+    await userEvent.tab()
     const field = screen.getByLabelText('Email').closest('.field') as HTMLElement
     expect(await within(field).findByText('value is not a valid email address')).toBeInTheDocument()
     expect(screen.getByRole('alert')).toHaveTextContent('bogus')
     expect(screen.getByLabelText('Email')).toHaveValue('ada')
-  })
-
-  it('the Save bar is there only with unsaved changes, and sits with the details, above the CV and the Stories', async () => {
-    await open()
-    expect(screen.queryByRole('button', { name: 'Save' })).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Undo changes' })).toBeNull()
-    await userEvent.type(screen.getByLabelText('Name'), 'x')
-    const save = screen.getByRole('button', { name: 'Save' })
-    expect(screen.getByRole('button', { name: 'Undo changes' })).toBeInTheDocument()
-    for (const name of ['Master CV', 'Stories']) {
-      const heading = screen.getByRole('heading', { name, level: 2 })
-      expect(save.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    }
-  })
-
-  it('Undo changes puts the saved values back', async () => {
-    await open()
-    await userEvent.type(screen.getByLabelText('Name'), 'x')
-    await userEvent.click(screen.getByRole('button', { name: 'Undo changes' }))
-    expect(screen.getByLabelText('Name')).toHaveValue('Ada Lovelace')
-    expect(screen.queryByRole('button', { name: 'Save' })).toBeNull()
+    // the same refused value is not sent again by the next blur
+    await userEvent.click(screen.getByLabelText('Name'))
+    await userEvent.tab()
+    expect(call.mock.calls.filter((c) => c[0] === 'init_profile')).toHaveLength(1)
+    refuse = false
+    await userEvent.type(screen.getByLabelText('Email'), '@example.net')
+    await userEvent.tab()
+    await waitFor(() => expect(call).toHaveBeenLastCalledWith('init_profile', { email: 'ada@example.net' }))
+    await waitFor(() => expect(within(field).queryByText('value is not a valid email address')).toBeNull())
   })
 
   it('exclude: companies and words as chips, sent as exclude_*', async () => {
     const { call } = await open({ init_profile: {} })
     await userEvent.type(screen.getByLabelText('Companies to skip'), 'Acme{Enter}')
-    await userEvent.click(saveButton())
-    expect(call).toHaveBeenCalledWith('init_profile', { exclude_companies: ['Acme'] })
+    await waitFor(() => expect(call).toHaveBeenCalledWith('init_profile', { exclude_companies: ['Acme'] }))
   })
 
   it('the tuning keys and file paths are left to config.json: not shown, never sent', async () => {
@@ -247,30 +238,82 @@ describe('Profile', () => {
     expect(screen.queryByText('/home/ada/profile/cv.template.html')).toBeNull()
     expect(screen.queryByLabelText('Sites read at once')).toBeNull()
     await userEvent.type(screen.getByLabelText('Name'), 'x')
-    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
-    expect(call).toHaveBeenCalledWith('init_profile', { name: 'Ada Lovelacex' })
+    await userEvent.tab()
+    await waitFor(() => expect(call).toHaveBeenCalledWith('init_profile', { name: 'Ada Lovelacex' }))
   })
 
-  it('a change of role targets has Claude propose the search terms again on Save', async () => {
-    let config: Record<string, unknown> = { search_keywords: ['Data Analyst'] }
-    const { call } = await open({
-      show_profile: () => show(config),
-      init_profile: (args: Record<string, unknown>) => {
-        config = { ...config, ...args }
-        return { config_path: '/x' }
-      },
-      keywords: () => {
-        config = { ...config, search_keywords: ['Data Analyst', 'BI Analyst', 'Dataanalytiker'], topic_terms: ['analytiker'] }
-        return { keywords: config['search_keywords'], topic_terms: config['topic_terms'], saved: true }
-      },
+  it('what is waiting is written when the window closes, and when Profile is left', async () => {
+    const { call, pushBeforeClose } = await open({ init_profile: {} })
+    await userEvent.type(screen.getByLabelText('Name'), 'x')
+    await pushBeforeClose()
+    expect(call).toHaveBeenCalledWith('init_profile', { name: 'Ada Lovelacex' })
+    cleanup()
+    const second = await open({ init_profile: {} })
+    await userEvent.type(screen.getByLabelText('Name'), 'y')
+    cleanup()
+    await waitFor(() => expect(second.call).toHaveBeenCalledWith('init_profile', { name: 'Ada Lovelacey' }))
+  })
+
+  it('an autosave does not rewrite what is shown or read the profile again', async () => {
+    const { call } = await open({ init_profile: {} })
+    const reads = () => call.mock.calls.filter((c) => c[0] === 'show_profile').length
+    await screen.findByRole('group', { name: 'Sources' })
+    const before = reads()
+    const name = screen.getByLabelText('Name')
+    await userEvent.type(name, 'x')
+    await userEvent.tab()
+    await waitFor(() => expect(call).toHaveBeenCalledWith('init_profile', { name: 'Ada Lovelacex' }))
+    expect(name).toHaveValue('Ada Lovelacex')
+    expect(reads()).toBe(before)
+  })
+
+  describe('on leaving', () => {
+    const openLeave = async (handlers: Record<string, unknown> = {}) => {
+      const h = mockDoor({ show_profile: show(), ...NO_STORIES, init_profile: {}, ...handlers })
+      const onLeave = vi.fn()
+      render(<Profile onSaved={() => {}} onDraft={() => {}} onLeave={onLeave} />)
+      await screen.findByRole('region', { name: 'About you' })
+      return { ...h, onLeave }
+    }
+
+    it('says the role targets changed', async () => {
+      const { call, onLeave } = await openLeave()
+      await userEvent.type(screen.getByLabelText('Role targets'), 'BI Analyst{Enter}')
+      cleanup()
+      await waitFor(() => expect(onLeave).toHaveBeenCalledWith(true, true))
+      expect(onLeave).toHaveBeenCalledTimes(1)
+      expect(call).toHaveBeenCalledWith('init_profile', { role_targets: ['Data Analyst', 'BI Analyst'] })
+      expect(call.mock.calls.some((c) => c[0] === 'keywords')).toBe(false) // the app proposes, not Profile
     })
-    await userEvent.type(screen.getByLabelText('Role targets'), 'BI Analyst{Enter}')
-    await userEvent.click(saveButton())
-    await waitFor(() => expect(call).toHaveBeenCalledWith('keywords', { role_targets: ['Data Analyst', 'BI Analyst'], languages: ['English'], save: true }))
-    const names = call.mock.calls.map((c) => c[0])
-    expect(names.indexOf('init_profile')).toBeLessThan(names.indexOf('keywords'))
-    expect(await screen.findByText('Saved.')).toBeInTheDocument()
-    expect(screen.queryByLabelText('Search keywords')).toBeNull()
+
+    it('says the ad languages changed', async () => {
+      const { onLeave } = await openLeave()
+      await userEvent.click(screen.getByRole('checkbox', { name: 'Danish' }))
+      cleanup()
+      await waitFor(() => expect(onLeave).toHaveBeenCalledWith(true, true))
+    })
+
+    it('a name alone changes no search terms', async () => {
+      const { onLeave } = await openLeave()
+      await userEvent.type(screen.getByLabelText('Name'), 'x')
+      cleanup()
+      await waitFor(() => expect(onLeave).toHaveBeenCalledWith(false, true))
+    })
+
+    it('a role target added and taken away again changes nothing', async () => {
+      const { onLeave } = await openLeave()
+      await userEvent.type(screen.getByLabelText('Role targets'), 'BI Analyst{Enter}')
+      await userEvent.click(screen.getByRole('button', { name: 'Remove BI Analyst' }))
+      cleanup()
+      await waitFor(() => expect(onLeave).toHaveBeenCalledWith(false, true))
+    })
+
+    it('nothing written: told so', async () => {
+      const { onLeave } = await openLeave()
+      cleanup()
+      await new Promise((r) => setTimeout(r, 20))
+      expect(onLeave).toHaveBeenCalledWith(false, false)
+    })
   })
 
   it('is one page: the details, then the CV and the Stories, each listed beside it', async () => {
@@ -310,15 +353,6 @@ describe('Profile', () => {
 })
 
 describe('Profile, keeping what is shown true', () => {
-  it('Undo after Other… puts the saved city back in the list', async () => {
-    await open()
-    await userEvent.selectOptions(screen.getByLabelText('City'), 'Other…')
-    await userEvent.type(screen.getByLabelText('Your city'), 'Reykjavik')
-    await userEvent.click(screen.getByRole('button', { name: 'Undo changes' }))
-    expect(screen.queryByLabelText('Your city')).toBeNull()
-    expect(screen.getByLabelText('City')).toHaveValue('Copenhagen')
-  })
-
   it('the CV and the Stories are there when config.json is not valid', async () => {
     mockDoor({ show_profile: { ...show(), config: null, errors: ['profile/config.json: remote — bad'] }, ...NO_STORIES })
     render(<Profile onSaved={() => {}} onDraft={() => {}} />)
@@ -335,7 +369,7 @@ describe('Profile, keeping what is shown true', () => {
     expect(screen.getByRole('region', { name: 'Stories' })).toBeInTheDocument()
   })
 
-  it('Save is the details\' only: the CV saves itself and is not counted', async () => {
+  it('the CV saves itself too, and nothing says anything is unsaved', async () => {
     const { call } = await open({ save_cv: {} })
     await userEvent.type(await screen.findByLabelText('Your CV (Markdown)'), '# Ada B')
     await userEvent.tab()

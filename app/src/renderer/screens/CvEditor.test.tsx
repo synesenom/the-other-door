@@ -21,7 +21,7 @@ const profile = (cv: Partial<{ text: string | null; is_example: boolean; exists:
 
 const NO_STORIES = { list_stories: { exists: false, stories: [] }, cv_style_sample: { png_base64: 'PNG', own_cv: true } } // the parts of Profile beside the CV
 
-/** The CV as Profile shows it: Profile's one save bar saves it. */
+/** The CV as Profile shows it: Profile saves it itself. */
 async function open(handlers: Record<string, unknown> = {}, cv = {}, sources: string[] = []) {
   const h = mockDoor({ show_profile: profile(cv, sources), ...NO_STORIES, ...handlers })
   const onDraft = vi.fn()
@@ -272,7 +272,6 @@ describe('errors under their field', () => {
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('profile/ is not writable')
     expect(alert).toHaveClass('field-error')
-    expect(alert.closest('.profile-save')).toBeNull()
     fail = false
     await userEvent.type(editor(), 'y')
     await userEvent.tab()

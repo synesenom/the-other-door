@@ -200,8 +200,8 @@ function Expand({ from, pages, blocked, onRead, onFile, onClose, onAdded }: { fr
   )
 }
 
-/** How long typing must stop before the text is written. */
-const SAVE_AFTER_MS = 1000
+/** How long typing must stop before the text (and Profile's details) is written. */
+export const SAVE_AFTER_MS = 1000
 
 /**
  * Profile's "Master CV": its Sources (the CV file and the pages it is read from, each only

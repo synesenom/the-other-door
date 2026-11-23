@@ -5,7 +5,7 @@ installer (below) or runs from a checkout ([`app/README.md`](../app/README.md)).
 each screen does. The look is in [`design/`](design/README.md).
 
 The first time you open it on a computer with no profile, a short wizard sets *The other door* up
-([First launch](#first-launch)). "Find new jobs" runs the whole search from the app (below). [Profile](#profile) edits every setting of your profile, and Settings holds your [connections](#settings) (Claude and Google Drive) and the data folder. The app opens on Matches. When something needs you (Claude, your Claude plan's window, your CV, Google Drive, something that keeps going wrong), a short line under the sidebar's menu says so and, except for the plan's window, which has nothing to fix, opens where it is fixed.
+([First launch](#first-launch)). "Find new jobs" runs the whole search from the app (below). [Profile](#profile) edits every setting of your profile, and Settings holds your [connections](#settings) (Claude and Google Drive) and the data folder. The app opens on Matches. When something needs you (Claude, your Claude plan's window, your CV, new search terms that could not be made, Google Drive, something that keeps going wrong), a short line under the sidebar's menu says so and, except for the plan's window, which has nothing to fix, opens where it is fixed.
 Preparing an application needs the `claude` command line and a Chromium headless shell, which prints the PDFs. The installed app
 brings Chromium (and the Python it runs on) with it; the first screen of the wizard installs Claude and
 signs you in when it is missing. From a checkout, `./door doctor` checks them all. Should Chromium be missing all
@@ -422,8 +422,9 @@ on macOS they are shown as coming from "Electron" until the app has its own name
 
 Who you are and the jobs you want (how the app works is in [Settings](#settings)). One page: the settings below,
 then your [Master CV](#master-cv), the [CV style](#cv-style) and your [Stories](#your-stories). The list on the right names its sections, the one you
-are reading marked; a click jumps to it (a window narrower than 900 px leaves the list out). The Save bar
-appears at the foot of the settings once you change one, and saves them; your CV and your stories save themselves.
+are reading marked; a click jumps to it (a window narrower than 900 px leaves the list out). Nothing here has a Save
+button: a setting you type is saved a second after you stop and when you leave the field, a choice at once, and what is
+still waiting when you leave Profile or close the app; your CV and your stories save themselves too.
 
 The everyday settings of `profile/config.json` ([Configuration](configuration.md)), in sections:
 About you (name, email, city, whether you need a visa or work permit there, where you would work, the languages of the job ads), What to
@@ -436,17 +437,17 @@ left to `profile/config.json`; the form keeps any you set there and never sends 
 *The other door* follows are its own business: it finds and follows them, and an employer you never want to
 hear from goes under Companies to skip.
 
-What the job boards are searched for follows your role targets, and is not on screen: when a Save changes
-your role targets or the languages of the ads, Claude proposes the search keywords and the words a job title
-must contain again from those, in each ad language, and they are saved with the rest (if that call fails, the
-terms you had stay). They aim wide: a term that is off brings in some ads that score low, nothing worse. Claude Code ("expand my search
-keywords") and `profile/config.json` can still change them by hand. Nothing is saved until you press Save,
-which sends only what you changed; the foot says how many changes are unsaved, and "Undo changes" puts the saved values
-back. *The other door* checks everything before writing anything: a value it refuses is explained in a
-sentence under its field, and your other changes stay in the form.
+What the job boards are searched for follows your role targets, and is not on screen: when you leave Profile after
+changing your role targets or the languages of the ads, Claude proposes the search keywords and the words a job title
+must contain again from those, in each ad language, in the background, and they are saved (if that call fails, the
+terms you had stay and a line under the sidebar's menu, "Search not updated to your role targets",
+opens What to look for; leaving Profile tries again; the line also shows on the next start if the window was closed before Claude answered). They aim wide: a term that is off brings in some ads that score low, nothing worse. Claude Code ("expand my search
+keywords") and `profile/config.json` can still change them by hand. Each setting is checked on its own before it is
+written: a value *The other door* refuses is explained in a sentence under its field, stays in the field and is not
+written, and your other settings are saved as usual.
 
 **Photo** (in About you): where CVs in your city's country may carry one (Denmark, France, Hungary and Sweden:
-optional), "Choose a photo…" opens the file dialog (a JPEG or PNG), and the picture is saved at once, not with Save:
+optional), "Choose a photo…" opens the file dialog (a JPEG or PNG), and the picture is saved at once:
 it is checked, stripped of its camera and location data and scaled to CV size, and the preview shows what is kept.
 A picture it refuses is explained under the field. "Remove" deletes it. The same question is on the setup
 review, held until you save. A photo is only put on the CVs for jobs in a country that allows one; the cover letter

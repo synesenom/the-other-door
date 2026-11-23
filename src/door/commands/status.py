@@ -11,6 +11,7 @@ import click
 from door.core.jobs import tracker as _tracker_mod
 from door.commands import _common as common
 from door.commands import _progress, _prompts
+from door.commands import keywords
 from door.core import lock, profile_loader, progress, recurring, usage, utils, workspace
 from door.core.jobs import runs
 from door.core.employers import companies
@@ -268,7 +269,7 @@ def _status_summary_core(jobs_dir: Path | None = None, profile_dir: Path | None 
         "rate", "low", "high"}}, "pass_rates_by_score": {"split", "near_min", "top", "reading"} | None, "standing": {"offer", "interviewing", "waiting", "rejected", "ghosted",
         "withdrawn"}, "no_answer": {"count", "days"}, "in_progress": {...} | None, "employers": {"followed", "unfollowable",
         "unresolved"}, "drive": {"connected", "account", "last_synced",
-        "last_error", "configured"}, "recurring_problem": bool, "plan": {...} | None, "cost": {...} | None}`` — every ledger status is present,
+        "last_error", "configured"}, "search_terms_outdated": bool (a saving `keywords` call started and did not finish), "recurring_problem": bool, "plan": {...} | None, "cost": {...} | None}`` — every ledger status is present,
         0 when unused; ``interviews`` is `tracker.interview_outcomes` (only the
         stages that occur); ``application`` is `tracker.application_outcomes`
         (did each sent application lead to an interview); ``pass_rates`` is
@@ -333,6 +334,7 @@ def _status_summary_core(jobs_dir: Path | None = None, profile_dir: Path | None 
         "no_answer": {"count": _tracker_mod.no_answer_count(app_tracker, job_ids=ongoing_ids), "days": _tracker_mod.NO_ANSWER_DAYS},
         "in_progress": _in_progress(jobs_dir),
         "employers": _employer_counts(profile_dir),
+        "search_terms_outdated": keywords.stale(profile_dir),
         "drive": _drive_block(),
         # the data folder holds jobs/: its logs/ (#593)
         "recurring_problem": recurring.check(jobs_dir.parent, records),

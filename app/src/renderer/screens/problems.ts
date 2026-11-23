@@ -12,7 +12,7 @@ export interface Problem {
   key: string
   text: string
   /** Where it is fixed: Settings, or Profile on the CV; `none` has nothing to fix (the plan's window), said, not a button. */
-  target: 'settings' | 'settings-report' | 'profile-cv' | 'profile' | 'none'
+  target: 'settings' | 'settings-report' | 'profile-cv' | 'profile-search' | 'profile' | 'none'
 }
 
 export interface ProblemInput {
@@ -21,6 +21,8 @@ export interface ProblemInput {
   cv: { exists: boolean } | null
   /** status_summary's `recurring_problem`; null while unknown (and on the phone). */
   recurring: boolean | null
+  /** status_summary's `search_terms_outdated`: the role targets changed and the new search terms could not be made; null while unknown (and on the phone). */
+  searchTermsStale?: boolean | null
   /** A sync found both this computer and Drive changed: which to keep is the user's. */
   driveConflict?: boolean
   /** status_summary's `plan`; null or missing while unknown. */
@@ -79,6 +81,7 @@ export function problems(input: ProblemInput): Problem[] {
   if (plan) out.push({ key: 'plan', text: plan, target: 'none' })
   // the example CV needs no line: a run refuses it and says why
   if (input.cv && !input.cv.exists) out.push({ key: 'cv', text: 'You have no CV yet', target: 'profile-cv' })
+  if (input.searchTermsStale) out.push({ key: 'search-terms', text: 'Search not updated to your role targets', target: 'profile-search' })
   if (input.drive?.connected && input.driveConflict) out.push({ key: 'drive', text: 'Google Drive needs a choice', target: 'settings' })
   else if (input.drive?.connected && input.drive.last_error) out.push({ key: 'drive', text: 'Google Drive sync failed', target: 'settings' })
   if (input.recurring) out.push({ key: 'report', text: 'Something keeps going wrong. Send a report', target: 'settings-report' })

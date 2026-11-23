@@ -808,3 +808,11 @@ def test_status_summary_shows_no_advice_when_the_bands_do_not_separate(cli_env):
 
     assert "below 90%" in text
     assert "consider raising it" not in " ".join(text.split())
+
+
+def test_status_summary_says_when_the_search_terms_are_out_of_date(cli_env):
+    from door.commands import status as status_cmd
+
+    assert status_cmd._status_summary_core(cli_env.jobs_dir, cli_env.profile_dir)["search_terms_outdated"] is False
+    (cli_env.profile_dir / ".search_terms_stale").write_text("")
+    assert status_cmd._status_summary_core(cli_env.jobs_dir, cli_env.profile_dir)["search_terms_outdated"] is True

@@ -115,21 +115,21 @@ function Field({ id, label, help, errors, children }: { id: string; label: strin
 }
 
 /** A text field with its label. */
-export function TextField({ label, help, errors, value, onChange, type = 'text', autoComplete, numeric }: { label: string; help?: string; errors?: string[]; value: string; onChange: (v: string) => void; type?: string; autoComplete?: string; numeric?: boolean }) {
+export function TextField({ label, help, errors, value, onChange, type = 'text', autoComplete, numeric, onBlur }: { label: string; help?: string; errors?: string[]; value: string; onChange: (v: string) => void; onBlur?: () => void; type?: string; autoComplete?: string; numeric?: boolean }) {
   const id = useId()
   return (
     <Field id={id} label={label} help={help} errors={errors}>
-      <input id={id} type={type} inputMode={numeric ? 'decimal' : undefined} className="onb-input" value={value} autoComplete={autoComplete} onChange={(e) => onChange(e.target.value)} />
+      <input id={id} type={type} inputMode={numeric ? 'decimal' : undefined} className="onb-input" value={value} autoComplete={autoComplete} onChange={(e) => onChange(e.target.value)} onBlur={onBlur} />
     </Field>
   )
 }
 
 /** Free text over several lines, in the user's own words (the preferences). */
-export function TextAreaField({ label, help, errors, value, onChange, rows = 3, placeholder }: { label: string; help?: string; errors?: string[]; value: string; onChange: (v: string) => void; rows?: number; placeholder?: string }) {
+export function TextAreaField({ label, help, errors, value, onChange, rows = 3, placeholder, onBlur }: { label: string; help?: string; errors?: string[]; value: string; onChange: (v: string) => void; onBlur?: () => void; rows?: number; placeholder?: string }) {
   const id = useId()
   return (
     <Field id={id} label={label} help={help} errors={errors}>
-      <textarea id={id} className="onb-input" rows={rows} placeholder={placeholder} value={value} onChange={(e) => onChange(e.target.value)} />
+      <textarea id={id} className="onb-input" rows={rows} placeholder={placeholder} value={value} onChange={(e) => onChange(e.target.value)} onBlur={onBlur} />
     </Field>
   )
 }
@@ -137,7 +137,7 @@ export function TextAreaField({ label, help, errors, value, onChange, rows = 3, 
 const OTHER = 'Other…'
 
 /** The city: a known one from the list, or any other typed in, which only the worldwide boards serve. */
-export function CityField({ label = 'City', help, errors, location, onChange, options }: { label?: string; help?: string; errors?: string[]; location: string; onChange: (v: string) => void; options: ProfileOptions }) {
+export function CityField({ label = 'City', help, errors, location, onChange, onBlur, options }: { label?: string; help?: string; errors?: string[]; location: string; onChange: (v: string) => void; onBlur?: () => void; options: ProfileOptions }) {
   const known = options.cities.find((c) => c.name.toLowerCase() === location.trim().toLowerCase())
   const [other, setOther] = useState(location !== '' && !known)
   const id = useId()
@@ -165,7 +165,7 @@ export function CityField({ label = 'City', help, errors, location, onChange, op
       </Field>
       {other && (
         <>
-          <TextField label="Your city" value={location} onChange={onChange} />
+          <TextField label="Your city" value={location} onChange={onChange} onBlur={onBlur} />
           {location.trim() !== '' && !known && (
             <p className="notice small">{named(`${location.trim()} isn't in a supported country yet, so only the worldwide job boards are searched. Adding a country and its job sites is described in docs/adding-a-site.md.`)}</p>
           )}

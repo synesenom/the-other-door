@@ -1,10 +1,10 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { ErrorBox, ErrorList } from './AppName'
 import { call, errorText } from '../api'
 import { photoPolicy, type ShowProfile } from './onboarding/reducer'
 import { FormSections, formSections } from './profile-form/FormSections'
 import { changedKeys, fieldErrors, formValues, toInitArgs, type FieldSpec, type FormValues } from './profile-form/form'
-import { CvEditor } from './CvEditor'
+import { CvEditor, SAVE_AFTER_MS } from './CvEditor'
 import { CvStyle, type CvStyles } from './CvStyle'
 import { PhotoField, photoHelp } from './PhotoField'
 import { Spinner } from './Spinner'
@@ -15,26 +15,35 @@ type Profile = ShowProfile & { options: ShowProfile['options'] & { fields?: Fiel
 
 /**
  * Profile: one page. Every key of profile/config.json in sections (the tuning keys left to config.json), then the CV
- * and the Stories. One Save writes what changed: the details through init_profile (which checks it all; an error is
- * said under its field), then the CV through the editor. The CV's file and pages, the photo and the stories are
- * each saved the moment they change, by their own controls.
+ * and the Stories. Nothing is saved with a button: each detail goes to init_profile (alone, which checks it; an error is
+ * said under its field) a second after typing stops, on leaving the field, at once for a choice, and when Profile is
+ * left or the window closes. The CV text, the CV file and pages, the photo and the stories save themselves too.
+ * On leaving, `onLeave(termsChanged, wrote)` tells the app whether the role targets or ad languages changed and whether anything was written, so it can
+ * propose the search terms again (Profile is gone by then: the app runs it).
  */
 /** Where Profile opens: a section scrolled into view, `cv` and `stories` among them. */
 export type ProfileStart = { section: string }
 
-export function Profile({ onSaved, onDraft, start }: { onSaved: () => void; onDraft: () => void; start?: ProfileStart }) {
+/** Typed, so saved after a pause; every other field is a choice, saved at once. */
+const TYPED = new Set(['string', 'path', 'integer', 'number'])
+const termsOf = (v: FormValues) => JSON.stringify([v['role_targets'], v['languages']])
+
+export function Profile({ onSaved, onDraft, onLeave, start }: { onSaved: () => void; onDraft: () => void; onLeave?: (termsChanged: boolean, wrote: boolean) => void; start?: ProfileStart }) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
-  const [saved, setSaved] = useState<FormValues>({})
   const [values, setValues] = useState<FormValues>({})
   const [errors, setErrors] = useState<{ byKey: Record<string, string[]>; general: string[] }>({ byKey: {}, general: [] })
-  const [saving, setSaving] = useState(false)
-  // after a save that changed the role targets or languages: Claude proposing the search terms again
-  const [refreshing, setRefreshing] = useState(false)
-  const [done, setDone] = useState(false)
-  // Counts Undo: the city field holds whether "Other…" is chosen, so Undo starts it afresh.
-  const [undone, setUndone] = useState(0)
-  // The CV photo is saved the moment it is chosen or removed (its own tools), not with Save: why one was refused, and a counter that renews the preview.
+  // What is on disk and what is shown, read by the writes (which run later than the render that asked for them)
+  const savedRef = useRef<FormValues>({})
+  const valuesRef = useRef<FormValues>({})
+  const specsRef = useRef<FieldSpec[]>([])
+  // the value of a key that init_profile refused, not sent again until it changes
+  const refused = useRef<Record<string, string>>({})
+  const queue = useRef<Promise<void>>(Promise.resolve())
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const wrote = useRef(false)
+  const termsAtStart = useRef<string | null>(null)
+  // The CV photo is saved the moment it is chosen or removed (its own tools): why one was refused, and a counter that renews the preview.
   const [photoBusy, setPhotoBusy] = useState(false)
   const [photoError, setPhotoError] = useState<string | null>(null)
   const [photoVersion, setPhotoVersion] = useState(0)
@@ -42,14 +51,19 @@ export function Profile({ onSaved, onDraft, start }: { onSaved: () => void; onDr
   const [cvSaves, setCvSaves] = useState(0)
 
   const specs = profile?.options.fields ?? []
+  specsRef.current = specs
   /** Read the profile; `keepEdits` (a change made elsewhere, e.g. titles added from the CV's market report) keeps what is typed and unsaved. */
   const load = async (keepEdits = false) => {
     try {
       const p = await call<Profile>('show_profile')
       setProfile(p)
       const v = formValues(p.config, p.options.fields ?? [])
-      setSaved(v)
-      setValues((typed) => (keepEdits ? { ...v, ...Object.fromEntries(changedKeys(saved, typed).map((k) => [k, typed[k]!])) } : v))
+      const typed = valuesRef.current
+      const kept = keepEdits ? { ...v, ...Object.fromEntries(changedKeys(savedRef.current, typed).map((k) => [k, typed[k]!])) } : v
+      savedRef.current = v
+      valuesRef.current = kept
+      if (termsAtStart.current === null) termsAtStart.current = termsOf(v)
+      setValues(kept)
     } catch (e) {
       setLoadError(errorText(e))
     }
@@ -72,39 +86,55 @@ export function Profile({ onSaved, onDraft, start }: { onSaved: () => void; onDr
     return () => watch.disconnect()
   }, [profile, startSection])
 
-  const set = (key: string, value: FormValues[string]) => {
-    setDone(false)
-    setValues((v) => ({ ...v, [key]: value }))
-  }
-  const changes = changedKeys(saved, values)
-  const save = async () => {
-    setSaving(true)
-    setErrors({ byKey: {}, general: [] })
-    // the search terms follow the role targets and the ad languages: Claude proposes them again, and they are saved
-    const refresh = changes.includes('role_targets') || changes.includes('languages')
-    try {
-      try {
-        await call('init_profile', toInitArgs(saved, values, specs))
-      } catch (e) {
-        setErrors(fieldErrors(errorText(e), specs))
-        return
-      }
-      if (refresh) {
-        setRefreshing(true)
+  /** Write what differs from the disk (only `key`, or every key that does), each key alone so one refusal holds back no other; one write at a time. */
+  const flush = (key?: string): Promise<void> => {
+    if (timer.current) clearTimeout(timer.current)
+    timer.current = null
+    const run = queue.current.then(async () => {
+      const keys = key ? [key] : changedKeys(savedRef.current, valuesRef.current)
+      for (const k of keys) {
+        const sent = valuesRef.current[k]
+        if (sent === undefined || JSON.stringify(sent) === JSON.stringify(savedRef.current[k])) continue
+        if (refused.current[k] === JSON.stringify(sent)) continue
+        const args = toInitArgs({ [k]: savedRef.current[k]! }, { [k]: sent }, specsRef.current)
         try {
-          await call('keywords', { role_targets: values['role_targets'], languages: values['languages'], save: true })
-        } catch {
-          // the terms saved before stay; the next change of role targets asks again
-        } finally {
-          setRefreshing(false)
+          if (Object.keys(args).length) await call('init_profile', args)
+          savedRef.current = { ...savedRef.current, [k]: sent }
+          delete refused.current[k]
+          wrote.current = true
+          setErrors((e) => ({ byKey: { ...e.byKey, [k]: [] }, general: [] }))
+        } catch (e) {
+          refused.current[k] = JSON.stringify(sent)
+          const found = fieldErrors(errorText(e), specsRef.current)
+          setErrors((prev) => ({ byKey: { ...prev.byKey, [k]: [], ...found.byKey }, general: found.general }))
         }
       }
-      await load()
-      setDone(true)
-      onSaved()
-    } finally {
-      setSaving(false)
+    })
+    queue.current = run
+    return run
+  }
+  const flushRef = useRef(flush)
+  flushRef.current = flush
+  const onLeaveRef = useRef(onLeave)
+  onLeaveRef.current = onLeave
+  // what is still waiting is written when Profile is left, or when the window closes (the app waits for it)
+  useEffect(() => {
+    const unregister = window.door.onBeforeClose(() => flushRef.current())
+    return () => {
+      unregister()
+      void flushRef.current().then(() => {
+        onLeaveRef.current?.(termsAtStart.current !== null && termsOf(savedRef.current) !== termsAtStart.current, wrote.current)
+      })
     }
+  }, [])
+
+  const set = (key: string, value: FormValues[string]) => {
+    valuesRef.current = { ...valuesRef.current, [key]: value }
+    setValues(valuesRef.current)
+    if (TYPED.has(specs.find((s) => s.key === key)?.type ?? '')) {
+      if (timer.current) clearTimeout(timer.current)
+      timer.current = setTimeout(() => void flush(), SAVE_AFTER_MS)
+    } else void flush(key)
   }
 
   const choosePhoto = async () => {
@@ -191,30 +221,9 @@ export function Profile({ onSaved, onDraft, start }: { onSaved: () => void; onDr
         set={set}
         errors={errors.byKey}
         idPrefix="profile"
-        undone={undone}
+        onBlur={() => void flush()}
         photo={photoField(profile)}
       />
-      {/* the details' bar: with the details only, and only while they have unsaved changes (the CV, the photo and the stories save themselves) */}
-      {(changes.length > 0 || saving || done) && (
-        <div className="profile-save">
-          <button type="button" className="quiet" disabled={changes.length === 0 || saving} onClick={() => {
-              setValues(saved)
-              setUndone((n) => n + 1)
-            }}>
-            Undo changes
-          </button>
-          <button type="button" className="primary" disabled={changes.length === 0 || saving} onClick={() => void save()}>
-            Save
-          </button>
-          {saving ? (
-            <Spinner message={refreshing ? 'Updating what we search for (up to two minutes)…' : 'Saving…'} />
-          ) : changes.length > 0 ? (
-            <p className="small muted">{changes.length === 1 ? '1 unsaved change' : `${changes.length} unsaved changes`}</p>
-          ) : (
-            <p className="small">Saved.</p>
-          )}
-        </div>
-      )}
     </div>
   )
 

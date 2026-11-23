@@ -78,6 +78,8 @@ export interface StatusSummary {
   drive?: { connected: boolean; account: string | null; last_synced: string | null; last_error: string | null; configured?: boolean }
   /** Something keeps going wrong since the last problem report (a site, scoring, the server, a tool): no details. */
   recurring_problem?: boolean
+  /** The role targets changed and the search terms could not be made again (a saving `keywords` call did not finish). */
+  search_terms_outdated?: boolean
   /** What the last days' Claude calls cost at API prices (`usage.cost`); null before any call was weighed. */
   cost?: CostBlock | null
   /** The Claude plan's window and the room left (`usage.room`); null before any reading. */
