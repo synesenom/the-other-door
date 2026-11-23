@@ -103,17 +103,24 @@ export function Applications({
 
   const refresh = useCallback(() => setTick((t) => t + 1), [])
 
+  /** Opens one job on its own page. `keep`: it stays open though it leaves the list; `fromBoard`: Ready to send
+   * opened straight from a Prepared card, whose back link returns to the board. */
+  const select = (id: string, to: PaneView, { doc, fromBoard = false, keep }: { doc?: Document; fromBoard?: boolean; keep: boolean }) => {
+    opened.current = keep ? id : null
+    setSelected(id)
+    setNotice(null)
+    setView(to)
+    setInitialDoc(doc)
+    setFromBoard(fromBoard)
+    setPushed(true)
+  }
+
   // A clicked notification names this job: select it, on the view it asked for, though the list may not hold it.
   useEffect(() => {
     if (!opening) return
     const { target } = opening
-    opened.current = target.jobId
-    setSelected(target.jobId)
-    setNotice(null)
-    setView(target.screen === 'materials' ? 'materials' : 'posting')
-    setInitialDoc(target.screen === 'materials' ? target.document : undefined)
-    setFromBoard(false)
-    setPushed(true)
+    if (target.screen === 'materials') select(target.jobId, 'materials', { doc: target.document, keep: true })
+    else select(target.jobId, 'posting', { keep: true })
     refresh()
     onOpened?.()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -196,16 +203,10 @@ export function Applications({
     )
 
   // A Prepared card goes straight to its application; the other columns open the posting.
+  // Preparing moves a job out of the list once it is sent: a prepared one stays open while on screen
   const open = (m: Match) => {
     const prepared = m.status === 'prepared'
-    setSelected(m.id)
-    setView(prepared ? 'materials' : 'posting')
-    setInitialDoc(undefined)
-    setFromBoard(prepared)
-    setNotice(null)
-    // Preparing moves a job out of the list once it is sent: it stays open while on screen
-    opened.current = prepared ? m.id : null
-    setPushed(true)
+    select(m.id, prepared ? 'materials' : 'posting', { fromBoard: prepared, keep: prepared })
   }
   const columns = boardColumns(rows ?? [], closed)
   const interviewing = columns[2]!.rows.length
@@ -261,13 +262,8 @@ export function Applications({
         <ImportDialog
           onClose={() => setImporting(false)}
           onOpen={(id) => {
-            opened.current = id
             setImporting(false)
-            setNotice(null)
-            setSelected(id)
-            setView('posting')
-            setFromBoard(false)
-            setPushed(true)
+            select(id, 'posting', { keep: true })
             refresh()
           }}
         />
