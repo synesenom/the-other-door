@@ -603,10 +603,10 @@ describe('App, the first-launch gate', () => {
     const info = actions['info']
     info.mockResolvedValue({ environment: 'production', remote: true })
     render(<App />)
-    const foot = await screen.findByRole('group', { name: 'Needs you' })
-    expect(within(foot).getByText('You have no CV yet')).toBeInTheDocument()
-    expect(within(foot).queryByRole('button')).toBeNull()
-    expect(within(foot).queryByText(/LinkedIn/)).toBeNull()
+    const needs = await screen.findByRole('group', { name: 'Needs you' })
+    expect(within(needs).getByText('You have no CV yet')).toBeInTheDocument()
+    expect(within(needs).queryByRole('button')).toBeNull()
+    expect(within(needs).queryByText(/LinkedIn/)).toBeNull()
     await userEvent.click(screen.getByRole('button', { name: 'Settings' }))
     await screen.findByRole('heading', { name: 'Settings', level: 1 })
     expect(call.mock.calls.map((c) => c[0])).not.toContain('doctor')
@@ -651,7 +651,7 @@ describe('App, the first-launch gate', () => {
     await waitFor(() => expect(document.title).toBe('The other door (staging)'))
   })
 
-  describe('the lines that need you, at the sidebar\'s foot', () => {
+  describe('the lines that need you, under the sidebar\'s menu', () => {
     const lines = () => within(screen.getByRole('complementary'))
     const sidebar = async () => within(await screen.findByRole('complementary'))
 

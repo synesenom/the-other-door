@@ -657,7 +657,7 @@ def run_checks(
     return {
         "ok": not any(c["status"] == "missing" for c in checks),
         "home": str(workspace.HOME),
-        # What the upgrade of the data folders found (#56): the app puts a line at the sidebar's foot for a refusal.
+        # What the upgrade of the data folders found (#56): the app puts a line under the sidebar's menu for a refusal.
         "data": data or {"state": "ok", "message": ""},
         "checks": checks,
         "last_run": last_run(jobs_dir),

@@ -3,7 +3,7 @@
 A failure the next run retries is said nowhere (docs/design/README.md, principle 8): it goes to the
 problem log (`door.core.problem_log`). The same failure again and again is something the user can act on,
 by sending a problem report (`data report`), so `status_summary` says it as ``recurring_problem`` and the
-app puts one line at the sidebar's foot. It is read from what is on disk: the run records and the log.
+app puts one line under the sidebar's menu. It is read from what is on disk: the run records and the log.
 
 Only what happened after the last saved report counts (`_report_core` stamps `<data folder>/logs/reported_at`),
 and each condition clears by itself once the problem stops. The thresholds are the constants below.

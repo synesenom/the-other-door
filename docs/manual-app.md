@@ -537,8 +537,8 @@ fine, an empty ring when not) and what you can do about it.
 which *The other door* can still read for employers to follow, if you choose to. Only the ones serving your city
 are listed, each with what its terms say. Off until you tick one; a tick is saved at once.
 
-When Claude is not signed in or not installed, or a Drive sync failed or needs a choice, a short line at the foot of
-the sidebar says so and opens Settings (your CV's line opens Profile). Nothing is said when all is
+When Claude is not signed in or not installed, or a Drive sync failed or needs a choice, a short line under the sidebar's menu
+says so and opens Settings (your CV's line opens Profile). Nothing is said when all is
 well or when Drive is simply off. A site a run could not read is not said: the next run reads it again (its error is in the run record).
 
 When your Claude plan's window is nearly full, a line says so too, with when it resets: **"Claude's usage limit is

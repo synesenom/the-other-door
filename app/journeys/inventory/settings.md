@@ -83,7 +83,7 @@ Sources I read in full: `app/src/renderer/screens/{Settings,Connections,SignIn,D
 
 ### Narrow window (< 900 px; Electron `minWidth` is 720, so 720–899 px is testable)
 - There is no "Sections" nav on Settings at any width. — ✓ Settings has no side nav and no sidebar lines; Matches says Claude is not signed in on top
-- The sidebar becomes a bottom tab bar and its foot is hidden: no "Find new jobs" button and **no problem lines**. Problem lines only appear on top of **Matches** (`.narrow-top`), never on Settings. — ✓ Settings has no side nav and no sidebar lines; Matches says Claude is not signed in on top
+- The sidebar becomes a bottom tab bar and its foot and the block under its menu are hidden: no "Find new jobs" button and **no problem lines**. Problem lines only appear on top of **Matches** (`.narrow-top`), never on Settings. — ✓ Settings has no side nav and no sidebar lines; Matches says Claude is not signed in on top
 - `h2.display-s` and `h1.display-l` use the phone font sizes. Nothing else in Settings changes; Settings has no pushed or back state. — ✓ Settings has no side nav and no sidebar lines; Matches says Claude is not signed in on top
 
 ---
