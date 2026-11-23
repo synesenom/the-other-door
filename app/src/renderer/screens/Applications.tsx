@@ -158,7 +158,6 @@ export function Applications({
   const backToBoard = () => {
     setPushed(false)
     setView('posting')
-    setFromBoard(false)
     opened.current = null
     refresh()
   }
