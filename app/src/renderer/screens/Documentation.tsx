@@ -30,14 +30,11 @@ export function DocDialog({ doc, onClose }: { doc: Doc; onClose: () => void }) {
   )
 }
 
-/** Settings' Documentation, between Your data and Report a problem: the documents, one quiet link each. */
+/** The documents, one quiet link each, in Settings' Help. */
 export function Documentation() {
   const [open, setOpen] = useState<Doc | null>(null)
   return (
-    <section className="part" aria-labelledby="settings-docs">
-      <h2 className="display-s" id="settings-docs">
-        Documentation
-      </h2>
+    <>
       <ul className="doc-list">
         {DOCS.map((doc) => (
           <li key={doc.title}>
@@ -48,6 +45,6 @@ export function Documentation() {
         ))}
       </ul>
       {open && <DocDialog doc={open} onClose={() => setOpen(null)} />}
-    </section>
+    </>
   )
 }

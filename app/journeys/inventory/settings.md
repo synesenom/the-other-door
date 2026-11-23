@@ -1,6 +1,6 @@
 # Settings: inventory of interactions and branches (desktop app, real Python server)
 
-Sources I read in full: `app/src/renderer/screens/{Settings,Connections,SignIn,DataMoves,PhoneSetup,Documentation,Switch,Dialog,Spinner,AppName,PageSections}.tsx`, `connection-rows.ts`, `problems.ts`, `renderer/theme.ts`, `renderer/api.ts`, the Settings-related parts of `renderer/App.tsx`, `main/{claude-login,archive-files,ipc,index}.ts`, `preload/index.ts`, `main/door-server.ts` (env, error translation), plus the Python side: `commands/setup.py`, `core/doctor.py`, `commands/archive.py`, `core/sync/archive.py`, `core/sync/drive.py` (connect/state/errors), `core/sync/sync.py`, `core/phone/phone.py`, `core/phone/pairing.py` (in part), `core/scraper_fix.py` (refusals/outcomes), `core/downloads/installers.py` (`plan_install`, `find_claude`), and the tool wrappers in `mcp_server.py`. I also used the unit test names and the e2e tests of the time (`e2e/settings.e2e.ts`, `e2e/data.e2e.ts`, since folded into the journeys) and `test/home-fixture.ts`.
+Sources I read in full: `app/src/renderer/screens/{Settings,Connections,SignIn,DataMoves,PhoneSetup,Documentation,Switch,Dialog,Spinner,AppName,ReportProblem}.tsx`, `connection-rows.ts`, `problems.ts`, `renderer/theme.ts`, `renderer/api.ts`, the Settings-related parts of `renderer/App.tsx`, `main/{claude-login,archive-files,ipc,index}.ts`, `preload/index.ts`, `main/door-server.ts` (env, error translation), plus the Python side: `commands/setup.py`, `core/doctor.py`, `commands/archive.py`, `core/sync/archive.py`, `core/sync/drive.py` (connect/state/errors), `core/sync/sync.py`, `core/phone/phone.py`, `core/phone/pairing.py` (in part), `core/scraper_fix.py` (refusals/outcomes), `core/downloads/installers.py` (`plan_install`, `find_claude`), and the tool wrappers in `mcp_server.py`. I also used the unit test names and the e2e tests of the time (`e2e/settings.e2e.ts`, `e2e/data.e2e.ts`, since folded into the journeys) and `test/home-fixture.ts`.
 
 ## 0. Things that hold for the whole area
 
@@ -57,11 +57,8 @@ Sources I read in full: `app/src/renderer/screens/{Settings,Connections,SignIn,D
 - `region "Connections"` (h2 `#settings-connections`) containing `list "Connections"`. — ✓ Settings shows who is signed in and the plan, with Use another account
 - `region "Your data"` (h2 `#settings-data`, §5). — unit: `app/src/renderer/screens/Settings.test.tsx`
 - `region "Appearance"` (h2): a `group` (fieldset) named by the heading and three radios named **"Same as the system"**, **"Light"**, **"Dark"** (`name="theme"`). — unit: `app/src/renderer/theme.test.ts`
-- `region "Documentation"` (h2 `#settings-docs`). — unit: `app/src/renderer/screens/Documentation.test.tsx`
-- `region "Report a problem"` (h2 `#settings-report`, §5b), last — ✓ Save logs… saves an archive with what went wrong, emails and the home folder masked, nothing of the profile
-- A side nav `navigation "Sections"` with links **Connections**, **Your data**, **Appearance**, **Documentation**, **Report a problem**. — unit: `app/src/renderer/screens/Settings.test.tsx`
-  - Clicking a link scrolls to that section and marks it `aria-current="location"`. — unit: `app/src/renderer/screens/Settings.test.tsx`
-  - The current link also follows scrolling of `.main`. — not tested: scrolling by wheel is not driven; the click case is
+- `region "Help"` (h2 `#settings-help`), last: the version line "Version X" (only when updates are on, with Download or "Restart to update to X" when a newer one is there), the documents (a link-styled button each, "Legal disclaimer", opened in a dialog) and the report: Save logs… (§5b). Not on the phone. — ✓ Save logs… saves an archive with what went wrong, emails and the home folder masked, nothing of the profile; unit: `app/src/renderer/screens/Settings.test.tsx`, `Documentation.test.tsx`
+- No side nav: the page is about one screen tall (only Profile keeps its list of parts). — unit: `app/src/renderer/screens/Settings.test.tsx`
 
 ### The data folder (Your data, `DataMoves.tsx`)
 - One muted `.settings-path` paragraph: "Your profile and jobs are stored in <home>. Export saves them in one file, to move to another computer or keep a copy; Import replaces them with the ones in such a file." (the first sentence only when `info.home` is set). — ✓ Your data says where the data folder is; its path shows it
@@ -85,7 +82,7 @@ Sources I read in full: `app/src/renderer/screens/{Settings,Connections,SignIn,D
   - "The phone finds, prepares and keeps your applications. Setting up, your profile and CV, connections and moving your data are done on the computer where it is installed." — not tested: phone build
 
 ### Narrow window (< 900 px; Electron `minWidth` is 720, so 720–899 px is testable)
-- `.page-aside` (the "Sections" nav) is `display:none`, so its links cannot be clicked. — ✓ Settings has no side nav and no sidebar lines; Matches says Claude is not signed in on top
+- There is no "Sections" nav on Settings at any width. — ✓ Settings has no side nav and no sidebar lines; Matches says Claude is not signed in on top
 - The sidebar becomes a bottom tab bar and its foot is hidden: no "Find new jobs" button and **no problem lines**. Problem lines only appear on top of **Matches** (`.narrow-top`), never on Settings. — ✓ Settings has no side nav and no sidebar lines; Matches says Claude is not signed in on top
 - `h2.display-s` and `h1.display-l` use the phone font sizes. Nothing else in Settings changes; Settings has no pushed or back state. — ✓ Settings has no side nav and no sidebar lines; Matches says Claude is not signed in on top
 
@@ -351,7 +348,7 @@ Outcome by what claude does:
   - **Saved** → **"Saved as <basename>. Send it to enys.mones@gmail.com."** — ✓ Save logs… saves an archive with what went wrong, emails and the home folder masked, nothing of the profile
 - The archive (`src/door/commands/report.py`): `README.txt`, `about.json` (version, OS, Python), `doctor.json` (each check's name, status, required, detail), `logs/door.log*`, `runs/<last 5>.json` (counts, outcomes, errors; no titles, companies or folders). Emails become `<email>`, the data folder `<data folder>`, the home folder `~`. Nothing from `profile/`, no postings, no ledger. — ✓ Save logs… saves an archive with what went wrong, emails and the home folder masked, nothing of the profile (a doctor fault naming the home and the email is in the log, masked; no cv.md, no persona name)
 - The log has the app's own lines too (`app/src/main/problem-log.ts`): a server that died (with its stderr), a call that timed out, what the window was refused. — ✓ a server that died is in the report, from the app's side
-- Opened from the sidebar's **"Something keeps going wrong. Send a report"** (jobs.md §0): Settings with this part scrolled into view. A saved report stamps `logs/reported_at` (`recurring.stamp_report`), the app reads `status_summary` again and the line goes. — ✓ a board that failed in each of the last three runs: the line opens Report a problem, and a saved report takes it away (report.journey.ts)
+- Opened from the sidebar's **"Something keeps going wrong. Send a report"** (jobs.md §0): Settings with this part scrolled into view. A saved report stamps `logs/reported_at` (`recurring.stamp_report`), the app reads `status_summary` again and the line goes. — ✓ a board that failed in each of the last three runs: the line opens the report in Help, and a saved report takes it away (report.journey.ts)
 - Not on the phone (`reportProblem` is `machineOnly` in the web bridge; `report_problem` is not in `serve_policy.PHONE_TOOLS`). — not tested here: Settings.test.tsx checks the phone has no button
 
 ---

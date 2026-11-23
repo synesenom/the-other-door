@@ -52,7 +52,7 @@ test('Claude usage: nothing before the first search, then what the search cost',
   const finding = usage.locator('.usage-activity').filter({ hasText: 'Finding jobs' })
   await expect(finding.locator('h3')).toHaveText('Finding jobs · 3 postings scored')
   await expect(finding.locator('.usage-row').first()).toContainText('$0.03')
-  await expect(finding.getByRole('listitem')).toHaveText(['Scoring postings$0.02', 'Translating job titles$0.01'])
+  await expect(finding.getByRole('listitem')).toHaveCount(0) // no row per feature: lines of money the user does not pay
   await expect(usage.locator('.usage-activity').filter({ hasText: 'Everything else' }).locator('h3')).toHaveText('Everything else · 2 other requests')
 })
 

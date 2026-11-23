@@ -61,7 +61,7 @@ change a colour or a size there, not in a component.
    themselves (sign in again, retry, choose a file). A failure the app retries by itself, or one the
    user can do nothing about, is said nowhere: a site a run could not read, an ad it could not score
    (#478). The run record and the logs keep it. The same failure again and again is something the
-   user can act on (send a report, #593): one line, "Something keeps going wrong. Send a report". A limit that only time lifts (the Claude plan's window) is said, as a line that opens nothing. A read that is the whole of what the user opened (a destination, or one of Profile's parts: its details, the CV, the stories) says its failure in the `error` box in that part's place; a read-only section of a page that stands without it (Analytics' Market) says nothing and is left out, with its entry beside the sections.
+   user can act on (send a report, #593): one line, "Something keeps going wrong. Send a report". A limit that only time lifts (the Claude plan's window) is said, as a line that opens nothing. A read that is the whole of what the user opened (a destination, or one of Profile's parts: its details, the CV, the stories) says its failure in the `error` box in that part's place; a read-only section of a page that stands without it (Analytics' Market) says nothing and is left out.
 
 ## Colour
 
@@ -121,7 +121,7 @@ the same thing by its shape, and `warning` a triangle with a ! beside words that
 
 ## Space and shape
 
-- Spacing steps: 4, 8, 12, 16, 20, 24, 32, 40, 48, 64 px, and 6 px (`size.gap-s`) between a thing and what belongs to it: a mark and its words, pills in a row. Corners: `radius-s`, `radius-m` and `radius-l` are all 2 px, and `radius-pill` is for anything rounded at its ends (bars, the logo's dash, the switch). Every screen's title sits 40 px from the top (`size.screen-top`) and 40 px from the sidebar (`size.screen-gutter`), on every screen: Finding jobs is a 620 px column on that same edge, not centred; Profile and Settings fill the width up to a fixed list of their sections on the right (the onboarding's Check your answers has the same list) (220 px with its gutter, level with the title; the part in view in ink and underlined), left out below the sidebar breakpoint. Screen padding 40–48 px (20 px on a phone; `tokens.json` `phone` holds the phone sizes).
+- Spacing steps: 4, 8, 12, 16, 20, 24, 32, 40, 48, 64 px, and 6 px (`size.gap-s`) between a thing and what belongs to it: a mark and its words, pills in a row. Corners: `radius-s`, `radius-m` and `radius-l` are all 2 px, and `radius-pill` is for anything rounded at its ends (bars, the logo's dash, the switch). Every screen's title sits 40 px from the top (`size.screen-top`) and 40 px from the sidebar (`size.screen-gutter`), on every screen: Finding jobs is a 620 px column on that same edge, not centred; Profile fills the width up to a fixed list of its sections on the right (a list is only for a page taller than about two screens; Settings and Analytics have none) (the onboarding's Check your answers has the same list) (220 px with its gutter, level with the title; the part in view in ink and underlined), left out below the sidebar breakpoint. Screen padding 40–48 px (20 px on a phone; `tokens.json` `phone` holds the phone sizes).
 - Controls (fields, the switch) are 36 px tall on the desktop; buttons and filters are 32 px (`button-height`). The phone keeps its own larger sizes.
 - Buttons answer the pointer with a 120 ms colour change, one rule per kind: the black button turns `ink-muted` (never blue), a text button is underlined (3 px offset), a quiet one and a filter word and a sidebar item turn ink; pressed, they are ink; a disabled button does not react, and a touch screen has no hover at all.
 - Reading width: the posting pane fills its column, so a long ad uses the window it is given; the score reason keeps a 60-character measure. (`size.content-max-width`, 760 px, is no longer applied to the posting.)
@@ -143,7 +143,7 @@ before the title of a posting that is new since the last review (instead of a �
 - **One mark for "this opens something"**: an action that opens a dialog ends in "…" (Status…, Add a job…, Disconnect…); an action that leaves the app ends in an arrow (`.go`: Open in browser →, Download →, the sign-in page); an action done in place has neither. "Finding jobs…" is a progress word, not a dialog.
 - **Dialog or in place**: a dialog for a short task about one thing that leaves the page as it was: a few fields and one answer (Add a job, Edit story, Write a story, Add a page), a confirmation before what cannot be undone, a document to read and close. Its title names the action; Esc or Cancel leaves; the main action is last. Only a confirmation opens over a dialog. In place for what is long, open-ended or worked alongside: many items to review (the drafted stories), a result that stays (the learning plan), a run (Finding jobs), a tool beside what it changes (Revise beside the pages).
 - **Inline link**: `accent` text, underlined, the size and weight of the sentence it is in (the Markdown cheatsheet in the Master CV's "Written in Markdown", "Draft it from your CV file or pages" in a note, a salary's source). Only a word inside a sentence that opens or shows something; an action on its own line is a button.
-- **Filter** (`.pill`): words in ink; the chosen one underlined, 2 px at a 6 px offset. A sidebar item and an entry of the page list beside Profile and Settings are chosen the same way. One mark for what is chosen: an underline, or an ink ring on a CV style's tile.
+- **Filter** (`.pill`): words in ink; the chosen one underlined, 2 px at a 6 px offset. A sidebar item and an entry of the page list beside Profile are chosen the same way. One mark for what is chosen: an underline, or an ink ring on a CV style's tile.
 - **Chip**: a `page` fill and no outline, a 2 px corner, small text (keywords). A posting's skills are not chips: each is a line with
   a mark, the green check for one that fits and the red cross for a gap, as Finding jobs marks its sources; the fits and
   the gaps side by side, each in two columns of its own, with no heading (the marks say which is which).
@@ -239,8 +239,7 @@ wide buttons with their keys: Not for me (X), Later (Space), Prepare (P).
 
 ![Review one at a time, dark](screens/review-dark.png)
 
-**Analytics** (no mockup yet): the reading-width column of Settings with its list of parts on the
-right, nothing in it changes anything. Applications first (#66, #87): the interview rate. It leads
+**Analytics** (no mockup yet): the reading-width column of Settings, without a list of its parts, nothing in it changes anything by itself: a suggestion carries its action as a blue text button to where the change is made (raising "Match fit" opens Profile there), or, under the Market's list, a secondary button when a skill is crossed (it opens the CV). Applications first (#66, #87): the interview rate. It leads
 like Claude usage, with the interview rate in `display-s` (the applications with an outcome, an interview, a
 rejection or no reply, that led to an interview) and one `small` line saying so with "3 of 5" (no range); before any outcome, one muted line instead (no reply: marked ghosted, or no change for 45 days). Under the rate (#90), when the server sends `pass_rates_by_score`, two `small` lines (best-scored matches, matches near your "Match fit" setting, each "5 of 6 led to an interview", no range) and, only when the server's reading says the near-minimum half led to an interview clearly less often, a third saying to consider raising "Match fit".
 Nothing else: where each application stands is the Applications board's columns and the matches
@@ -251,8 +250,8 @@ search and one application cost in `small` muted, then one 8 px stacked bar for 
 (always full, so it shows where the money went and never reads as a quota filling up), a part per
 activity in its tone (`accent`, `ink-muted`, `border`: largest first). Under it each activity as a
 row: a 10 px dot in its part's tone, its name, what it did after it in muted (" · 184 postings
-scored", as Finding jobs puts a site's jobs after its name), its dollars right in tabular figures,
-and its features as quieter `small` rows under the name when there are several.
+scored", as Finding jobs puts a site's jobs after its name) and its dollars right in tabular figures:
+three rows, no row per feature (lines of money the user does not pay).
 Not the plan's 5-hour window: that is live, and this screen is about the days gone by. Before any call, one muted line. Not on the phone.
 
 **Onboarding** (no mockup yet): the first-launch wizard has no sidebar. One 620 px column,

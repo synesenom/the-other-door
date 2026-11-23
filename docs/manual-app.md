@@ -59,7 +59,7 @@ and signs you in to your Claude plan.
   first: `sudo apt install libfuse2t64`) or the `.deb` (`sudo apt install ./the-other-door-….deb`).
 
 **Updating**: an installed app looks for a newer published version when it starts and once a day while
-it is open; there is nothing to press. Settings → Version shows the version you have. The Windows installer, the AppImage and a signed macOS build download it in the
+it is open; there is nothing to press. Settings → Help shows the version you have. The Windows installer, the AppImage and a signed macOS build download it in the
 background and install it when you quit; Settings shows "Downloading X", then a "Restart to update to X" button
 that installs it at once. When the app installs an update itself, a running phone server is stopped first; one on Tailscale starts
 again with the new version, a quick tunnel needs setting up again with a new code. Your data stays where it is. A macOS build that is not signed, and the `.deb`, cannot
@@ -67,7 +67,7 @@ replace themselves (a phone server the older version left is stopped at the next
 you install the download over this one. The check sends no information about you; offline, or when the release
 cannot be reached, it shows nothing and writes one line to the problem log. The unsigned Windows installer may
 show SmartScreen's warning again on an update. Only a published release counts, not a draft or a pre-release. A
-checkout, staging and the sandbox never check, and then Settings has no Version part. The app and the pipeline inside it are always one version: an app that finds another says so
+checkout, staging and the sandbox never check, and then Settings' Help shows no version. The app and the pipeline inside it are always one version: an app that finds another says so
 ("Install the app again").
 
 **Your data** (profile, jobs, applications, backups) lives in your user folder, never inside the
@@ -506,8 +506,8 @@ Stories are not on the phone.
 ## Settings
 
 How *The other door* works for you (who you are and what you want is in [Profile](#profile)). One column of
-sections: **Connections**, **Where to find employers**, **Your data**, **Appearance**, **Version** (installed builds), **Documentation** (with the
-legal disclaimer) and, last, **Report a problem**. The same list as Profile's sits on the right.
+sections: **Connections**, **Where to find employers**, **Your data**, **Appearance** and, last, **Help**: the version you have (installed builds), the documents (the
+legal disclaimer) and **Save logs…** to report a problem. A page this short has no list of its parts.
 Opening it checks Claude's sign-in again; nothing else runs until you click.
 
 **Connections** lists what *The other door* is connected to, each with its state in words (a ✓ when it is
@@ -547,9 +547,9 @@ for three or fewer (an estimate). It opens nothing, and goes by itself when the 
 when the app opens, after a run and after a Prepare, never in between. The phone shows it too, as plain text.
 
 Three more lines are about your data folder, when this version cannot open it. Every screen then refuses to work with it
-(nothing is changed), and only Settings and Report a problem still answer:
+(nothing is changed), and only Settings (with its Help part) still answers:
 
-- **"Your data could not be upgraded. Send a report"** (opens Report a problem): an upgrade step failed and put your
+- **"Your data could not be upgraded. Send a report"** (opens Settings at Help's report button): an upgrade step failed and put your
   data back as it was. Save the logs and send them; the next start tries again.
 - **"Install the latest version of The other door"** (opens Settings): the data was written by a newer version, for
   instance after you used a newer version on this computer or on Google Drive. Install the latest version.
@@ -574,10 +574,10 @@ export still refuses it and writes nothing.
 **Appearance** picks the theme: the same as the system (the default), light or dark. The choice
 is this computer's.
 
-**Version** shows the version you have and, once the app has found a newer one, what comes next: "Downloading X",
+**Help** shows the version you have and, once the app has found a newer one, what comes next: "Downloading X",
 "Restart to update to X" or a Download button (see Updating above).
 
-**Report a problem** is for when something does not work and the screens do not say why (they show
+Its report, last, is for when something does not work and the screens do not say why (they show
 an error only when it stops a mistake or you can fix it). "Save logs…" asks where to save one
 file (`door-report-<date>.zip`; it never replaces a file that is there) and then says to send it to
 enys.mones@gmail.com. It holds no personal data: what went wrong
@@ -592,13 +592,13 @@ A failure that happens once is said nowhere: the next run tries again. When the 
 going wrong (a job site failed in each of its last three runs, ads could not be scored in each of
 the last two runs, *The other door*'s server stopped or would not start, or the same action failed
 three times in a day), a line at the foot of the sidebar says **"Something keeps going wrong. Send a
-report"**. It opens Settings at Report a problem. Once you save a report the
+report"**. It opens Settings at Help, at its report button. Once you save a report the
 line goes (only what goes wrong after it counts again), and it also goes by itself when the problem
 stops. The phone does not show it.
 
 ## Analytics
 
-How it is going, as figures: nothing here changes anything. Not on the phone.
+How it is going, as figures: nothing here changes anything, but a suggestion carries a button to the place where the change is made. Not on the phone.
 
 **Applications** is your interview rate: how many of your applications with an outcome (an
 interview, a rejection or no reply) led to an interview (offers count, since they passed one), with
@@ -608,21 +608,20 @@ marked it ghosted (the Applications board offers to); once you record what happe
 an outcome it says only that the rate shows here then. Under it, once at least 5 applications in each
 half have an outcome, the same rate for the better-scored half of your sent applications and for the
 half near your "Match fit" setting (split near the median score), and a line suggesting you raise that setting only when
-the near-minimum half led to an interview clearly less often. Where each application stands is on the
+the near-minimum half led to an interview clearly less often; its button, **Open "Match fit"**, opens Profile at that setting. Where each application stands is on the
 Applications board, and your matches are on Matches.
 
 **Claude usage** estimates what Claude's work in the last 7 days would cost at Claude's API prices.
 You don't pay it: your plan covers it, and the screen says so under the total. It shows the total,
 with about what one search and one prepared application cost under it, then each activity (finding
 jobs, preparing applications, everything else) with a bar for its share, what it did (postings
-scored, applications prepared, other requests) and, when there are several, what it was spent on
-(scoring postings, translating job titles, tailoring the CV and letter, …). Your plan is not
+scored, applications prepared, other requests). Your plan is not
 charged per call: this is what the same calls would cost on the API, a figure that is the same
 whatever your plan. Before the first search it says only that the figures show here after it.
 
 **Market** lists the eight skills the ads of the last 30 days ask for most, each with its share of the ads:
 a check when your CV has it, a cross when it does not, as on a job. It counts the ads once, when you open
-Analytics (new skill names may take one short Claude call on your plan), and writes no report.
+Analytics (new skill names may take one short Claude call on your plan), and writes no report. When a skill is crossed, **Add the missing skill to your CV** under the list opens your CV in Profile.
 
 ## On your phone
 

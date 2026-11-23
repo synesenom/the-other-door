@@ -35,7 +35,7 @@ test.describe('something that keeps going wrong', () => {
     await expect(page.getByText(LINE)).toHaveCount(0)
   })
 
-  test('a board that failed in each of the last three runs: the line opens Report a problem, and a saved report takes it away', async ({ page, world, os }) => {
+  test('a board that failed in each of the last three runs: the line opens the report in Help, and a saved report takes it away', async ({ page, world, os }) => {
     test.setTimeout(300_000)
     await ready(page)
     setBoard(world, 'jobindex', { fail: 'jobindex answered 503 Service Unavailable' })
@@ -48,7 +48,7 @@ test.describe('something that keeps going wrong', () => {
     await line(page).click()
     await expect(page.getByRole('heading', { name: 'Settings', level: 1 })).toBeVisible()
     await expect(page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Settings', exact: true })).toHaveAttribute('aria-current', 'page')
-    const report = region(page, 'Report a problem')
+    const report = region(page, 'Help')
     await expect(report).toBeInViewport()
     await expect(button(report, 'Save logs…')).toBeVisible()
     // the runs' end moves with how long they took: masked
