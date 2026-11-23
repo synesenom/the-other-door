@@ -52,6 +52,8 @@ same data as the other two when you point `DOOR_HOME` at it.
 
 ![The desktop app: Find new jobs plays the five steps, the new matches, a posting in full, Applications, a prepared CV and letter](docs/demo/app.gif)
 
+The pictures and manuals here follow `main`, which can be ahead of the [latest release](https://github.com/synesenom/the-other-door/releases/latest): the app you download may look a little different until the next release.
+
 ### Claude Code
 
 Open the repo in Claude Code and say `/onboard`:
