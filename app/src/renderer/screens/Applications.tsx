@@ -76,6 +76,8 @@ export function Applications({
   const [importing, setImporting] = useState(false)
   const [notice, setNotice] = useState<{ text: string; warning?: string } | null>(null)
   const opened = useRef<string | null>(null)
+  // Ready to send was opened straight from a Prepared card: its back link returns to the board, not to a posting
+  const [fromBoard, setFromBoard] = useState(false)
 
   useEffect(() => {
     let live = true
@@ -110,6 +112,7 @@ export function Applications({
     setNotice(null)
     setView(target.screen === 'materials' ? 'materials' : 'posting')
     setInitialDoc(target.screen === 'materials' ? target.document : undefined)
+    setFromBoard(false)
     setPushed(true)
     refresh()
     onOpened?.()
@@ -123,6 +126,7 @@ export function Applications({
   const changed = (result: SetStatusResult, title: string) => {
     setPushed(false)
     setView('posting')
+    setFromBoard(false)
     told(result, title)
   }
   // No answer for the tracker's days: record it as ghosted, dated today.
@@ -151,7 +155,23 @@ export function Applications({
     }
     setView(next)
   }
-  const posting = selected && <ReadingPane jobId={selected} view={view} onView={switchView} onChanged={changed} initialDoc={initialDoc} />
+  const backToBoard = () => {
+    setPushed(false)
+    setView('posting')
+    setFromBoard(false)
+    opened.current = null
+    refresh()
+  }
+  const posting = selected && (
+    <ReadingPane
+      jobId={selected}
+      view={view}
+      onView={switchView}
+      onChanged={changed}
+      initialDoc={initialDoc}
+      back={fromBoard ? { label: '← Applications', onBack: backToBoard } : undefined}
+    />
+  )
   const noticeLines = notice && (
     <>
       <p role="status" className="notice">
@@ -176,11 +196,16 @@ export function Applications({
       </div>
     )
 
-  const open = (id: string) => {
-    setSelected(id)
-    setView('posting')
+  // A Prepared card goes straight to its application; the other columns open the posting.
+  const open = (m: Match) => {
+    const prepared = m.status === 'prepared'
+    setSelected(m.id)
+    setView(prepared ? 'materials' : 'posting')
+    setInitialDoc(undefined)
+    setFromBoard(prepared)
     setNotice(null)
-    opened.current = null
+    // Preparing moves a job out of the list once it is sent: it stays open while on screen
+    opened.current = prepared ? m.id : null
     setPushed(true)
   }
   const columns = boardColumns(rows ?? [], closed)
@@ -226,7 +251,7 @@ export function Applications({
                 </div>
                 <ul className="board-cards">
                   {c.rows.map((m) => (
-                    <Card key={m.id} m={m} onOpen={() => open(m.id)} onGhost={() => markGhosted(m)} ghosting={ghostingId === m.id} />
+                    <Card key={m.id} m={m} onOpen={() => open(m)} onGhost={() => markGhosted(m)} ghosting={ghostingId === m.id} />
                   ))}
                 </ul>
               </section>
@@ -242,6 +267,7 @@ export function Applications({
             setNotice(null)
             setSelected(id)
             setView('posting')
+            setFromBoard(false)
             setPushed(true)
             refresh()
           }}

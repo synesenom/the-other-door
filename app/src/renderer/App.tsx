@@ -420,6 +420,12 @@ export function App({ start }: { start?: AppStart } = {}) {
             onStart={() => void startRun()}
             onStop={() => void window.door.invoke('stop-run')}
             onViewMatches={() => goToMatches(true)}
+            onOpenJob={(jobId) => {
+              openings.current += 1
+              setFinding(false)
+              setCurrent('Matches')
+              setOpening({ target: { screen: 'posting', jobId, inPlay: false }, n: openings.current })
+            }}
             discoveryUnchosen={sandbox || remote ? [] : (profile?.discovery_unchosen ?? [])}
             discoveryOff={sandbox || remote || !profile ? [] : discoveryOff(profile)}
             onChooseDiscovery={openRisky}

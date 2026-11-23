@@ -13,9 +13,13 @@ interface Props {
   jobId: string
   /** The back link: to the posting this was opened from. */
   onBack: () => void
+  /** The back link's words; "← Posting" when left out. */
+  backLabel?: string
+  /** Opened from the board, where the back link no longer passes the posting: a way to it (Status, Prepare again). */
+  onPosting?: () => void
   /** "I've applied" was recorded, on the job titled `title`. */
   onApplied: (result: SetStatusResult, title: string) => void
-  /** The document shown first (a clicked notification); the letter when left out. */
+  /** The document shown first (a clicked notification); else the one its first warning names, the CV when none. */
   initialDoc?: Document
 }
 
@@ -54,19 +58,17 @@ function unbackedLine(m: MaterialsData): string | null {
   return values.length ? `Not in your CV: ${values.join(', ')}. Check them before you send it.` : null
 }
 
-/** Shown when text of the CV runs off the page (`overflow`); the tailor was already asked once to trim it. */
-const overflowLine = (m: MaterialsData) =>
-  `Some text runs off the page in your CV. ${m.revisable ? 'Switch to the CV and ask for a shorter version.' : 'Prepare it again to fix it.'}`
 const overflows = (m: MaterialsData) => (m.readability ?? []).some((p) => p.file === 'cv' && p.kind === 'overflow')
 
 type Notice = { text: string } | null
 
-export function Materials({ jobId, onBack, onApplied, initialDoc }: Props) {
+export function Materials({ jobId, onBack, backLabel = '← Posting', onPosting, onApplied, initialDoc }: Props) {
   const remote = useRemote()
   const narrow = useNarrow()
   const [posting, setPosting] = useState<Posting | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
-  const [doc, setDoc] = useState<Document>(initialDoc ?? 'cover_letter')
+  // the user's own pick wins; until then the document the first warning names, else the CV
+  const [choice, setChoice] = useState<Document | undefined>(initialDoc)
   const [instruction, setInstruction] = useState('')
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState<Notice>(null)
@@ -109,7 +111,7 @@ export function Materials({ jobId, onBack, onApplied, initialDoc }: Props) {
     return (
       <div className="materials">
         <button type="button" className="back" onClick={onBack}>
-          ← Posting
+          {backLabel}
         </button>
         <ErrorBox text={loadError} />
       </div>
@@ -120,13 +122,14 @@ export function Materials({ jobId, onBack, onApplied, initialDoc }: Props) {
     return (
       <div className="materials">
         <button type="button" className="back" onClick={onBack}>
-          ← Posting
+          {backLabel}
         </button>
         <p className="body muted">There is nothing prepared for this job yet.</p>
       </div>
     )
 
   const id = posting.id
+  const doc: Document = choice ?? (m.readability?.[0]?.file === 'cover_letter' ? 'cover_letter' : 'cv')
   // Sent: what the employer has, from the copy kept when it went out; read only (no Revise, no I've applied).
   const sent = m.sent === true
   const inSent = fromSentCopy(m)
@@ -193,12 +196,17 @@ export function Materials({ jobId, onBack, onApplied, initialDoc }: Props) {
   return (
     <div className="materials">
       <button type="button" className="back" onClick={onBack}>
-        ← Posting
+        {backLabel}
       </button>
       <header className="materials-head">
         <div className="posting-head">
           <h1 className="display-l">{sent ? 'What you sent' : 'Ready to send'}</h1>
           <p className="body muted">{subtitle}</p>
+          {onPosting && (
+            <button type="button" className="link-inline small" onClick={onPosting}>
+              See the posting
+            </button>
+          )}
         </div>
         {!narrow && !remote && !sent && (
           <button type="button" className="primary" disabled={busy || applying} onClick={() => void apply(posting.title_en || posting.title)}>
@@ -220,7 +228,19 @@ export function Materials({ jobId, onBack, onApplied, initialDoc }: Props) {
           <span className="mark">
             <WarningMark />
           </span>
-          <span>{overflowLine(m)}</span>
+          <span>
+            {m.revisable ? (
+              <>
+                Some text runs off the page in your CV.{' '}
+                <button type="button" className="link-inline" onClick={() => setChoice('cv')}>
+                  Switch to the CV
+                </button>{' '}
+                and ask for a shorter version.
+              </>
+            ) : (
+              'Some text runs off the page in your CV. Prepare it again to fix it.'
+            )}
+          </span>
         </p>
       )}
       {notice && (
@@ -235,7 +255,7 @@ export function Materials({ jobId, onBack, onApplied, initialDoc }: Props) {
       {/* One document at a time, large enough to read; the switch also picks what Revise changes. */}
       <div className="doc-switch" role="group" aria-label="Document">
         {docs.map((d) => (
-          <button key={d} type="button" className="pill" aria-pressed={doc === d} disabled={busy} onClick={() => setDoc(d)}>
+          <button key={d} type="button" className="pill" aria-pressed={doc === d} disabled={busy} onClick={() => setChoice(d)}>
             {`${NAMES[d]} · ${d === 'cv' ? pages(m.page_counts.cv) : m.cover_letter_words === null ? pages(m.page_counts.cover_letter) : `${m.cover_letter_words} words`}`}
           </button>
         ))}

@@ -27,7 +27,7 @@ const board = (over: Partial<Extract<RunBoard, { active: true }>> = {}): RunBoar
   ...over,
 })
 
-const handlers = () => ({ onStart: vi.fn(), onStop: vi.fn(), onViewMatches: vi.fn() })
+const handlers = () => ({ onStart: vi.fn(), onStop: vi.fn(), onViewMatches: vi.fn(), onOpenJob: vi.fn() })
 const show = (state: FindingState, b: RunBoard = board(), h = handlers()) => {
   render(<Finding state={state} board={b} {...h} />)
   return h
@@ -247,6 +247,14 @@ describe('Finding, the summary card', () => {
     expect(h.onViewMatches).toHaveBeenCalledTimes(1)
   })
 
+  it('opens the posting of a top match when its row is clicked', async () => {
+    mockDoor({})
+    const h = show({ kind: 'summary', record: record() }, { active: false })
+    await userEvent.click(screen.getByRole('button', { name: /Business Controller/ }))
+    expect(h.onOpenJob).toHaveBeenCalledWith('a.2')
+    expect(h.onViewMatches).not.toHaveBeenCalled()
+  })
+
   it('opens the summary with a heavy rule, not a box', () => {
     mockDoor({})
     show({ kind: 'summary', record: record() }, { active: false })
@@ -274,7 +282,8 @@ describe('Finding, the summary card', () => {
     mockDoor({})
     show({ kind: 'summary', record: record() }, { active: false })
     expect(screen.getByText(/19 min/)).toBeInTheDocument()
-    expect(screen.getAllByRole('button').map((b) => b.textContent)).toEqual(['View matches'])
+    // the top matches are buttons too; the one action is the primary one under them
+    expect(screen.getAllByRole('button').filter((b) => b.closest('.actions')).map((b) => b.textContent)).toEqual(['View matches'])
   })
 
 })

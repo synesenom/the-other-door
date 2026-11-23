@@ -78,7 +78,8 @@ test.describe('a run', () => {
     await expect(top.filter({ hasText: 'Nordlys Retail' })).toHaveCount(0)
     await expect(summary(page).getByText(/^Took \d+ s$/)).toBeVisible()
     await expect(summary(page).getByRole('button', { name: 'View matches' })).toBeVisible()
-    await expect(summary(page).getByRole('button')).toHaveCount(1)
+    // a top match opens its posting; View matches is the one action under them
+    await expect(summary(page).getByRole('button')).toHaveCount(3)
     await expect(runButton(page)).toHaveText('Find new jobs')
     await expect(runButton(page)).toBeEnabled()
     await expect(page.getByRole('complementary').getByText(/^Last run /)).toHaveText(/^Last run Oct 26, \d\d:\d\d (AM|PM)$/)
@@ -109,6 +110,16 @@ test.describe('a run', () => {
     await expect(summary(page).getByRole('heading', { level: 2 })).toHaveText('2 new matches')
     await expect(summary(page).getByRole('listitem')).toHaveCount(2)
     expect(world.toolCalls('find_jobs')).toHaveLength(1)
+  })
+
+  test('a top match of the summary opens its posting, and back returns to Matches', async ({ page }) => {
+    await ready(page)
+    await runToSummary(page)
+    await summary(page).getByRole('listitem').filter({ hasText: 'Havtorn Energi' }).getByRole('button').click()
+    await expect(findingHeading(page)).toHaveCount(0)
+    await expect(page.getByRole('heading', { name: 'Lead Data Scientist', level: 2 })).toBeVisible()
+    await page.getByRole('button', { name: '← Matches' }).click()
+    await expect(nav(page, 'Matches')).toHaveAttribute('aria-current', 'page')
   })
 
   test('View matches opens Matches on New only, with the ads the run found', { tag: '@core' }, async ({ page, world }) => {

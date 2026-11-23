@@ -307,6 +307,22 @@ describe('App, Find new jobs', () => {
     expect(await screen.findByText('Brand new job')).toBeInTheDocument()
   })
 
+  it('a top match of the summary opens its posting, with a way back to Matches', async () => {
+    mockDoor({
+      status_summary: summary(),
+      list_matches: matchesResult([match()]),
+      find_jobs: RECORD,
+      show: { id: 'a.1', title: 'Finance Controller', company: 'Tyrell Maritime', location: 'Copenhagen', description: 'text', status: 'unapplied', materials: null },
+    })
+    render(<App />)
+    await screen.findByRole('heading', { name: 'Matches' })
+    await userEvent.click(sidebarButton())
+    await userEvent.click(await screen.findByRole('button', { name: /Finance Controller/ }))
+    expect(await screen.findByRole('heading', { name: 'Finance Controller', level: 2 })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Finding jobs' })).toBeNull()
+    expect(screen.getByRole('button', { name: '← Matches' })).toBeInTheDocument()
+  })
+
   it('a Stop goes back to the screen the run was started from', async () => {
     const h = runSetup(() => new Promise(() => {}))
     h.call.mockImplementation(async (tool: string) => {

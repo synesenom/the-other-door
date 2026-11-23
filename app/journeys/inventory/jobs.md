@@ -123,7 +123,7 @@ These only reach the window as IPC. They can be faked with `app.evaluate(({Brows
   - Time on the right: "N s" / "N min" for running (live, 1 s tick), done and failed; it needs `started_at` (and `finished_at`). — ✓ (shown in finding-running / finding-elsewhere: the world's step times are real wall-clock, so they read "0 s")
 - **Summary** (state summary and not watching), region **"Run summary"**:
   - h2 "No new matches" / "1 new match" / "N new matches" from `new_above_threshold.length`. — ✓ Find new jobs runs the five steps… (renders); ✓ the summary counts the new matches of this run and lists only them ("2 new matches", two items); ✓ a second run that found nothing new says No new matches (no list)
-  - A list of `top` with title, company and a score with 2 decimals (omitted when `top` is empty). — ✓ Find new jobs runs the five steps…
+  - A list of `top` with title, company and a score with 2 decimals (omitted when `top` is empty); each row is a button that opens that posting in Matches ("← Matches" goes back). — ✓ Find new jobs runs the five steps…; ✓ a top match of the summary opens its posting, and back returns to Matches
   - "Took N s" / "Took N min" from `elapsed_s`. — ✓ Find new jobs runs the five steps…
   - **btn "View matches"** → Matches with **New only on** (remounted), refreshKey++. — ✓ View matches opens Matches on New only, with the ads the run found
   - **btn "Check your search terms"** (quiet, only beside an account of a run with no new matches, not on the phone) → Profile at What to look for. — unit: `app/src/renderer/screens/Finding.test.tsx`
@@ -217,13 +217,13 @@ These only reach the window as IPC. They can be faked with `app.evaluate(({Brows
   - **alert** <prepareError>. — ✓ a failing tailor: Prepare says what went wrong and the job stays unprepared; a server refusal: unit: `app/src/renderer/screens/Posting.test.tsx`
   - Action row (wide). Order: primary, Open, Status, Prepare again, Not for me.
     - **Primary** (none while running): — ✓ while Prepare runs: the progress line, the elapsed time, locked actions and no Find new jobs
-      - materials exist → **btn "See the application"**, or **"See what you sent"** when `materials.sent` → view materials. — ✓ a prepared card opens its application and comes back through its posting; ✓ What you sent: the copy kept when it went out, read only, and saved from there
+      - materials exist → **btn "See the application"**, or **"See what you sent"** when `materials.sent` → view materials. — ✓ a prepared card opens its application on the CV, with a way to the posting and back to the board; ✓ What you sent: the copy kept when it went out, read only, and saved from there
       - else status in [unapplied, prepared] → **btn "Prepare application"** → startPrepare(false). — ✓ Prepare application on a new match tailors, compiles and opens Ready to send
       - else none. — unit: `app/src/renderer/screens/Applications.test.tsx`
     - **Open**: **btn "Apply on <host>"** when `apply_url` is http(s), differs from `url`, and parses (`www.` is stripped from the host). Otherwise **btn "Open in browser"** when `url` exists. Absent with neither, or with only a non-http apply_url and no url. Disabled while preparing. Click → `open-external` action with the url in the OS browser; a refused non-http URL is silent. — ✓ a separate application page: "Apply on <host>" opens it in the browser; unit: `app/src/renderer/screens/Posting.test.tsx`; disabled while preparing: Prepare area
     - **btn "Status"**: disabled while preparing → StatusDialog (full). — ✓ while Prepare runs: the progress line, the elapsed time, locked actions and no Find new jobs; ✓ opens on the current status, with every status to choose from
     - **btn "Prepare again"** (quiet): materials exist, status in [unapplied, prepared], not running → confirm dialog. — ✓ Prepare again asks first; Cancel and Escape leave the application as it is; ✓ What you sent: … (absent for a sent job)
-    - **btn "Not for me"** (quiet): only when there are **no materials**. Disabled while preparing → StatusDialog preset discarded. — ✓ a prepared card opens its application and comes back through its posting (absent with materials); ✓ while Prepare runs: … (disabled); unit: `app/src/renderer/screens/StatusDialog.test.tsx`; unit: `app/src/renderer/screens/Posting.test.tsx`
+    - **btn "Not for me"** (quiet): only when there are **no materials**. Disabled while preparing → StatusDialog preset discarded. — ✓ a prepared card opens its application on the CV, with a way to the posting and back to the board (absent with materials); ✓ while Prepare runs: … (disabled); unit: `app/src/renderer/screens/StatusDialog.test.tsx`; unit: `app/src/renderer/screens/Posting.test.tsx`
   - **list "Why it fits"** (✓ marks) / **list "Gaps"** (✗ marks) from `matching_skills` / `missing_skills`, each only when non-empty. — ✓ a Danish ad…; unit: `app/src/renderer/screens/Posting.test.tsx`
   - Language line, when `language` is set: `Intl.DisplayNames('en')` name of the code, plus " — required" or " — an advantage" by `language_requirement`. "none" or null gives the name alone; an unknown code stays raw. — ✓ a Danish ad… (name alone); unit: `app/src/renderer/screens/Posting.test.tsx`; an unknown code: not tested (the server keeps only supported languages)
   - `description` paragraph (pre-wrapped text). — ✓ a Danish ad…
@@ -330,7 +330,7 @@ Reached through:
 - `p.muted` "Loading". — not tested: transient
 - **No materials** (`materials === null`): **btn "← Posting"** and "There is nothing prepared for this job yet." This is the branch a failed Prepare lands on. — not tested: no longer reachable from a Prepare (a failed Prepare throws and stays on the posting); "See the application" needs materials
 - Full view:
-  - **btn "← Posting"** → the posting view (in Matches still pushed: back to the posting, and the stepper hides when the job left the list). — ✓ Ready to send: the letter first, the CV behind the switch, every page loaded; ✓ a prepared card opens its application and comes back through its posting
+  - **btn "← Posting"** (**"← Applications"** to the board when a Prepared card opened it, with a **"See the posting"** link under the subtitle) → the posting view (in Matches still pushed: back to the posting, and the stepper hides when the job left the list). — ✓ Ready to send: the CV first, the letter behind the switch, every page loaded; ✓ a prepared card opens its application on the CV, with a way to the posting and back to the board
   - **h1 "Ready to send"**, or **"What you sent"** when `materials.sent`. Subtitle "<title_en || title> · <company>". — ✓ Prepare application on a new match tailors, compiles and opens Ready to send; ✓ What you sent: the copy kept when it went out, read only, and saved from there
   - **btn "I've applied"** (primary, header): wide only, not remote, not sent. Disabled while busy or recording. One click records Applied (`set_status`), no dialog; a failure is an **alert** on the page and the job stays. Success → the parent's `changed` (in Matches the title is "the job", since a prepared job is not in the list). — ✓ I've applied records the application in one click and keeps a copy of what was sent; unit: `app/src/renderer/screens/Materials.test.tsx`; ✓ I've applied from Matches names the job in its notice
   - **status** notices (a revise or an undo that worked says nothing: the pages redraw and the box empties — ✓ Revise changes the letter, shows the new pages, and Undo puts it back):
@@ -344,19 +344,19 @@ Reached through:
   - A reload failure after a successful revise also lands in the failure alert (the show error text). — unit: `app/src/renderer/screens/Materials.test.tsx`
   - **status** spinner "Revising…" while busy. The pages get `aria-busy=true` and the `.dimmed` class. — ✓ Revise changes the letter, shows the new pages, and Undo puts it back
   - Revise box ("Anything to change?", Revise, Undo last change): not sent and `revisable`; for a job prepared with LaTeX (no HTML bodies) the line "Prepare it again to change it." stands in its place. — unit: `app/src/renderer/screens/Materials.test.tsx`
-  - **group "Document"** with two pills (aria-pressed, disabled while busy). The letter is the default unless a notification asked for `document`. — ✓ Ready to send: the letter first, the CV behind the switch, every page loaded (a notification's document: §0's)
-    - **btn "CV · N page(s)"** (`page_counts.cv`; "1 page" or "N pages"). — ✓ Ready to send: the letter first, the CV behind the switch, every page loaded; unit: `app/src/renderer/screens/Materials.test.tsx`
+  - **group "Document"** with two pills (aria-pressed, disabled while busy). It opens on the CV, or on the letter when the first `readability` item is in the letter, unless a notification asked for `document`; a pick wins. — ✓ Ready to send: the CV first, the letter behind the switch, every page loaded (a notification's document: §0's)
+    - **btn "CV · N page(s)"** (`page_counts.cv`; "1 page" or "N pages"). — ✓ Ready to send: the CV first, the letter behind the switch, every page loaded; unit: `app/src/renderer/screens/Materials.test.tsx`
     - **btn "Letter · N words"** (`cover_letter_words`), or **"Letter · N page(s)"** when the words are null (no cover_letter.html). — unit: `app/src/renderer/screens/Materials.test.tsx`
-  - Pages: `img` alt **"CV, page i"** / **"Letter, page i"**, for `pngs[doc].slice(0, page_counts[doc])`. Stale extra PNGs are hidden. The src is `door-file://output/<id>/[sent/]<png>?v=<version>`; the version bumps after each revise to beat the cache. — ✓ Ready to send: the letter first, the CV behind the switch, every page loaded; ✓ Revise changes the letter, … (new pages after a revise)
+  - Pages: `img` alt **"CV, page i"** / **"Letter, page i"**, for `pngs[doc].slice(0, page_counts[doc])`. Stale extra PNGs are hidden. The src is `door-file://output/<id>/[sent/]<png>?v=<version>`; the version bumps after each revise to beat the cache. — ✓ Ready to send: the CV first, the letter behind the switch, every page loaded; ✓ Revise changes the letter, … (new pages after a revise)
   - **note** (figcaption) limit text:
     - CV over `cv_max_pages`: "(limit is N)" — unit: `app/src/renderer/screens/Materials.test.tsx`
     - Letter with more than 1 page: "(limit is 1)" — unit: `app/src/renderer/screens/Materials.test.tsx`
     - Otherwise, a letter outside 250–350 words: "(aim for 250–350)" (en dash) — unit: `app/src/renderer/screens/Materials.test.tsx`
-    - Within limits: none — ✓ Ready to send: the letter first, the CV behind the switch, every page loaded
+    - Within limits: none — ✓ Ready to send: the CV first, the letter behind the switch, every page loaded
   - **btn "Save CV"** / **"Save letter"** under the figure: wide only, disabled while busy. — unit: `app/src/renderer/screens/Materials.test.tsx`; ✓ Revise changes the letter, … (disabled while busy)
   - Revise aside (not when sent):
-    - textbox **"Anything to change?"**, disabled while busy. Placeholder "Change the CV: lead with the dashboards project…" or "Change the letter: make it shorter and warmer…". — ✓ Ready to send: the letter first, the CV behind the switch, every page loaded (placeholders); ✓ Revise changes the letter, … (disabled while busy)
-    - **btn "Revise"**, disabled while busy or with empty text. — ✓ Ready to send: the letter first, … (disabled empty); ✓ Revise changes the letter, …
+    - textbox **"Anything to change?"**, disabled while busy. Placeholder "Change the CV: lead with the dashboards project…" or "Change the letter: make it shorter and warmer…". — ✓ Ready to send: the CV first, the letter behind the switch, every page loaded (placeholders); ✓ Revise changes the letter, … (disabled while busy)
+    - **btn "Revise"**, disabled while busy or with empty text. — ✓ Ready to send: the CV first, the letter behind the switch, every page loaded (disabled empty); ✓ Revise changes the letter, …
     - **btn "Undo last change"**, disabled while busy. — ✓ Revise changes the letter, shows the new pages, and Undo puts it back
     - The switch decides which file Revise edits. — unit: `app/src/renderer/screens/Materials.test.tsx`
   - **Sent**: no aside, no I've applied; the images and Save read from `sent/`. — ✓ What you sent: the copy kept when it went out, read only, and saved from there
@@ -397,8 +397,8 @@ Reached through:
 - Card click → pushed posting. — unit: `app/src/renderer/screens/Applications.test.tsx`
 
 ### Pushed view
-- **btn "← Applications"** (posting view only). No stepper and no j/k/Esc keys. — unit: `app/src/renderer/screens/Applications.test.tsx`; ✓ a prepared card opens its application and comes back through its posting
-- ReadingPane → Posting (§3) / Materials (§5). — ✓ a prepared card opens its application and comes back through its posting
+- **btn "← Applications"** (posting view only). No stepper and no j/k/Esc keys. — unit: `app/src/renderer/screens/Applications.test.tsx`; ✓ a prepared card opens its application on the CV, with a way to the posting and back to the board
+- ReadingPane → Posting (§3) / Materials (§5). — ✓ a prepared card opens its application on the CV, with a way to the posting and back to the board
 - Notice lines are **not** rendered in the pushed view. — not tested: a notice is set only when the view unpushes
 - `changed` always unpushes back to the board with the notice. "Not for me" goes back too; there is no next card. The title comes from the ongoing rows; a closed or imported job gives "the job". — ✓ an interview round moves an applied card to Interviewing; ✓ I've applied records the application in one click…
 - Transitions to test:
