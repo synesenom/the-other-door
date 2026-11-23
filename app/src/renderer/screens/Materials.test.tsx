@@ -42,7 +42,7 @@ const figure = () => screen.getByRole('figure')
 const pick = (which: 'CV' | 'Letter') => userEvent.click(screen.getByRole('button', { name: new RegExp(`^${which} · `) }))
 
 describe('Materials', () => {
-  it('titles the view and shows one document at a time from the door-file scheme, the CV first', async () => {
+  it('titles the view and shows one document at a time from the door-file scheme, opened on the letter', async () => {
     mockDoor({ show: posting() })
     render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} initialDoc="cover_letter" />)
     expect(await screen.findByRole('heading', { name: 'Ready to send' })).toBeInTheDocument()
@@ -278,7 +278,7 @@ describe('Materials', () => {
       return () => (++n === 1 ? posting() : posting({ materials: materials({ page_counts: { cv: 2, cover_letter: 1 }, cover_letter_words: 280 }) }))
     }
 
-    it('applies to the letter by default and is off while the text is empty', async () => {
+    it('applies to the letter when opened on it, and is off while the text is empty', async () => {
       mockDoor({ show: posting() })
       render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} initialDoc="cover_letter" />)
       await screen.findByRole('heading', { name: 'Ready to send' })
@@ -494,6 +494,17 @@ describe('Materials: the document it opens on', () => {
     render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} onPosting={onPosting} />)
     const link = await screen.findByRole('button', { name: 'See the posting' })
     expect(link).toHaveClass('secondary') // an action on its own line is a text button, not an inline link
+    await userEvent.click(link)
+    expect(onPosting).toHaveBeenCalled()
+  })
+
+  it('offers the posting even when nothing is prepared (a status set by hand)', async () => {
+    mockDoor({ show: posting({ materials: null }) })
+    const onPosting = vi.fn()
+    render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} onPosting={onPosting} />)
+    expect(await screen.findByText('There is nothing prepared for this job yet.')).toBeInTheDocument()
+    const link = screen.getByRole('button', { name: 'See the posting' })
+    expect(link).toHaveClass('secondary')
     await userEvent.click(link)
     expect(onPosting).toHaveBeenCalled()
   })

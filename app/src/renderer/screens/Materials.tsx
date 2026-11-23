@@ -125,6 +125,13 @@ export function Materials({ jobId, onBack, backLabel = '← Posting', onPosting,
           {backLabel}
         </button>
         <p className="body muted">There is nothing prepared for this job yet.</p>
+        {onPosting && (
+          <p>
+            <button type="button" className="secondary" onClick={onPosting}>
+              See the posting
+            </button>
+          </p>
+        )}
       </div>
     )
 
