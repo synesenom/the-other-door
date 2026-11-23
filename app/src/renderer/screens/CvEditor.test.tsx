@@ -159,7 +159,7 @@ describe('Add a page', () => {
   }
   const dialog = () => screen.getByRole('dialog', { name: 'Add a page' })
   const readPage = async (url = 'https://ada.dev') => {
-    await userEvent.click(screen.getByRole('button', { name: 'Add a page' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Add a page…' }))
     await userEvent.type(within(dialog()).getByLabelText('Which page?'), url)
     await userEvent.click(within(dialog()).getByRole('button', { name: 'Read it' }))
   }
@@ -248,7 +248,7 @@ describe('Add a page', () => {
 
   it('Cancel closes it without reading', async () => {
     const { call } = await open()
-    await userEvent.click(screen.getByRole('button', { name: 'Add a page' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Add a page…' }))
     await userEvent.click(within(dialog()).getByRole('button', { name: 'Cancel' }))
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(call.mock.calls.some((c) => c[0] === 'enrich')).toBe(false)
@@ -257,7 +257,7 @@ describe('Add a page', () => {
   it('writes what was typed before a page is read, since adding rewrites the CV', async () => {
     const { call } = await open({ save_cv: {} }, {}, ['https://ada.dev'])
     await userEvent.type(editor(), 'x')
-    await userEvent.click(screen.getByRole('button', { name: 'Add a page' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Add a page…' }))
     expect(call).toHaveBeenCalledWith('save_cv', { markdown: `${CV}x`, backup: true })
     expect(await screen.findByRole('dialog')).toBeInTheDocument()
   })
@@ -308,7 +308,7 @@ describe('the pages read before', () => {
     await open()
     expect(screen.queryByRole('list', { name: 'What your Master CV is read from' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Check again' })).toBeNull()
-    expect(screen.getByRole('button', { name: 'Add a page' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Add a page…' })).toBeEnabled()
   })
 
   it('Check again reads them all at once and names the page of each proposal', async () => {
@@ -348,7 +348,7 @@ describe('CvEditor, its part', () => {
     const cv = within(screen.getByRole('region', { name: 'Master CV' }))
     expect(cv.getByText(/each application gets a CV of its own, picked from this one and tailored to the ad/)).toBeInTheDocument()
     expect(cv.getByRole('heading', { name: 'Experience' })).toBeInTheDocument()
-    expect(cv.getByRole('button', { name: 'Add a page' })).toBeInTheDocument()
+    expect(cv.getByRole('button', { name: 'Add a page…' })).toBeInTheDocument()
   })
 })
 

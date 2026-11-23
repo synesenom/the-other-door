@@ -32,16 +32,24 @@ describe('Matches, Find new jobs', () => {
     delete (window as { matchMedia?: unknown }).matchMedia
   })
 
-  it('a narrow window, which has no sidebar foot, has a pill beside Add a job that asks for a run', async () => {
+  it('a narrow window, which has no sidebar foot, has a text button beside Add a job that asks for a run', async () => {
     stubNarrow(true)
     setup()
     const onFindJobs = vi.fn()
     render(<Matches onFindJobs={onFindJobs} />)
     await screen.findAllByRole('listitem')
     const pill = screen.getByRole('button', { name: 'Find new jobs' })
-    expect(pill).toHaveClass('pill')
+    expect(pill).toHaveClass('secondary')
     await userEvent.click(pill)
     expect(onFindJobs).toHaveBeenCalledTimes(1)
+  })
+
+  it('the list opens with a heavy rule under its head', async () => {
+    stubNarrow(false)
+    setup()
+    const { container } = render(<Matches onFindJobs={() => {}} />)
+    await screen.findAllByRole('listitem')
+    expect(container.querySelector('.list-head')).toHaveClass('rule-heavy')
   })
 
   it('a wide window leaves it to the sidebar', async () => {
@@ -246,7 +254,7 @@ describe('Matches', () => {
     const { call } = setup({ set_status: { status: 'discarded' } })
     render(<Matches />)
     await userEvent.click(within((await screen.findAllByRole('listitem'))[0]).getByRole('button'))
-    await userEvent.click(await screen.findByRole('button', { name: 'Not for me' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Not for me…' }))
     await userEvent.type(screen.getByLabelText('Why not?'), 'too far')
     call.mockClear()
     await userEvent.click(screen.getByRole('button', { name: 'Discard' }))
@@ -279,7 +287,7 @@ describe('Matches', () => {
 
     async function markApplied(row: string) {
       await userEvent.click(await screen.findByRole('button', { name: new RegExp(row) }))
-      await userEvent.click(await screen.findByRole('button', { name: 'Status' }))
+      await userEvent.click(await screen.findByRole('button', { name: 'Status…' }))
       await userEvent.click(screen.getByRole('radio', { name: 'Applied' }))
       await userEvent.click(screen.getByRole('button', { name: 'Save' }))
     }
@@ -324,7 +332,7 @@ describe('Matches', () => {
       changing({})
       render(<Matches />)
       await userEvent.click(await screen.findByRole('button', { name: /Second job/ }))
-      await userEvent.click(await screen.findByRole('button', { name: 'Not for me' }))
+      await userEvent.click(await screen.findByRole('button', { name: 'Not for me…' }))
       await userEvent.type(screen.getByLabelText('Why not?'), 'too far')
       await userEvent.click(screen.getByRole('button', { name: 'Discard' }))
       expect(await screen.findByRole('heading', { name: 'Third job', level: 2 })).toBeInTheDocument()
@@ -343,7 +351,7 @@ describe('Matches', () => {
       })
       render(<Matches />)
       await userEvent.click(await screen.findByRole('button', { name: /First job/ }))
-      await userEvent.click(await screen.findByRole('button', { name: 'Not for me' }))
+      await userEvent.click(await screen.findByRole('button', { name: 'Not for me…' }))
       await userEvent.type(screen.getByLabelText('Why not?'), 'too far')
       await userEvent.click(screen.getByRole('button', { name: 'Discard' }))
       expect(await screen.findByText(/Nothing scored yet/)).toBeInTheDocument()
@@ -357,7 +365,7 @@ describe('Matches', () => {
         set_status: { job_id: 'jobindex.9', status: 'applied', current: 'applied' },
       })
       render(<Matches opening={{ n: 1, target: { screen: 'posting', jobId: 'jobindex.9', inPlay: false } }} />)
-      await userEvent.click(await screen.findByRole('button', { name: 'Status' }))
+      await userEvent.click(await screen.findByRole('button', { name: 'Status…' }))
       await userEvent.click(screen.getByRole('radio', { name: 'Applied' }))
       await userEvent.click(screen.getByRole('button', { name: 'Save' }))
       expect(await screen.findByText('Applied: Job from elsewhere. It is in Applications now.')).toBeInTheDocument()
@@ -376,7 +384,7 @@ describe('Matches', () => {
       changing({}, false)
       render(<Matches />)
       await userEvent.click(await screen.findByRole('button', { name: /First job/ }))
-      await userEvent.click(await screen.findByRole('button', { name: 'Status' }))
+      await userEvent.click(await screen.findByRole('button', { name: 'Status…' }))
       await userEvent.click(screen.getByRole('radio', { name: 'Not yet applied' }))
       await userEvent.click(screen.getByRole('button', { name: 'Save' }))
       expect(await screen.findByText('Back in Matches.')).toBeInTheDocument()
@@ -390,7 +398,7 @@ describe('Matches', () => {
       changing({})
       render(<Matches onPushed={onPushed} />)
       await userEvent.click(within((await screen.findAllByRole('listitem'))[1]).getByRole('button'))
-      await userEvent.click(await screen.findByRole('button', { name: 'Status' }))
+      await userEvent.click(await screen.findByRole('button', { name: 'Status…' }))
       await userEvent.click(screen.getByRole('radio', { name: 'Applied' }))
       await userEvent.click(screen.getByRole('button', { name: 'Save' }))
       expect(await screen.findByText('Applied: Second job. It is in Applications now.')).toBeInTheDocument()
@@ -458,7 +466,7 @@ describe('Matches', () => {
 
     async function importOne() {
       await screen.findAllByRole('listitem')
-      await userEvent.click(screen.getByRole('button', { name: 'Add a job' }))
+      await userEvent.click(screen.getByRole('button', { name: 'Add a job…' }))
       await userEvent.type(screen.getByLabelText('Link'), 'https://example.com/1')
       await userEvent.click(screen.getByRole('button', { name: 'Import' }))
       await userEvent.click(await screen.findByRole('button', { name: 'Open' }))
@@ -469,7 +477,7 @@ describe('Matches', () => {
       setup()
       render(<Matches />)
       await screen.findAllByRole('listitem')
-      const button = screen.getByRole('button', { name: 'Add a job' })
+      const button = screen.getByRole('button', { name: 'Add a job…' })
       expect(button).toHaveClass('secondary')
       await userEvent.click(button)
       expect(screen.getByRole('dialog', { name: 'Add a job' })).toBeInTheDocument()
@@ -576,7 +584,7 @@ describe('Matches', () => {
       stepping()
       render(<Matches />)
       await userEvent.click(await screen.findByRole('button', { name: /First job/ }))
-      await userEvent.click(await screen.findByRole('button', { name: 'Status' }))
+      await userEvent.click(await screen.findByRole('button', { name: 'Status…' }))
       within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancel' }).focus()
       await userEvent.keyboard('j')
       expect(screen.getByRole('dialog')).toBeInTheDocument()
@@ -607,7 +615,7 @@ describe('Matches', () => {
       stepping()
       render(<Matches />)
       await userEvent.click(await screen.findByRole('button', { name: /First job/ }))
-      await userEvent.click(await screen.findByRole('button', { name: 'Not for me' }))
+      await userEvent.click(await screen.findByRole('button', { name: 'Not for me…' }))
       await userEvent.type(screen.getByLabelText('Why not?'), 'jk')
       expect(screen.getByRole('heading', { name: 'First job', level: 2 })).toBeInTheDocument()
       expect(screen.getByLabelText('Why not?')).toHaveValue('jk')

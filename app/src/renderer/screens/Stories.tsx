@@ -240,7 +240,7 @@ export function Stories() {
       {/* one way in: writing a story. Not drafted from the CV: a story adds what the CV does not say */}
       <div className="actions stories-add">
         <button type="button" className="primary" onClick={() => { setNote(null); setError(null); setView({ kind: 'text', text: '', drafting: false }) }}>
-          Write a story
+          Write a story…
         </button>
       </div>
       {note && <p className="small">{named(note)}</p>}
@@ -263,10 +263,10 @@ export function Stories() {
               </dl>
               <div className="actions">
                 <button type="button" className="secondary" onClick={() => setView({ kind: 'form', old: s.title, values: toValues(s) })}>
-                  Edit
+                  Edit…
                 </button>
                 <button type="button" className="secondary" onClick={() => setRemoving(s)}>
-                  Remove
+                  Remove…
                 </button>
               </div>
             </li>

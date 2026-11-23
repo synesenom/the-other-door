@@ -41,7 +41,7 @@ describe('Stories', () => {
   it('edits a story and saves it by its old title, renamed', async () => {
     const user = userEvent.setup()
     const { call } = show()
-    await user.click((await row('Cut build time')).getByRole('button', { name: 'Edit' }))
+    await user.click((await row('Cut build time')).getByRole('button', { name: 'Edit…' }))
     await fill(user, { Title: 'Cut build time by half', Result: 'Ten minutes.' })
     await user.click(screen.getByRole('button', { name: 'Save' }))
     await waitFor(() => expect(call).toHaveBeenCalledWith('save_story', expect.objectContaining({ title: 'Cut build time by half', result: 'Ten minutes.', replace: 'Cut build time' })))
@@ -50,7 +50,7 @@ describe('Stories', () => {
   it('asks before removing, then removes', async () => {
     const user = userEvent.setup()
     const { call } = show()
-    await user.click((await row('Ran the migration')).getByRole('button', { name: 'Remove' }))
+    await user.click((await row('Ran the migration')).getByRole('button', { name: 'Remove…' }))
     expect(call.mock.calls.some((c) => c[0] === 'remove_story')).toBe(false)
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Remove' }))
     await waitFor(() => expect(call).toHaveBeenCalledWith('remove_story', { title: 'Ran the migration' }))
@@ -59,7 +59,7 @@ describe('Stories', () => {
   it('drafts from text in the same dialog: the story in its four parts, saved, then the list again', async () => {
     const user = userEvent.setup()
     const { call } = show({ draft_stories: { outcome: 'proposed', stories: [{ ...story('Drafted'), learning: '', missing: ['learning'], conflicts: ['You wrote 50%; your CV says 30%.'] }] } })
-    await user.click(await screen.findByRole('button', { name: 'Write a story' }))
+    await user.click(await screen.findByRole('button', { name: 'Write a story…' }))
     await user.type(screen.getByLabelText('What did you do?'), 'I drafted something.')
     await user.click(screen.getByRole('button', { name: 'Draft it' }))
     const dialog = within(await screen.findByRole('dialog', { name: 'Your story' }))
@@ -84,7 +84,7 @@ describe('Stories', () => {
   it('shows only the one story the text tells, never the others of an answer', async () => {
     const user = userEvent.setup()
     const { call } = show({ draft_stories: { outcome: 'proposed', stories: [story('One'), story('Two')] } })
-    await user.click(await screen.findByRole('button', { name: 'Write a story' }))
+    await user.click(await screen.findByRole('button', { name: 'Write a story…' }))
     await user.type(screen.getByLabelText('What did you do?'), 'One thing.')
     await user.click(screen.getByRole('button', { name: 'Draft it' }))
     const dialog = within(await screen.findByRole('dialog', { name: 'Your story' }))
@@ -98,7 +98,7 @@ describe('Stories', () => {
   it('Cancel on the drafted story saves nothing and goes back to the list', async () => {
     const user = userEvent.setup()
     const { call } = show({ draft_stories: { outcome: 'proposed', stories: [story('One')] } })
-    await user.click(await screen.findByRole('button', { name: 'Write a story' }))
+    await user.click(await screen.findByRole('button', { name: 'Write a story…' }))
     await user.type(screen.getByLabelText('What did you do?'), 'One thing.')
     await user.click(screen.getByRole('button', { name: 'Draft it' }))
     await user.click(within(await screen.findByRole('dialog', { name: 'Your story' })).getByRole('button', { name: 'Cancel' }))
@@ -110,14 +110,14 @@ describe('Stories', () => {
   it('an empty bank offers only writing a story, never a draft from the CV', async () => {
     show({ list_stories: { ...BANK, stories: [] } })
     expect(await screen.findByText(/No stories yet/)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Write a story' })).toHaveClass('primary')
+    expect(screen.getByRole('button', { name: 'Write a story…' })).toHaveClass('primary')
     expect(screen.queryByRole('button', { name: /from my CV/ })).toBeNull()
   })
 
   it('says when the text has nothing new', async () => {
     const user = userEvent.setup()
     show({ draft_stories: { outcome: 'nothing_new', stories: [] } })
-    await user.click(await screen.findByRole('button', { name: 'Write a story' }))
+    await user.click(await screen.findByRole('button', { name: 'Write a story…' }))
     await user.type(screen.getByLabelText('What did you do?'), 'Same as before.')
     await user.click(screen.getByRole('button', { name: 'Draft it' }))
     expect(await screen.findByText('Nothing new to propose.')).toBeInTheDocument()
@@ -130,7 +130,7 @@ describe('Stories', () => {
         throw new Error('a story titled x is already in the bank')
       },
     })
-    await user.click((await row('Cut build time')).getByRole('button', { name: 'Edit' }))
+    await user.click((await row('Cut build time')).getByRole('button', { name: 'Edit…' }))
     await fill(user, { Title: 'Ran the migration' })
     await user.click(screen.getByRole('button', { name: 'Save' }))
     const alert = await screen.findByRole('alert')
@@ -146,7 +146,7 @@ describe('Stories', () => {
         throw new Error('Claude did not answer. Try again.')
       },
     })
-    await user.click(await screen.findByRole('button', { name: 'Write a story' }))
+    await user.click(await screen.findByRole('button', { name: 'Write a story…' }))
     await user.type(screen.getByLabelText('What did you do?'), 'Something.')
     await user.click(screen.getByRole('button', { name: 'Draft it' }))
     const dialog = within(await screen.findByRole('dialog', { name: 'Write a story' }))
@@ -177,7 +177,7 @@ describe('Stories', () => {
         return BANK
       },
     })
-    await user.click((await row('Cut build time')).getByRole('button', { name: 'Edit' }))
+    await user.click((await row('Cut build time')).getByRole('button', { name: 'Edit…' }))
     await user.click(screen.getByRole('button', { name: 'Save' }))
     expect(await screen.findByText('Saved Cut build time.')).toBeInTheDocument()
     await waitFor(() => expect(reads).toBe(2))
@@ -192,7 +192,7 @@ describe('Stories', () => {
         throw new Error('Your story could not be removed. Try again.')
       },
     })
-    await user.click((await row('Ran the migration')).getByRole('button', { name: 'Remove' }))
+    await user.click((await row('Ran the migration')).getByRole('button', { name: 'Remove…' }))
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Remove' }))
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('Your story could not be removed. Try again.')
@@ -208,7 +208,7 @@ describe('Stories', () => {
         throw new Error('Your story could not be saved.')
       },
     })
-    await user.click(await screen.findByRole('button', { name: 'Write a story' }))
+    await user.click(await screen.findByRole('button', { name: 'Write a story…' }))
     await user.type(screen.getByLabelText('What did you do?'), 'One thing.')
     await user.click(screen.getByRole('button', { name: 'Draft it' }))
     const dialog = within(await screen.findByRole('dialog', { name: 'Your story' }))

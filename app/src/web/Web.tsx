@@ -109,7 +109,6 @@ export function Web({ store, fetch }: { store: TokenStore; fetch: typeof globalT
   if (state.kind === 'sharing') {
     return (
       <main className="onb pair">
-        <span className="dash" aria-hidden="true" />
         <h1 className="display-l">Adding the ad you shared</h1>
         {state.error ? (
           <>

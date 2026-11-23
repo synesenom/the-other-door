@@ -2,8 +2,8 @@
 
 An Electron shell over *The other door*'s MCP server, run from the checkout. Its five destinations are
 **Matches** (the ranked list; a posting opened full width with
-"← Matches" and the previous and next match, "Prepare application", "Open in browser", "Status",
-"Not for me", "Add a job"; opening a match makes it seen), **Applications** (the board of jobs in play), **Profile** (the settings and
+"← Matches" and the previous and next match, "Prepare application", "Open in browser", "Status…",
+"Not for me…", "Add a job…"; opening a match makes it seen), **Applications** (the board of jobs in play), **Profile** (the settings and
 the CV: the pages read for it, then the editor), **Settings** (connections, appearance, data moves, checks) and **Analytics** (Applications first: the interview rate of the applications with an outcome, and under it that rate for the better-scored and the near-minimum half of them; then what Claude's work cost at API prices, per activity; then Market, the skills the ads ask for most; not on the phone); **Finding jobs** ("Find new
 jobs": the five steps live, Stop, a summary card) takes the place of the page during a run, and a
 prepared job opens "Ready to send" (the pages, Revise and Undo). What each does is in
@@ -256,7 +256,7 @@ renderer (React) -- window.door.call / onProgress / invoke / on --> main (ipc.ts
   listed in `img-src` only). It serves `HOME/jobs/output/<job id>/(cv|cover_letter)_page_<n>.png`
   and nothing else (names checked, symlinks resolved, `Cache-Control: no-store`; the page adds `?v=`
   after a revision). `HOME` follows `workspace.py` (`src/main/files.ts`; an integration test
-  compares it with the server's `output_dir`). **Save CV** / **Save letter** is the IPC
+  compares it with the server's `output_dir`). **Save CV…** / **Save letter…** is the IPC
   `door:before-close` (main to the page when a window closes or the app quits: the page writes what it holds unsaved, the Master CV's last typing, and answers `door:before-close-done`; main waits 3 s at most, `src/main/close-flush.ts`, the preload's one listener `before-close.ts` answering at once when nothing is registered, and `DoorServer.close(5000)` lets a save in flight finish); channel `door:save-material` (job id, `cv` or `cover_letter`, sent or not, the name `show`'s
   `file_names` offers): the main process runs the save dialog in Downloads and copies the PDF
   where the user chose; the renderer never names a path (on the phone, the browser downloads

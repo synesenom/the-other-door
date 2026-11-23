@@ -1,7 +1,7 @@
 // The visual guide (`?scene=guide`): every control and mark of the renderer on one page, in its real
 // classes, so a change to a shared style is seen (and hovered, pressed, focused) in one place.
 // Its own layout is inline: a development page, in no build of the app.
-import { useState, type ReactNode } from 'react'
+import { useState, type CSSProperties, type ReactNode } from 'react'
 import { CheckMark, CrossMark, WarningMark } from '../renderer/screens/CheckMark'
 import { Switch } from '../renderer/screens/Switch'
 import { ErrorBox } from '../renderer/screens/AppName'
@@ -24,7 +24,7 @@ function Part({ title, children }: { title: string; children: ReactNode }) {
 const Row = ({ label, children }: { label: string; children: ReactNode }) => (
   <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', alignItems: 'center', gap: 16 }}>
     <span className="small muted">{label}</span>
-    <div className="actions">{children}</div>
+    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 16 }}>{children}</div>
   </div>
 )
 
@@ -39,19 +39,23 @@ export function Guide() {
         <p className="subtitle">Every control in its real classes. Hover, press and tab through them; switch the theme in the scene list.</p>
 
         <Part title="Buttons">
-          {(['primary', 'secondary', 'quiet'] as const).map((kind) => (
-            <Row key={kind} label={kind}>
-              <button type="button" className={kind}>View matches</button>
-              <button type="button" className={kind} disabled>Disabled</button>
-            </Row>
-          ))}
-          <Row label="actions flush">
-            <div>
-              <p className="body">Text above the row</p>
-              <div className="actions flush">
-                <button type="button" className="quiet">Show broader matches</button>
-                <button type="button" className="quiet">Check your search terms</button>
-              </div>
+          <Row label="primary">
+            <button type="button" className="primary">Prepare application</button>
+            <button type="button" className="primary" disabled>Disabled</button>
+          </Row>
+          <Row label="secondary">
+            <div className="actions">
+              <button type="button" className="secondary go">Open in browser</button>
+              <button type="button" className="secondary">Status…</button>
+              <button type="button" className="secondary">Check again</button>
+              <button type="button" className="secondary" disabled>Disabled</button>
+            </div>
+          </Row>
+          <Row label="quiet, the way out">
+            <div className="actions">
+              <button type="button" className="primary">Save</button>
+              <button type="button" className="quiet">Not for me</button>
+              <button type="button" className="quiet" disabled>Disabled</button>
             </div>
           </Row>
           <Row label="link-inline">
@@ -149,14 +153,70 @@ export function Guide() {
           </Row>
         </Part>
 
+        <Part title="Heavy rules and hairlines">
+          <Row label="list head">
+            <div className="matches" style={{ width: '100%', height: 'auto' }}>
+              <div className="list-pane" style={{ minWidth: 0, overflow: 'visible', padding: 0 }}>
+                <div className="list-head rule-heavy" style={{ paddingTop: 0 }}><h3 className="display-s">Matches</h3></div>
+                <ul className="rows">
+                  {['Senior Financial Controller', 'Økonomichef'].map((t) => (
+                    <li key={t}><button type="button" className="row"><span className="title">{t}</span><span className="score-s">0.88</span></button></li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </Row>
+          <Row label="board column">
+            <div className="board-column" style={{ width: '100%' }}>
+              <div className="board-column-head rule-heavy"><h4 className="label">Interviewing · 1</h4></div>
+              <ul className="board-cards">
+                <li><div className="board-card"><span className="board-card-title">Head of Finance</span></div></li>
+                <li><div className="board-card"><span className="board-card-title">Finance Lead</span></div></li>
+              </ul>
+            </div>
+          </Row>
+          <Row label="summary-card">
+            <section className="summary-card rule-heavy rule-top" style={{ width: '100%' }}>
+              <h3 className="display-s">12 new matches</h3>
+              <p className="body muted">The run took 41 minutes and read 9 boards.</p>
+            </section>
+          </Row>
+        </Part>
+
+        <Part title="CV style tiles">
+          <Row label="colour, chosen">
+            <div className="style-grid style-colours" style={{ width: '100%', maxWidth: 300 }}>
+              {[['Blue', '#3D5798', true], ['Teal', '#2A7F7A', false], ['Rust', '#A8512C', false]].map(([name, hex, on]) => (
+                <label key={name as string} className="style-pick" title={name as string}>
+                  <input type="radio" name="guide-accent" aria-label={name as string} defaultChecked={on as boolean} />
+                  <span className="style-tile" style={{ '--c': hex } as CSSProperties} />
+                </label>
+              ))}
+            </div>
+          </Row>
+          <Row label="fonts, chosen">
+            <div className="style-grid style-fonts" style={{ width: '100%', maxWidth: 300 }}>
+              {[['Editorial', 'Young Serif', true], ['Plain', 'Figtree', false]].map(([name, face, on]) => (
+                <label key={name as string} className="style-pick" title={name as string}>
+                  <input type="radio" name="guide-fonts" aria-label={name as string} defaultChecked={on as boolean} />
+                  <span className="style-font" style={{ '--h': face, '--hw': 400, '--t': 'Figtree' } as CSSProperties}>
+                    <span><span className="h">A</span><span className="t">a</span></span>
+                  </span>
+                  <span className="style-name">{name as string}</span>
+                </label>
+              ))}
+            </div>
+          </Row>
+        </Part>
+
         <Part title="Figures">
           <Row label="bar">
-            <div className="bar" aria-hidden="true">
+            <div className="bar" aria-hidden="true" style={{ width: '100%', maxWidth: 240 }}>
               <span style={{ width: '62%' }} />
             </div>
           </Row>
           <Row label="usage-stack">
-            <div className="usage-stack" aria-hidden="true">
+            <div className="usage-stack" aria-hidden="true" style={{ width: '100%', maxWidth: 240 }}>
               <span className="usage-tone-0" style={{ flexGrow: 0.62 }} />
               <span className="usage-tone-1" style={{ flexGrow: 0.35 }} />
               <span className="usage-tone-2" style={{ flexGrow: 0.03 }} />

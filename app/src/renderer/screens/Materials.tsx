@@ -28,7 +28,7 @@ const NAMES: Record<Document, string> = { cv: 'CV', cover_letter: 'Letter' }
 const pages = (n: number) => `${n} ${n === 1 ? 'page' : 'pages'}`
 
 /** The save button's words: which file it saves, as the switch names it. */
-const SAVE: Record<Document, string> = { cv: 'Save CV', cover_letter: 'Save letter' }
+const SAVE: Record<Document, string> = { cv: 'Save CV…', cover_letter: 'Save letter…' }
 /** "Saved as Jane Doe - CV.pdf in Downloads.": the file and the folder it went to. */
 function savedText(path: string): string {
   const parts = path.split(/[\\/]/).filter(Boolean)

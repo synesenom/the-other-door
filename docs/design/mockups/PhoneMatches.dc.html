@@ -8,7 +8,7 @@
 <body>
 <x-dc>
 <helmet>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&amp;family=Figtree:wght@400;500;600&amp;display=swap">
+<link rel="stylesheet" href="fonts.css">
 <style>
 body{margin:0}
 button{font:inherit}
@@ -18,18 +18,18 @@ button{font:inherit}
   <main style="flex: 1; min-height: 0; overflow: hidden; padding: 28px 20px 0; display: flex; flex-direction: column">
     <div style="display: flex; justify-content: space-between; align-items: baseline">
       <span style="font-family: 'Young Serif', Georgia, serif; font-size: 20px; font-weight: 400">The other door</span>
-      <button type="button" style="height: 36px; padding: 0 14px; border: 1px solid {{t.border}}; border-radius: 18px; background: transparent; color: {{t.ink}}; font-size: 13px">Find new jobs</button>
+      <button type="button" style="height: 32px; padding: 0; border: 0; background: none; color: {{t.accent}}; font-weight: 600; font-size: 13px">Find new jobs</button>
     </div>
-    <h1 style="margin: 20px 0 0; font-family: 'Young Serif', Georgia, serif; font-size: 36px; font-weight: 400; letter-spacing: -0.01em; line-height: 1.1">Matches</h1>
+    <h1 style="margin: 20px 0 0; font-family: 'Young Serif', Georgia, serif; font-size: 32px; font-weight: 400; letter-spacing: -0.01em; line-height: 1.1">Matches</h1>
     <p style="margin: 4px 0 0; color: {{t.muted}}">12 new since your last review</p>
-    <div style="display: flex; gap: 6px; margin: 16px 0 8px">
-      <button type="button" style="height: 32px; padding: 0 14px; border-radius: 16px; border: 1px solid {{t.ink}}; background: {{t.ink}}; color: {{t.ground}}; font-size: 13px">New</button>
-      <button type="button" style="height: 32px; padding: 0 14px; border-radius: 16px; border: 1px solid {{t.border}}; background: transparent; color: {{t.ink}}; font-size: 13px">All</button>
+    <div style="display: flex; gap: 12px; margin: 16px 0 12px">
+      <button type="button" style="height: 32px; padding: 0 2px; border: 0; background: none; color: {{t.ink}}; font-size: 13px; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 6px">New</button>
+      <button type="button" style="height: 32px; padding: 0 2px; border: 0; background: none; color: {{t.ink}}; font-size: 13px">All</button>
     </div>
-    <ul style="list-style: none; margin: 0 -8px; padding: 0; display: flex; flex-direction: column">
+    <ul style="list-style: none; margin: 0; padding: 0; border-top: 2px solid {{t.ink}}; display: flex; flex-direction: column">
       <sc-for list="{{jobs}}" as="job" hint-placeholder-count="6">
         <li style="border-bottom: 1px solid {{t.rule}}">
-          <button type="button" style="width: 100%; min-height: 72px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 8px; border: 0; background: transparent; color: {{t.ink}}; text-align: left">
+          <button type="button" style="width: 100%; min-height: 72px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border: 0; background: transparent; color: {{t.ink}}; text-align: left">
             <span style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
               <span style="display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 15px">
                 <sc-if value="{{job.isNew}}" hint-placeholder-val="{{ false }}"><span aria-label="new" style="flex: none; width: 6px; height: 6px; border-radius: 3px; background: {{t.accent}}"></span></sc-if>
@@ -37,7 +37,7 @@ button{font:inherit}
               </span>
               <span style="color: {{t.muted}}; font-size: 13px">{{job.company}} · {{job.place}}</span>
             </span>
-            <span style="font-family: 'Young Serif', Georgia, serif; font-size: 20px; font-weight: 400; font-variant-numeric: tabular-nums">{{job.score}}</span>
+            <span style="font-family: 'Young Serif', Georgia, serif; font-size: 22px; font-weight: 400; font-variant-numeric: tabular-nums">{{job.score}}</span>
           </button>
         </li>
       </sc-for>
@@ -46,9 +46,8 @@ button{font:inherit}
   <nav aria-label="Main" style="flex: none; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); padding: 6px 4px 22px; border-top: 1px solid {{t.rule}}; background: {{t.ground}}">
     <sc-for list="{{tabs}}" as="tab" hint-placeholder-count="5">
       <a href="#" style="min-height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 3px; text-decoration: none; font-size: 11px; color: {{tab.color}}; font-weight: {{tab.weight}}">
-        <span aria-hidden="true" style="width: 16px; height: 3px; border-radius: 2px; background: {{tab.dash}}"></span>
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{tab.icon}}"></path></svg>
-        <span>{{tab.label}}</span>
+        <span style="text-decoration: {{tab.deco}}; text-decoration-thickness: 2px; text-underline-offset: 4px">{{tab.label}}</span>
       </a>
     </sc-for>
   </nav>
@@ -60,7 +59,7 @@ class Component extends DCLogic {
     const dark = !!this.props.dark;
     const t = dark
       ? { ground: '#1E1A16', ink: '#F1E6CF', muted: '#B5A890', rule: '#3A332C', border: '#4A423A', accent: '#6F8FEF' }
-      : { ground: '#F1E6CF', ink: '#1E1A16', muted: '#5C5249', rule: '#E2D5BA', border: '#D6C7A8', accent: '#4169E1' };
+      : { ground: '#F1E6CF', ink: '#1E1A16', muted: '#5C5249', rule: '#D6C7A8', border: '#D6C7A8', accent: '#3D5798' };
     const jobs = [
       { title: 'Senior Data Scientist', company: 'Hooli Labs', place: 'Copenhagen', score: '0.86', isNew: true },
       { title: 'Machine Learning Engineer', company: 'Contoso Pay', place: 'Copenhagen', score: '0.81', isNew: true },
@@ -81,7 +80,7 @@ class Component extends DCLogic {
       label, icon: icons[label],
       color: label === active ? t.ink : t.muted,
       weight: label === active ? '600' : '400',
-      dash: label === active ? t.accent : 'transparent'
+      deco: label === active ? 'underline' : 'none'
     }));
     return { t, jobs, tabs };
   }

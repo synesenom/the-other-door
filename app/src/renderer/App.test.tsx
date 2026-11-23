@@ -98,16 +98,15 @@ describe('App', () => {
       delete (window as { matchMedia?: unknown }).matchMedia
     })
 
-    it('shows the same five destinations as a tab bar, the current one marked with a dash', async () => {
+    it('shows the same five destinations as a tab bar, the current one marked', async () => {
       stubNarrow(true)
       setup()
-      const { container } = render(<App />)
+      render(<App />)
       const nav = await screen.findByRole('navigation')
       expect(within(nav).getAllByRole('button').map((b) => b.textContent)).toEqual(['Matches', 'Applications', 'Profile', 'Settings', 'Analytics'])
       const current = within(nav).getByRole('button', { name: 'Matches' })
       await waitFor(() => expect(current).toHaveAttribute('aria-current', 'page'))
-      expect(current.querySelector('.tab-dash')).not.toBeNull()
-      expect(container.querySelectorAll('.tab-dash')).toHaveLength(1)
+      expect(within(nav).getAllByRole('button').filter((b) => b.getAttribute('aria-current') === 'page')).toHaveLength(1)
     })
 
     it('each tab has an icon', async () => {
@@ -669,7 +668,7 @@ describe('App, the first-launch gate', () => {
       await userEvent.click(await screen.findByRole('button', { name: 'Settings' }))
       const row = within(await screen.findByRole('listitem', { name: 'Google Drive' }))
       await userEvent.click(await row.findByRole('button', { name: 'Connect' }))
-      await row.findByRole('button', { name: 'Disconnect' })
+      await row.findByRole('button', { name: 'Disconnect…' })
       await act(() => new Promise((r) => setTimeout(r, 50)))
       expect(h.call.mock.calls.filter((c) => c[0] === 'sync_data')).toHaveLength(1) // the connect's own
     })

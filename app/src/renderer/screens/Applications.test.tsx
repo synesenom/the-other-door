@@ -63,6 +63,16 @@ describe('Applications', () => {
     expect(screen.getByRole('button', { name: /Rejected job/ })).toBeInTheDocument()
   })
 
+  it('each column opens with its heavy-ruled head', async () => {
+    stubNarrow(false)
+    setup([match({ id: 'jobindex.1', title: 'Prepared job', status: 'prepared' })])
+    const { container } = render(<Applications />)
+    await screen.findByText('Prepared job')
+    const heads = container.querySelectorAll('.board-column-head')
+    expect(heads.length).toBeGreaterThan(0)
+    for (const head of heads) expect(head).toHaveClass('rule-heavy')
+  })
+
   it('a card is the title, the company and a note; no score, no id', async () => {
     stubNarrow(false)
     setup([match({ id: 'jobindex.3', title: 'Interview job', company: 'Novo', status: 'interview:technical', rounds: [{ stage: 'screening', result: 'passed' }, { stage: 'technical', result: 'pending' }] })])
@@ -88,6 +98,8 @@ describe('Applications', () => {
       const card = await screen.findByRole('button', { name: /Silent job/ })
       expect(card).toHaveTextContent('No answer in 45 days')
       const ghost = screen.getByRole('button', { name: 'Mark ghosted' })
+      expect(ghost).toHaveClass('secondary')
+      expect(ghost).not.toHaveClass('quiet')
       expect(card.contains(ghost)).toBe(false)
       expect(card.parentElement).toBe(ghost.parentElement)
       expect(screen.getAllByRole('button', { name: 'Mark ghosted' })).toHaveLength(1)
@@ -158,7 +170,7 @@ describe('Applications', () => {
     render(<Applications onPushed={onPushed} />)
     await userEvent.click(await screen.findByRole('button', { name: /Applied job/ }))
     await waitFor(() => expect(call).toHaveBeenCalledWith('show', { job_id: 'jobindex.2' }))
-    expect(await screen.findByRole('button', { name: 'Status' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Status…' })).toBeInTheDocument()
     expect(screen.queryByRole('group', { name: 'Applications board' })).toBeNull()
     expect(onPushed).not.toHaveBeenCalledWith(true) // the sidebar stays on a wide window
     await userEvent.click(screen.getByRole('button', { name: '← Applications' }))
@@ -189,7 +201,7 @@ describe('Applications', () => {
     stubNarrow(false)
     setup([])
     render(<Applications />)
-    const add = await screen.findByRole('button', { name: 'Add a job' })
+    const add = await screen.findByRole('button', { name: 'Add a job…' })
     expect(add).toHaveClass('secondary')
     await userEvent.click(add)
     expect(screen.getByRole('dialog', { name: 'Add a job' })).toBeInTheDocument()
@@ -207,7 +219,7 @@ describe('Applications', () => {
     })
     render(<Applications />)
     await userEvent.click(await screen.findByRole('button', { name: /Applied job/ }))
-    await userEvent.click(await screen.findByRole('button', { name: 'Status' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Status…' }))
     await userEvent.click(screen.getByRole('radio', { name: 'Not for me' }))
     await userEvent.type(screen.getByLabelText('Why not?'), 'gone')
     call.mockClear()
