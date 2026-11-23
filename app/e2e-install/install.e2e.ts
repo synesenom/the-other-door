@@ -174,6 +174,8 @@ test('the installed app: set-up, the first run and Prepare on what the installer
     if (Date.now() > deadline) throw new Error('Prepare did not finish in time and logged no error')
     await page.waitForTimeout(2_000)
   }
+  // Ready to send opens on the CV; the letter is one tab away
+  await page.getByRole('button', { name: /^Letter · / }).click()
   await pagesLoaded(page, 'Letter', 1)
   const output = filesIn(world.home, 'jobs/output')
   expect(output).toHaveLength(1)
