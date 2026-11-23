@@ -814,13 +814,15 @@ describe('App, the first-launch gate', () => {
       expect(line.closest('button')).toBeNull()
     })
 
-    it('what needs you stands above Find new jobs, read before a search starts', async () => {
+    it('what needs you has its own place right under the menu, apart from Find new jobs at the foot', async () => {
       const low = { as_of: new Date().toISOString(), status: 'allowed', five_hour: { used: 0.9 }, room: { find: 1, prepare: 2 }, binding: 'five_hour' }
       mockDoor({ show_profile: profile(), status_summary: summary({ plan: low }), list_matches: matchesResult([]), doctor: doctorReport('ok') })
       render(<App />)
       const group = await (await sidebar()).findByRole('group', { name: 'Needs you' })
-      const find = sidebarButton()
-      expect(group.compareDocumentPosition(find) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      const menu = screen.getByRole('navigation', { name: 'Main' })
+      expect(group.previousElementSibling).toBe(menu)
+      expect(group.parentElement).toBe(screen.getByRole('complementary'))
+      expect(group.contains(sidebarButton())).toBe(false)
     })
 
     it('the plan line goes by itself once the window resets, by one read at that time', async () => {

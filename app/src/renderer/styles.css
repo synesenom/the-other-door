@@ -52,7 +52,6 @@ strong, b { font-weight: 600; }
 }
 .nav-item[aria-current='page'] { font-weight: 600; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 6px; }
 .sidebar-foot { margin-top: auto; display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2); }
-.sidebar-foot .sidebar-problems { margin-bottom: var(--space-4); }
 
 .rule-heavy { border: 0 solid var(--color-ink); border-bottom-width: 2px; }
 .rule-heavy.rule-top { border-bottom-width: 0; border-top-width: 2px; }
@@ -265,7 +264,7 @@ textarea { resize: none; }
   .shell.pushed { grid-template-rows: 1fr; }
   .main { grid-row: 1; }
   .sidebar { grid-row: 2; flex-direction: row; padding: var(--space-2) var(--phone-gutter) var(--phone-tab-bar-bottom-inset); border-right: 0; border-top: 1px solid var(--color-border); }
-  .sidebar-foot { display: none; }
+  .sidebar-foot, .sidebar > .sidebar-problems { display: none; }
   .sidebar nav { flex: 1; flex-direction: row; justify-content: space-between; }
   .nav-item { position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; gap: var(--space-1); text-align: center; padding: var(--space-3) 0 0; font-size: var(--phone-tab-bar-label); background: none; }
   .tab-icon { display: block; }
@@ -565,7 +564,8 @@ details.part > summary + * { margin-top: var(--space-4); }
 .round-passed { background: var(--color-ink); }
 .round-next { border: 2px solid var(--color-accent); width: 6px; height: 6px; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-/* What needs you (issue 404): a short line each at the sidebar's foot, opening where it is fixed. */
+/* What needs you (issue 404): a short line each in its own block under the sidebar's menu, opening where it is fixed;
+   the foot keeps Find new jobs alone. */
 .sidebar-problems { display: flex; flex-direction: column; gap: var(--space-2); }
 .sidebar-problem { min-height: 0; padding: 0; text-align: left; font-size: var(--text-small-size); color: var(--color-ink); text-underline-offset: 3px; }
 button.sidebar-problem:hover > .mark + * { text-decoration: underline; }

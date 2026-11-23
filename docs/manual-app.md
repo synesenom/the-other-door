@@ -5,7 +5,7 @@ installer (below) or runs from a checkout ([`app/README.md`](../app/README.md)).
 each screen does. The look is in [`design/`](design/README.md).
 
 The first time you open it on a computer with no profile, a short wizard sets *The other door* up
-([First launch](#first-launch)). "Find new jobs" runs the whole search from the app (below). [Profile](#profile) edits every setting of your profile, and Settings holds your [connections](#settings) (Claude and Google Drive) and the data folder. The app opens on Matches. When something needs you (Claude, your Claude plan's window, your CV, Google Drive, something that keeps going wrong), a short line at the foot of the sidebar says so and, except for the plan's window, which has nothing to fix, opens where it is fixed.
+([First launch](#first-launch)). "Find new jobs" runs the whole search from the app (below). [Profile](#profile) edits every setting of your profile, and Settings holds your [connections](#settings) (Claude and Google Drive) and the data folder. The app opens on Matches. When something needs you (Claude, your Claude plan's window, your CV, Google Drive, something that keeps going wrong), a short line under the sidebar's menu says so and, except for the plan's window, which has nothing to fix, opens where it is fixed.
 Preparing an application needs the `claude` command line and a Chromium headless shell, which prints the PDFs. The installed app
 brings Chromium (and the Python it runs on) with it; the first screen of the wizard installs Claude and
 signs you in when it is missing. From a checkout, `./door doctor` checks them all. Should Chromium be missing all
@@ -145,12 +145,12 @@ with npm (`claude.cmd`) cannot be started from the app, so sign in from a termin
    [legal disclaimer](../LEGAL_DISCLAIMER.md), which opens from there; Settings → Where to find employers changes it later).
    "Save and start searching" writes the profile and the CV and opens [Finding jobs](#finding-new-jobs)
    on a first search of the boards. Without a CV of your own or Claude, it saves and opens Matches,
-   and a line at the foot of the sidebar says what is missing.
+   and a line under the sidebar's menu says what is missing.
 
 Companies and words to skip and "Match fit" are not asked: they keep their defaults, and
 Profile changes them.
 
-If you have no CV yet, a line at the foot of the sidebar says so and opens Profile on the CV. (The example CV needs no line: a run refuses it and says why.)
+If you have no CV yet, a line under the sidebar's menu says so and opens Profile on the CV. (The example CV needs no line: a run refuses it and says why.)
 While your CV is still the example one, "Draft it from your CV file or pages" in Profile's CV opens
 the same screens with your answers filled in: your sources are read, with new titles to choose
 from. Your answers stay, and Save starts no search.
@@ -527,7 +527,7 @@ fine, an empty ring when not) and what you can do about it.
   Drive too: an older one shows "Google Drive has data from a newer version of The other door; install it on
   this computer too" and neither pulls nor pushes until it is upgraded. After a sync that brought Drive's data here, the screens read it again. When this
   computer and Drive both changed since the last sync, nothing is replaced until you choose
-  ("Google Drive needs a choice" at the sidebar's foot opens it): "Keep this computer" (its data
+  ("Google Drive needs a choice" under the sidebar's menu opens it): "Keep this computer" (its data
   replaces the copy on Drive) or "Keep Drive" (Drive's data replaces this computer's, which is
   kept in `backups/`). "Disconnect…" asks first, sends the last changes, and the copy on Drive stays. In staging
   and the sandbox Drive is not available (their throwaway data never reaches your Drive),
@@ -591,7 +591,7 @@ does not offer it.
 A failure that happens once is said nowhere: the next run tries again. When the same thing keeps
 going wrong (a job site failed in each of its last three runs, ads could not be scored in each of
 the last two runs, *The other door*'s server stopped or would not start, or the same action failed
-three times in a day), a line at the foot of the sidebar says **"Something keeps going wrong. Send a
+three times in a day), a line under the sidebar's menu says **"Something keeps going wrong. Send a
 report"**. It opens Settings at Help, at its report button. Once you save a report the
 line goes (only what goes wrong after it counts again), and it also goes by itself when the problem
 stops. The phone does not show it.

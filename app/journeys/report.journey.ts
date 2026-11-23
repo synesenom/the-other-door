@@ -1,8 +1,8 @@
 // Something that keeps going wrong (#593): a failure the next run retries is said nowhere, the same one run
-// after run is one line at the sidebar's foot, "Something keeps going wrong. Send a report", that opens
+// after run is one line under the sidebar's menu, "Something keeps going wrong. Send a report", that opens
 // Settings scrolled to Report a problem; saving a report takes it away. Real runs of door's
 // pipeline against the world's boards, a board that fails, scoring that fails. Checklist: inventory/settings.md
-// (Report a problem) and inventory/jobs.md §0 (the sidebar's foot).
+// (Report a problem) and inventory/jobs.md §0 (the sidebar).
 import { join } from 'node:path'
 import type { Page } from '@playwright/test'
 import { expect, test } from './fixtures'
