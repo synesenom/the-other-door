@@ -1,12 +1,32 @@
 // Test helpers for the wizard's steps: a stateful host around the real reducer, and sample data.
 import { useReducer, type Dispatch, type ReactNode } from 'react'
+import type { FieldSpec } from '../profile-form/form'
 import { initialState, wizardReducer, type Action, type DoctorReport, type ShowProfile, type WizardState } from './reducer'
 
 const LINKEDIN = { key: 'linkedin_discovery', label: 'LinkedIn', verdict: 'unsure', terms_url: 'https://example.com/li', terms_summary: 'its terms ask for no scrapers', disclaimer: 'LinkedIn disclaimer text: its terms ask for no scrapers.' }
 const HELLOWORK = { key: 'hellowork_discovery', label: 'HelloWork', verdict: 'unsure', terms_url: 'https://example.com/hw', terms_summary: 'its terms ask for no bots', disclaimer: 'HelloWork disclaimer text: its terms ask for no bots.' }
 const CV = { photo: 'optional' as const, date_of_birth: false, max_pages: 2, date_format: 'DD.MM.YYYY' }
 
+/** The profile's keys as `show_profile` lists them, the ones the review holds and a few it does not. */
+export const fields: FieldSpec[] = [
+  { key: 'name', type: 'string', required: true, nullable: false },
+  { key: 'email', type: 'string', required: true, nullable: false },
+  { key: 'location', type: 'string', required: true, nullable: false },
+  { key: 'needs_work_permit', type: 'boolean', required: false, nullable: false, default: false },
+  { key: 'photo', type: 'path', required: false, nullable: true, default: null },
+  { key: 'role_targets', type: 'list', required: true, nullable: false },
+  { key: 'search_keywords', type: 'list', required: false, nullable: false, default: [] },
+  { key: 'topic_terms', type: 'list', required: false, nullable: false, default: [] },
+  { key: 'preferences', type: 'string', required: false, nullable: false, default: '' },
+  { key: 'remote', type: 'choice', required: true, nullable: false, choices: ['yes', 'no', 'hybrid'] },
+  { key: 'exclude', type: 'exclude', required: false, nullable: false, default: { companies: [], keywords: [] } },
+  { key: 'min_score', type: 'number', required: false, nullable: false, default: 0.65 },
+  { key: 'languages', type: 'list', required: false, nullable: false, default: [] },
+  { key: 'linkedin_discovery', type: 'boolean', required: false, nullable: false, default: false },
+]
+
 export const options = {
+  fields,
   cities: [
     { name: 'Copenhagen', country: 'Denmark', boards: ['jobindex', 'thehub', 'workable'], discovery: [LINKEDIN, HELLOWORK], cv: CV },
     { name: 'Aarhus', country: 'Denmark', boards: ['jobindex', 'thehub', 'workable'], discovery: [LINKEDIN, HELLOWORK], cv: CV },

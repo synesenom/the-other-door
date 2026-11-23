@@ -3,10 +3,11 @@
 // routing of its errors back to the review section that owns the field. No React, no calls.
 
 import { todoOffsets } from '../todos'
+import type { FieldSpec, FormValue, FormValues } from '../profile-form/form'
 
 export type StepId = 'sources' | 'reading' | 'review'
 /** The parts of the review; a failed Save puts each error line under the part that owns its field. */
-export type ReviewSection = 'you' | 'photo' | 'titles' | 'preferences' | 'terms' | 'cv' | 'story' | 'employers' | 'review'
+export type ReviewSection = 'you' | 'photo' | 'titles' | 'preferences' | 'cv' | 'story' | 'employers' | 'review'
 /** A story of the story bank: a title and the four CARL parts. */
 export interface StoryValues {
   title: string
@@ -54,6 +55,8 @@ export interface CityOption {
   discovery?: DiscoveryChoice[]
 }
 export interface ProfileOptions {
+  /** The profile's keys, each with its type (`show_profile`'s `options.fields`): what Profile's form and the review are built from. */
+  fields: FieldSpec[]
   cities: CityOption[]
   languages: string[]
   worldwide_boards: string[]
@@ -164,9 +167,8 @@ export function isLinkedIn(url: string): boolean {
 }
 
 /** The reading steps that ask Claude and go on without an answer: the review says why each came back empty. */
-export type ReadingWarning = 'basics' | 'titles' | 'terms'
+export type ReadingWarning = 'basics' | 'titles'
 
-export type ListField = 'languages' | 'keywords' | 'topicTerms'
 export type ScalarField = 'name' | 'email' | 'location' | 'remote' | 'cvText' | 'preferences'
 
 /** What the review does with the CV photo on Save: keep what there is, save a picked picture (by its token), or remove the one kept. */
@@ -182,8 +184,6 @@ export interface WizardState {
   email: string
   location: string
   languages: string[]
-  /** The titles offered in the review, with their reasons. */
-  titles: TitleSuggestion[]
   /** The titles picked, saved as `role_targets`. */
   roleTargets: string[]
   remote: Remote
@@ -199,8 +199,6 @@ export interface WizardState {
   discoveryChoices: { byCity: Record<string, DiscoveryChoice[]>; worldwide: DiscoveryChoice[] }
   keywords: string[]
   topicTerms: string[]
-  /** Where the keywords came from: proposed by Claude, skipped (the titles stand in), or already in the config. */
-  keywordsState: 'none' | 'proposed' | 'skipped' | 'config'
   /** The CV photo, held until Save (`save_photo` is its own tool, called after the profile is written). */
   photo: PhotoChoice
   /** The CV text to save, or null to leave profile/cv.md as it is. */
@@ -229,7 +227,6 @@ export function initialState(profile: ShowProfile): WizardState {
     email: c?.email ?? '',
     location: c?.location ?? '',
     languages: c?.languages?.length ? [...c.languages] : ['English'],
-    titles: (c?.role_targets ?? []).map((title) => ({ title, reason: 'In your profile', recommended: true })),
     roleTargets: [...(c?.role_targets ?? [])],
     remote: c?.remote ?? 'hybrid',
     preferences: c?.preferences ?? '',
@@ -244,7 +241,6 @@ export function initialState(profile: ShowProfile): WizardState {
     },
     keywords: [...(c?.search_keywords ?? [])],
     topicTerms: [...(c?.topic_terms ?? [])],
-    keywordsState: c?.search_keywords?.length ? 'config' : 'none',
     photo: { kind: 'keep' },
     cvText: null,
     enrichSources: [...(c?.enrich_sources ?? profile.enrich_sources ?? [])],
@@ -292,14 +288,13 @@ export function reviewProblem(state: WizardState, profile: ShowProfile): string 
 }
 
 /** Which review section asks for which answer. */
-const OWNER: Record<ListField | ScalarField, ReviewSection> = {
-  name: 'you', email: 'you', location: 'you', languages: 'you', remote: 'you',
-  keywords: 'terms', topicTerms: 'terms', cvText: 'cv', preferences: 'preferences',
+const OWNER: Record<ScalarField, ReviewSection> = {
+  name: 'you', email: 'you', location: 'you', remote: 'you', cvText: 'cv', preferences: 'preferences',
 }
 
 const CONFIG_OWNER: Record<string, ReviewSection> = {
   name: 'you', email: 'you', location: 'you', languages: 'you', remote: 'you',
-  role_targets: 'titles', search_keywords: 'terms', topic_terms: 'terms', preferences: 'preferences',
+  role_targets: 'titles', preferences: 'preferences',
   linkedin_discovery: 'employers', profession_discovery: 'employers',
   jobbsafari_discovery: 'employers', hellowork_discovery: 'employers',
 }
@@ -333,15 +328,11 @@ export type Action =
   | { type: 'dropUrl'; url: string }
   | { type: 'set'; field: ScalarField; value: string | null }
   | { type: 'discovery'; key: string; value: boolean }
-  | { type: 'add'; list: ListField; value: string }
-  | { type: 'drop'; list: ListField; value: string }
+  | { type: 'form'; key: string; value: FormValue }
   | { type: 'basics'; basics: Basics }
   | { type: 'titles'; titles: TitleSuggestion[]; warning?: string }
-  | { type: 'toggleTitle'; title: string }
-  | { type: 'addTitle'; title: string }
-  | { type: 'dropTitle'; title: string }
   | { type: 'keywords'; keywords: string[]; topicTerms: string[] }
-  | { type: 'skipKeywords'; warning?: string }
+  | { type: 'skipKeywords' }
   | ({ type: 'draftDone'; markdown: string; urls: string[] } & CvDraftInfo)
   | { type: 'saveFailed'; error: string }
   | { type: 'photo'; choice: PhotoChoice }
@@ -365,17 +356,35 @@ function warned(state: WizardState, step: ReadingWarning, warning: string | unde
   return warning ? { ...rest, [step]: warning } : rest
 }
 
-const sameTitle = (a: string, b: string) => a.toLowerCase() === b.toLowerCase()
-
-/** A title typed in is picked: as the suggestion it names, if it names one, so the suggestion's own box is ticked. */
-function pickTitle(state: WizardState, title: string): WizardState {
-  const name = state.titles.find((t) => sameTitle(t.title, title))?.title ?? title
-  return { ...state, roleTargets: state.roleTargets.some((t) => sameTitle(t, name)) ? state.roleTargets : [...state.roleTargets, name] }
+/** What the review holds for the keys of Profile's form (`fields.json`): the same names, so one form shows both. */
+export function reviewValues(state: WizardState): FormValues {
+  return {
+    name: state.name,
+    email: state.email,
+    location: state.location,
+    remote: state.remote,
+    languages: state.languages,
+    role_targets: state.roleTargets,
+    preferences: state.preferences,
+  }
 }
 
-/** The picked titles that are no suggestion: the user's own, which can be removed. */
-export function ownTitles(state: WizardState): string[] {
-  return state.roleTargets.filter((r) => !state.titles.some((t) => sameTitle(t.title, r)))
+/** A change of a form key, put in the answer that holds it; a key the review does not hold changes nothing. */
+function applyForm(state: WizardState, key: string, value: FormValue): WizardState {
+  switch (key) {
+    case 'name':
+    case 'email':
+    case 'location':
+    case 'remote':
+    case 'preferences':
+      return wizardReducer(state, { type: 'set', field: key, value: String(value) })
+    case 'languages':
+      return withoutErrors({ ...state, languages: value as string[] }, 'you')
+    case 'role_targets':
+      return withoutErrors({ ...state, roleTargets: value as string[] }, 'titles')
+    default:
+      return state
+  }
 }
 
 export function wizardReducer(state: WizardState, action: Action): WizardState {
@@ -401,14 +410,8 @@ export function wizardReducer(state: WizardState, action: Action): WizardState {
       return withoutErrors({ ...state, [action.field]: action.value }, OWNER[action.field])
     case 'discovery':
       return withoutErrors({ ...state, discovery: { ...state.discovery, [action.key]: action.value } }, 'employers')
-    case 'add': {
-      const value = action.value.trim()
-      const list = state[action.list]
-      if (!value || list.some((v) => v.toLowerCase() === value.toLowerCase())) return state
-      return withoutErrors({ ...state, [action.list]: [...list, value] }, OWNER[action.list])
-    }
-    case 'drop':
-      return withoutErrors({ ...state, [action.list]: state[action.list].filter((v) => v !== action.value) }, OWNER[action.list])
+    case 'form':
+      return applyForm(state, action.key, action.value)
     case 'basics': {
       // A value already there (a redo, an edit) stands: what was read only fills the gaps.
       const { basics } = action
@@ -434,22 +437,12 @@ export function wizardReducer(state: WizardState, action: Action): WizardState {
       const recommended = action.titles.filter((t) => t.recommended).map((t) => t.title)
       const roleTargets = [...state.roleTargets, ...recommended.filter((t) => !picked.has(t.toLowerCase()))]
       const missing = roleTargets.length === 0 ? [...without(state.missing, 'titles'), 'titles' as const] : without(state.missing, 'titles')
-      return { ...state, titles: action.titles, roleTargets, missing, warnings: warned(state, 'titles', action.warning) }
+      return { ...state, roleTargets, missing, warnings: warned(state, 'titles', action.warning) }
     }
-    case 'toggleTitle': {
-      const on = state.roleTargets.includes(action.title)
-      return withoutErrors({ ...state, roleTargets: on ? state.roleTargets.filter((t) => t !== action.title) : [...state.roleTargets, action.title] }, 'titles')
-    }
-    case 'addTitle': {
-      const title = action.title.trim()
-      return title ? withoutErrors(pickTitle(state, title), 'titles') : state
-    }
-    case 'dropTitle':
-      return { ...state, roleTargets: state.roleTargets.filter((t) => t !== action.title) }
     case 'keywords':
-      return withoutErrors({ ...state, keywords: action.keywords, topicTerms: action.topicTerms, keywordsState: 'proposed', warnings: warned(state, 'terms', undefined) }, 'terms')
+      return { ...state, keywords: action.keywords, topicTerms: action.topicTerms }
     case 'skipKeywords':
-      return { ...state, keywords: [], topicTerms: [], keywordsState: 'skipped', warnings: warned(state, 'terms', action.warning) }
+      return { ...state, keywords: [], topicTerms: [] }
     case 'draftDone': {
       const kept = state.enrichSources.filter((u) => !state.cvUrls.includes(u))
       const added: string[] = []

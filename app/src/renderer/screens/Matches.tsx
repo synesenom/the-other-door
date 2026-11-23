@@ -26,14 +26,27 @@ export function emptyText(scored: number | undefined, minScore: number | undefin
   return `Nothing has scored ${minScoreValue(minScore)} yet.`
 }
 
-/** Above the weak matches: how many, and what would widen the search. It informs, never recommends: the sources' terms forbid automated access. */
-function WeakLine({ weak, onChooseDiscovery, onCheckSearch }: { weak: NonNullable<MatchesResult['weak']>; onChooseDiscovery?: () => void; onCheckSearch?: () => void }) {
+/** Above the weak matches: how many, with Show broader matches right after the count, and what would widen the search.
+ * It informs, never recommends: the sources' terms forbid automated access. */
+function WeakLine({ weak, onChooseDiscovery, onLowerBar }: { weak: NonNullable<MatchesResult['weak']>; onChooseDiscovery?: () => void; onLowerBar?: () => void }) {
   const n = weak.matches.length
-  const head = `${n} weak ${n === 1 ? 'match' : 'matches'} found.`
+  const head = (
+    <>
+      {`${n} weak ${n === 1 ? 'match' : 'matches'} found.`}
+      {onLowerBar && (
+        <>
+          {' '}
+          <button type="button" className="link-inline" onClick={onLowerBar}>Show broader matches</button>
+        </>
+      )}
+    </>
+  )
   if (weak.hint === 'sources')
     return (
       <p className="body muted">
-        {head} <AppName /> can also find employers on {andList(weak.sources.map((s) => s.label))}, at your own risk: read the{' '}
+        {head}
+        <br />
+        <AppName /> can also find employers on {andList(weak.sources.map((s) => s.label))}, at your own risk: read the{' '}
         {onChooseDiscovery ? (
           <>
             <LegalLink />. <button type="button" className="link-inline" onClick={onChooseDiscovery}>Turn it on in Settings</button>
@@ -43,16 +56,7 @@ function WeakLine({ weak, onChooseDiscovery, onCheckSearch }: { weak: NonNullabl
         )}
       </p>
     )
-  return (
-    <p className="body muted">
-      {head}{' '}
-      {onCheckSearch ? (
-        <button type="button" className="link-inline" onClick={onCheckSearch}>Broaden your search keywords to find closer ones.</button>
-      ) : (
-        'Broaden your search keywords to find closer ones.'
-      )}
-    </p>
-  )
+  return <p className="body muted">{head}</p>
 }
 
 export function Matches({
@@ -65,7 +69,6 @@ export function Matches({
   onOpened,
   onLowerBar,
   onChooseDiscovery,
-  onCheckSearch,
 }: {
   onPushed?: (pushed: boolean) => void
   /** Starts a run (or, while one is going, goes to it): the "Find new jobs" pill of a narrow window, which has no sidebar foot. */
@@ -82,10 +85,8 @@ export function Matches({
   onOpened?: () => void
   /** Opens Profile at the bar (`min_score`); none given (the phone), no button. */
   onLowerBar?: () => void
-  /** Opens Settings at Risky sources (the discovery sources); none given (the phone), the line is plain text. */
+  /** Opens Settings at Where to find employers (the discovery sources); none given (the phone), the line is plain text. */
   onChooseDiscovery?: () => void
-  /** Opens Profile at the search keywords; none given (the phone), the line is plain text. */
-  onCheckSearch?: () => void
 } = {}) {
   const narrow = useNarrow()
   const [pushed, setPushed] = useState(false)
@@ -204,6 +205,7 @@ export function Matches({
   // Until a first posting reaches the bar, the empty list shows the best below it, marked weak.
   const weakRows = matches !== null && matches.length === 0 && weak && !(newOnly && listed.reviewedAt) ? weak.matches : []
   const rowsShown = weakRows.length > 0 ? weakRows : (shown ?? [])
+  const broader = Boolean(onLowerBar) && listed.scored !== undefined && listed.scored > 0 && !(newOnly && listed.reviewedAt)
 
   // A match is seen once it is opened: its dot goes.
   useEffect(() => {
@@ -336,7 +338,7 @@ export function Matches({
         {shown && shown.length === 0 && !error && (
           <div className="empty">
             {weak && weakRows.length > 0 ? (
-              <WeakLine weak={weak} onChooseDiscovery={onChooseDiscovery} onCheckSearch={onCheckSearch} />
+              <WeakLine weak={weak} onChooseDiscovery={onChooseDiscovery} onLowerBar={broader ? onLowerBar : undefined} />
             ) : (
               <p className="body muted">
                 <span>{emptyText(listed.scored, listed.minScore, listed.reviewedAt, newOnly)}</span>
@@ -348,7 +350,7 @@ export function Matches({
                 )}
               </p>
             )}
-            {onLowerBar && listed.scored !== undefined && listed.scored > 0 && !(newOnly && listed.reviewedAt) && (
+            {broader && weakRows.length === 0 && (
               <div className="actions">
                 <button type="button" className="secondary" onClick={onLowerBar}>
                   Show broader matches

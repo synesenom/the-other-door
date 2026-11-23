@@ -173,6 +173,10 @@ describe('scenes', () => {
   it('profile-stories lists the stories', async () => {
     mount('profile-stories')
     expect(await screen.findByRole('listitem', { name: 'Rebuilt the cash forecast at Acme Foods' })).toBeInTheDocument()
+    // no Save bar until a detail is edited
+    expect(screen.queryByRole('button', { name: 'Save' })).toBeNull()
+    await userEvent.type(screen.getByLabelText('Name'), 'x')
+    expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument()
   })
 
   it('sent opens what was sent, read only', async () => {
@@ -231,7 +235,7 @@ describe('scenes', () => {
     mount('finding-summary-none')
     expect(await screen.findByText('46 jobs found, 40 close enough to score, none scored 0.65 or better')).toBeInTheDocument()
     expect(screen.getByText('Match fit: Balanced')).toBeInTheDocument()
-    for (const name of ['View matches', 'Check your search terms']) expect(screen.getByRole('button', { name })).toBeInTheDocument()
+    for (const name of ['View matches', 'Show broader matches']) expect(screen.getByRole('button', { name })).toBeInTheDocument()
   })
 
   it('matches-none-reached names the setting the empty list waits on', async () => {

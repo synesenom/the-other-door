@@ -40,6 +40,8 @@ export interface Scene {
   drive?: 'off' | 'connected' | 'failed' | 'conflict'
   /** Matches scored, none at "Match fit": the empty list that names the setting. */
   noneReached?: boolean
+  /** None at "Match fit", the best below it shown as weak matches; the hint names what would widen the search. */
+  weak?: 'keywords' | 'sources'
   /** The Master CV with gaps (TODO) where a draft found nothing: "to fill in" pills in its preview. */
   cvGaps?: boolean
   /** Tools (or actions: `export-data`, `report-problem`) that fail here, each with the words it fails with: an error the user sees. */
@@ -144,15 +146,9 @@ const ANSWERED: Partial<WizardState> = {
   location: 'Copenhagen',
   languages: ['English', 'Danish'],
   remote: 'hybrid',
-  titles: [
-    { title: 'Financial Controller', reason: 'Five years of month-end close and group reporting.', recommended: true },
-    { title: 'Finance Business Partner', reason: 'The forecasting work with the business units.', recommended: true },
-    { title: 'Head of Finance', reason: 'A step up: you have led a small team.', recommended: false },
-  ],
   roleTargets: ['Financial Controller', 'Finance Business Partner'],
   keywords: ['financial controller', 'controller', 'økonomimedarbejder', 'business partner'],
   topicTerms: ['controller', 'finance', 'økonomi*', 'regnskab*'],
-  keywordsState: 'proposed',
   cvText: CV,
   cvDraft: {
     sources: [{ source: 'jane-doe-cv.pdf', kind: 'file', chars: 5400 }],
@@ -165,6 +161,8 @@ export const SCENES: readonly Scene[] = [
   { id: 'matches', group: 'Matches', title: 'Matches' },
   { id: 'matches-add-job-failed', group: 'Matches', title: 'Add a job, an import that failed (type a link, Import: the error box)', fails: { import_posting: 'That page needs a sign-in. Paste the ad text instead.' }, press: ['Add a job…'] },
   { id: 'matches-none-reached', group: 'Matches', title: 'Matches, 40 scored and none at the setting', noneReached: true },
+  { id: 'matches-weak', group: 'Matches', title: 'Matches, only weak ones', weak: 'keywords' },
+  { id: 'matches-weak-sources', group: 'Matches', title: 'Matches, only weak ones, a source off', weak: 'sources' },
   { id: 'posting', group: 'Matches', title: 'Posting', open: { screen: 'posting', jobId: 'jobindex.demo-1', inPlay: false } },
   { id: 'applications', group: 'Applications', title: 'Applications board', start: { destination: 'Applications' } },
   { id: 'posting-prepared', group: 'Applications', title: 'Posting, prepared', open: { screen: 'posting', jobId: 'successfactors.demo-6', inPlay: true } },
@@ -209,7 +207,7 @@ export const SCENES: readonly Scene[] = [
   { id: 'onboarding-reading', group: 'Onboarding', title: '2. Reading, slowed down (reload to watch again)', fresh: true, start: { wizard: { step: 'reading', files: [FILE] } }, slow: { draft_cv: 8_000, infer_basics: 2_000, suggest_titles: 3_000, keywords: 3_000 } },
   { id: 'onboarding-reading-last', group: 'Onboarding', title: '2. Reading, stays on the last step', fresh: true, start: { wizard: { step: 'reading', files: [FILE] } }, hold: 'keywords' },
   { id: 'onboarding-review', group: 'Onboarding', title: '3. Review', fresh: true, start: { wizard: { ...ANSWERED, step: 'review' } } },
-  { id: 'onboarding-review-unfound', group: 'Onboarding', title: '3. Review, details not found', fresh: true, start: { wizard: { ...ANSWERED, step: 'review', name: '', email: '', location: '', titles: [], roleTargets: [], keywords: [], topicTerms: [], keywordsState: 'none', missing: ['name', 'email', 'location', 'titles'] } } },
+  { id: 'onboarding-review-unfound', group: 'Onboarding', title: '3. Review, details not found', fresh: true, start: { wizard: { ...ANSWERED, step: 'review', name: '', email: '', location: '', roleTargets: [], keywords: [], topicTerms: [], missing: ['name', 'email', 'location', 'titles'] } } },
   { id: 'onboarding-review-gaps', group: 'Onboarding', title: '3. Review, the CV has gaps', fresh: true, start: { wizard: { ...ANSWERED, step: 'review', cvText: CV.replace('+45 00 00 00 00', 'TODO').replace(/(BSc in Business Administration.*— ).*/, '$1TODO') } } },
   { id: 'onboarding-review-no-cv', group: 'Onboarding', title: '3. Review, the draft failed', fresh: true, start: { wizard: { ...ANSWERED, cvText: null, cvDraft: null, step: 'review' } } },
 ]

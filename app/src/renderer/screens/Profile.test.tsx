@@ -81,7 +81,7 @@ describe('Profile, the CV photo', () => {
     await userEvent.click(within(about()).getByRole('button', { name: 'Choose a photo…' }))
     await waitFor(() => expect(h.call).toHaveBeenCalledWith('save_photo', {}, undefined, ['t1']))
     expect(h.call).toHaveBeenCalledWith('show_profile', {})
-    expect(saveButton()).toBeDisabled()
+    expect(screen.queryByRole('button', { name: 'Save' })).toBeNull()
   })
 
   it('shows the photo kept, and Remove deletes it through remove_photo', async () => {
@@ -157,7 +157,7 @@ describe('Profile', () => {
     // how the app works is in Settings: the discovery switches and the Claude folder are not here
     expect(screen.queryByRole('checkbox', { name: 'LinkedIn' })).toBeNull()
     expect(screen.queryByLabelText('Claude config folder')).toBeNull()
-    expect(saveButton()).toBeDisabled()
+    expect(screen.queryByRole('button', { name: 'Save' })).toBeNull()
   })
 
   it('saves only what changed, by name or in other, and reads the profile again', async () => {
@@ -214,12 +214,25 @@ describe('Profile', () => {
     expect(screen.getByLabelText('Email')).toHaveValue('ada')
   })
 
+  it('the Save bar is there only with unsaved changes, and sits with the details, above the CV and the Stories', async () => {
+    await open()
+    expect(screen.queryByRole('button', { name: 'Save' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Undo changes' })).toBeNull()
+    await userEvent.type(screen.getByLabelText('Name'), 'x')
+    const save = screen.getByRole('button', { name: 'Save' })
+    expect(screen.getByRole('button', { name: 'Undo changes' })).toBeInTheDocument()
+    for (const name of ['Master CV', 'Stories']) {
+      const heading = screen.getByRole('heading', { name, level: 2 })
+      expect(save.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    }
+  })
+
   it('Undo changes puts the saved values back', async () => {
     await open()
     await userEvent.type(screen.getByLabelText('Name'), 'x')
     await userEvent.click(screen.getByRole('button', { name: 'Undo changes' }))
     expect(screen.getByLabelText('Name')).toHaveValue('Ada Lovelace')
-    expect(saveButton()).toBeDisabled()
+    expect(screen.queryByRole('button', { name: 'Save' })).toBeNull()
   })
 
   it('exclude: companies and words as chips, sent as exclude_*', async () => {
@@ -267,7 +280,7 @@ describe('Profile', () => {
     expect(names.slice(-3)).toEqual(['Master CV', 'CV style', 'Stories'])
     expect(names[0]).toBe('About you')
     expect(within(screen.getByRole('navigation', { name: 'Sections' })).getAllByRole('link').slice(-3).map((l) => l.textContent)).toEqual(['Master CV', 'CV style', 'Stories'])
-    expect(screen.getAllByRole('button', { name: 'Save' })).toHaveLength(1)
+    expect(screen.queryByRole('button', { name: 'Save' })).toBeNull()
   })
 
   it('the CV style is a section of the page, and its two keys are not in the form above it', async () => {
@@ -327,7 +340,7 @@ describe('Profile, keeping what is shown true', () => {
     await userEvent.type(await screen.findByLabelText('Your CV (Markdown)'), '# Ada B')
     await userEvent.tab()
     await waitFor(() => expect(call).toHaveBeenCalledWith('save_cv', { markdown: '# Ada B', backup: true }))
-    expect(saveButton()).toBeDisabled()
+    expect(screen.queryByRole('button', { name: 'Save' })).toBeNull()
     expect(screen.queryByText(/unsaved change/)).toBeNull()
   })
 

@@ -97,7 +97,7 @@ export function Wizard({ profile: initial, environment, onFinish, onCancel, star
   return (
     <div className="page-with-aside">
       {page}
-      <PageSections sections={reviewSections(state)} />
+      <PageSections sections={reviewSections(state, initial)} />
     </div>
   )
 }

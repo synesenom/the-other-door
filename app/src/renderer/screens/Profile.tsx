@@ -1,51 +1,17 @@
-import { Fragment, useEffect, useId, useState, type CSSProperties, type ReactNode } from 'react'
-import { MATCH, minScoreChoice } from './minScore'
-import { ErrorBox, ErrorList, named } from './AppName'
+import { useEffect, useState, type ReactNode } from 'react'
+import { ErrorBox, ErrorList } from './AppName'
 import { call, errorText } from '../api'
-import { ChipInput, CityField, TextAreaField, TextField } from './onboarding/parts'
 import { photoPolicy, type ShowProfile } from './onboarding/reducer'
-import layout from './profile-form/fields.json'
-import { changedKeys, fieldErrors, formValues, toInitArgs, type Exclude, type FieldSpec, type FormValues } from './profile-form/form'
+import { FormSections, formSections } from './profile-form/FormSections'
+import { changedKeys, fieldErrors, formValues, toInitArgs, type FieldSpec, type FormValues } from './profile-form/form'
 import { CvEditor } from './CvEditor'
 import { CvStyle, type CvStyles } from './CvStyle'
-import { Hint } from './Hint'
 import { PhotoField, photoHelp } from './PhotoField'
 import { Spinner } from './Spinner'
 import { Stories } from './Stories'
 import { PageSections } from './PageSections'
 
-export interface Layout {
-  /** `screen: "settings"`: a section of Settings (how the app works), not of Profile (who you are, what you want) */
-  sections: { id: string; label: string; screen?: string }[]
-  /** `group`: neighbouring fields shown together under that name (two checkboxes) */
-  fields: { key: string; section: string; label: string; help?: string; group?: string; multiline?: boolean }[]
-}
-export const LAYOUT = layout as Layout
-/** The keys left to profile/config.json: tuning and file paths, not shown (fields.json's "config" section). */
-const CONFIG_ONLY = 'config'
-
-const REMOTE: Record<string, string> = { hybrid: 'Hybrid', yes: 'Remote only', no: 'On site' }
-
 type Profile = ShowProfile & { options: ShowProfile['options'] & { fields?: FieldSpec[]; cv_styles?: CvStyles }; config: Record<string, unknown> | null }
-
-function Chips({ label, help, errors, values, onChange }: { label: string; help?: string; errors?: string[]; values: string[]; onChange: (v: string[]) => void }) {
-  return (
-    <div className="profile-chips">
-      <ChipInput
-        label={label}
-        values={values}
-        hint={help}
-        onAdd={(v) => !values.includes(v.trim()) && onChange([...values, v.trim()])}
-        onDrop={(v) => onChange(values.filter((x) => x !== v))}
-      />
-      {errors?.map((e) => (
-        <p key={e} className="field-error">
-          {named(e)}
-        </p>
-      ))}
-    </div>
-  )
-}
 
 /**
  * Profile: one page. Every key of profile/config.json in sections (the tuning keys left to config.json), then the CV
@@ -174,171 +140,33 @@ export function Profile({ onSaved, onDraft, start }: { onSaved: () => void; onDr
     }
   }
 
-  const fieldsOf = (id: string) => LAYOUT.fields.filter((f) => f.section === id && specs.some((x) => x.key === f.key))
-  const shown = LAYOUT.sections.filter((s) => s.id !== CONFIG_ONLY && s.screen !== 'settings' && fieldsOf(s.id).length > 0)
+  const shown = formSections(specs)
+  const photoField = (p: Profile): ReactNode => {
+    // Where the country's CVs carry no photo it is not asked about, unless there is one to change or remove.
+    const policy = photoPolicy(p.options, String(values['location'] ?? ''))
+    const kept = p.photo?.exists === true
+    if (policy === 'no' && !kept) return null
+    return (
+      <PhotoField
+        src={kept ? `door-file://profile/photo.jpg?v=${photoVersion}` : null}
+        help={photoHelp(policy)}
+        error={photoError}
+        busy={photoBusy}
+        onChoose={() => void choosePhoto()}
+        onRemove={() => void removePhoto()}
+      />
+    )
+  }
   const aside = (
     <PageSections
       sections={[
-        ...(profile?.config ? shown.map((x) => ({ id: `profile-${x.id}`, label: x.label })) : []),
+        ...(profile?.config ? shown.map((x) => ({ id: `profile-${x.section.id}`, label: x.section.label })) : []),
         { id: 'profile-cv', label: 'Master CV' },
         ...(profile?.config && profile.options.cv_styles ? [{ id: 'profile-cv-style', label: 'CV style' }] : []),
         { id: 'profile-stories', label: 'Stories' },
       ]}
     />
   )
-
-  const control = (f: Layout['fields'][number]): ReactNode => {
-    const spec = specs.find((s) => s.key === f.key)
-    if (!spec || !profile) return null
-    const err = errors.byKey[f.key]
-    const value = values[f.key]
-    if (f.key === 'location') return <CityField key={`${f.key}-${undone}`} label={f.label} help={f.help} errors={err} location={String(value)} options={profile.options} onChange={(v) => set(f.key, v)} />
-    if (f.key === 'languages') {
-      const chosen = value as string[]
-      const offered = [...profile.options.languages, ...chosen.filter((l) => !profile.options.languages.some((o) => o.toLowerCase() === l.toLowerCase()))]
-      return (
-        <fieldset key={f.key} className="choices onb-field">
-          <legend className="field-label">{f.label}</legend>
-          <div className="choice-columns" style={{ '--rows': Math.ceil(offered.length / 3) } as CSSProperties}>
-          {offered.map((l) => {
-            const on = chosen.some((c) => c.toLowerCase() === l.toLowerCase())
-            return (
-              <label key={l} className="choice">
-                <input type="checkbox" checked={on} onChange={() => set(f.key, on ? chosen.filter((c) => c.toLowerCase() !== l.toLowerCase()) : [...chosen, l])} />
-                <span>{l}</span>
-              </label>
-            )
-          })}
-          </div>
-          {f.help && <p className="small muted">{f.help}</p>}
-          {err?.map((e) => <p key={e} className="field-error">{named(e)}</p>)}
-        </fieldset>
-      )
-    }
-    if (f.key === 'min_score') {
-      const now = Number(value)
-      const own = MATCH.some(([n]) => n === now) ? [] : [[now, minScoreChoice(now)] as [number, string]]
-      return (
-        <fieldset key={f.key} className="choices onb-field">
-          <legend className="field-label">
-            <span className="field-name">
-              {f.label}
-              {f.help && <Hint label={`About ${f.label}`}>{f.help}</Hint>}
-            </span>
-          </legend>
-          {[...MATCH, ...own].map(([n, label]) => (
-            <label key={label} className="choice">
-              <input type="radio" name={f.key} checked={now === n} onChange={() => set(f.key, String(n))} />
-              <span>{label}</span>
-            </label>
-          ))}
-          {err?.map((e) => <p key={e} className="field-error">{named(e)}</p>)}
-        </fieldset>
-      )
-    }
-    if (f.key === 'photo') {
-      // Where the country's CVs carry no photo it is not asked about, unless there is one to change or remove.
-      const policy = photoPolicy(profile.options, String(values['location'] ?? ''))
-      const kept = profile.photo?.exists === true
-      if (policy === 'no' && !kept) return null
-      return (
-        <PhotoField
-          key={f.key}
-          src={kept ? `door-file://profile/photo.jpg?v=${photoVersion}` : null}
-          help={photoHelp(policy)}
-          error={photoError}
-          busy={photoBusy}
-          onChoose={() => void choosePhoto()}
-          onRemove={() => void removePhoto()}
-        />
-      )
-    }
-    switch (spec.type) {
-      case 'path':
-        return (
-          <div key={f.key} className="field onb-field">
-            <span className="field-label">{f.label}</span>
-            <p className="body settings-path">{String(value) || 'Not set'}</p>
-            <p className="small muted">Change it in profile/config.json.</p>
-          </div>
-        )
-      case 'boolean': {
-        const on = Boolean(value ?? spec.default)
-        return (
-          <div key={f.key} className="field onb-field">
-            <label className="choice">
-              <input type="checkbox" checked={on} onChange={(e) => set(f.key, e.target.checked)} />
-              <span>{f.label}</span>
-            </label>
-            {f.help && <p className="small muted">{f.help}</p>}
-            {err?.map((e) => <p key={e} className="field-error">{named(e)}</p>)}
-          </div>
-        )
-      }
-      case 'choice':
-        return (
-          <fieldset key={f.key} className="choices onb-field">
-            <legend className="field-label">{f.label}</legend>
-            {(spec.choices ?? []).map((c) => (
-              <label key={c} className="choice">
-                <input type="radio" name={f.key} checked={value === c} onChange={() => set(f.key, c)} />
-                <span>{REMOTE[c] ?? c}</span>
-              </label>
-            ))}
-            {err?.map((e) => <p key={e} className="field-error">{named(e)}</p>)}
-          </fieldset>
-        )
-      case 'list':
-        return (
-          <div key={f.key}>
-            <Chips label={f.label} help={f.help} errors={err} values={value as string[]} onChange={(v) => set(f.key, v)} />
-          </div>
-        )
-      case 'exclude': {
-        const ex = value as Exclude
-        // two fields of the section, spaced as every other pair of fields is
-        return (
-          <Fragment key={f.key}>
-            <Chips label="Companies to skip" values={ex.companies} onChange={(v) => set(f.key, { ...ex, companies: v })} />
-            <Chips label="Words that rule an ad out" errors={err} values={ex.keywords} onChange={(v) => set(f.key, { ...ex, keywords: v })} />
-          </Fragment>
-        )
-      }
-      default:
-        if (f.multiline) return <TextAreaField key={f.key} label={f.label} help={f.help} errors={err} value={String(value)} onChange={(v) => set(f.key, v)} />
-        return <TextField key={f.key} label={f.label} help={f.help} errors={err} value={String(value)} numeric={spec.type === 'integer' || spec.type === 'number'} onChange={(v) => set(f.key, v)} />
-    }
-  }
-
-  /** The fields in order, each alone, but neighbours of one `group` together. */
-  const runs = (fields: Layout['fields']) =>
-    fields.reduce<Layout['fields'][]>((all, f) => {
-      const last = all[all.length - 1]
-      if (last && f.group && last[0]!.group === f.group) last.push(f)
-      else all.push([f])
-      return all
-    }, [])
-  const section = (s: Layout['sections'][number]) => {
-    const fields = fieldsOf(s.id)
-    return (
-      <section key={s.id} className="part" aria-labelledby={`profile-${s.id}`}>
-        <h2 className="display-s" id={`profile-${s.id}`}>
-          {s.label}
-        </h2>
-        {runs(fields).map((run) =>
-          // a group's fields sit together under its name, as the choices of one field
-          run[0]!.group ? (
-            <fieldset key={run[0]!.key} className="choices onb-field checks">
-              <legend className="field-label">{run[0]!.group}</legend>
-              {run.map(control)}
-            </fieldset>
-          ) : (
-            control(run[0]!)
-          ),
-        )}
-      </section>
-    )
-  }
 
   // the details: read, or why they could not be (only this part: the CV and the Stories read their own)
   const details = loadError ? (
@@ -355,7 +183,39 @@ export function Profile({ onSaved, onDraft, start }: { onSaved: () => void; onDr
       </ul>
     </div>
   ) : (
-    shown.map(section)
+    <div className="profile-details">
+      <FormSections
+        specs={specs}
+        options={profile.options}
+        values={values}
+        set={set}
+        errors={errors.byKey}
+        idPrefix="profile"
+        undone={undone}
+        photo={photoField(profile)}
+      />
+      {/* the details' bar: with the details only, and only while they have unsaved changes (the CV, the photo and the stories save themselves) */}
+      {(changes.length > 0 || saving || done) && (
+        <div className="profile-save">
+          <button type="button" className="quiet" disabled={changes.length === 0 || saving} onClick={() => {
+              setValues(saved)
+              setUndone((n) => n + 1)
+            }}>
+            Undo changes
+          </button>
+          <button type="button" className="primary" disabled={changes.length === 0 || saving} onClick={() => void save()}>
+            Save
+          </button>
+          {saving ? (
+            <Spinner message={refreshing ? 'Updating what we search for (up to two minutes)…' : 'Saving…'} />
+          ) : changes.length > 0 ? (
+            <p className="small muted">{changes.length === 1 ? '1 unsaved change' : `${changes.length} unsaved changes`}</p>
+          ) : (
+            <p className="small">Saved.</p>
+          )}
+        </div>
+      )}
+    </div>
   )
 
   return (
@@ -370,26 +230,6 @@ export function Profile({ onSaved, onDraft, start }: { onSaved: () => void; onDr
         </h2>
         <Stories />
       </section>
-      {/* the details' bar, at the page's foot and always in reach (the CV, the photo and the stories save themselves) */}
-      <div className="profile-save">
-        {/* always there, so Save does not move when the first change makes Undo possible */}
-        <button type="button" className="quiet" disabled={changes.length === 0 || saving} onClick={() => {
-            setValues(saved)
-            setUndone((n) => n + 1)
-          }}>
-          Undo changes
-        </button>
-        <button type="button" className="primary" disabled={changes.length === 0 || saving} onClick={() => void save()}>
-          Save
-        </button>
-        {saving ? (
-          <Spinner message={refreshing ? 'Updating what we search for (up to two minutes)…' : 'Saving…'} />
-        ) : changes.length > 0 ? (
-          <p className="small muted">{changes.length === 1 ? '1 unsaved change' : `${changes.length} unsaved changes`}</p>
-        ) : done ? (
-          <p className="small">Saved.</p>
-        ) : null}
-      </div>
     </Wrap>
   )
 }

@@ -81,7 +81,7 @@ describe('CvEditor', () => {
 
   it('saves itself when the editor is left: the first save keeps the backup, the later ones leave it', async () => {
     const { call } = await open({ save_cv: { cv_path: '/p/cv.md', backup: '/p/cv.md.bak' } })
-    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeNull() // the details' Save, not the CV's
+    expect(screen.queryByRole('button', { name: 'Save' })).toBeNull() // the CV has no Save of its own, and the details' bar waits for a change
     await userEvent.type(editor(), '- SQL{Enter}')
     await userEvent.tab()
     await waitFor(() => expect(call).toHaveBeenCalledWith('save_cv', { markdown: `${CV}- SQL\n`, backup: true }))

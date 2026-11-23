@@ -73,13 +73,22 @@ export async function toReview(page: Page, world: World, os: OsStub): Promise<vo
 export const readingStep = (page: Page, name: string) =>
   page.getByRole('list', { name: 'Reading', exact: true }).getByRole('listitem').filter({ has: page.getByRole('heading', { name, level: 2 }) })
 
-/** A title's checkbox: its label is the title and the reason. */
-export const titleBox = (page: Page, title: string) =>
-  page.getByRole('group', { name: 'The job titles to look for' }).getByRole('checkbox', { name: new RegExp(`^${escape(title)}\\b`) })
+/** A title picked: a chip under Role targets (what is not picked is not there). */
+export const titleChip = (page: Page, title: string) =>
+  page.getByRole('list', { name: 'Role targets, chosen', exact: true }).getByRole('listitem').filter({ has: page.getByText(title, { exact: true }) })
+
+/** Picks a title of one's own: typed into Role targets. */
+export async function addTitle(page: Page, title: string): Promise<void> {
+  await page.getByLabel('Role targets', { exact: true }).fill(title)
+  await page.getByLabel('Role targets', { exact: true }).press('Enter')
+}
+
+/** Drops a picked title. */
+export const dropTitle = (page: Page, title: string) => page.getByRole('button', { name: `Remove ${title}`, exact: true }).click()
 
 export const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
-/** The review's fold by its title ("Search", "CV"). */
+/** The review's fold by its title ("Master CV"). */
 export const fold = (page: Page, title: string) => page.locator('details').filter({ has: page.locator('summary', { hasText: new RegExp(`^${title}\\b`) }) })
 
 /** The employer sources offered, in order, with whether each is ticked. */
