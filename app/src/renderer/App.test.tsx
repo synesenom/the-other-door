@@ -49,6 +49,56 @@ describe('App', () => {
     expect(await screen.findByRole('region', { name: 'Claude usage' })).toBeInTheDocument()
   })
 
+  describe("Analytics' actions open the place the change is made", () => {
+    const BANDS = {
+      split: 0.75,
+      top: { passed: 5, decided: 6, rate: 0.83, low: 0.6, high: 0.95 },
+      near_min: { passed: 1, decided: 6, rate: 0.17, low: 0.05, high: 0.35 },
+      reading: 'near_min_lower',
+    }
+    const MARKET = {
+      window: { days: 30 },
+      counts: { scraped: 412, scored: 120, above_min_score: 18 },
+      skills: [
+        { name: 'SQL', count: 60, share: 0.5, have: true, trend: null },
+        { name: 'dbt', count: 30, share: 0.25, have: false, trend: null },
+      ],
+      near_misses: { n: 0, rows: [] },
+      uncovered_titles: [],
+      companies: { population: 'scraped', rows: [] },
+      report_path: null,
+    }
+    const opened = async (button: string) => {
+      mockDoor({
+        status_summary: summary({ pass_rates: { application: { passed: 6, decided: 12, rate: 0.5, low: 0.3, high: 0.7 } }, pass_rates_by_score: BANDS }),
+        list_matches: matchesResult([]),
+        market: MARKET,
+        show_profile: existingProfile,
+      })
+      const ids: string[] = []
+      const was = Element.prototype.scrollIntoView
+      Element.prototype.scrollIntoView = function (this: Element) { ids.push(this.id) }
+      try {
+        render(<App />)
+        await userEvent.click(await screen.findByRole('button', { name: 'Analytics' }))
+        await userEvent.click(await screen.findByRole('button', { name: button }))
+        expect(await screen.findByRole('heading', { name: 'Profile', level: 1 })).toBeInTheDocument()
+        await waitFor(() => expect(ids.length).toBeGreaterThan(0))
+        return ids
+      } finally {
+        Element.prototype.scrollIntoView = was
+      }
+    }
+
+    it('Open "Match fit" lands on Profile at What to look for, the part holding Match fit', async () => {
+      expect(await opened('Open "Match fit"')).toContain('profile-search')
+    })
+
+    it('Add the missing skill to your CV lands on Profile at the CV', async () => {
+      expect(await opened('Add the missing skill to your CV')).toContain('profile-cv')
+    })
+  })
+
   it('opens every screen at its top, wherever the last one was scrolled to', async () => {
     setup()
     const tops: number[] = []

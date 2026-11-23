@@ -546,9 +546,9 @@ for three or fewer (an estimate). It opens nothing, and goes by itself when the 
 when the app opens, after a run and after a Prepare, never in between. The phone shows it too, as plain text.
 
 Three more lines are about your data folder, when this version cannot open it. Every screen then refuses to work with it
-(nothing is changed), and only Settings and Report a problem still answer:
+(nothing is changed), and only Settings (with its Help part) still answers:
 
-- **"Your data could not be upgraded. Send a report"** (opens Report a problem): an upgrade step failed and put your
+- **"Your data could not be upgraded. Send a report"** (opens Settings at Help's report button): an upgrade step failed and put your
   data back as it was. Save the logs and send them; the next start tries again.
 - **"Install the latest version of The other door"** (opens Settings): the data was written by a newer version, for
   instance after you used a newer version on this computer or on Google Drive. Install the latest version.
@@ -573,10 +573,10 @@ export still refuses it and writes nothing.
 **Appearance** picks the theme: the same as the system (the default), light or dark. The choice
 is this computer's.
 
-**Version** shows the version you have and, once the app has found a newer one, what comes next: "Downloading X",
+**Help** shows the version you have and, once the app has found a newer one, what comes next: "Downloading X",
 "Restart to update to X" or a Download button (see Updating above).
 
-**Report a problem** is for when something does not work and the screens do not say why (they show
+Its report, last, is for when something does not work and the screens do not say why (they show
 an error only when it stops a mistake or you can fix it). "Save logs…" asks where to save one
 file (`door-report-<date>.zip`; it never replaces a file that is there) and then says to send it to
 enys.mones@gmail.com. It holds no personal data: what went wrong

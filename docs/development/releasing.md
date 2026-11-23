@@ -82,7 +82,7 @@ On each, download the installer from the draft release and check, in order:
 6. **Reopen.** Quit and open the app again: the profile, the matches and the prepared materials are
    still there, and the data is in the user's data folder, not inside the app (Settings → Your data).
 7. **Update** (from the second release on). Install the previous version, set it up, then install this one
-   over it: the data stays, the app opens on Matches, and before that Settings → Version of the old one says
+   over it: the data stays, the app opens on Matches, and before that Settings → Help of the old one says
    this version is out. With the draft published, a Windows or AppImage install (and a signed mac one) of the old
    version downloads it by itself and offers "Restart to update to X"; an unsigned mac one shows the Download link.
    With the phone server running on the old version, "Restart to update" stops it first (a Tailscale one
@@ -122,5 +122,5 @@ public repo and that it opens there once the release is published.
 
 When a shipped template changed, say in the release notes that earlier materials pick it up on the next `revise` (or a new `prepare`).
 
-Publish the draft. Then open the README's link and an installed older app's Settings → Version once:
+Publish the draft. Then open the README's link and an installed older app's Settings → Help once:
 both should show the new version.
