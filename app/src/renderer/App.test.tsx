@@ -692,11 +692,11 @@ describe('App, the first-launch gate', () => {
       await waitFor(() => expect(lines().queryByRole('button', { name: 'Google Drive needs a choice' })).toBeNull())
     })
 
-    it('something that keeps going wrong opens Settings at Report a problem', async () => {
+    it('something that keeps going wrong opens Settings at Help', async () => {
       const h = mockDoor({ show_profile: profile(), status_summary: summary({ recurring_problem: true }), list_matches: matchesResult([]), doctor: doctorReport('ok') })
       render(<App />)
       await userEvent.click(await (await sidebar()).findByRole('button', { name: 'Something keeps going wrong. Send a report' }))
-      const report = await screen.findByRole('region', { name: 'Report a problem' })
+      const report = await screen.findByRole('region', { name: 'Help' })
       expect(within(report).getByRole('button', { name: 'Save logs…' })).toBeVisible()
       expect(screen.getByRole('button', { name: 'Settings' })).toHaveAttribute('aria-current', 'page')
       expect(h.actions['report-problem']).not.toHaveBeenCalled()
@@ -711,7 +711,7 @@ describe('App, the first-launch gate', () => {
       mockDoor({ show_profile: refuse, status_summary: refuse, list_matches: refuse, doctor: { ...doctorReport('ok'), data } })
       render(<App />)
       await userEvent.click(await (await sidebar()).findByRole('button', { name: 'Your data could not be upgraded. Send a report' }))
-      expect(await screen.findByRole('region', { name: 'Report a problem' })).toBeInTheDocument()
+      expect(await screen.findByRole('region', { name: 'Help' })).toBeInTheDocument()
     })
 
     it('a saved report reads the summary again, and the line goes', async () => {
@@ -719,12 +719,12 @@ describe('App, the first-launch gate', () => {
       const h = mockDoor({ show_profile: profile(), status_summary: () => summary({ recurring_problem: recurring }), list_matches: matchesResult([]), doctor: doctorReport('ok') })
       render(<App />)
       await userEvent.click(await (await sidebar()).findByRole('button', { name: 'Something keeps going wrong. Send a report' }))
-      const report = await screen.findByRole('region', { name: 'Report a problem' })
+      const report = await screen.findByRole('region', { name: 'Help' })
       recurring = false
       h.actions['report-problem'].mockResolvedValueOnce({ ok: true, data: { path: '/Users/ada/Desktop/door-report-2026-10-26.zip', files: [], bytes: 1 } })
       await userEvent.click(within(report).getByRole('button', { name: 'Save logs…' }))
       await waitFor(() => expect(lines().queryByRole('button', { name: 'Something keeps going wrong. Send a report' })).toBeNull())
-      expect(within(screen.getByRole('region', { name: 'Report a problem' })).getByText(/^Saved as door-report-2026-10-26\.zip\./)).toBeInTheDocument()
+      expect(within(screen.getByRole('region', { name: 'Help' })).getByText(/^Saved as door-report-2026-10-26\.zip\./)).toBeInTheDocument()
     })
 
     it('on the phone, something that keeps going wrong is not said: the report is made on the computer', async () => {

@@ -428,9 +428,8 @@ details.part { display: block; }
 .usage-tone-1 { background: var(--color-ink-muted); }
 .usage-tone-2 { background: var(--color-border); }
 .usage-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: var(--space-2); }
-.usage-list, .usage-features { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.usage-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
 .usage-list { gap: var(--space-5); }
-.usage-features { gap: var(--space-1); margin-top: var(--space-2); padding-left: calc(10px + var(--space-2)); }
 .usage-row { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-4); }
 .usage-row > h3 { margin: 0; font-weight: inherit; }
 .usage-row > span:last-child { font-variant-numeric: tabular-nums; }

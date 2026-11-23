@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { statusSummary, type CostBlock, type PassRate, type ScoreBands, type StatusSummary } from '../api'
 import { Market } from './Market'
-import { PageSections } from './PageSections'
 import { MIN_SCORE_NAME } from './minScore'
 
 /** Dollars and cents, "<$0.01" for a sliver above nothing. */
@@ -47,13 +46,20 @@ function bandLine(label: string, rate: PassRate): string {
 }
 
 /** The same rate for the better-scored half of the matches and the half near "Match fit" (#90). */
-function ScoreBandsView({ bands }: { bands: ScoreBands }) {
+function ScoreBandsView({ bands, onOpenProfile }: { bands: ScoreBands; onOpenProfile?: (section: string) => void }) {
   return (
     <div className="part-head">
       <p className="small">{bandLine('Best-scored matches', bands.top)}</p>
       <p className="small">{bandLine(`Matches near your "${MIN_SCORE_NAME}" setting`, bands.near_min)}</p>
       {bands.reading === 'near_min_lower' && (
-        <p className="small">These led to an interview less often: consider raising that setting in Profile.</p>
+        <p className="small">
+          These led to an interview less often: consider raising that setting.{' '}
+          {onOpenProfile && (
+            <button type="button" className="link-inline" onClick={() => onOpenProfile('search')}>
+              {`Open "${MIN_SCORE_NAME}"`}
+            </button>
+          )}
+        </p>
       )}
     </div>
   )
@@ -95,16 +101,6 @@ function Usage({ cost }: { cost: CostBlock | null }) {
                 </h3>
                 <span className="body">{usd(a.usd)}</span>
               </div>
-              {a.features.length > 1 && (
-                <ul className="usage-features">
-                  {a.features.map((f) => (
-                    <li key={f.feature} className="usage-row small muted">
-                      <span>{f.label}</span>
-                      <span>{usd(f.usd)}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
             </li>
           ))}
         </ul>
@@ -117,12 +113,10 @@ function Usage({ cost }: { cost: CostBlock | null }) {
  * Analytics: how it is going, read-only (#64, #66, #87, #65). Applications first (the interview rate, #87), then Claude usage: what the last week's calls cost at API prices per activity, and
  * one search and one prepared application (not the plan's window: that is live, and this screen is about the days
  * gone by), then Market (the skills the ads ask for most, #65). Reads `status_summary` once on opening; a failed
- * read is said nowhere (the next opening reads again).
+ * read is said nowhere (the next opening reads again). A suggestion carries its action: a button to the place the change is made (principle 8).
  */
-export function Analytics() {
+export function Analytics({ onOpenProfile, onOpenCv }: { onOpenProfile?: (section: string) => void; onOpenCv?: () => void } = {}) {
   const [summary, setSummary] = useState<StatusSummary | null>(null)
-  // the Market's count failed: its section is left out, and its entry beside the sections with it
-  const [marketFailed, setMarketFailed] = useState(false)
   useEffect(() => {
     let live = true
     statusSummary().then(
@@ -134,33 +128,26 @@ export function Analytics() {
     }
   }, [])
   return (
-    <div className="page-with-aside">
-      <div className="settings">
-        <h1 className="display-l">Analytics</h1>
-        {summary?.pass_rates && (
-          <section className="part" aria-labelledby="analytics-applications">
-            <h2 className="display-s" id="analytics-applications">
-              Applications
-            </h2>
-            <Rate rate={summary.pass_rates.application} />
-            {summary.pass_rates.application?.rate != null && summary.pass_rates_by_score && (
-              <ScoreBandsView bands={summary.pass_rates_by_score} />
-            )}
-          </section>
-        )}
-        <section className="part" aria-labelledby="analytics-usage">
-          <h2 className="display-s" id="analytics-usage">
-            Claude usage
+    <div className="settings">
+      <h1 className="display-l">Analytics</h1>
+      {summary?.pass_rates && (
+        <section className="part" aria-labelledby="analytics-applications">
+          <h2 className="display-s" id="analytics-applications">
+            Applications
           </h2>
-          {summary && <Usage cost={summary.cost ?? null} />}
+          <Rate rate={summary.pass_rates.application} />
+          {summary.pass_rates.application?.rate != null && summary.pass_rates_by_score && (
+            <ScoreBandsView bands={summary.pass_rates_by_score} onOpenProfile={onOpenProfile} />
+          )}
         </section>
-        <Market onFailed={() => setMarketFailed(true)} />
-      </div>
-      <PageSections sections={[...(summary?.pass_rates ? [APPLICATIONS] : []), USAGE, ...(marketFailed ? [] : [MARKET])]} />
+      )}
+      <section className="part" aria-labelledby="analytics-usage">
+        <h2 className="display-s" id="analytics-usage">
+          Claude usage
+        </h2>
+        {summary && <Usage cost={summary.cost ?? null} />}
+      </section>
+      <Market onOpenCv={onOpenCv} />
     </div>
   )
 }
-
-const APPLICATIONS = { id: 'analytics-applications', label: 'Applications' }
-const USAGE = { id: 'analytics-usage', label: 'Claude usage' }
-const MARKET = { id: 'analytics-market', label: 'Market' }

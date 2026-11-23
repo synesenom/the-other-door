@@ -48,7 +48,7 @@ test.describe('something that keeps going wrong', () => {
     await line(page).click()
     await expect(page.getByRole('heading', { name: 'Settings', level: 1 })).toBeVisible()
     await expect(page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Settings', exact: true })).toHaveAttribute('aria-current', 'page')
-    const report = region(page, 'Report a problem')
+    const report = region(page, 'Help')
     await expect(report).toBeInViewport()
     await expect(button(report, 'Save logs…')).toBeVisible()
     // the runs' end moves with how long they took: masked

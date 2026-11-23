@@ -13,20 +13,16 @@ const pct = (share: number) => `${Math.round(share * 100)}%`
 /**
  * "Market", in Analytics (#65): the skills the ads of the last 30 days ask for most, each with its share of the ads,
  * a check when the CV has it and a cross when it does not (the marks of a posting's skills). The market tool runs
- * once when the screen opens and writes no report.
+ * once when the screen opens and writes no report. A skill the CV lacks leads to the CV by one button under the list.
  */
-export function Market({ onFailed }: { onFailed?: () => void } = {}) {
+export function Market({ onOpenCv }: { onOpenCv?: () => void } = {}) {
   const [state, setState] = useState<{ kind: 'counting' } | { kind: 'done'; m: MarketReport } | { kind: 'error' }>({ kind: 'counting' })
 
   useEffect(() => {
     let live = true
     call<MarketReport>('market', { save: false }).then(
       (m) => live && setState({ kind: 'done', m }),
-      () => {
-        if (!live) return
-        setState({ kind: 'error' })
-        onFailed?.()
-      },
+      () => live && setState({ kind: 'error' }),
     )
     return () => {
       live = false
@@ -36,6 +32,7 @@ export function Market({ onFailed }: { onFailed?: () => void } = {}) {
   // a section of Analytics, which stands without it: a count that failed is said nowhere and left out (principle 9)
   if (state.kind === 'error') return null
   const skills = state.kind === 'done' ? state.m.skills.slice(0, SKILLS_SHOWN) : []
+  const missing = skills.filter((s) => !s.have).length
   return (
     <section className="part" aria-labelledby="analytics-market">
       <h2 className="display-s" id="analytics-market">
@@ -59,6 +56,13 @@ export function Market({ onFailed }: { onFailed?: () => void } = {}) {
               </li>
             ))}
           </ul>
+          {missing > 0 && onOpenCv && (
+            <p>
+              <button type="button" className="secondary" onClick={onOpenCv}>
+                {`Add the missing ${missing === 1 ? 'skill' : 'skills'} to your CV`}
+              </button>
+            </p>
+          )}
         </>
       )}
     </section>
