@@ -454,6 +454,7 @@ details.part > summary + * { margin-top: var(--space-4); }
 
 /* Settings (issues 222 and 393): one reading-width column of sections, each under a section label. */
 .settings { box-sizing: content-box; max-width: 620px; margin: 0; padding: var(--size-screen-top) var(--size-screen-gutter) var(--space-5); /* on the gutter, like every screen; it ends level with the sidebar's foot (20 px up), no room to scroll below its last buttons */ display: flex; flex-direction: column; gap: var(--space-7); }
+.profile-details { display: flex; flex-direction: column; gap: var(--space-7); } /* the details' parts, spaced as the page's other parts */
 .main:has(> .settings), .main:has(> .page-with-aside) { overflow-y: auto; }
 /* A one-column screen with a list of its sections beside it, on a wide window only. */
 .page-with-aside { display: flex; align-items: flex-start; }

@@ -40,6 +40,8 @@ export interface Scene {
   drive?: 'off' | 'connected' | 'failed' | 'conflict'
   /** Matches scored, none at "Match fit": the empty list that names the setting. */
   noneReached?: boolean
+  /** None at "Match fit", the best below it shown as weak matches; the hint names what would widen the search. */
+  weak?: 'keywords' | 'sources'
   /** The Master CV with gaps (TODO) where a draft found nothing: "to fill in" pills in its preview. */
   cvGaps?: boolean
   /** Tools (or actions: `export-data`, `report-problem`) that fail here, each with the words it fails with: an error the user sees. */
@@ -164,6 +166,8 @@ export const SCENES: readonly Scene[] = [
   { id: 'matches', group: 'Matches', title: 'Matches' },
   { id: 'matches-add-job-failed', group: 'Matches', title: 'Add a job, an import that failed (type a link, Import: the error box)', fails: { import_posting: 'That page needs a sign-in. Paste the ad text instead.' }, press: ['Add a job…'] },
   { id: 'matches-none-reached', group: 'Matches', title: 'Matches, 40 scored and none at the setting', noneReached: true },
+  { id: 'matches-weak', group: 'Matches', title: 'Matches, only weak ones', weak: 'keywords' },
+  { id: 'matches-weak-sources', group: 'Matches', title: 'Matches, only weak ones, a source off', weak: 'sources' },
   { id: 'posting', group: 'Matches', title: 'Posting', open: { screen: 'posting', jobId: 'jobindex.demo-1', inPlay: false } },
   { id: 'applications', group: 'Applications', title: 'Applications board', start: { destination: 'Applications' } },
   { id: 'posting-prepared', group: 'Applications', title: 'Posting, prepared', open: { screen: 'posting', jobId: 'successfactors.demo-6', inPlay: true } },

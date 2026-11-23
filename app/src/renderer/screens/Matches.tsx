@@ -74,7 +74,6 @@ export function Matches({
   onLowerBar?: () => void
   /** Opens Settings at Where to find employers (the discovery sources); none given (the phone), the line is plain text. */
   onChooseDiscovery?: () => void
-  /** Opens Profile at the search keywords; none given (the phone), the line is plain text. */
 } = {}) {
   const narrow = useNarrow()
   const [pushed, setPushed] = useState(false)

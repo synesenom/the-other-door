@@ -91,8 +91,9 @@ test('a good CV goes from the sources to the review, Save and a first run, askin
     await expect(page.getByLabel('Name', { exact: true })).toHaveValue('Ada Lovelace')
     await expect(page.getByLabel('Email')).toHaveValue('ada@example.com')
     await expect(page.getByLabel('City', { exact: true })).toHaveValue('Copenhagen')
-    await expect(page.getByRole('checkbox', { name: /Data Scientist your latest title/ })).toBeChecked()
-    await expect(page.getByRole('checkbox', { name: /Quant your maths/ })).not.toBeChecked()
+    const targets = page.getByRole('list', { name: 'Role targets, chosen' })
+    await expect(targets).toContainText('Data Scientist')
+    await expect(targets).not.toContainText('Quant')
     await expect(page.getByRole('checkbox', { name: 'LinkedIn' })).not.toBeChecked()
     expect(existsSync(join(sandbox, 'profile', 'config.json'))).toBe(false) // still nothing written
 
