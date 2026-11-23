@@ -4,7 +4,7 @@ import { call, errorText } from '../api'
 import { photoPolicy, type ShowProfile } from './onboarding/reducer'
 import { FormSections, formSections } from './profile-form/FormSections'
 import { changedKeys, fieldErrors, formValues, toInitArgs, type FieldSpec, type FormValues } from './profile-form/form'
-import { CvEditor } from './CvEditor'
+import { CvEditor, SAVE_AFTER_MS } from './CvEditor'
 import { CvStyle, type CvStyles } from './CvStyle'
 import { PhotoField, photoHelp } from './PhotoField'
 import { Spinner } from './Spinner'
@@ -24,8 +24,6 @@ type Profile = ShowProfile & { options: ShowProfile['options'] & { fields?: Fiel
 /** Where Profile opens: a section scrolled into view, `cv` and `stories` among them. */
 export type ProfileStart = { section: string }
 
-/** A pause in typing this long writes the details (as the CV text). */
-export const SAVE_AFTER_MS = 1000
 /** Typed, so saved after a pause; every other field is a choice, saved at once. */
 const TYPED = new Set(['string', 'path', 'integer', 'number'])
 const termsOf = (v: FormValues) => JSON.stringify([v['role_targets'], v['languages']])
