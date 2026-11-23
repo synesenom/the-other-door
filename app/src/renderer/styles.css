@@ -69,6 +69,7 @@ strong, b { font-weight: 600; }
 .posting > * { margin: 0; }
 .posting-head { display: flex; flex-direction: column; gap: var(--space-2); }
 .posting-head > * { margin: 0; }
+.posting-head > button { align-self: flex-start; } /* a text button keeps the heading's left edge */
 .reason { max-width: 60ch; }
 .score-line { position: relative; display: flex; align-items: center; gap: var(--size-gap-s); }
 .score-line .hint-pop { left: 0; right: auto; }

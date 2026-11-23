@@ -456,9 +456,11 @@ describe('Materials: the document it opens on', () => {
   }
   const pressed = (name: RegExp) => expect(screen.getByRole('button', { name })).toHaveAttribute('aria-pressed', 'true')
 
-  it('opens on the CV when the CV has a warning', async () => {
+  it('opens on the CV when the CV has a warning, and asks for a shorter version with no switch', async () => {
     await open([overflow])
     pressed(/^CV · /)
+    expect(screen.getByText('Some text runs off the page in your CV. Ask for a shorter version.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Switch to the CV' })).toBeNull()
   })
 
   it('opens on the CV, the first tab, when nothing is wrong', async () => {
@@ -482,14 +484,17 @@ describe('Materials: the document it opens on', () => {
     pressed(/^Letter · /)
     await userEvent.click(screen.getByRole('button', { name: 'Switch to the CV' }))
     pressed(/^CV · /)
-    expect(screen.getByText(/and ask for a shorter version\./)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Switch to the CV' })).toBeNull()
+    expect(screen.getByText('Some text runs off the page in your CV. Ask for a shorter version.')).toBeInTheDocument()
   })
 
   it('offers the posting when it was opened from the board', async () => {
     mockDoor({ show: posting() })
     const onPosting = vi.fn()
     render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} onPosting={onPosting} />)
-    await userEvent.click(await screen.findByRole('button', { name: 'See the posting' }))
+    const link = await screen.findByRole('button', { name: 'See the posting' })
+    expect(link).toHaveClass('secondary') // an action on its own line is a text button, not an inline link
+    await userEvent.click(link)
     expect(onPosting).toHaveBeenCalled()
   })
 

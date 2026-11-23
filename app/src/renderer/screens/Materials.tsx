@@ -203,7 +203,7 @@ export function Materials({ jobId, onBack, backLabel = '← Posting', onPosting,
           <h1 className="display-l">{sent ? 'What you sent' : 'Ready to send'}</h1>
           <p className="body muted">{subtitle}</p>
           {onPosting && (
-            <button type="button" className="link-inline small" onClick={onPosting}>
+            <button type="button" className="secondary" onClick={onPosting}>
               See the posting
             </button>
           )}
@@ -229,7 +229,9 @@ export function Materials({ jobId, onBack, backLabel = '← Posting', onPosting,
             <WarningMark />
           </span>
           <span>
-            {m.revisable ? (
+            {m.revisable && doc === 'cv' ? (
+              'Some text runs off the page in your CV. Ask for a shorter version.'
+            ) : m.revisable ? (
               <>
                 Some text runs off the page in your CV.{' '}
                 <button type="button" className="link-inline" onClick={() => setChoice('cv')}>
