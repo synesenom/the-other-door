@@ -351,9 +351,13 @@ export function App({ start }: { start?: AppStart } = {}) {
   /** Profile was left after it wrote something: the matches may change (the age limit, "Match fit"), and when the role
    * targets or ad languages changed Claude proposes the search terms again, in the background (one call at a time;
    * a failure leaves the sidebar's line, which the summary read afterwards shows). */
-  const profileLeft = (termsChanged: boolean) => {
+  /** The profile changed: read it again, and redraw the matches ("Match fit" or the age limit may change them). */
+  const profileChanged = () => {
     void call<ShowProfile>('show_profile').then(setProfile, () => undefined)
     setRefreshKey((k) => k + 1)
+  }
+  const profileLeft = (termsChanged: boolean) => {
+    profileChanged()
     if (!termsChanged || proposing.current) return
     proposing.current = true
     void call('keywords', { save: true })
@@ -475,10 +479,7 @@ export function App({ start }: { start?: AppStart } = {}) {
             key={profileStart?.n ?? 0}
             start={profileStart?.at}
             onDraft={() => void setUpAgain().catch(() => undefined)}
-            onSaved={() => {
-              void call<ShowProfile>('show_profile').then(setProfile, () => undefined)
-              setRefreshKey((k) => k + 1) // the matches may change with "Match fit" or the age limit
-            }}
+            onSaved={profileChanged}
             onLeave={profileLeft}
           />
         ) : current === 'Settings' ? (
