@@ -233,16 +233,6 @@ export function Guide() {
                   </h3>
                   <span className="body">$1.22</span>
                 </div>
-                <ul className="usage-features">
-                  <li className="usage-row small muted">
-                    <span>Scoring postings</span>
-                    <span>$1.14</span>
-                  </li>
-                  <li className="usage-row small muted">
-                    <span>Translating job titles</span>
-                    <span>$0.08</span>
-                  </li>
-                </ul>
               </li>
             </ul>
           </Row>
