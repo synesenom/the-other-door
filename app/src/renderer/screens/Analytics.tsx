@@ -52,14 +52,16 @@ function ScoreBandsView({ bands, onOpenProfile }: { bands: ScoreBands; onOpenPro
       <p className="small">{bandLine('Best-scored matches', bands.top)}</p>
       <p className="small">{bandLine(`Matches near your "${MIN_SCORE_NAME}" setting`, bands.near_min)}</p>
       {bands.reading === 'near_min_lower' && (
-        <p className="small">
-          These led to an interview less often: consider raising that setting.{' '}
+        <>
+          <p className="small">These led to an interview less often: consider raising that setting.</p>
           {onOpenProfile && (
-            <button type="button" className="link-inline" onClick={() => onOpenProfile('search')}>
-              {`Open "${MIN_SCORE_NAME}"`}
-            </button>
+            <p>
+              <button type="button" className="secondary" onClick={() => onOpenProfile('search')}>
+                {`Open "${MIN_SCORE_NAME}"`}
+              </button>
+            </p>
           )}
-        </p>
+        </>
       )}
     </div>
   )

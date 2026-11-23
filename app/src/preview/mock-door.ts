@@ -329,7 +329,10 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
     'pick-archive': async () => ({ canceled: true }),
     'report-problem': async () => (scene.fails?.['report-problem'] ? { ok: false, error: scene.fails['report-problem'] } : { ok: false, canceled: true }),
     'show-home': done,
-    'check-update': async () => ({ enabled: false as const }),
+    'check-update': async () =>
+      scene.updateReady
+        ? ({ enabled: true, mode: 'install', checked: true, current: '0.1.0', available: true, version: '0.1.1', url: 'https://example.com/r', state: 'downloaded' } as const)
+        : ({ enabled: false as const }),
     'install-update': async () => ({ ok: false }),
     'stop-run': async () => {
       stopPlay?.()

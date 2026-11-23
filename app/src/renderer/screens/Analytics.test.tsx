@@ -169,7 +169,8 @@ describe('Analytics', () => {
         render(<Analytics onOpenProfile={onOpenProfile} />)
         const part = await screen.findByRole('region', { name: 'Applications' })
         const open = within(part).getByRole('button', { name: 'Open "Match fit"' })
-        expect(open).toHaveClass('link-inline')
+        expect(open).toHaveClass('secondary')
+        expect(open.closest('p')).not.toHaveTextContent('consider raising') // its own line, not a word of the sentence
         await userEvent.click(open)
         expect(onOpenProfile).toHaveBeenCalledWith('search')
       })
