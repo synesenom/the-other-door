@@ -1,26 +1,24 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Dispatch, ReactNode } from 'react'
 import { AppName, ErrorBox, ErrorList, named } from '../AppName'
-import { call, errorText } from '../../api'
+import { call } from '../../api'
 import { DocDialog, LEGAL_DISCLAIMER } from '../Documentation'
 import { Markdown } from '../Markdown'
 import { todoOffsets } from '../todos'
 import { Spinner } from '../Spinner'
-import { ChipInput, CityField, FieldLabel, Frame, TextField } from './parts'
+import { FieldLabel, Frame } from './parts'
 import { saveProfile } from './save'
-import { discoveryFor, hasOwnCv, ownTitles, photoPolicy, reviewProblem, stillUnfound, todoCount } from './reducer'
-import type { Action, Remote, ReviewSection, ShowProfile, WizardState } from './reducer'
+import { discoveryFor, hasOwnCv, photoPolicy, reviewProblem, reviewValues, stillUnfound, todoCount } from './reducer'
+import type { Action, ReviewSection, ShowProfile, WizardState } from './reducer'
 import { Switch } from '../Switch'
 import { PhotoField, photoHelp } from '../PhotoField'
 import { MarkdownLink } from '../MarkdownHelp'
 import { Fields } from '../Stories'
+import { FormSections, formSections } from '../profile-form/FormSections'
 
 
-const REMOTE: { value: Remote; word: string }[] = [
-  { value: 'hybrid', word: 'Hybrid' },
-  { value: 'yes', word: 'Remote only' },
-  { value: 'no', word: 'On site' },
-]
+/** The keys of Profile's form the review holds: Profile's parts and controls, fewer of them. */
+const KEYS: ReadonlySet<string> = new Set(['name', 'email', 'location', 'photo', 'remote', 'languages', 'role_targets', 'preferences'])
 
 /** How long the title picks stay still before their search terms are proposed again. */
 export const TERMS_DEBOUNCE_MS = 800
@@ -93,10 +91,10 @@ function useTermsFollowTitles(state: WizardState, dispatch: Dispatch<Action>) {
           dispatch({ type: 'keywords', keywords: r.keywords ?? [], topicTerms: r.topic_terms ?? [] })
           setProposing(false)
         },
-        (e) => {
+        () => {
           if (mine !== asking.current) return
           proposedFor.current = now
-          dispatch({ type: 'skipKeywords', warning: errorText(e) })
+          dispatch({ type: 'skipKeywords' })
           setProposing(false)
         },
       )
@@ -126,15 +124,12 @@ interface Props {
   onBack?: () => void
 }
 
-/** The review's parts, in order, for the list beside it: the ones always there, then those this answer has. */
-export function reviewSections(state: WizardState): { id: string; label: string }[] {
+/** The review's parts, in order, for the list beside it: Profile's own parts it holds, then the CV and the rest. */
+export function reviewSections(state: WizardState, profile: ShowProfile): { id: string; label: string }[] {
   return [
-    { id: 'review-you', label: 'You' },
-    { id: 'review-titles', label: 'Titles' },
-    { id: 'review-preferences', label: 'What matters to you' },
-    { id: 'review-search', label: 'Search' },
-    { id: 'review-cv', label: 'CV' },
-    ...(state.story ? [{ id: 'review-story', label: 'Your story bank' }] : []),
+    ...formSections(profile.options.fields, KEYS).map(({ section }) => ({ id: `review-${section.id}`, label: section.label })),
+    { id: 'review-cv', label: 'Master CV' },
+    ...(state.story ? [{ id: 'review-story', label: 'Stories' }] : []),
     ...(discoveryFor(state).length > 0 ? [{ id: 'review-employers', label: 'Where to find employers' }] : []),
   ]
 }
@@ -213,81 +208,48 @@ export function Review({ state, profile, dispatch, onSaved, onBack }: Props) {
     >
       {legalOpen && <DocDialog doc={LEGAL_DISCLAIMER} onClose={() => setLegalOpen(false)} />}
       {unfound.length > 0 && <p className="notice body">{named(`These could not be found in your sources: ${unfound.join(', ')}. Fill them in below to finish.`)}</p>}
-      <Part id="review-you" title="You" messages={errors('you')}>
-        <Warning text={warnings.basics && `Claude could not read your details: ${warnings.basics}`} />
-        <TextField label="Name" value={state.name} onChange={(v) => dispatch({ type: 'set', field: 'name', value: v })} autoComplete="name" />
-        <TextField label="Email" value={state.email} onChange={(v) => dispatch({ type: 'set', field: 'email', value: v })} type="email" autoComplete="email" />
-        <CityField location={state.location} onChange={(v) => dispatch({ type: 'set', field: 'location', value: v })} options={profile.options} />
-        {state.unsupportedLocation && state.location.trim() === '' && (
-          <p className="notice small">{named(`Your CV says ${state.unsupportedLocation}, which isn't covered yet. Choose a city, or keep yours under Other…: only the worldwide job boards are searched then.`)}</p>
-        )}
-        <fieldset className="choices onb-field">
-          <legend className="field-label">Where you would work</legend>
-          {REMOTE.map((r) => (
-            <label key={r.value} className="choice">
-              <input type="radio" name="remote" checked={state.remote === r.value} onChange={() => dispatch({ type: 'set', field: 'remote', value: r.value })} />
-              <span>{r.word}</span>
-            </label>
-          ))}
-        </fieldset>
-        {askPhoto && (
-          <PhotoField
-            src={state.photo.kind === 'keep' && kept ? 'door-file://profile/photo.jpg' : null}
-            pending={state.photo.kind === 'new' ? state.photo.name : null}
-            help={photoHelp(policy)}
-            error={photoErrors.join(' ') || null}
-            onChoose={() => void choosePhoto()}
-            onRemove={() => {
-              setPhotoNote(null)
-              dispatch({ type: 'photo', choice: state.photo.kind === 'keep' && kept ? { kind: 'none' } : { kind: 'keep' } })
-            }}
-          />
-        )}
-        <fieldset className="choices onb-field">
-          <legend className="field-label">Languages of the job ads</legend>
-          {profile.options.languages.map((l) => (
-            <label key={l} className="choice">
-              <input type="checkbox" checked={state.languages.includes(l)} onChange={(e) => dispatch({ type: e.target.checked ? 'add' : 'drop', list: 'languages', value: l })} />
-              <span>{l}</span>
-            </label>
-          ))}
-        </fieldset>
-      </Part>
+      <FormSections
+        specs={profile.options.fields}
+        options={profile.options}
+        values={reviewValues(state)}
+        set={(key, value) => dispatch({ type: 'form', key, value })}
+        keys={KEYS}
+        idPrefix="review"
+        notes={{
+          about: (
+            <>
+              <Errors messages={errors('you')} />
+              <Warning text={warnings.basics && `Claude could not read your details: ${warnings.basics}`} />
+              {state.unsupportedLocation && state.location.trim() === '' && (
+                <p className="notice small">{named(`Your CV says ${state.unsupportedLocation}, which isn't covered yet. Choose a city, or keep yours under Other…: only the worldwide job boards are searched then.`)}</p>
+              )}
+            </>
+          ),
+          search: (
+            <>
+              <Errors messages={[...(errors('titles') ?? []), ...(errors('preferences') ?? [])]} />
+              <Warning text={warnings.titles && `Claude could not suggest titles: ${warnings.titles}`} />
+            </>
+          ),
+        }}
+        photo={
+          askPhoto && (
+            <PhotoField
+              src={state.photo.kind === 'keep' && kept ? 'door-file://profile/photo.jpg' : null}
+              pending={state.photo.kind === 'new' ? state.photo.name : null}
+              help={photoHelp(policy)}
+              error={photoErrors.join(' ') || null}
+              onChoose={() => void choosePhoto()}
+              onRemove={() => {
+                setPhotoNote(null)
+                dispatch({ type: 'photo', choice: state.photo.kind === 'keep' && kept ? { kind: 'none' } : { kind: 'keep' } })
+              }}
+            />
+          )
+        }
+      />
 
-      <Part id="review-titles" title="Titles" lead="The job titles to look for" messages={errors('titles')}>
-        <Warning text={warnings.titles && `Claude could not suggest titles: ${warnings.titles}`} />
-        {state.titles.length > 0 && (
-          <fieldset className="choices onb-field" aria-label="The job titles to look for">
-            {state.titles.map((t) => (
-              <label key={t.title} className="choice">
-                <input type="checkbox" checked={state.roleTargets.includes(t.title)} onChange={() => dispatch({ type: 'toggleTitle', title: t.title })} />
-                <span>
-                  {t.title} <span className="small muted">{t.reason}</span>
-                </span>
-              </label>
-            ))}
-          </fieldset>
-        )}
-        <ChipInput label="Add your own title" hideLabel placeholder="Add your own title and press Enter" values={ownTitles(state)} onAdd={(v) => dispatch({ type: 'addTitle', title: v })} onDrop={(v) => dispatch({ type: 'dropTitle', title: v })} />
-      </Part>
-
-      <Part id="review-preferences" title="What matters to you" lead="Optional: in your own words, the kind of employer and job you want, and anything you rule out. E.g. medical or green energy, maybe robotics; a smaller company, little travel; not banking or gambling." messages={errors('preferences')}>
-        <textarea className="onb-input onb-field" aria-label="What matters to you" rows={3} value={state.preferences} onChange={(e) => dispatch({ type: 'set', field: 'preferences', value: e.target.value })} />
-      </Part>
-
-      <Folded
-        id="review-search"
-        title="Search"
-        summary={proposing ? 'Choosing them…' : state.keywords.length > 0 ? `${state.keywords.length} search terms, ${state.topicTerms.length} title terms` : 'Your titles, as they are'}
-        open={Boolean(errors('terms') || warnings.terms)}
-        messages={errors('terms')}
-      >
-        <Warning text={warnings.terms && `Claude could not propose search terms, so your titles are searched as they are: ${warnings.terms}`} />
-        <ChipInput label="Search terms" placeholder="Add a term and press Enter" values={state.keywords} onAdd={(v) => dispatch({ type: 'add', list: 'keywords', value: v })} onDrop={(v) => dispatch({ type: 'drop', list: 'keywords', value: v })} hint="What the job boards are searched for." />
-        <ChipInput label="Title terms" placeholder="Add a word and press Enter" values={state.topicTerms} onAdd={(v) => dispatch({ type: 'add', list: 'topicTerms', value: v })} onDrop={(v) => dispatch({ type: 'drop', list: 'topicTerms', value: v })} hint="Words that make a job title on topic, in every ad language." />
-      </Folded>
-
-      <Folded id="review-cv" title="CV" summary={cvOverview(state, profile)} open={cvOpen || Boolean(errors('cv'))} messages={errors('cv')}>
+      <Folded id="review-cv" title="Master CV" summary={cvOverview(state, profile)} open={cvOpen || Boolean(errors('cv'))} messages={errors('cv')}>
         <Switch label="Preview" checked={!cvRaw} onChange={(on) => setCvRaw(!on)} />
         {cvRaw ? (
           <div className="field onb-field">
@@ -316,7 +278,7 @@ export function Review({ state, profile, dispatch, onSaved, onBack }: Props) {
       {state.story && (
         <Part
           id="review-story"
-          title="Your story bank"
+          title="Stories"
           messages={errors('story')}
           lead="Your CV lists what you did. A story tells what was behind it, and the tailor draws on it when it writes an application. Here is one from your CV: fill in what the CV could not say. Add more later in Profile → Stories."
         >

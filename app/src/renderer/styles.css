@@ -453,6 +453,7 @@ details.part > summary + * { margin-top: var(--space-4); }
 
 /* Settings (issues 222 and 393): one reading-width column of sections, each under a section label. */
 .settings { box-sizing: content-box; max-width: 620px; margin: 0; padding: var(--size-screen-top) var(--size-screen-gutter) var(--space-5); /* on the gutter, like every screen; it ends level with the sidebar's foot (20 px up), no room to scroll below its last buttons */ display: flex; flex-direction: column; gap: var(--space-7); }
+.profile-details { display: flex; flex-direction: column; gap: var(--space-7); } /* the details' parts, spaced as the page's other parts */
 .main:has(> .settings), .main:has(> .page-with-aside) { overflow-y: auto; }
 /* A one-column screen with a list of its sections beside it, on a wide window only. */
 .page-with-aside { display: flex; align-items: flex-start; }
@@ -490,12 +491,10 @@ details.part > summary + * { margin-top: var(--space-4); }
 .connection-choice ul { padding-left: var(--space-5); }
 /* Profile (issue 222): the Settings column; the save bar stays in reach at the foot. */
 .profile-chips > * { margin: 0; }
-/* its foot 20 px from the bottom, the sidebar's: Save lines up with Find new jobs */
+/* with the details only, while they have unsaved changes: it sticks at the window's foot over the details, not over the CV and the Stories */
 .profile-save { position: sticky; bottom: 0; display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; padding: var(--space-4) 0 var(--space-5); background: var(--color-ground); }
 .profile-save > p { margin: 0; }
 .profile-save > .error { flex-basis: 100%; }
-/* a page that ends with its sticky save bar ends at the bar: no room to scroll below it */
-.settings:has(> .profile-save:last-child, > :last-child > .profile-save:last-child) { padding-bottom: 0; }
 /* In Profile an error is a sentence under its field. */
 .field-error { margin: 0; font-size: var(--text-small-size); font-weight: 600; color: var(--color-ink); }
 .field-error::before { content: '↳ '; color: var(--color-ink-muted); }

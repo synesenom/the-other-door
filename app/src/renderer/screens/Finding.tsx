@@ -186,13 +186,13 @@ function Summary({
   onViewMatches,
   reminder,
   onChooseDiscovery,
-  onCheckSearch,
+  onLowerBar,
 }: {
   record: RunRecord
   onViewMatches: () => void
   reminder: DiscoveryChoice[]
   onChooseDiscovery?: () => void
-  onCheckSearch?: () => void
+  onLowerBar?: () => void
 }) {
   const n = record.new_above_threshold.length
   const account = n === 0 ? runAccount(record) : null
@@ -233,9 +233,9 @@ function Summary({
         <button type="button" className="primary" onClick={onViewMatches}>
           View matches
         </button>
-        {account !== null && onCheckSearch && (
-          <button type="button" className="secondary" onClick={onCheckSearch}>
-            Check your search terms
+        {account !== null && onLowerBar && (
+          <button type="button" className="secondary" onClick={onLowerBar}>
+            Show broader matches
           </button>
         )}
       </div>
@@ -252,7 +252,7 @@ export function Finding({
   discoveryUnchosen = [],
   discoveryOff = [],
   onChooseDiscovery,
-  onCheckSearch,
+  onLowerBar,
 }: {
   /** null only while watching a run started elsewhere: this window has none of its own */
   state: FindingState | null
@@ -263,8 +263,8 @@ export function Finding({
   discoveryOff?: DiscoveryChoice[]
   /** Opens Profile, where they are chosen. */
   onChooseDiscovery?: () => void
-  /** The zero-match card's second action, opening Profile at what to look for; none given, no button (the phone has no Profile). */
-  onCheckSearch?: () => void
+  /** The zero-match card's second action, opening Profile at what to look for (Match fit); none given, no button (the phone has no Profile). */
+  onLowerBar?: () => void
   onStart: () => void
   onStop: () => void
   onViewMatches: () => void
@@ -329,7 +329,7 @@ export function Finding({
           onViewMatches={onViewMatches}
           reminder={state.firstRun && state.record.new_above_threshold.length < FEW_MATCHES ? discoveryOff : []}
           onChooseDiscovery={onChooseDiscovery}
-          onCheckSearch={onCheckSearch}
+          onLowerBar={onLowerBar}
         />
       )}
       {!showing && state && state.kind !== 'summary' && (

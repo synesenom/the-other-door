@@ -322,7 +322,7 @@ test.describe('a Prepare in progress', () => {
 })
 
 test.describe('discovery sources never chosen', () => {
-  test('the sources never chosen are said under Discover, and Enable opens Settings on Risky sources', async ({ page, world }) => {
+  test('the sources never chosen are said under Discover, and Enable opens Settings on Where to find employers', async ({ page, world }) => {
     await ready(page)
     unsetConfig(world, ['linkedin_discovery'])
     await page.reload()
@@ -334,7 +334,7 @@ test.describe('discovery sources never chosen', () => {
 
     await sources.getByRole('button', { name: 'Enable LinkedIn' }).click()
     await expect(findingHeading(page)).toHaveCount(0)
-    await expect(page.getByRole('heading', { name: 'Risky sources', level: 2 })).toBeInViewport()
+    await expect(page.getByRole('heading', { name: 'Where to find employers', level: 2 })).toBeInViewport()
     // the run goes on; nothing was turned on behind the user's back
     await expect(runButton(page)).toHaveText('Finding jobs…')
     await expect(runButton(page)).toBeEnabled()

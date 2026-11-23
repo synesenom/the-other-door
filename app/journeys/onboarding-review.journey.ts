@@ -3,12 +3,14 @@
 import { readFileSync } from 'node:fs'
 import { expect, test } from './fixtures'
 import {
+  addTitle,
+  dropTitle,
   fold,
   LAUNCH,
   reason,
   reviewHeading,
   saveAndSearch,
-  titleBox,
+  titleChip,
   toReview,
 } from './helpers/onboarding'
 import type { Page } from '@playwright/test'
@@ -29,7 +31,7 @@ function nothingSaved(world: import('../test/world/build').World) {
   expect(world.toolCalls('save_cv')).toEqual([])
 }
 
-test('You: name, email, city, where to work and the ad languages are all changed in place and saved as changed', async ({ page, world, os }) => {
+test('About you: name, email, city, where to work and the ad languages are all changed in place and saved as changed', async ({ page, world, os }) => {
   await toReview(page, world, os)
   await name(page).fill('Mette K. Larsen')
   await email(page).fill('mette@larsen.example.com')
@@ -49,28 +51,25 @@ test('You: name, email, city, where to work and the ad languages are all changed
   })
 })
 
-test('with every title unticked, Save says a title is needed', async ({ page, world, os }) => {
+test('with every title dropped, Save says a title is needed', async ({ page, world, os }) => {
   await toReview(page, world, os)
-  await titleBox(page, 'Senior Data Scientist').uncheck()
-  await titleBox(page, 'Lead Data Scientist').uncheck()
+  await dropTitle(page, 'Senior Data Scientist')
+  await dropTitle(page, 'Lead Data Scientist')
   await expect(saveAndSearch(page)).toBeDisabled()
   await expect(reason(page)).toHaveText('Choose at least one title.', { timeout: 5_000 })
 })
 
-test('titles: the recommended ones start ticked; unticking one and ticking another proposes new search terms, Save waiting meanwhile', async ({ page, world, os }) => {
+test('titles: the recommended ones start as chips; dropping one and adding another proposes new search terms, Save waiting meanwhile', async ({ page, world, os }) => {
   await toReview(page, world, os)
-  await expect(titleBox(page, 'Senior Data Scientist')).toBeChecked()
-  await expect(titleBox(page, 'Lead Data Scientist')).toBeChecked()
-  await expect(titleBox(page, 'Machine Learning Engineer')).not.toBeChecked()
-  await expect(titleBox(page, 'Forecasting Specialist')).not.toBeChecked()
-  await expect(page.getByRole('group', { name: 'The job titles to look for' }).getByRole('checkbox', { name: 'Senior Data Scientist your latest title' })).toBeVisible()
+  await expect(titleChip(page, 'Senior Data Scientist')).toBeVisible()
+  await expect(titleChip(page, 'Lead Data Scientist')).toBeVisible()
+  await expect(titleChip(page, 'Machine Learning Engineer')).toHaveCount(0)
   expect(world.toolCalls('keywords')).toHaveLength(1)
 
   world.faults({ tools: { keywords: { delay_s: 2 } } })
-  await titleBox(page, 'Lead Data Scientist').uncheck()
-  await titleBox(page, 'Forecasting Specialist').check()
+  await dropTitle(page, 'Lead Data Scientist')
+  await addTitle(page, 'Forecasting Specialist')
   await expect(reason(page)).toHaveText('Choosing search terms for your titles…')
-  await expect(fold(page, 'Search').locator('summary')).toContainText('Choosing them…')
   await expect(saveAndSearch(page)).toBeDisabled()
   await expect(saveAndSearch(page)).toBeEnabled(LAUNCH)
   expect(world.toolCalls('keywords').map((c) => c.args?.role_targets)).toEqual([
@@ -85,7 +84,7 @@ test('titles: the recommended ones start ticked; unticking one and ticking anoth
 
 test('CV: the draft is shown formatted, edited in the box, and the edited text is what cv.md holds', async ({ page, world, os }) => {
   await toReview(page, world, os)
-  const cv = fold(page, 'CV')
+  const cv = fold(page, 'Master CV')
   await expect(cv).not.toHaveAttribute('open') // a draft was made: folded
   await expect(cv.locator('summary')).toContainText('Ready')
   await cv.locator('summary').click()
@@ -148,7 +147,7 @@ test('Save writes config.json and cv.md with exactly the reviewed answers, then 
   await expect.poll(() => world.toolCalls('find_jobs').map((c) => c.args?.skip)).toEqual([['discover', 'follow', 'collect']])
 })
 
-test('init_profile refusing a field puts its message under the part that owns it; the next Save goes through', async ({ page, world, os }) => {
+test('init_profile refusing a field puts its message under the part that owns it, a search term in the general list; the next Save goes through', async ({ page, world, os }) => {
   await toReview(page, world, os)
   world.faults({
     tools: {
@@ -159,18 +158,11 @@ test('init_profile refusing a field puts its message under the part that owns it
     },
   })
   await saveAndSearch(page).click()
-  const search = fold(page, 'Search')
-  await expect(search).toHaveAttribute('open', '') // opened to show it
-  await expect(search.getByRole('alert')).toHaveText('at most 40 search terms')
-  await expect(page.getByRole('region', { name: 'Check your answers', exact: true }).getByRole('alert').first().getByRole('listitem')).toHaveText(['min_score: min_score must be between 0.0 and 1.0', 'something else went wrong'])
+  await expect(page.getByRole('region', { name: 'Check your answers', exact: true }).getByRole('alert').first().getByRole('listitem')).toHaveText(['search_keywords: at most 40 search terms', 'min_score: min_score must be between 0.0 and 1.0', 'something else went wrong'])
   await expect(reviewHeading(page)).toBeVisible()
   expect(world.exists('profile/config.json')).toBe(false)
   expect(world.toolCalls('save_cv')).toEqual([])
   await reviewHeading(page).scrollIntoViewIfNeeded()
-  // Editing the Search part clears its message; the top list stays until the next Save.
-  await page.getByRole('textbox', { name: 'Search terms', exact: true }).fill('energy analyst')
-  await page.getByRole('textbox', { name: 'Search terms', exact: true }).press('Enter')
-  await expect(search.getByRole('alert')).toHaveCount(0)
   await saveAndSearch(page).click()
   await expect(finding(page)).toBeVisible(LAUNCH)
   expect(world.toolCalls('init_profile')).toHaveLength(2)
@@ -202,7 +194,7 @@ test('a failed read-back after a good Save is not reported as an unsaved CV', as
 })
 
 test.describe('the example story', () => {
-  const story = (page: Page) => page.getByRole('region', { name: 'Your story bank' })
+  const story = (page: Page) => page.getByRole('region', { name: 'Stories' })
   const drafted = {
     title: 'Built the forecasting models', context: 'The team planned with spreadsheets.', action: 'Built the models in Python.',
     result: 'The planners used them every week.', learning: '', missing: ['learning'], conflicts: [],

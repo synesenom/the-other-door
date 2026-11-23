@@ -34,8 +34,8 @@ test.describe('the editor', () => {
     await cvBox(page).blur()
     await expect.poll(() => readText(world, 'profile/cv.md')).toBe(`${world.persona.cv}\n- Danish driving licence B\n- Forklift`)
     expect(readText(world, 'profile/cv.md.bak')).toBe(world.persona.cv)
-    // the details' Save has nothing to do with it
-    await expect(saveButton(page)).toBeDisabled()
+    // the details' Save has nothing to do with it: no bar
+    await expect(saveButton(page)).toHaveCount(0)
   })
 
   test('text typed just before the window is closed is written first', async ({ page, app, world }) => {

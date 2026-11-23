@@ -1,4 +1,4 @@
-// Settings beyond the connections: Risky sources (profile/config.json keys about how the app works), Your data (the folder, Export and Import), Appearance, Help (the report), and the narrow window.
+// Settings beyond the connections: Where to find employers (profile/config.json keys about how the app works), Your data (the folder, Export and Import), Appearance, Help (the report), and the narrow window.
 import { existsSync, readdirSync, readFileSync, realpathSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { expect } from './fixtures'
@@ -21,14 +21,14 @@ import {
 
 const theme = (page: import('@playwright/test').Page) => page.evaluate(() => ({ attr: document.documentElement.getAttribute('data-theme'), stored: localStorage.getItem('door.theme') }))
 
-// --------------------------------------------------------------------------- Risky sources
+// --------------------------------------------------------------------------- Where to find employers
 
 const profileConfig = (world: { home: string }) => JSON.parse(readFileSync(join(world.home, 'profile', 'config.json'), 'utf8'))
 
-test.describe('Risky sources', () => {
+test.describe('Where to find employers', () => {
   test('offers the sources serving the city; a tick is saved at once', async ({ page, world }) => {
     await openSettings(page)
-    const part = region(page, 'Risky sources')
+    const part = region(page, 'Where to find employers')
     // Copenhagen: LinkedIn (anywhere), not profession.hu, HelloWork or Jobbsafari
     const linkedin = part.getByRole('checkbox', { name: 'LinkedIn' })
     await expect(linkedin).not.toBeChecked()

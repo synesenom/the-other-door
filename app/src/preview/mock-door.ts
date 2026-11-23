@@ -180,6 +180,11 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
         installed = true
         return { outcome: 'ok', results: [{ tool: 'claude', ok: true }] }
       case 'list_matches':
+        if (scene.weak) {
+          const list = listFor(args)
+          const sources = scene.weak === 'sources' ? [{ key: 'linkedin_discovery', label: 'LinkedIn' }] : []
+          return { ...list, matches: [], scored: 40, last_reviewed_at: null, weak: { matches: list.matches.slice(0, 3), hint: scene.weak, sources } }
+        }
         if (scene.noneReached) return { ...listFor(args), matches: [], scored: 40, last_reviewed_at: null }
         return state === 'empty' ? { ...listFor(args), matches: [] } : state === 'long' ? longRows(unseen(listFor(args), Boolean(args['new_only']))) : unseen(listFor(args), Boolean(args['new_only']))
       case 'mark_seen':

@@ -38,7 +38,7 @@ describe('Settings', () => {
     const { onRecheck, call } = show()
     expect(screen.getByRole('heading', { name: 'Settings', level: 1 })).toBeInTheDocument()
     expect(onRecheck).toHaveBeenCalledTimes(1)
-    expect(calls(call).map((c) => c[0])).toEqual(['show_profile']) // Risky sources
+    expect(calls(call).map((c) => c[0])).toEqual(['show_profile']) // Where to find employers
   })
 
   it('has the Connections section with Claude and Google Drive', () => {
@@ -66,7 +66,7 @@ describe('Settings', () => {
   it('has no list of parts: a page about one screen tall', () => {
     show()
     expect(screen.queryByRole('navigation', { name: 'Sections' })).toBeNull()
-    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual(['Connections', 'Risky sources', 'Your data', 'Appearance', 'Help'])
+    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual(['Connections', 'Where to find employers', 'Your data', 'Appearance', 'Help'])
   })
 
   it('Help holds the version, the documents and the report button', async () => {

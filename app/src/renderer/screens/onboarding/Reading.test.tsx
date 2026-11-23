@@ -85,10 +85,10 @@ describe('Reading', () => {
     expect(seen.warnings.basics).toBe('not logged in')
   })
 
-  it('what Claude could not do is kept for the review: details, titles, terms', async () => {
+  it('what Claude could not do is kept for the review: details and titles (a failed term proposal says nothing)', async () => {
     const h = setup({ infer_basics: { ...basics, warning: 'usage limit' }, suggest_titles: { ...titles, warning: 'overloaded' }, keywords: () => { throw new Error('quota') } })
     await waitFor(() => expect(h.onDone).toHaveBeenCalled())
-    expect(seen.warnings).toEqual({ basics: 'usage limit', titles: 'overloaded', terms: 'quota' })
+    expect(seen.warnings).toEqual({ basics: 'usage limit', titles: 'overloaded' })
   })
 
   it('a failed titles call goes on, leaving the titles for the review, and says why', async () => {
@@ -129,7 +129,7 @@ describe('Reading', () => {
   it('failed terms: the titles stand in, and it still goes on', async () => {
     const h = setup({ keywords: () => { throw new Error('quota') } })
     await waitFor(() => expect(h.onDone).toHaveBeenCalled())
-    expect(seen.keywordsState).toBe('skipped')
+    expect(seen.keywords).toEqual([])
   })
 
   it('names a file it found no text in, while it reads on', async () => {
@@ -165,7 +165,6 @@ describe('Reading', () => {
     expect(seen.name).toBe('Ada Lovelace')
     expect(h.call).toHaveBeenCalledWith('suggest_titles', { titles: ['Data Scientist'], languages: ['English'] })
     expect(seen.roleTargets).toEqual(['Data Scientist', 'Lead'])
-    expect(seen.titles.map((t) => t.title)).toEqual(['Lead', 'Quant'])
   })
 
   describe('the example story', () => {

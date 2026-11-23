@@ -66,7 +66,7 @@ describe('Wizard', () => {
     expect(screen.queryByRole('navigation', { name: 'Sections' })).toBeNull()
     await toReview()
     const links = within(screen.getByRole('navigation', { name: 'Sections' })).getAllByRole('link')
-    expect(links.map((l) => l.textContent)).toEqual(['You', 'Titles', 'What matters to you', 'Search', 'CV', 'Where to find employers'])
+    expect(links.map((l) => l.textContent)).toEqual(['About you', 'What to look for', 'Master CV', 'Where to find employers'])
     for (const l of links) expect(document.getElementById(l.getAttribute('href')!.slice(1))).not.toBeNull()
   })
 

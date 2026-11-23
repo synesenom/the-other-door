@@ -47,7 +47,7 @@ describe('Analytics', () => {
     render(<Analytics />)
     const part = await screen.findByRole('region', { name: 'Claude usage' })
     // an estimate, marked as one, and plainly not something to pay
-    expect(within(part).getByText('≈ $2.10')).toBeInTheDocument()
+    expect(await within(part).findByText('≈ $2.10')).toBeInTheDocument()
     const notice = within(part).getByText("You don't pay this.")
     expect(notice.tagName).toBe('STRONG')
     expect(notice.parentElement).toHaveTextContent("You don't pay this. Your Claude plan covers it. The last 7 days, estimated at API prices.")
