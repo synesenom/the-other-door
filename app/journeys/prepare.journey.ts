@@ -36,9 +36,13 @@ async function prepareVestvind(page: Page): Promise<void> {
 async function openKronvejMaterials(page: Page): Promise<void> {
   await toApplications(page)
   await card(page, KRONVEJ).click()
-  await expect(postingHeading(page, KRONVEJ)).toBeVisible()
-  await page.getByRole('button', { name: 'See the application', exact: true }).click()
   await expect(readyHeading(page)).toBeVisible()
+  await pagesLoaded(page, 'CV', 2)
+}
+
+/** Switches Ready to send to the letter (it opens on the CV). */
+async function showLetter(page: Page): Promise<void> {
+  await page.getByRole('button', { name: /^Letter · / }).click()
   await pagesLoaded(page, 'Letter', 1)
 }
 
@@ -53,8 +57,8 @@ test('Prepare application on a new match tailors, compiles and opens Ready to se
 
   await expect(readyHeading(page)).toBeVisible({ timeout: 90_000 })
   await expect(page.getByText(`${VESTVIND} · Vestvind Service A/S`, { exact: true })).toBeVisible()
-  await expect(page.getByRole('button', { name: /^Letter · \d+ words$/ })).toHaveAttribute('aria-pressed', 'true')
-  await pagesLoaded(page, 'Letter', 1)
+  await expect(page.getByRole('button', { name: /^CV · / })).toHaveAttribute('aria-pressed', 'true')
+  await pagesLoaded(page, 'CV', 2)
 
   const id = world.jobId(VESTVIND_KEY)
   expect(ledgerEntry(world, VESTVIND_KEY)?.status).toBe('prepared')
@@ -117,6 +121,7 @@ test('the server dying during Prepare says so, and the next Prepare works', asyn
 test('Prepare again asks first; Cancel and Escape leave the application as it is', async ({ page, world }) => {
   await toApplications(page)
   await card(page, KRONVEJ).click()
+  await page.getByRole('button', { name: 'See the posting', exact: true }).click()
   await expect(postingHeading(page, KRONVEJ)).toBeVisible()
   const before = readFileSync(join(outDir(world, KRONVEJ_KEY), 'cv.html'), 'utf8')
 
@@ -141,6 +146,7 @@ test('Prepare again replaces the application with a new one', async ({ page, wor
   world.faults({ claude: { tailor: { cover_letter: letterHtml(300, world.persona.name) } } })
   await toApplications(page)
   await card(page, KRONVEJ).click()
+  await page.getByRole('button', { name: 'See the posting', exact: true }).click()
   await page.getByRole('button', { name: 'Prepare again…', exact: true }).click()
   await page.getByRole('dialog', { name: 'Prepare again?' }).getByRole('button', { name: 'Prepare again' }).click()
 
@@ -154,32 +160,33 @@ test('Prepare again replaces the application with a new one', async ({ page, wor
 
 // --------------------------------------------------------------------------- §5 Ready to send
 
-test('Ready to send: the letter first, the CV behind the switch, every page loaded', async ({ page }) => {
+test('Ready to send: the CV first, the letter behind the switch, every page loaded', async ({ page }) => {
   await openKronvejMaterials(page)
   await expect(page.getByText(`${KRONVEJ} · Kronvej`, { exact: true })).toBeVisible()
   const letter = page.getByRole('button', { name: /^Letter · \d+ words$/ })
   const cv = page.getByRole('button', { name: 'CV · 2 pages' })
-  await expect(letter).toHaveAttribute('aria-pressed', 'true')
-  await expect(cv).toHaveAttribute('aria-pressed', 'false')
-  await expect(page.getByRole('note')).toHaveCount(0) // within the limits
-  await expect(page.getByRole('button', { name: 'Save letter…' })).toBeVisible()
-  await expect(page.getByRole('textbox', { name: 'Anything to change?' })).toHaveAttribute('placeholder', 'Change the letter: make it shorter and warmer…')
-  await expect(page.getByRole('button', { name: 'Revise' })).toBeDisabled()
-
-  await cv.click()
   await expect(cv).toHaveAttribute('aria-pressed', 'true')
-  await pagesLoaded(page, 'CV', 2)
-  await expect(page.getByRole('img', { name: /^Letter/ })).toHaveCount(0)
+  await expect(letter).toHaveAttribute('aria-pressed', 'false')
+  await expect(page.getByRole('note')).toHaveCount(0) // within the limits
   await expect(page.getByRole('button', { name: 'Save CV…' })).toBeVisible()
   await expect(page.getByRole('textbox', { name: 'Anything to change?' })).toHaveAttribute('placeholder', 'Change the CV: lead with the dashboards project…')
+  await expect(page.getByRole('button', { name: 'Revise' })).toBeDisabled()
+
+  await letter.click()
+  await expect(letter).toHaveAttribute('aria-pressed', 'true')
+  await pagesLoaded(page, 'Letter', 1)
+  await expect(page.getByRole('img', { name: /^CV/ })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Save letter…' })).toBeVisible()
+  await expect(page.getByRole('textbox', { name: 'Anything to change?' })).toHaveAttribute('placeholder', 'Change the letter: make it shorter and warmer…')
   await expect(page.getByRole('note')).toHaveCount(0)
 
-  await page.getByRole('button', { name: '← Posting' }).click()
-  await expect(postingHeading(page, KRONVEJ)).toBeVisible()
+  await page.getByRole('button', { name: '← Applications' }).click()
+  await expect(card(page, KRONVEJ)).toBeVisible()
 })
 
 test('Save letter writes the PDF where the save dialog says', async ({ page, world, os }) => {
   await openKronvejMaterials(page)
+  await showLetter(page)
   mkdirSync(join(world.scratch, 'saved'), { recursive: true })
   const target = join(world.scratch, 'saved', 'Mette letter.pdf')
   await os.nextSave(target)
@@ -191,6 +198,7 @@ test('Save letter writes the PDF where the save dialog says', async ({ page, wor
 test('Revise changes the letter, shows the new pages, and Undo puts it back', async ({ page, world }) => {
   world.faults({ claude: { revise: { delay_s: 3 } } })
   await openKronvejMaterials(page)
+  await showLetter(page)
   const letter = join(outDir(world, KRONVEJ_KEY), 'cover_letter.html')
   const before = readFileSync(letter, 'utf8')
   const words = (await page.getByRole('button', { name: /^Letter · / }).textContent())!
@@ -263,7 +271,7 @@ test('What you sent: the copy kept when it went out, read only, and saved from t
 
   await expect(page.getByRole('heading', { name: 'What you sent', level: 1 })).toBeVisible()
   await expect(page.getByText(`${SUNDLINE} · Sundline Shipping`, { exact: true })).toBeVisible()
-  await pagesLoaded(page, 'Letter', 1)
+  await showLetter(page)
   await expect(page.getByRole('img', { name: 'Letter, page 1' })).toHaveAttribute('src', new RegExp(`/${world.jobId('sundline-network-optimisation')}/sent/cover_letter_page_1\\.png`))
   await expect(page.getByRole('button', { name: "I've applied" })).toHaveCount(0)
   await expect(page.getByRole('textbox', { name: 'Anything to change?' })).toHaveCount(0)
@@ -285,6 +293,7 @@ test('What you sent for a job whose sent copy is missing still shows and saves i
   await card(page, SUNDLINE).click()
   await page.getByRole('button', { name: /^See (what you sent|the application)$/ }).click()
   await expect(page.getByRole('heading', { name: /^(What you sent|Ready to send)$/, level: 1 })).toBeVisible()
+  await page.getByRole('button', { name: /^Letter · / }).click()
   mkdirSync(join(world.scratch, 'saved'), { recursive: true })
   const target = join(world.scratch, 'saved', 'letter.pdf')
   await os.nextSave(target)

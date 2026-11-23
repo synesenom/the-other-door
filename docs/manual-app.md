@@ -209,7 +209,7 @@ and says so when you point at it.
 
 ### When the run is done
 
-A card says how many new matches the run found ("2 new matches": the ads this run scored at or above your "Match fit" setting; a match an earlier run found is not counted again) and lists the best. It says nothing
+A card says how many new matches the run found ("2 new matches": the ads this run scored at or above your "Match fit" setting; a match an earlier run found is not counted again) and lists the best (click one to open its posting). It says nothing
 about what did not work, because nothing there needs you: a site that could not be read is read
 again on the next run, and a posting that could not be scored is scored then. Every site's outcome
 and error is in the run record. "View matches" opens Matches on
@@ -254,7 +254,7 @@ next match without going back (or the k and j keys). Back in the list, it is whe
 and the row you last opened is marked.
 
 In a window narrower than 900 px the sidebar becomes a tab bar and steps aside while a posting
-is open. Ready to send is one more pushed screen ("← Posting") that shows one document at a
+is open. Ready to send is one more pushed screen ("← Posting", or "← Applications" from a Prepared card) that shows one document at a
 time behind a switch ("CV · 2 pages", "Letter · 310 words"), with Save and I've applied in a
 bar at the bottom.
 
@@ -303,7 +303,7 @@ page to cite, there is no Salary line.
 ## Ready to send
 
 The prepared application, one document at a time: a switch ("CV · 2 pages", "Letter · 310
-words") picks the CV or the letter, shown large enough to read.
+words") picks the CV or the letter, shown large enough to read. It opens on the CV, or on the letter when the first thing it warns about is in the letter.
 Its pages scroll in their own column, so the second page of the CV is one scroll away and the
 column on the right stays in view; the wider the window, the larger the page. On a phone the
 column comes under the pages.
@@ -312,8 +312,8 @@ column comes under the pages.
 - Under that, a line marked with the warning triangle names the numbers, employers, skills,
   certifications or degrees of the CV and letter that your `cv.md` and story bank do not back
   ("Not in your CV: 87%, Nordwind. Check them before you send it."). A claim the tailor kept as true shows its reason in brackets after the name. Revise can take them out.
-- A second marked line says "Some text runs off the page in your CV. Switch to the CV and ask for a
-  shorter version." when words of the CV never reached its PDF (Chromium cuts what runs past the
+- A second marked line says "Some text runs off the page in your CV. Ask for a shorter version." (with
+  "Switch to the CV" while the letter is shown) when words of the CV never reached its PDF (Chromium cuts what runs past the
   page); on materials that cannot be revised it says "Prepare it again to fix it." Prepare already
   asked the tailor once to trim the CV before it shows this.
 - A CV is meant to be within its page limit, as your profile stands now (the job country's convention, usually 2), a letter 1 page and 250 to 350 words. When one is over,
@@ -325,7 +325,7 @@ column comes under the pages.
 - **I've applied** records the job as applied in one click and takes you back to the list; it
   moves to Applied on the Applications board, where its status can be changed later.
 
-The link at the top returns to the posting ("← Posting").
+The link at the top returns to where you came from: the posting ("← Posting"), or the board ("← Applications").
 
 Once you have applied, the posting's button reads **See what you sent** and the screen is
 **What you sent**: the CV and letter exactly as they were when you first marked the job applied
@@ -336,7 +336,7 @@ width. Save saves that copy.
 ## Revise and Undo
 
 Beside the pages, **Anything to change?** takes an instruction in your own words, for the
-document the switch shows (the letter first). **Revise** sends it to Claude,
+document the switch shows (the CV first). **Revise** sends it to Claude,
 which takes up to a few minutes; the pages dim and the buttons wait. Then the pages are
 rebuilt and shown, and a line says so. Revise also brings the document's layout up to your current template, so earlier materials pick up a template change on their next Revise.
 
@@ -390,7 +390,8 @@ rejected, ghosted or withdrawn after you prepared or sent them (a match you dism
 says "No answer in 45 days" on its card, with a **Mark ghosted** button under it that records it as
 ghosted, dated today. The line under the title counts
 the jobs in play and in interviews. Clicking a card opens its posting across the whole window,
-where you change its status or open a prepared job's application; "← Applications" goes back.
+where you change its status; "← Applications" goes back. A card in Prepared opens Ready to send
+instead, with "See the posting" under the title for its status and Prepare again.
 **Add a job…** imports an ad. When nothing is in play, the screen says so. On a narrow window
 the board scrolls sideways in its own box.
 

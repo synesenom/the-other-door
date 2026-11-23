@@ -76,6 +76,8 @@ export function Applications({
   const [importing, setImporting] = useState(false)
   const [notice, setNotice] = useState<{ text: string; warning?: string } | null>(null)
   const opened = useRef<string | null>(null)
+  // Ready to send was opened straight from a Prepared card: its back link returns to the board, not to a posting
+  const [fromBoard, setFromBoard] = useState(false)
 
   useEffect(() => {
     let live = true
@@ -101,16 +103,24 @@ export function Applications({
 
   const refresh = useCallback(() => setTick((t) => t + 1), [])
 
+  /** Opens one job on its own page. `keep`: it stays open though it leaves the list; `fromBoard`: Ready to send
+   * opened straight from a Prepared card, whose back link returns to the board. */
+  const select = (id: string, to: PaneView, { doc, fromBoard = false, keep }: { doc?: Document; fromBoard?: boolean; keep: boolean }) => {
+    opened.current = keep ? id : null
+    setSelected(id)
+    setNotice(null)
+    setView(to)
+    setInitialDoc(doc)
+    setFromBoard(fromBoard)
+    setPushed(true)
+  }
+
   // A clicked notification names this job: select it, on the view it asked for, though the list may not hold it.
   useEffect(() => {
     if (!opening) return
     const { target } = opening
-    opened.current = target.jobId
-    setSelected(target.jobId)
-    setNotice(null)
-    setView(target.screen === 'materials' ? 'materials' : 'posting')
-    setInitialDoc(target.screen === 'materials' ? target.document : undefined)
-    setPushed(true)
+    if (target.screen === 'materials') select(target.jobId, 'materials', { doc: target.document, keep: true })
+    else select(target.jobId, 'posting', { keep: true })
     refresh()
     onOpened?.()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -123,6 +133,7 @@ export function Applications({
   const changed = (result: SetStatusResult, title: string) => {
     setPushed(false)
     setView('posting')
+    setFromBoard(false)
     told(result, title)
   }
   // No answer for the tracker's days: record it as ghosted, dated today.
@@ -151,7 +162,22 @@ export function Applications({
     }
     setView(next)
   }
-  const posting = selected && <ReadingPane jobId={selected} view={view} onView={switchView} onChanged={changed} initialDoc={initialDoc} />
+  const backToBoard = () => {
+    setPushed(false)
+    setView('posting')
+    opened.current = null
+    refresh()
+  }
+  const posting = selected && (
+    <ReadingPane
+      jobId={selected}
+      view={view}
+      onView={switchView}
+      onChanged={changed}
+      initialDoc={initialDoc}
+      back={fromBoard ? { label: '← Applications', onBack: backToBoard } : undefined}
+    />
+  )
   const noticeLines = notice && (
     <>
       <p role="status" className="notice">
@@ -176,12 +202,11 @@ export function Applications({
       </div>
     )
 
-  const open = (id: string) => {
-    setSelected(id)
-    setView('posting')
-    setNotice(null)
-    opened.current = null
-    setPushed(true)
+  // A Prepared card goes straight to its application; the other columns open the posting.
+  // Preparing moves a job out of the list once it is sent: a prepared one stays open while on screen
+  const open = (m: Match) => {
+    const prepared = m.status === 'prepared'
+    select(m.id, prepared ? 'materials' : 'posting', { fromBoard: prepared, keep: prepared })
   }
   const columns = boardColumns(rows ?? [], closed)
   const interviewing = columns[2]!.rows.length
@@ -226,7 +251,7 @@ export function Applications({
                 </div>
                 <ul className="board-cards">
                   {c.rows.map((m) => (
-                    <Card key={m.id} m={m} onOpen={() => open(m.id)} onGhost={() => markGhosted(m)} ghosting={ghostingId === m.id} />
+                    <Card key={m.id} m={m} onOpen={() => open(m)} onGhost={() => markGhosted(m)} ghosting={ghostingId === m.id} />
                   ))}
                 </ul>
               </section>
@@ -237,12 +262,8 @@ export function Applications({
         <ImportDialog
           onClose={() => setImporting(false)}
           onOpen={(id) => {
-            opened.current = id
             setImporting(false)
-            setNotice(null)
-            setSelected(id)
-            setView('posting')
-            setPushed(true)
+            select(id, 'posting', { keep: true })
             refresh()
           }}
         />

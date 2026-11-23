@@ -69,6 +69,7 @@ strong, b { font-weight: 600; }
 .posting > * { margin: 0; }
 .posting-head { display: flex; flex-direction: column; gap: var(--space-2); }
 .posting-head > * { margin: 0; }
+.posting-head > button { align-self: flex-start; } /* a text button keeps the heading's left edge */
 .reason { max-width: 60ch; }
 .score-line { position: relative; display: flex; align-items: center; gap: var(--size-gap-s); }
 .score-line .hint-pop { left: 0; right: auto; }
@@ -238,7 +239,7 @@ textarea { resize: none; }
 .summary-card { margin-top: var(--space-6); padding: var(--space-3) 0 0; display: flex; flex-direction: column; gap: var(--space-4); }
 .summary-card > * { margin: 0; }
 .summary-top { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
-.summary-top li { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); padding: var(--space-3) 0; border-top: 1px solid var(--color-border); }
+.summary-top li { border-top: 1px solid var(--color-border); }
 .summary-job { display: flex; flex-direction: column; min-width: 0; }
 
 .tab-icon { display: none; }

@@ -42,9 +42,9 @@ const figure = () => screen.getByRole('figure')
 const pick = (which: 'CV' | 'Letter') => userEvent.click(screen.getByRole('button', { name: new RegExp(`^${which} · `) }))
 
 describe('Materials', () => {
-  it('titles the view and shows one document at a time from the door-file scheme, the letter first', async () => {
+  it('titles the view and shows one document at a time from the door-file scheme, opened on the letter', async () => {
     mockDoor({ show: posting() })
-    render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} />)
+    render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} initialDoc="cover_letter" />)
     expect(await screen.findByRole('heading', { name: 'Ready to send' })).toBeInTheDocument()
     expect(screen.getByText('Data Analyst · Acme')).toBeInTheDocument()
     expect(document.querySelector('.dash')).toBeNull() // no blue bar above the title
@@ -57,7 +57,7 @@ describe('Materials', () => {
 
   it('has one document switch, in both widths, naming each document with its size', async () => {
     mockDoor({ show: posting() })
-    render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} />)
+    render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} initialDoc="cover_letter" />)
     await screen.findByRole('heading', { name: 'Ready to send' })
     expect(screen.getAllByRole('group', { name: 'Document' })).toHaveLength(1)
     expect(screen.getByRole('button', { name: 'CV · 2 pages' })).toHaveAttribute('aria-pressed', 'false')
@@ -83,7 +83,7 @@ describe('Materials', () => {
 
   it('says in words when the CV or the letter is over its limit', async () => {
     mockDoor({ show: posting({ materials: materials({ page_counts: { cv: 3, cover_letter: 2 }, pngs: { cv: ['a_page_1.png', 'a_page_2.png', 'a_page_3.png'].map((n) => `${dir}/cv_${n.slice(2)}`), cover_letter: [`${dir}/cover_letter_page_1.png`, `${dir}/cover_letter_page_2.png`] } }) }) })
-    render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} />)
+    render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} initialDoc="cover_letter" />)
     await screen.findByRole('heading', { name: 'Ready to send' })
     expect(within(figure()).getByRole('note')).toHaveTextContent('(limit is 1)')
     await pick('CV')
@@ -99,7 +99,7 @@ describe('Materials', () => {
 
   it.each([200, 400])('flags a letter of %i words', async (words) => {
     mockDoor({ show: posting({ materials: materials({ cover_letter_words: words }) }) })
-    render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} />)
+    render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} initialDoc="cover_letter" />)
     await screen.findByRole('heading', { name: 'Ready to send' })
     expect(within(figure()).getByRole('note')).toHaveTextContent('(aim for 250–350)')
   })
@@ -116,7 +116,7 @@ describe('Materials', () => {
   it('saves the document shown under its own name, and says where it went', async () => {
     const { actions } = mockDoor({ show: posting() }, { actions: saved })
     const saveMaterial = actions['save-material']
-    render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} />)
+    render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} initialDoc="cover_letter" />)
     await screen.findByRole('heading', { name: 'Ready to send' })
     expect(screen.queryAllByRole('note')).toHaveLength(0) // no caption repeating the switch
     const save = within(figure()).getByRole('button', { name: 'Save letter…' })
@@ -131,7 +131,7 @@ describe('Materials', () => {
 
   it('the change box names the document it changes, and follows the switch', async () => {
     mockDoor({ show: posting() })
-    render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} />)
+    render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} initialDoc="cover_letter" />)
     await screen.findByRole('heading', { name: 'Ready to send' })
     expect(screen.getByLabelText('Anything to change?')).toHaveAttribute('placeholder', expect.stringMatching(/^Change the letter: /))
     await pick('CV')
@@ -142,7 +142,7 @@ describe('Materials', () => {
     const { actions } = mockDoor({ show: posting() }, { actions: saved })
     const saveMaterial = actions['save-material']
     saveMaterial.mockResolvedValueOnce({ ok: false, canceled: true })
-    render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} />)
+    render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} initialDoc="cover_letter" />)
     await screen.findByRole('heading', { name: 'Ready to send' })
     await userEvent.click(screen.getByRole('button', { name: 'Save letter…' }))
     await waitFor(() => expect(saveMaterial).toHaveBeenCalled())
@@ -192,7 +192,7 @@ describe('Materials', () => {
     it('shows what was sent, read only: its pages from the sent copy, no Revise and no I have applied', async () => {
       stubNarrow(false)
       mockDoor({ show: sent() })
-      render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} />)
+      render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} initialDoc="cover_letter" />)
       expect(await screen.findByRole('heading', { name: 'What you sent' })).toBeInTheDocument()
       expect(screen.getAllByRole('img').map((i) => i.getAttribute('src'))).toEqual(['door-file://output/jobindex.1/sent/cover_letter_page_1.png?v=0'])
       expect(screen.queryByRole('button', { name: 'Revise' })).toBeNull()
@@ -204,7 +204,7 @@ describe('Materials', () => {
       stubNarrow(false)
       const { actions } = mockDoor({ show: sent() }, { actions: saved })
       const saveMaterial = actions['save-material']
-      render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} />)
+      render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} initialDoc="cover_letter" />)
       await screen.findByRole('heading', { name: 'What you sent' })
       await userEvent.click(within(figure()).getByRole('button', { name: 'Save letter…' }))
       expect(saveMaterial).toHaveBeenCalledWith('jobindex.1', 'cover_letter', true, 'Jane Doe - Cover letter.pdf')
@@ -214,7 +214,7 @@ describe('Materials', () => {
       stubNarrow(false)
       const { actions } = mockDoor({ show: posting({ status: 'applied', materials: materials({ sent: true }) }) }, { actions: saved })
       const saveMaterial = actions['save-material']
-      render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} />)
+      render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} initialDoc="cover_letter" />)
       await screen.findByRole('heading', { name: 'What you sent' })
       expect(screen.getAllByRole('img').map((i) => i.getAttribute('src'))).toEqual(['door-file://output/jobindex.1/cover_letter_page_1.png?v=0'])
       await userEvent.click(within(figure()).getByRole('button', { name: 'Save letter…' }))
@@ -232,7 +232,7 @@ describe('Materials', () => {
     it('narrow: only Save in the action bar', async () => {
       stubNarrow(true)
       mockDoor({ show: sent() })
-      render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} />)
+      render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} initialDoc="cover_letter" />)
       await screen.findByRole('heading', { name: 'What you sent' })
       expect(screen.getByRole('button', { name: 'Save letter…' })).toBeInTheDocument()
       expect(screen.queryByRole('button', { name: "I've applied" })).toBeNull()
@@ -243,7 +243,7 @@ describe('Materials', () => {
     const { actions } = mockDoor({ show: posting() }, { actions: saved })
     const saveMaterial = actions['save-material']
     saveMaterial.mockResolvedValueOnce({ ok: false, error: 'Could not save it: disk full' })
-    render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} />)
+    render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} initialDoc="cover_letter" />)
     await screen.findByRole('heading', { name: 'Ready to send' })
     await userEvent.click(within(figure()).getByRole('button', { name: 'Save letter…' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('Could not save it: disk full')
@@ -278,9 +278,9 @@ describe('Materials', () => {
       return () => (++n === 1 ? posting() : posting({ materials: materials({ page_counts: { cv: 2, cover_letter: 1 }, cover_letter_words: 280 }) }))
     }
 
-    it('applies to the letter by default and is off while the text is empty', async () => {
+    it('applies to the letter when opened on it, and is off while the text is empty', async () => {
       mockDoor({ show: posting() })
-      render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} />)
+      render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} initialDoc="cover_letter" />)
       await screen.findByRole('heading', { name: 'Ready to send' })
       expect(screen.getByRole('button', { name: /^Letter · / })).toHaveAttribute('aria-pressed', 'true')
       expect(screen.getByRole('button', { name: 'Revise' })).toBeDisabled()
@@ -293,7 +293,7 @@ describe('Materials', () => {
         show: revisedShow(),
         revise: { outcome: 'revised', job_id: 'jobindex.1', file: `${dir}/cover_letter.html`, compile: [{ file: 'cover_letter.html', status: 'compiled' }] },
       })
-      render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} />)
+      render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} initialDoc="cover_letter" />)
       await screen.findByRole('heading', { name: 'Ready to send' })
       await pick('CV')
       await userEvent.type(screen.getByLabelText('Anything to change?'), 'cut the retail job')
@@ -334,7 +334,7 @@ describe('Materials', () => {
 
     it('undoes the last change and reloads', async () => {
       const { call } = mockDoor({ show: revisedShow(), revise: { outcome: 'undone', job_id: 'jobindex.1', file: 'x', compile: [] } })
-      render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} />)
+      render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} initialDoc="cover_letter" />)
       await screen.findByRole('heading', { name: 'Ready to send' })
       await userEvent.click(screen.getByRole('button', { name: 'Undo last change' }))
       await waitFor(() => expect(screen.getAllByRole('img')[0]).toHaveAttribute('src', expect.stringContaining('?v=1')))
@@ -355,7 +355,7 @@ describe('Materials', () => {
       let finish: (v: unknown) => void = noop
       const pending = new Promise((r) => (finish = r))
       mockDoor({ show: posting(), revise: () => pending })
-      render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} />)
+      render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} initialDoc="cover_letter" />)
       await screen.findByRole('heading', { name: 'Ready to send' })
       await userEvent.type(screen.getByLabelText('Anything to change?'), 'x')
       await userEvent.click(screen.getByRole('button', { name: 'Revise' }))
@@ -400,7 +400,7 @@ describe('Materials', () => {
       stubNarrow(true)
       const { actions } = mockDoor({ show: posting() }, { actions: saved })
       const saveMaterial = actions['save-material']
-      render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} />)
+      render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} initialDoc="cover_letter" />)
       expect(await screen.findByRole('button', { name: '← Posting' })).toBeInTheDocument()
       const cv = screen.getByRole('button', { name: 'CV · 2 pages' })
       const letter = screen.getByRole('button', { name: 'Letter · 310 words' })
@@ -420,14 +420,14 @@ describe('Materials: text running off the page', () => {
   const overflow = { file: 'cv', kind: 'overflow', detail: 'text cut off: Kubernetes, Airflow' }
   const shows = async (readability: unknown, over: Record<string, unknown> = {}) => {
     mockDoor({ show: posting({ materials: materials({ readability, ...over }) }) })
-    render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} />)
+    render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} initialDoc="cover_letter" />)
     await screen.findByRole('heading', { name: /Ready to send|Sent/ })
   }
 
   it('says it once when the CV overflows', async () => {
     await shows([overflow, { ...overflow, detail: 'again' }])
     expect(screen.getAllByText(/runs off the page/)).toHaveLength(1)
-    expect(screen.getByText('Some text runs off the page in your CV. Switch to the CV and ask for a shorter version.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Switch to the CV' }).parentElement).toHaveTextContent('Some text runs off the page in your CV. Switch to the CV and ask for a shorter version.')
   })
 
   it('says to prepare again when the materials cannot be revised', async () => {
@@ -443,5 +443,75 @@ describe('Materials: text running off the page', () => {
   ])('says nothing for %j', async (readability) => {
     await shows(readability)
     expect(screen.queryByText(/runs off the page/)).toBeNull()
+  })
+})
+
+describe('Materials: the document it opens on', () => {
+  const overflow = { file: 'cv', kind: 'overflow', detail: 'text cut off: Kubernetes' }
+  const letterIssue = { file: 'cover_letter', kind: 'missing', detail: 'keyword' }
+  const open = async (readability: unknown) => {
+    mockDoor({ show: posting({ materials: materials({ readability }) }) })
+    render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} />)
+    await screen.findByRole('heading', { name: 'Ready to send' })
+  }
+  const pressed = (name: RegExp) => expect(screen.getByRole('button', { name })).toHaveAttribute('aria-pressed', 'true')
+
+  it('opens on the CV when the CV has a warning, and asks for a shorter version with no switch', async () => {
+    await open([overflow])
+    pressed(/^CV · /)
+    expect(screen.getByText('Some text runs off the page in your CV. Ask for a shorter version.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Switch to the CV' })).toBeNull()
+  })
+
+  it('opens on the CV, the first tab, when nothing is wrong', async () => {
+    await open([])
+    pressed(/^CV · /)
+  })
+
+  it('opens on the letter when the first thing wrong is in the letter', async () => {
+    await open([letterIssue])
+    pressed(/^Letter · /)
+  })
+
+  it('keeps the document the user picked', async () => {
+    await open([letterIssue])
+    await pick('CV')
+    pressed(/^CV · /)
+  })
+
+  it('the overflow warning has a button that switches to the CV', async () => {
+    await open([letterIssue, overflow])
+    pressed(/^Letter · /)
+    await userEvent.click(screen.getByRole('button', { name: 'Switch to the CV' }))
+    pressed(/^CV · /)
+    expect(screen.queryByRole('button', { name: 'Switch to the CV' })).toBeNull()
+    expect(screen.getByText('Some text runs off the page in your CV. Ask for a shorter version.')).toBeInTheDocument()
+  })
+
+  it('offers the posting when it was opened from the board', async () => {
+    mockDoor({ show: posting() })
+    const onPosting = vi.fn()
+    render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} onPosting={onPosting} />)
+    const link = await screen.findByRole('button', { name: 'See the posting' })
+    expect(link).toHaveClass('secondary') // an action on its own line is a text button, not an inline link
+    await userEvent.click(link)
+    expect(onPosting).toHaveBeenCalled()
+  })
+
+  it('offers the posting even when nothing is prepared (a status set by hand)', async () => {
+    mockDoor({ show: posting({ materials: null }) })
+    const onPosting = vi.fn()
+    render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} onPosting={onPosting} />)
+    expect(await screen.findByText('There is nothing prepared for this job yet.')).toBeInTheDocument()
+    const link = screen.getByRole('button', { name: 'See the posting' })
+    expect(link).toHaveClass('secondary')
+    await userEvent.click(link)
+    expect(onPosting).toHaveBeenCalled()
+  })
+
+  it('names where the back link goes', async () => {
+    mockDoor({ show: posting() })
+    render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} backLabel="← Applications" />)
+    expect(await screen.findByRole('button', { name: '← Applications' })).toBeInTheDocument()
   })
 })

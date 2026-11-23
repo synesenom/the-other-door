@@ -184,12 +184,14 @@ function DiscoveryReminder({ sources, onChoose }: { sources: DiscoveryChoice[]; 
 function Summary({
   record,
   onViewMatches,
+  onOpenJob,
   reminder,
   onChooseDiscovery,
   onLowerBar,
 }: {
   record: RunRecord
   onViewMatches: () => void
+  onOpenJob: (id: string) => void
   reminder: DiscoveryChoice[]
   onChooseDiscovery?: () => void
   onLowerBar?: () => void
@@ -206,11 +208,13 @@ function Summary({
         <ul className="summary-top">
           {record.top.map((t) => (
             <li key={t.id}>
-              <span className="summary-job">
-                <span className="title">{t.title}</span>
-                <span className="small muted">{t.company}</span>
-              </span>
-              <span className="score-s">{scoreText(t.score)}</span>
+              <button type="button" className="row" onClick={() => onOpenJob(t.id)}>
+                <span className="summary-job">
+                  <span className="title">{t.title}</span>
+                  <span className="small muted">{t.company}</span>
+                </span>
+                <span className="score-s">{scoreText(t.score)}</span>
+              </button>
             </li>
           ))}
         </ul>
@@ -249,6 +253,7 @@ export function Finding({
   onStart,
   onStop,
   onViewMatches,
+  onOpenJob,
   discoveryUnchosen = [],
   discoveryOff = [],
   onChooseDiscovery,
@@ -268,6 +273,8 @@ export function Finding({
   onStart: () => void
   onStop: () => void
   onViewMatches: () => void
+  /** A top match was clicked: opens its posting. */
+  onOpenJob: (id: string) => void
 }) {
   const [stopping, setStopping] = useState(false)
   const [now, setNow] = useState(() => Date.now())
@@ -327,6 +334,7 @@ export function Finding({
         <Summary
           record={state.record}
           onViewMatches={onViewMatches}
+          onOpenJob={onOpenJob}
           reminder={state.firstRun && state.record.new_above_threshold.length < FEW_MATCHES ? discoveryOff : []}
           onChooseDiscovery={onChooseDiscovery}
           onLowerBar={onLowerBar}

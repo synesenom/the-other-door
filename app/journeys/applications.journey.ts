@@ -1,5 +1,6 @@
 // Applications (inventory/jobs.md §6, and §9 for the narrow window): the board from FULL_LEDGER, a job in
 // every column; opening a card, its posting and materials; status changes moving a card.
+import type { Page } from '@playwright/test'
 import { expect, notice, test } from './fixtures'
 import { card, column, ledgerEntry, narrow, openCard, pagesLoaded, postingHeading, ready, toApplications } from './helpers/applications'
 
@@ -22,17 +23,27 @@ test('the board: five columns, a job in each, counts and how many are in play', 
   expect(world.toolCalls('list_matches').map((c) => c.args)).toEqual(expect.arrayContaining([expect.objectContaining({ ongoing: true }), expect.objectContaining({ closed: true })]))
 })
 
-test('a prepared card opens its application and comes back through its posting', async ({ page }) => {
+/** A Prepared card opens Ready to send: the posting (Status, Prepare again) is one click behind it. */
+async function openPreparedPosting(page: Page, title: string): Promise<void> {
+  await card(page, title).click()
+  await page.getByRole('button', { name: 'See the posting', exact: true }).click()
+  await expect(postingHeading(page, title)).toBeVisible()
+}
+
+test('a prepared card opens its application on the CV, with a way to the posting and back to the board', async ({ page }) => {
   await toApplications(page)
-  await openCard(page, KRONVEJ)
+  await card(page, KRONVEJ).click()
+  await expect(page.getByRole('heading', { name: 'Ready to send', level: 1 })).toBeVisible()
+  await expect(page.getByRole('button', { name: '← Posting' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: /^CV · / })).toHaveAttribute('aria-pressed', 'true')
+  await pagesLoaded(page, 'CV', 2)
+  await page.getByRole('button', { name: 'See the posting', exact: true }).click()
+  await expect(postingHeading(page, KRONVEJ)).toBeVisible()
   await expect(page.getByRole('button', { name: 'Prepare again…', exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Not for me…' })).toHaveCount(0)
-  await page.getByRole('button', { name: 'See the application', exact: true }).click()
-  await expect(page.getByRole('heading', { name: 'Ready to send', level: 1 })).toBeVisible()
-  await expect(page.getByRole('button', { name: '← Applications' })).toHaveCount(0)
-  await pagesLoaded(page, 'Letter', 1)
-  await page.getByRole('button', { name: '← Posting' }).click()
-  await expect(postingHeading(page, KRONVEJ)).toBeVisible()
+  await page.getByRole('button', { name: '← Applications' }).click()
+  await expect(card(column(page, 'Prepared'), KRONVEJ)).toBeVisible()
+  await card(page, KRONVEJ).click()
   await page.getByRole('button', { name: '← Applications' }).click()
   await expect(card(column(page, 'Prepared'), KRONVEJ)).toBeVisible()
 })
@@ -70,7 +81,7 @@ test('a rejection ends the last round and moves the card to Closed', async ({ pa
 
 test('Not for me on a prepared job, through Status, closes it as withdrawn', async ({ page, world }) => {
   await toApplications(page)
-  await openCard(page, KRONVEJ)
+  await openPreparedPosting(page, KRONVEJ)
   await page.getByRole('button', { name: 'Status…', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: `Status: ${KRONVEJ}` })
   await dialog.getByRole('radio', { name: 'Not for me', exact: true }).check()
@@ -92,7 +103,7 @@ const KRONVEJ_KEY = 'kronvej-ml-engineer-mlops'
 
 test('Not yet applied takes a job off the board and back to Matches', async ({ page, world }) => {
   await toApplications(page)
-  await openCard(page, KRONVEJ)
+  await openPreparedPosting(page, KRONVEJ)
   await page.getByRole('button', { name: 'Status…', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: `Status: ${KRONVEJ}` })
   await dialog.getByRole('radio', { name: 'Not yet applied', exact: true }).check()
@@ -125,13 +136,15 @@ test('narrow: Ready to send saves the shown document and has I’ve applied in t
   await ready(page)
   await narrow(app, page)
   await page.getByRole('navigation').getByRole('button', { name: 'Applications', exact: true }).click()
-  await openCard(page, KRONVEJ)
-  await page.getByRole('button', { name: 'See the application', exact: true }).click()
+  await card(page, KRONVEJ).click()
   await expect(page.getByRole('heading', { name: 'Ready to send', level: 1 })).toBeVisible()
-  await pagesLoaded(page, 'Letter', 1)
-  await expect(page.getByRole('button', { name: /^Save / })).toHaveText(['Save letter…'])
+  await pagesLoaded(page, 'CV', 2)
+  await expect(page.getByRole('button', { name: /^Save / })).toHaveText(['Save CV…'])
   await expect(page.getByRole('button', { name: "I've applied" })).toHaveCount(1)
 
+  await page.getByRole('button', { name: /^Letter · / }).click()
+  await pagesLoaded(page, 'Letter', 1)
+  await expect(page.getByRole('button', { name: /^Save / })).toHaveText(['Save letter…'])
   await page.getByRole('button', { name: 'CV · 2 pages' }).click()
   await expect(page.getByRole('button', { name: /^Save / })).toHaveText(['Save CV…'])
   const { mkdirSync } = await import('node:fs')

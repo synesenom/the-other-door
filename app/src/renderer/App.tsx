@@ -164,6 +164,13 @@ export function App({ start }: { start?: AppStart } = {}) {
     // the run's outcome stays: a notification about it, clicked later, opens it rather than an empty screen
     setRefreshKey((k) => k + 1)
   }
+  /** Opens one job: the posting or Ready to send, on Applications when it is in play, else on Matches. */
+  const openJob = (target: Opening['target']) => {
+    openings.current += 1
+    setFinding(false)
+    setCurrent(target.inPlay ? 'Applications' : 'Matches')
+    setOpening({ target, n: openings.current })
+  }
   useEffect(
     () =>
       window.door.on('open', (target) => {
@@ -171,12 +178,7 @@ export function App({ start }: { start?: AppStart } = {}) {
         if (typeof target !== 'object' || target === null) return
         if (target.screen === 'matches') goToMatches(target.newOnly === true)
         else if (target.screen === 'finding') setFinding(true)
-        else if ((target.screen === 'materials' || target.screen === 'posting') && typeof target.jobId === 'string') {
-          openings.current += 1
-          setFinding(false)
-          setCurrent(target.inPlay ? 'Applications' : 'Matches')
-          setOpening({ target, n: openings.current })
-        }
+        else if ((target.screen === 'materials' || target.screen === 'posting') && typeof target.jobId === 'string') openJob(target)
       }),
     [],
   )
@@ -420,6 +422,7 @@ export function App({ start }: { start?: AppStart } = {}) {
             onStart={() => void startRun()}
             onStop={() => void window.door.invoke('stop-run')}
             onViewMatches={() => goToMatches(true)}
+            onOpenJob={(jobId) => openJob({ screen: 'posting', jobId, inPlay: false })}
             discoveryUnchosen={sandbox || remote ? [] : (profile?.discovery_unchosen ?? [])}
             discoveryOff={sandbox || remote || !profile ? [] : discoveryOff(profile)}
             onChooseDiscovery={openRisky}

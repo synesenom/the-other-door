@@ -253,7 +253,7 @@ describe('Applications', () => {
       revisable: true,
     }
 
-    it('a prepared row opens the posting pane and then Ready to send', async () => {
+    it('a Prepared card opens Ready to send; ← Applications returns to the board', async () => {
       stubNarrow(false)
       mockDoor({
         list_matches: (a: Record<string, unknown>) => matchesResult(a['closed'] ? [] : [rows[3]]),
@@ -262,16 +262,26 @@ describe('Applications', () => {
       })
       render(<Applications />)
       await userEvent.click(await screen.findByRole('button', { name: /Prepared job/ }))
-      await userEvent.click(await screen.findByRole('button', { name: 'See the application' }))
       expect(await screen.findByRole('heading', { name: 'Ready to send' })).toBeInTheDocument()
       expect(screen.queryByRole('heading', { name: 'Applications', level: 1 })).toBeNull()
-      await userEvent.click(screen.getByRole('button', { name: '← Posting' }))
+      expect(screen.queryByRole('button', { name: '← Posting' })).toBeNull()
+      // the posting (Status, Prepare again) is one click away, and back still returns to the board
+      await userEvent.click(screen.getByRole('button', { name: 'See the posting' }))
       expect(await screen.findByRole('heading', { name: 'Prepared job', level: 2 })).toBeInTheDocument()
       await userEvent.click(screen.getByRole('button', { name: '← Applications' }))
       expect(await screen.findByRole('heading', { name: 'Applications', level: 1 })).toBeInTheDocument()
     })
 
-    it("narrow: ← Posting returns, and I've applied shows the notice and the list", async () => {
+    it('a card of another column still opens the posting', async () => {
+      stubNarrow(false)
+      const { call } = setup()
+      render(<Applications />)
+      await userEvent.click(await screen.findByRole('button', { name: /Applied job/ }))
+      await waitFor(() => expect(call).toHaveBeenCalledWith('show', { job_id: 'jobindex.2' }))
+      expect(screen.queryByRole('heading', { name: 'Ready to send' })).toBeNull()
+    })
+
+    it("narrow: I've applied shows the notice and the list", async () => {
       stubNarrow(true)
       const { call } = mockDoor({
         list_matches: (a: Record<string, unknown>) => matchesResult(a['closed'] ? [] : [rows[3]]),
@@ -281,9 +291,6 @@ describe('Applications', () => {
       })
       render(<Applications />)
       await userEvent.click(await screen.findByRole('button', { name: /Prepared job/ }))
-      await userEvent.click(await screen.findByRole('button', { name: 'See the application' }))
-      await userEvent.click(await screen.findByRole('button', { name: '← Posting' }))
-      await userEvent.click(await screen.findByRole('button', { name: 'See the application' }))
       const applied = await screen.findByRole('button', { name: "I've applied" })
       call.mockClear()
       await userEvent.click(applied)

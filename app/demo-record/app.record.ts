@@ -92,7 +92,7 @@ test('record the app', async () => {
     // Applications: the board, then the prepared one's PDFs
     await click(page, page.getByRole('navigation').getByRole('button', { name: 'Applications' }), 2200)
     await click(page, page.getByRole('button', { name: /Finance Manager/ }).first(), 1500)
-    await click(page, page.getByRole('button', { name: 'See the application' }))
+    await expect(page.getByRole('heading', { name: 'Ready to send' })).toBeVisible()
     await expect(page.locator('img.paper').first()).toBeVisible({ timeout: 20_000 })
     await page.waitForTimeout(2600)
     await click(page, page.getByRole('button', { name: /^CV · / }), 2800)
