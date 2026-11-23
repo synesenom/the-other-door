@@ -12,12 +12,9 @@ from door import i18n
 from door.commands import profile as profile_cmd
 from door.core import claude_cli, profile_loader, utils, workspace
 
-_STALE = ".search_terms_stale"
-
-
 def stale(profile_dir: Path) -> bool:
     """Whether a saving proposal started and did not finish: the search terms do not follow the role targets."""
-    return (profile_dir / _STALE).exists()
+    return (profile_dir / profile_cmd.STALE_MARK).exists()
 
 
 
@@ -78,7 +75,7 @@ def _keywords_core(
     codes = [c for c in (i18n.language_code(v) for v in wanted) if c]
     ad_languages = [packs[c].name for c in dict.fromkeys(["en", *codes]) if c in packs]
     if save:
-        utils.write_atomic(profile_dir / _STALE, "")
+        utils.write_atomic(profile_dir / profile_cmd.STALE_MARK, "")
     answer = claude_cli.ask(
         "keywords", "Role targets: " + "; ".join(targets) + "\nAd languages: " + ", ".join(ad_languages),
         model=model, feature="keywords", schema=_SCHEMA, timeout_s=timeout_s,
@@ -97,7 +94,7 @@ def _keywords_core(
     if save:
         fields = {"search_keywords": keywords, **({"topic_terms": topic_terms} if topic_terms else {})}
         written = profile_cmd._init_core(fields, profile_dir=profile_dir, example_dir=workspace.PROFILE_EXAMPLE_DIR)
-        (profile_dir / _STALE).unlink(missing_ok=True)
+        (profile_dir / profile_cmd.STALE_MARK).unlink(missing_ok=True)
         result["saved"] = True
         result["config_path"] = written["config_path"]
     return result

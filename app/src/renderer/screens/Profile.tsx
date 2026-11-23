@@ -18,7 +18,7 @@ type Profile = ShowProfile & { options: ShowProfile['options'] & { fields?: Fiel
  * and the Stories. Nothing is saved with a button: each detail goes to init_profile (alone, which checks it; an error is
  * said under its field) a second after typing stops, on leaving the field, at once for a choice, and when Profile is
  * left or the window closes. The CV text, the CV file and pages, the photo and the stories save themselves too.
- * On leaving, `onLeave(termsChanged)` tells the app whether the role targets or ad languages changed, so it can
+ * On leaving, `onLeave(termsChanged, wrote)` tells the app whether the role targets or ad languages changed and whether anything was written, so it can
  * propose the search terms again (Profile is gone by then: the app runs it).
  */
 /** Where Profile opens: a section scrolled into view, `cv` and `stories` among them. */
@@ -30,7 +30,7 @@ export const SAVE_AFTER_MS = 1000
 const TYPED = new Set(['string', 'path', 'integer', 'number'])
 const termsOf = (v: FormValues) => JSON.stringify([v['role_targets'], v['languages']])
 
-export function Profile({ onSaved, onDraft, onLeave, start }: { onSaved: () => void; onDraft: () => void; onLeave?: (termsChanged: boolean) => void; start?: ProfileStart }) {
+export function Profile({ onSaved, onDraft, onLeave, start }: { onSaved: () => void; onDraft: () => void; onLeave?: (termsChanged: boolean, wrote: boolean) => void; start?: ProfileStart }) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [values, setValues] = useState<FormValues>({})
@@ -125,7 +125,7 @@ export function Profile({ onSaved, onDraft, onLeave, start }: { onSaved: () => v
     return () => {
       unregister()
       void flushRef.current().then(() => {
-        if (wrote.current) onLeaveRef.current?.(termsAtStart.current !== null && termsOf(savedRef.current) !== termsAtStart.current)
+        onLeaveRef.current?.(termsAtStart.current !== null && termsOf(savedRef.current) !== termsAtStart.current, wrote.current)
       })
     }
   }, [])

@@ -7,7 +7,7 @@ import { addChip, argsOf, config, exists, expectChips, narrow, openDetails, star
 
 const leave = (page: import('@playwright/test').Page) => page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Matches', exact: true }).click()
 const comeBack = (page: import('@playwright/test').Page) => page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Profile', exact: true }).click()
-const STALE = 'Your search terms could not be updated to your new role targets'
+const STALE = 'Search not updated to your role targets'
 const needsYou = (page: import('@playwright/test').Page) => page.getByRole('group', { name: 'Needs you' })
 
 const region = (page: import('@playwright/test').Page, name: string) => page.getByRole('region', { name, exact: true })
@@ -134,8 +134,8 @@ test.describe('the search terms', () => {
     await addChip(page, 'Role targets', 'Grid Analyst')
     await expect.poll(() => config(world).role_targets).toContain('Grid Analyst')
     await leave(page)
+    await expect.poll(() => config(world).search_keywords, { timeout: 30_000 }).toEqual(proposal.keywords)
     await expect(needsYou(page).getByRole('button', { name: STALE })).toHaveCount(0, { timeout: 30_000 })
-    expect(config(world).search_keywords).toEqual(proposal.keywords)
   })
 })
 

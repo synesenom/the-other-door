@@ -81,7 +81,7 @@ export function problems(input: ProblemInput): Problem[] {
   if (plan) out.push({ key: 'plan', text: plan, target: 'none' })
   // the example CV needs no line: a run refuses it and says why
   if (input.cv && !input.cv.exists) out.push({ key: 'cv', text: 'You have no CV yet', target: 'profile-cv' })
-  if (input.searchTermsStale) out.push({ key: 'search-terms', text: 'Your search terms could not be updated to your new role targets', target: 'profile-search' })
+  if (input.searchTermsStale) out.push({ key: 'search-terms', text: 'Search not updated to your role targets', target: 'profile-search' })
   if (input.drive?.connected && input.driveConflict) out.push({ key: 'drive', text: 'Google Drive needs a choice', target: 'settings' })
   else if (input.drive?.connected && input.drive.last_error) out.push({ key: 'drive', text: 'Google Drive sync failed', target: 'settings' })
   if (input.recurring) out.push({ key: 'report', text: 'Something keeps going wrong. Send a report', target: 'settings-report' })

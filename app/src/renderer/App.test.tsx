@@ -769,7 +769,7 @@ describe('App, the first-launch gate', () => {
     })
 
     describe('the search terms, proposed again after the role targets change', () => {
-      const STALE = 'Your search terms could not be updated to your new role targets'
+      const STALE = 'Search not updated to your role targets'
       const withTerms = (over: { keywords?: unknown; stale?: () => boolean } = {}) =>
         mockDoor({
           show_profile: profile(),
@@ -821,6 +821,60 @@ describe('App, the first-launch gate', () => {
         await waitFor(() => expect(h.call).toHaveBeenCalledWith('init_profile', { name: 'Ada Lovelacex' }))
         await act(() => new Promise((r) => setTimeout(r, 30)))
         expect(keywordsCalls(h)).toHaveLength(0)
+      })
+
+      it('no line while the leave-time proposal runs; after it fails the line shows', async () => {
+        let stale = false
+        let fail: (e: unknown) => void = () => {}
+        const h = withTerms({
+          stale: () => stale,
+          keywords: () => new Promise((_, rej) => { fail = rej }),
+        })
+        render(<App />)
+        await addRoleTarget()
+        stale = true // the server marked it at the write
+        await userEvent.click(screen.getByRole('button', { name: 'Applications' }))
+        await waitFor(() => expect(keywordsCalls(h)).toHaveLength(1))
+        await act(() => new Promise((r) => setTimeout(r, 30)))
+        expect(lines().queryByRole('button', { name: STALE })).toBeNull()
+        await act(async () => { fail({ message: 'offline' }) })
+        expect(await (await sidebar()).findByRole('button', { name: STALE })).toBeInTheDocument()
+      })
+
+      it('a role-target change left during a proposal is proposed after it, never two at once', async () => {
+        let running = 0
+        let most = 0
+        const finishers: Array<() => void> = []
+        const h = withTerms({
+          keywords: () => new Promise((r) => {
+            running += 1
+            most = Math.max(most, running)
+            finishers.push(() => { running -= 1; r({ keywords: ['a'], topic_terms: [], saved: true }) })
+          }),
+        })
+        render(<App />)
+        await addRoleTarget()
+        await userEvent.click(screen.getByRole('button', { name: 'Applications' }))
+        await waitFor(() => expect(keywordsCalls(h)).toHaveLength(1))
+        await userEvent.click(screen.getByRole('button', { name: 'Profile' }))
+        await userEvent.type(await screen.findByLabelText('Role targets'), 'Analyst{Enter}')
+        await screen.findByRole('list', { name: 'Role targets, chosen' })
+        await userEvent.click(screen.getByRole('button', { name: 'Applications' }))
+        await act(() => new Promise((r) => setTimeout(r, 30)))
+        expect(keywordsCalls(h)).toHaveLength(1)
+        await act(async () => { finishers[0]() })
+        await waitFor(() => expect(keywordsCalls(h)).toHaveLength(2))
+        expect(most).toBe(1)
+        await act(async () => { finishers[1]() })
+      })
+
+      it('leaving Profile with the line up proposes again even when nothing changed', async () => {
+        const h = withTerms({ stale: () => true })
+        render(<App />)
+        await userEvent.click(await (await sidebar()).findByRole('button', { name: STALE }))
+        await screen.findByRole('heading', { name: 'Profile', level: 1 })
+        await userEvent.click(screen.getByRole('button', { name: 'Applications' }))
+        await waitFor(() => expect(keywordsCalls(h)).toEqual([['keywords', { save: true }]]))
       })
 
       it('a failed proposal leaves the line, and a later success removes it after the summary is read again', async () => {

@@ -280,7 +280,7 @@ describe('Profile', () => {
       const { call, onLeave } = await openLeave()
       await userEvent.type(screen.getByLabelText('Role targets'), 'BI Analyst{Enter}')
       cleanup()
-      await waitFor(() => expect(onLeave).toHaveBeenCalledWith(true))
+      await waitFor(() => expect(onLeave).toHaveBeenCalledWith(true, true))
       expect(onLeave).toHaveBeenCalledTimes(1)
       expect(call).toHaveBeenCalledWith('init_profile', { role_targets: ['Data Analyst', 'BI Analyst'] })
       expect(call.mock.calls.some((c) => c[0] === 'keywords')).toBe(false) // the app proposes, not Profile
@@ -290,14 +290,14 @@ describe('Profile', () => {
       const { onLeave } = await openLeave()
       await userEvent.click(screen.getByRole('checkbox', { name: 'Danish' }))
       cleanup()
-      await waitFor(() => expect(onLeave).toHaveBeenCalledWith(true))
+      await waitFor(() => expect(onLeave).toHaveBeenCalledWith(true, true))
     })
 
     it('a name alone changes no search terms', async () => {
       const { onLeave } = await openLeave()
       await userEvent.type(screen.getByLabelText('Name'), 'x')
       cleanup()
-      await waitFor(() => expect(onLeave).toHaveBeenCalledWith(false))
+      await waitFor(() => expect(onLeave).toHaveBeenCalledWith(false, true))
     })
 
     it('a role target added and taken away again changes nothing', async () => {
@@ -305,14 +305,14 @@ describe('Profile', () => {
       await userEvent.type(screen.getByLabelText('Role targets'), 'BI Analyst{Enter}')
       await userEvent.click(screen.getByRole('button', { name: 'Remove BI Analyst' }))
       cleanup()
-      await waitFor(() => expect(onLeave).toHaveBeenCalledWith(false))
+      await waitFor(() => expect(onLeave).toHaveBeenCalledWith(false, true))
     })
 
-    it('nothing written: nothing said', async () => {
+    it('nothing written: told so', async () => {
       const { onLeave } = await openLeave()
       cleanup()
       await new Promise((r) => setTimeout(r, 20))
-      expect(onLeave).not.toHaveBeenCalled()
+      expect(onLeave).toHaveBeenCalledWith(false, false)
     })
   })
 

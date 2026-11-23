@@ -818,6 +818,9 @@ def _first_run_step() -> None:
     )
 
 
+STALE_MARK = ".search_terms_stale"  # the search terms no longer follow the role targets or languages (keywords.stale)
+
+
 def _init_core(fields: dict, profile_dir: Path | None = None, example_dir: Path | None = None) -> dict:
     """The non-interactive half of `init`: copy, merge, validate, write.
 
@@ -870,6 +873,8 @@ def _init_core(fields: dict, profile_dir: Path | None = None, example_dir: Path 
     config_path = profile_dir / "config.json"
     config_path.parent.mkdir(parents=True, exist_ok=True)
     utils.write_json_atomic(config_path, merged)
+    if "search_keywords" not in fields and any(k in fields and fields[k] != base.get(k) for k in ("role_targets", "languages")):
+        utils.write_atomic(profile_dir / STALE_MARK, "")
     disclaimers = [
         {"key": s["key"], "text": s["disclaimer"]}
         for s in map(discovery_sources.info, discovery_sources.SOURCES)

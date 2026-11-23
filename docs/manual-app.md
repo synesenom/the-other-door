@@ -440,8 +440,8 @@ hear from goes under Companies to skip.
 What the job boards are searched for follows your role targets, and is not on screen: when you leave Profile after
 changing your role targets or the languages of the ads, Claude proposes the search keywords and the words a job title
 must contain again from those, in each ad language, in the background, and they are saved (if that call fails, the
-terms you had stay and a line under the sidebar's menu, "Your search terms could not be updated to your new role targets",
-opens What to look for; the next time you leave Profile after such a change, it tries again). They aim wide: a term that is off brings in some ads that score low, nothing worse. Claude Code ("expand my search
+terms you had stay and a line under the sidebar's menu, "Search not updated to your role targets",
+opens What to look for; leaving Profile tries again; the line also shows on the next start if the window was closed before Claude answered). They aim wide: a term that is off brings in some ads that score low, nothing worse. Claude Code ("expand my search
 keywords") and `profile/config.json` can still change them by hand. Each setting is checked on its own before it is
 written: a value *The other door* refuses is explained in a sentence under its field, stays in the field and is not
 written, and your other settings are saved as usual.

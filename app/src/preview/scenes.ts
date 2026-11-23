@@ -173,6 +173,7 @@ export const SCENES: readonly Scene[] = [
   { id: 'materials', group: 'Applications', title: 'Ready to send (Revise)', open: { screen: 'materials', jobId: 'successfactors.demo-6', inPlay: true } },
   { id: 'sent', group: 'Applications', title: 'What you sent', open: { screen: 'materials', jobId: 'jobindex.demo-7', inPlay: true } },
   { id: 'profile', group: 'Profile', title: 'Profile form', start: { destination: 'Profile' } },
+  { id: 'profile-detail-refused', group: 'Profile', title: 'A detail the server refused (edit Name: the reason under its field)', start: { destination: 'Profile' }, fails: { init_profile: 'profile/config.json: name — name must not be empty' } },
   { id: 'profile-search-stale', group: 'Profile', title: 'The search terms could not follow new role targets (a line under the sidebar menu)', start: { destination: 'Matches' }, searchTermsStale: true },
   { id: 'profile-cv', group: 'Profile', title: 'CV', start: { destination: 'Profile', cv: true } },
   { id: 'profile-cv-forget-failed', group: 'Profile', title: 'CV, a page that could not be forgotten (under Sources)', start: { destination: 'Profile', cv: true }, fails: { init_profile: 'Your pages could not be saved. Try again.' }, press: ['Forget https://janedoe.example/portfolio'] },

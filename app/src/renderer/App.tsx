@@ -85,8 +85,11 @@ export function App({ start }: { start?: AppStart } = {}) {
   const [recurring, setRecurring] = useState<boolean | null>(null)
   // The role targets changed and the search terms could not be made again (status_summary's search_terms_outdated)
   const [searchStale, setSearchStale] = useState<boolean | null>(null)
-  // The search terms are being proposed after leaving Profile: one call at a time
+  // The search terms are being proposed after leaving Profile: one call at a time (the ref is read by the leave handler,
+  // the state by the render: no line while the call runs); a role-target change left during a call asks once more after it
   const proposing = useRef(false)
+  const [proposingNow, setProposingNow] = useState(false)
+  const proposeAgain = useRef(false)
   // The Claude plan's window (status_summary's plan): a sidebar line only when it is nearly full
   const [plan, setPlan] = useState<PlanBlock | null>(null)
   // Bumped when a Prepare ends, to read the summary again (refreshKey would remount Matches)
@@ -340,7 +343,7 @@ export function App({ start }: { start?: AppStart } = {}) {
   // What is wrong and needs you (Claude, the Claude plan's window, the CV, Drive, something that keeps going wrong):
   // a short line each in its own block under the sidebar's menu (the plan's opens nothing). On the phone they are said, not buttons: what fixes them is on the computer running
   // The other door; a problem report is made there too, so the phone does not say that one.
-  const lines = problems({ doctor, drive, driveConflict, cv: profile?.config ? profile.cv : null, recurring: remote ? null : recurring, searchTermsStale: remote ? null : searchStale, plan })
+  const lines = problems({ doctor, drive, driveConflict, cv: profile?.config ? profile.cv : null, recurring: remote ? null : recurring, searchTermsStale: remote ? null : searchStale === null ? null : searchStale && !proposingNow, plan })
   const destinations = remote ? PHONE_DESTINATIONS : DESTINATIONS
   /** Opens Profile at one of its sections (the same way for every link into it). */
   const openProfile = (section: string) => {
@@ -356,16 +359,28 @@ export function App({ start }: { start?: AppStart } = {}) {
     void call<ShowProfile>('show_profile').then(setProfile, () => undefined)
     setRefreshKey((k) => k + 1)
   }
-  const profileLeft = (termsChanged: boolean) => {
-    profileChanged()
-    if (!termsChanged || proposing.current) return
+  const propose = () => {
     proposing.current = true
+    setProposingNow(true)
     void call('keywords', { save: true })
       .catch(() => undefined)
       .finally(() => {
         proposing.current = false
-        setSummaryKey((k) => k + 1)
+        setProposingNow(false)
+        if (proposeAgain.current) {
+          proposeAgain.current = false
+          propose()
+        } else setSummaryKey((k) => k + 1)
       })
+  }
+  const profileLeft = (termsChanged: boolean, wrote: boolean) => {
+    if (wrote) profileChanged()
+    // Also when the sidebar's line sent the user here: leaving Profile tries the proposal again
+    if (proposing.current) {
+      if (termsChanged) proposeAgain.current = true
+      return
+    }
+    if (termsChanged || searchStale) propose()
   }
   /** Opens Settings at Where to find employers, where the discovery sources are turned on. */
   const openRisky = () => {
