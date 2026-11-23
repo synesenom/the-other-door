@@ -42,7 +42,7 @@ pytest-cov = "*"
 responses = "*"
 genbadge = { extras = ["coverage"], version = "*" }
 pytest-xdist = "*"
-claude-agent-sdk = "0.2.181"
+claude-agent-sdk = "0.2.182"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

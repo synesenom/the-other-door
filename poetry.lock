@@ -349,18 +349,18 @@ files = [
 
 [[package]]
 name = "claude-agent-sdk"
-version = "0.2.181"
+version = "0.2.182"
 description = "Python SDK for Claude Code"
 optional = false
 python-versions = ">=3.10"
 groups = ["dev"]
 files = [
-    {file = "claude_agent_sdk-0.2.181-py3-none-macosx_11_0_arm64.whl", hash = "sha256:3cd4a8fdb9115369142a1eef68fdb0f5e590c64eda374880cb1eeac59f8a28ea"},
-    {file = "claude_agent_sdk-0.2.181-py3-none-macosx_11_0_x86_64.whl", hash = "sha256:5da8b0a4d3e70c49d5bf404999913e0e3f0dd36155f2b583f24f7ed94919b332"},
-    {file = "claude_agent_sdk-0.2.181-py3-none-manylinux_2_17_aarch64.whl", hash = "sha256:5047fd13b58659aa07c1128d5a44798a65df39dafc53e2d793c0fdd16bfb91b0"},
-    {file = "claude_agent_sdk-0.2.181-py3-none-manylinux_2_17_x86_64.whl", hash = "sha256:9fad1f5cca72daaf4b6585e8e47e5f8f74b01a10564b742f9f10bf0003b0f6a1"},
-    {file = "claude_agent_sdk-0.2.181-py3-none-win_amd64.whl", hash = "sha256:254d6361e9f698bd5382c2ecd03778602ae0a6be4a09d1f309c71c2a04674367"},
-    {file = "claude_agent_sdk-0.2.181.tar.gz", hash = "sha256:1d99a9903a37eaf5c8b0ce0a3f7aab218e68011283d74b13091b54d1e0de0877"},
+    {file = "claude_agent_sdk-0.2.182-py3-none-macosx_11_0_arm64.whl", hash = "sha256:05b1ebd637b379f95c7aebb4f40702db59b3e3a6795cf255d31a9b42594b2647"},
+    {file = "claude_agent_sdk-0.2.182-py3-none-macosx_11_0_x86_64.whl", hash = "sha256:24ccc1c37191ced8f6289f70a76d571b067d663040643e432c165d0c2756ef35"},
+    {file = "claude_agent_sdk-0.2.182-py3-none-manylinux_2_17_aarch64.whl", hash = "sha256:2c56dc3b9059e68df272977e85f314dce99b6c9680c313236ee31968c14a2b5b"},
+    {file = "claude_agent_sdk-0.2.182-py3-none-manylinux_2_17_x86_64.whl", hash = "sha256:f15e140913c67f45a5eb09e5793f785a2d05613fc911c14bc3f8d818bedf9d09"},
+    {file = "claude_agent_sdk-0.2.182-py3-none-win_amd64.whl", hash = "sha256:dab32a5bbbe2c4199348bc12d5b92f6c7010458178d40964f1175221a8e61e97"},
+    {file = "claude_agent_sdk-0.2.182.tar.gz", hash = "sha256:bcecafd906f2dcb6bb8aac0799ff2534a2b2ec0895d67e3bd5a909d5f5e3df98"},
 ]
 
 [package.dependencies]
@@ -2126,4 +2126,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.13"
-content-hash = "402d17750d03ebf1334521f332c63f2f84a7af9bc6ddcf3795ea1797c71d6f1e"
+content-hash = "f0607bc3120d0663e12e26ea0b81d8c7be315ff70e09ed9534165f20617fdeec"
