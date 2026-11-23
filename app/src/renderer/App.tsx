@@ -473,7 +473,7 @@ export function App({ start }: { start?: AppStart } = {}) {
             onDataChanged={dataChanged}
           />
         ) : current === 'Analytics' && !remote ? (
-          <Analytics />
+          <Analytics onOpenProfile={openProfile} onOpenCv={() => openProfile('cv')} />
         ) : null}
       </main>
     </div>

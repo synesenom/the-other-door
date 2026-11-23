@@ -46,6 +46,8 @@ export interface Scene {
   cvGaps?: boolean
   /** Tools (or actions: `export-data`, `report-problem`) that fail here, each with the words it fails with: an error the user sees. */
   fails?: Record<string, string>
+  /** An installed build with an update downloaded: Settings' Help shows the version and "Restart to update". */
+  updateReady?: boolean
   /** Buttons the preview presses, in order, once the screen has loaded (`pressInOrder`): a state only an action reaches. */
   press?: string[]
 }
@@ -182,6 +184,7 @@ export const SCENES: readonly Scene[] = [
   { id: 'profile-stories-unread', group: 'Profile', title: 'Stories, a story bank that could not be read (the error box)', start: { destination: 'Profile', stories: true }, fails: { list_stories: 'Your story bank could not be read. Try again later.' } },
   { id: 'profile-stories-failed', group: 'Profile', title: 'Stories, a story that could not be saved (the error box)', start: { destination: 'Profile', stories: true }, fails: { save_story: 'Your story could not be saved. Try again.' }, press: ['Edit…', 'Save'] },
   { id: 'settings', group: 'Settings', title: 'Settings', start: { destination: 'Settings' } },
+  { id: 'settings-update', group: 'Settings', title: 'Settings, an update ready', updateReady: true, start: { destination: 'Settings' } },
   { id: 'settings-data-failed', group: 'Settings', title: 'Settings, an export and a report refused (the error box)', start: { destination: 'Settings' }, fails: { 'export-data': 'door-data.tar.gz is there already. Choose another name.', 'report-problem': 'report.zip is there already. A report never replaces a file, so nothing was written: choose another name.' }, press: ['Export…', 'Save logs…'] },
   { id: 'analytics', group: 'Analytics', title: 'Analytics: applications, Claude usage and the market', start: { destination: 'Analytics' } },
   { id: 'settings-signed-out', group: 'Settings', title: 'Settings, Claude signed out', start: { destination: 'Settings' }, claudeSignedOut: true },

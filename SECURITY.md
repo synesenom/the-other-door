@@ -13,7 +13,7 @@ that holds your data. A security problem is still worth reporting, for example:
 Please report it privately, not in a public issue: through GitHub's **Report a vulnerability**
 button on this repository's Security tab, or by email to enys.mones@gmail.com.
 
-Say what you found, how to make it happen, and which version (Settings → Version in the app, or the
+Say what you found, how to make it happen, and which version (Settings → Help in the app, or the
 `version` in `pyproject.toml` for a checkout). It is a personal project, so there is no promised response time, but a report
 is read and a confirmed problem is fixed before anything else.
 

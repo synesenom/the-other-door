@@ -6,7 +6,6 @@ import type { UpdateResult } from '../../main/updates'
 import { readTheme, saveTheme, type Theme } from '../theme'
 import { Connections } from './Connections'
 import { DataMoves } from './DataMoves'
-import { PageSections } from './PageSections'
 import { ReportProblem } from './ReportProblem'
 import { SettingsFields } from './SettingsFields'
 import type { DriveStatus, Environment } from './connection-rows'
@@ -15,7 +14,7 @@ import type { DoctorReport } from './onboarding/reducer'
 /**
  * Settings: how The other door works for you (Profile is who you are and what you want). One reading-width
  * column. Connections (Claude, Google Drive, the phone), Where to find employers (where it looks), Your data (the data folder, export,
- * import), Appearance (the theme), Documentation and, last, Report a problem. Opening it reads doctor again (Claude's sign-in may have changed); nothing else
+ * import), Appearance (the theme) and, last, Help (the version, the documents and Report a problem). Opening it reads doctor again (Claude's sign-in may have changed); nothing else
  * runs by itself. On the phone it is Appearance and where the data is, and it reads nothing.
  */
 export function Settings({
@@ -43,14 +42,14 @@ export function Settings({
   onDriveConflict?: (conflict: boolean) => void
   onDriveChanged: () => void
   onDataChanged: () => void
-  /** Where it opens: at Report a problem (the sidebar's "Something keeps going wrong"), or at Where to find employers (sources never chosen). */
+  /** Where it opens: at Help's report button (the sidebar's "Something keeps going wrong"), or at Where to find employers (sources never chosen). */
   at?: 'report' | 'risky'
   /** A problem report was saved. */
   onReported?: () => void
 }) {
   const remote = useRemote()
   const [theme, setTheme] = useState<Theme>(readTheme)
-  const reportPart = useRef<HTMLElement>(null)
+  const reportPart = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (!at) return
     const part = at === 'report' ? reportPart.current : document.getElementById('settings-risky')
@@ -76,7 +75,7 @@ export function Settings({
     // once, on opening
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-  const page = (
+  return (
     <div className="settings">
       <h1 className="display-l">Settings</h1>
       {!remote && (
@@ -134,30 +133,6 @@ export function Settings({
           ))}
         </fieldset>
       </section>
-      {!remote && update?.enabled && (
-        <section className="part" aria-labelledby="settings-version">
-          <h2 className="display-s" id="settings-version">
-            Version
-          </h2>
-          <p className="body">Version {update.current}</p>
-          {update.checked && update.available && update.mode === 'link' && (
-            <p className="body">
-              Version {update.version} is available{' '}
-              <button type="button" className="secondary go" onClick={() => void window.door.invoke('open-external', update.url)}>
-                Download
-              </button>
-            </p>
-          )}
-          {update.checked && update.available && update.mode === 'install' && update.state === 'downloading' && <p className="body">Downloading {update.version}</p>}
-          {update.checked && update.available && update.mode === 'install' && update.state === 'downloaded' && (
-            <p>
-              <button type="button" className="primary" onClick={() => void window.door.invoke('install-update')}>
-                Restart to update to {update.version}
-              </button>
-            </p>
-          )}
-        </section>
-      )}
       {remote ? (
         // The phone: where the data is, and that everything else is done on that computer.
         <section className="settings-section" aria-labelledby="settings-computer">
@@ -169,32 +144,37 @@ export function Settings({
           <p className="small muted">The phone finds, prepares and keeps your applications. Setting up, your profile and CV, connections and moving your data are done on the computer where it is installed.</p>
         </section>
       ) : (
-        <>
+        <section className="part" aria-labelledby="settings-help">
+          <h2 className="display-s" id="settings-help">
+            Help
+          </h2>
+          {update?.enabled && (
+            <>
+              <p className="body">Version {update.current}</p>
+              {update.checked && update.available && update.mode === 'link' && (
+                <p className="body">
+                  Version {update.version} is available{' '}
+                  <button type="button" className="secondary go" onClick={() => void window.door.invoke('open-external', update.url)}>
+                    Download
+                  </button>
+                </p>
+              )}
+              {update.checked && update.available && update.mode === 'install' && update.state === 'downloading' && <p className="body">Downloading {update.version}</p>}
+              {update.checked && update.available && update.mode === 'install' && update.state === 'downloaded' && (
+                <p>
+                  <button type="button" className="primary" onClick={() => void window.door.invoke('install-update')}>
+                    Restart to update to {update.version}
+                  </button>
+                </p>
+              )}
+            </>
+          )}
           <Documentation />
-          <section className="part" aria-labelledby="settings-report" ref={reportPart}>
-            <h2 className="display-s" id="settings-report">
-              Report a problem
-            </h2>
+          <div ref={reportPart}>
             <ReportProblem onSaved={onReported} />
-          </section>
-        </>
+          </div>
+        </section>
       )}
     </div>
   )
-  if (remote) return page
-  return (
-    <div className="page-with-aside">
-      {page}
-      <PageSections sections={update?.enabled ? [...PARTS.slice(0, 3), { id: 'settings-version', label: 'Version' }, ...PARTS.slice(3)] : PARTS} />
-    </div>
-  )
 }
-
-const PARTS = [
-  { id: 'settings-connections', label: 'Connections' },
-  { id: 'settings-risky', label: 'Where to find employers' },
-  { id: 'settings-data', label: 'Your data' },
-  { id: 'settings-appearance', label: 'Appearance' },
-  { id: 'settings-docs', label: 'Documentation' },
-  { id: 'settings-report', label: 'Report a problem' },
-]

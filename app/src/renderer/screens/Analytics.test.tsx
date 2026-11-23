@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mockDoor as baseDoor } from '../testing'
 import { Analytics, usd } from './Analytics'
 
@@ -46,7 +47,7 @@ describe('Analytics', () => {
     render(<Analytics />)
     const part = await screen.findByRole('region', { name: 'Claude usage' })
     // an estimate, marked as one, and plainly not something to pay
-    expect(within(part).getByText('≈ $2.10')).toBeInTheDocument()
+    expect(await within(part).findByText('≈ $2.10')).toBeInTheDocument()
     const notice = within(part).getByText("You don't pay this.")
     expect(notice.tagName).toBe('STRONG')
     expect(notice.parentElement).toHaveTextContent("You don't pay this. Your Claude plan covers it. The last 7 days, estimated at API prices.")
@@ -60,9 +61,11 @@ describe('Analytics', () => {
     expect(rows.map((r) => within(r).getByRole('heading').textContent)).toEqual([
       'Preparing applications · 1 application prepared', 'Finding jobs · 110 postings scored', 'Everything else · 2 other requests'])
     rows.forEach((r, i) => expect(r.querySelector('.usage-dot')!.className).toContain(parts[i].className))
-    // the features within an activity, only when there are several
-    expect(within(rows[0]).getByText('Tailoring the CV and letter')).toBeInTheDocument()
-    expect(within(rows[1]).queryByText('Scoring postings')).toBeNull()
+    // three activity rows with their totals, and no row per feature: lines of money the user does not pay
+    expect(rows.map((r) => r.textContent)).toEqual([
+      'Preparing applications · 1 application prepared$1.50', 'Finding jobs · 110 postings scored$0.50', 'Everything else · 2 other requests$0.10'])
+    expect(within(part).queryByText('Tailoring the CV and letter')).toBeNull()
+    expect(within(part).queryByText('Revising materials')).toBeNull()
   })
 
   it('says nothing of the plan window: a live reading, not what the week cost', async () => {
@@ -96,7 +99,7 @@ describe('Analytics', () => {
     expect(await screen.findByText(/shows here after your first search/)).toBeInTheDocument()
   })
 
-  it('shows the Market third, read once on opening, listed beside the sections', async () => {
+  it('shows the Market third, read once on opening, with no list of sections beside the page', async () => {
     const { call } = mockDoor({ status_summary: summary({ cost: COST, pass_rates: {} }) })
     render(<Analytics />)
     await screen.findByRole('region', { name: 'Applications' })
@@ -104,10 +107,11 @@ describe('Analytics', () => {
     expect(headings).toEqual(['Applications', 'Claude usage', 'Market'])
     expect(await screen.findByRole('listitem', { name: 'SQL, in your CV' })).toBeInTheDocument()
     expect(call.mock.calls.filter((c) => c[0] === 'market')).toEqual([['market', { save: false }]])
-    expect(screen.getAllByText('Market')).toHaveLength(2) // the heading and its entry beside the sections
+    expect(screen.getAllByText('Market')).toHaveLength(1)
+    expect(screen.queryByRole('navigation', { name: 'Sections' })).toBeNull()
   })
 
-  it('a market that could not be counted is left out, heading and entry beside the sections', async () => {
+  it('a market that could not be counted is left out', async () => {
     mockDoor({
       status_summary: summary({ cost: COST }),
       market: () => {
@@ -119,7 +123,7 @@ describe('Analytics', () => {
     await waitFor(() => expect(screen.queryByText(/Counting the ads/)).toBeNull())
     expect(screen.queryByText('Market')).toBeNull()
     expect(screen.queryByRole('alert')).toBeNull()
-    expect(screen.getAllByText('Claude usage')).toHaveLength(2)
+    expect(screen.getAllByText('Claude usage')).toHaveLength(1)
   })
 
   it('without the interview rate the Market is still the last section', async () => {
@@ -156,7 +160,19 @@ describe('Analytics', () => {
         expect(part).toHaveTextContent('Best-scored matches: 5 of 6 led to an interview.')
         expect(part).toHaveTextContent('Matches near your "Match fit" setting: 1 of 6 led to an interview.')
         expect(part).not.toHaveTextContent('likely')
-        expect(within(part).getByText('These led to an interview less often: consider raising that setting in Profile.')).toBeInTheDocument()
+        expect(within(part).getByText('These led to an interview less often: consider raising that setting.')).toBeInTheDocument()
+      })
+
+      it('the reading carries its action: a button that opens Profile at the setting', async () => {
+        mockDoor({ status_summary: summary({ ...APPLIED, pass_rates_by_score: BANDS, cost: null }) })
+        const onOpenProfile = vi.fn()
+        render(<Analytics onOpenProfile={onOpenProfile} />)
+        const part = await screen.findByRole('region', { name: 'Applications' })
+        const open = within(part).getByRole('button', { name: 'Open "Match fit"' })
+        expect(open).toHaveClass('secondary')
+        expect(open.closest('p')).not.toHaveTextContent('consider raising') // its own line, not a word of the sentence
+        await userEvent.click(open)
+        expect(onOpenProfile).toHaveBeenCalledWith('search')
       })
 
       it('shows the bands without a sentence when the reading is null', async () => {
@@ -164,7 +180,8 @@ describe('Analytics', () => {
         render(<Analytics />)
         const part = await screen.findByRole('region', { name: 'Applications' })
         expect(part).toHaveTextContent('Best-scored matches: 5 of 6')
-        expect(within(part).queryByText(/consider raising it/)).toBeNull()
+        expect(within(part).queryByText(/consider raising/)).toBeNull()
+        expect(within(part).queryByRole('button')).toBeNull()
       })
 
       it('shows nothing about scores when the server sends none or there is no overall rate', async () => {

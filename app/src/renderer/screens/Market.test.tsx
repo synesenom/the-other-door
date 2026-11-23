@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mockDoor } from '../testing'
 import { Market } from './Market'
 
@@ -21,9 +22,9 @@ const MARKET = {
   report_path: null,
 }
 
-function show(handlers: Record<string, unknown> = {}) {
+function show(handlers: Record<string, unknown> = {}, onOpenCv?: () => void) {
   const h = mockDoor(handlers)
-  render(<Market />)
+  render(<Market onOpenCv={onOpenCv} />)
   return h
 }
 
@@ -40,7 +41,6 @@ describe('Market', () => {
     expect(dbt).toHaveClass('skill-gap')
     expect(within(section).getAllByRole('listitem')).toHaveLength(3)
     expect(section).not.toHaveTextContent(/Analytics Engineer|Trustpilot|Python|left as written/)
-    expect(within(section).queryByRole('button')).toBeNull()
     expect(call.mock.calls.map((c) => c[0])).toEqual(['market'])
   })
 
@@ -49,6 +49,24 @@ describe('Market', () => {
     await waitFor(() => expect(screen.queryByText(/Counting the ads/)).toBeNull())
     expect(screen.queryByRole('alert')).toBeNull()
     expect(document.body).not.toHaveTextContent('invalid JSON')
+  })
+
+  it('a skill the CV lacks leads to the CV: one button under the list, in the plural for several', async () => {
+    const onOpenCv = vi.fn()
+    show({ market: MARKET }, onOpenCv)
+    const button = await screen.findByRole('button', { name: 'Add the missing skills to your CV' })
+    expect(button).toHaveClass('secondary')
+    await userEvent.click(button)
+    expect(onOpenCv).toHaveBeenCalledTimes(1)
+  })
+
+  it('one missing skill: the singular; none missing: no button', async () => {
+    show({ market: { ...MARKET, skills: MARKET.skills.slice(0, 2) } }, vi.fn())
+    expect(await screen.findByRole('button', { name: 'Add the missing skill to your CV' })).toBeInTheDocument()
+    cleanup()
+    show({ market: { ...MARKET, skills: MARKET.skills.slice(0, 1) } }, vi.fn())
+    await screen.findByRole('listitem', { name: 'SQL, in your CV' })
+    expect(screen.queryByRole('button')).toBeNull()
   })
 
   it('with no ads read it says when the market shows', async () => {

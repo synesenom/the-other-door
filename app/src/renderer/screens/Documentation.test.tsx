@@ -9,7 +9,7 @@ afterEach(cleanup)
 describe('Documentation', () => {
   it('lists the documents and opens one in place, without repeating its title', async () => {
     render(<Documentation />)
-    expect(screen.getByRole('heading', { name: 'Documentation' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Documentation' })).toBeNull()
     await userEvent.click(screen.getByRole('button', { name: 'Legal disclaimer' }))
     const dialog = within(screen.getByRole('dialog', { name: 'Legal disclaimer' }))
     expect(dialog.getByRole('heading', { name: 'Your data' })).toBeInTheDocument()

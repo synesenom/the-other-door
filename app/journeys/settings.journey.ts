@@ -1,4 +1,4 @@
-// Settings beyond the connections: Where to find employers (profile/config.json keys about how the app works), Your data (the folder, Export and Import), Appearance, Report a problem, and the narrow window.
+// Settings beyond the connections: Where to find employers (profile/config.json keys about how the app works), Your data (the folder, Export and Import), Appearance, Help (the report), and the narrow window.
 import { existsSync, readdirSync, readFileSync, realpathSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { expect } from './fixtures'
@@ -161,14 +161,14 @@ test.describe('Your data', () => {
   })
 })
 
-// --------------------------------------------------------------------------- Report a problem
+// --------------------------------------------------------------------------- Help
 
-test.describe('Report a problem', () => {
+test.describe('Help: Report a problem', () => {
   test('Save logs… saves an archive with what went wrong, emails and the home folder masked, nothing of the profile', async ({ page, world, os }) => {
     // A failure the screens leave unsaid: doctor answers an error naming the data folder and the persona's email.
     world.faults({ tools: { doctor: { error: `could not read ${world.home}/profile/config.json for ${world.persona.email}`, once: true } } })
     await openSettings(page)
-    const report = region(page, 'Report a problem')
+    const report = region(page, 'Help')
     await expect(report).toContainText('No CV, profile, job ads or applications; emails and folder names are hidden.')
     const target = join(world.scratch, 'door-report-2026-10-26.zip')
     await os.nextSave(target)
@@ -195,8 +195,8 @@ test.describe('Report a problem', () => {
     await openSettings(page)
     const target = join(world.scratch, 'after-the-crash.zip')
     await os.nextSave(target)
-    await button(region(page, 'Report a problem'), 'Save logs…').click()
-    await expect(region(page, 'Report a problem').getByText(/^Saved as after-the-crash\.zip\./)).toBeVisible()
+    await button(region(page, 'Help'), 'Save logs…').click()
+    await expect(region(page, 'Help').getByText(/^Saved as after-the-crash\.zip\./)).toBeVisible()
     expect(zipContents(world, target)['logs/door.log']).toMatch(/^\S+Z ERROR app server stopped: /m)
   })
 })
