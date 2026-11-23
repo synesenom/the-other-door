@@ -155,7 +155,9 @@ describe('Settings: Version', () => {
     const openExternal = actions['open-external']
     const section = await screen.findByRole('region', { name: 'Version' })
     expect(within(section).getByText('Version 0.1.1 is available')).toBeInTheDocument()
-    await userEvent.click(within(section).getByRole('button', { name: 'Download' }))
+    const download = within(section).getByRole('button', { name: 'Download' })
+    expect(download).toHaveClass('go')
+    await userEvent.click(download)
     expect(openExternal).toHaveBeenCalledWith('https://example.com/releases/v0.1.1')
   })
 

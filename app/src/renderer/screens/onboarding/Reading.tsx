@@ -192,7 +192,7 @@ export function Reading({ state, dispatch, onDone, onBack }: Props) {
             </button>
             <button
               type="button"
-              className="quiet"
+              className="secondary"
               onClick={() => {
                 setDraftError(null)
                 void understand(null).then(finish)

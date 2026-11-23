@@ -26,7 +26,7 @@ describe('Connections: Your phone', () => {
   it('not set up: only the setup', async () => {
     connections({ phone_status: idle })
     const row = within(await screen.findByRole('listitem', { name: 'Your phone' }))
-    await userEvent.click(await row.findByRole('button', { name: 'Set up your phone' }))
+    await userEvent.click(await row.findByRole('button', { name: 'Set up your phone…' }))
     expect(screen.getByRole('dialog', { name: 'Set up your phone' })).toBeInTheDocument()
   })
 
@@ -34,7 +34,7 @@ describe('Connections: Your phone', () => {
     connections({ phone_status: { ...idle, devices: [{ device: 'Pixel', paired_at: 'x', last_seen: null }] } })
     const row = within(await screen.findByRole('listitem', { name: 'Your phone' }))
     expect(await row.findByText(/scan a new code/)).toBeInTheDocument()
-    expect(row.getByRole('button', { name: 'Set up your phone' })).toBeInTheDocument()
+    expect(row.getByRole('button', { name: 'Set up your phone…' })).toBeInTheDocument()
   })
 
   it('the state cannot be read: says why, and Check again reads it again', async () => {
@@ -49,7 +49,7 @@ describe('Connections: Your phone', () => {
     expect(await row.findByRole('alert')).toHaveTextContent('the phone server state is unreadable')
     fails = false
     await userEvent.click(row.getByRole('button', { name: 'Check again' }))
-    expect(await row.findByRole('button', { name: 'Set up your phone' })).toBeInTheDocument()
+    expect(await row.findByRole('button', { name: 'Set up your phone…' })).toBeInTheDocument()
     expect(row.queryByRole('alert')).toBeNull()
     expect(call.mock.calls.filter((c) => c[0] === 'phone_status')).toHaveLength(2)
   })
@@ -59,12 +59,12 @@ describe('Connections: Your phone', () => {
     const row = within(await screen.findByRole('listitem', { name: 'Your phone' }))
     expect(await row.findByText('Connected')).toBeInTheDocument()
     expect(row.queryByText(/mac\.tail1234\.ts\.net|Pixel|[Ss]erving/)).toBeNull()
-    expect(row.queryByRole('button', { name: 'Pair your phone' })).toBeNull()
-    await userEvent.click(row.getByRole('button', { name: 'Disconnect' }))
+    expect(row.queryByRole('button', { name: 'Pair your phone…' })).toBeNull()
+    await userEvent.click(row.getByRole('button', { name: 'Disconnect…' }))
     const ask = screen.getByRole('dialog', { name: 'Disconnect your phone?' })
     await userEvent.click(within(ask).getByRole('button', { name: 'Cancel' }))
     expect(call.mock.calls.filter((c) => c[0] === 'unpair_phone' || c[0] === 'phone_stop')).toEqual([])
-    await userEvent.click(row.getByRole('button', { name: 'Disconnect' }))
+    await userEvent.click(row.getByRole('button', { name: 'Disconnect…' }))
     await userEvent.click(within(screen.getByRole('dialog', { name: 'Disconnect your phone?' })).getByRole('button', { name: 'Disconnect' }))
     expect(call.mock.calls.filter((c) => c[0] === 'unpair_phone' || c[0] === 'phone_stop')).toEqual([
       ['unpair_phone', { device: 'Pixel' }],
@@ -75,7 +75,7 @@ describe('Connections: Your phone', () => {
   it('serving, nothing paired yet: Pair your phone opens the QR code', async () => {
     const { call } = connections({ phone_status: { ...serving, devices: [] }, pair_phone: { device: 'My phone', qr_svg: SVG, expires_at: future() } })
     const row = within(await screen.findByRole('listitem', { name: 'Your phone' }))
-    await userEvent.click(await row.findByRole('button', { name: 'Pair your phone' }))
+    await userEvent.click(await row.findByRole('button', { name: 'Pair your phone…' }))
     expect(await screen.findByRole('img', { name: 'QR code that pairs your phone' })).toBeInTheDocument()
     expect(call.mock.calls.filter((c) => c[0] === 'pair_phone')).toEqual([['pair_phone', { device: 'My phone' }]])
   })

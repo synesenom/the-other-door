@@ -247,6 +247,12 @@ describe('Finding, the summary card', () => {
     expect(h.onViewMatches).toHaveBeenCalledTimes(1)
   })
 
+  it('opens the summary with a heavy rule, not a box', () => {
+    mockDoor({})
+    show({ kind: 'summary', record: record() }, { active: false })
+    expect(screen.getByRole('region', { name: 'Run summary' })).toHaveClass('rule-heavy')
+  })
+
   it.each([
     [['a.1'], '1 new match'],
     [[], 'No new matches'],
@@ -304,11 +310,9 @@ describe('Finding, the summary card of a run with no new matches', () => {
     expect(cb.onLowerBar).toHaveBeenCalledTimes(1)
   })
 
-  it('makes the second action a bordered button in a narrow window, where the row stacks', () => {
-    stubNarrow(true)
+  it('the second action is a text button of the forward kind, narrow or wide', () => {
     open(none())
     expect(screen.getByRole('button', { name: 'Show broader matches' })).toHaveClass('secondary')
-    delete (window as { matchMedia?: unknown }).matchMedia
   })
 
   it('offers no action it cannot open', () => {

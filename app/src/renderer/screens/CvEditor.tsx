@@ -454,7 +454,7 @@ export function CvEditor({
               </button>
             )}
             <button type="button" className="secondary" onClick={() => from({ kind: 'page' })}>
-              Add a page
+              Add a page…
             </button>
             {remembered.length > 0 && (
               <button type="button" className="secondary" onClick={() => from({ kind: 'again' })}>

@@ -63,7 +63,7 @@ describe('Connections: Claude', () => {
   it('not installed: Install asks first, then runs setup for claude only', async () => {
     const { row, call, onRecheck } = show({ doctor: { ok: false, checks: [cli(false)] }, handlers: { setup: { outcome: 'ok' } } })
     expect(row('Claude').getByText('Not installed')).toBeInTheDocument()
-    await userEvent.click(row('Claude').getByRole('button', { name: 'Install' }))
+    await userEvent.click(row('Claude').getByRole('button', { name: 'Install…' }))
     expect(calls(call)).toEqual([])
     await userEvent.click(screen.getByRole('button', { name: 'Install the Claude command line' }))
     expect(call).toHaveBeenCalledWith('setup', { install: ['claude'], yes: true })
@@ -79,14 +79,14 @@ describe('Connections: Claude', () => {
         },
       },
     })
-    await userEvent.click(row('Claude').getByRole('button', { name: 'Install' }))
+    await userEvent.click(row('Claude').getByRole('button', { name: 'Install…' }))
     await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancel' }))
     expect(screen.queryByRole('dialog')).toBeNull()
-    await userEvent.click(row('Claude').getByRole('button', { name: 'Install' }))
+    await userEvent.click(row('Claude').getByRole('button', { name: 'Install…' }))
     await userEvent.keyboard('{Escape}')
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(calls(call)).toEqual([])
-    await userEvent.click(row('Claude').getByRole('button', { name: 'Install' }))
+    await userEvent.click(row('Claude').getByRole('button', { name: 'Install…' }))
     await userEvent.click(screen.getByRole('button', { name: 'Install the Claude command line' }))
     expect(await row('Claude').findByRole('alert')).toHaveTextContent('setup is not available')
   })
@@ -115,6 +115,7 @@ describe('Connections: Google Drive', () => {
 
   it('off: Connect connects, then syncs at once and says what it did', async () => {
     const { row, call, onDriveChanged } = show({ handlers: { connect_drive: { account: 'ada@gmail.com' }, sync_data: { action: 'push', version: 'v1' } } })
+    expect(row('Google Drive').getByRole('button', { name: 'Connect' })).toHaveClass('go') // it opens the browser to sign in
     await userEvent.click(row('Google Drive').getByRole('button', { name: 'Connect' }))
     expect(calls(call)).toEqual([
       ['connect_drive', {}],
@@ -153,7 +154,7 @@ describe('Connections: Google Drive', () => {
     expect(row('Google Drive').getByText('This computer and Drive both changed since they last synced. Nothing was replaced.')).toBeInTheDocument()
     expect(row('Google Drive').getByText(/replaces the copy on Drive/)).toBeInTheDocument()
     expect(row('Google Drive').getByText(/which is kept as a backup\.$/)).toBeInTheDocument()
-    expect(row('Google Drive').queryByRole('button', { name: 'Disconnect' })).toBeNull()
+    expect(row('Google Drive').queryByRole('button', { name: 'Disconnect…' })).toBeNull()
     expect(calls(call)).toEqual([])
     await userEvent.click(row('Google Drive').getByRole('button', { name: 'Keep this computer' }))
     expect(calls(call)).toEqual([['sync_data', { keep_local: true }]])
@@ -190,7 +191,7 @@ describe('Connections: Google Drive', () => {
 
   it('Disconnect asks first, then sends the last changes and disconnects', async () => {
     const { row, call, onDriveChanged } = show({ drive: on, handlers: { sync_data: { action: 'push' }, disconnect_drive: { disconnected: true } } })
-    await userEvent.click(row('Google Drive').getByRole('button', { name: 'Disconnect' }))
+    await userEvent.click(row('Google Drive').getByRole('button', { name: 'Disconnect…' }))
     expect(calls(call)).toEqual([])
     expect(screen.getByRole('dialog')).toHaveTextContent('The last changes go to Drive first')
     expect(screen.getByRole('dialog')).toHaveTextContent('The copy on Drive stays')
@@ -213,7 +214,7 @@ describe('Connections: Google Drive', () => {
         disconnect_drive: { disconnected: true },
       },
     })
-    await userEvent.click(row('Google Drive').getByRole('button', { name: 'Disconnect' }))
+    await userEvent.click(row('Google Drive').getByRole('button', { name: 'Disconnect…' }))
     await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Disconnect' }))
     expect(call).toHaveBeenCalledWith('disconnect_drive', {})
     expect(row('Google Drive').getByText('Disconnected. The last changes did not reach Drive: Google Drive is unreachable')).toBeInTheDocument()
@@ -228,7 +229,7 @@ describe('Connections: Google Drive', () => {
         },
       },
     })
-    await userEvent.click(row('Google Drive').getByRole('button', { name: 'Disconnect' }))
+    await userEvent.click(row('Google Drive').getByRole('button', { name: 'Disconnect…' }))
     await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Disconnect' }))
     expect(call).not.toHaveBeenCalledWith('disconnect_drive', {})
     expect(row('Google Drive').getByText(/both changed since they last synced/)).toBeInTheDocument()

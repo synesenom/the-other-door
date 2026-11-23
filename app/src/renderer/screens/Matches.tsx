@@ -293,17 +293,17 @@ export function Matches({
   return (
     <div className="matches">
       <section className="list-pane" ref={listRef}>
-        <div className="list-head">
+        <div className="list-head rule-heavy">
           {/* As Applications' head: the title on the left, adding a job on the right. */}
           <div className="board-head">
             <h1 className="display-l">Matches</h1>
             <div className="actions head-actions">
               <button type="button" className="secondary" onClick={() => setImporting(true)}>
-                Add a job
+                Add a job…
               </button>
               {/* The sidebar's button starts a run; a narrow window has no sidebar foot, so it is here instead. */}
               {narrow && onFindJobs && (
-                <button type="button" className="pill" disabled={finding === 'elsewhere' || preparing} title={preparing ? PREPARING_TIP : undefined} onClick={onFindJobs}>
+                <button type="button" className="secondary" disabled={finding === 'elsewhere' || preparing} title={preparing ? PREPARING_TIP : undefined} onClick={onFindJobs}>
                   {finding ? 'Finding jobs…' : 'Find new jobs'}
                 </button>
               )}
@@ -338,8 +338,8 @@ export function Matches({
               </p>
             )}
             {onLowerBar && listed.scored !== undefined && listed.scored > 0 && !(newOnly && listed.reviewedAt) && (
-              <div className="actions flush">
-                <button type="button" className="quiet" onClick={onLowerBar}>
+              <div className="actions">
+                <button type="button" className="secondary" onClick={onLowerBar}>
                   Show broader matches
                 </button>
               </div>

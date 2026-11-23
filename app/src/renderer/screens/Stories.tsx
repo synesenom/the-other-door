@@ -239,8 +239,8 @@ export function Stories() {
       <p className="small muted">The stories the tailor draws on for your applications: the context, what you did, what came of it and what you learned.</p>
       {/* one way in: writing a story. Not drafted from the CV: a story adds what the CV does not say */}
       <div className="actions stories-add">
-        <button type="button" className="link-inline" onClick={() => { setNote(null); setError(null); setView({ kind: 'text', text: '', drafting: false }) }}>
-          Write a story
+        <button type="button" className="secondary" onClick={() => { setNote(null); setError(null); setView({ kind: 'text', text: '', drafting: false }) }}>
+          Write a story…
         </button>
       </div>
       {note && <p className="small">{named(note)}</p>}
@@ -263,10 +263,10 @@ export function Stories() {
               </dl>
               <div className="actions">
                 <button type="button" className="secondary" onClick={() => setView({ kind: 'form', old: s.title, values: toValues(s) })}>
-                  Edit
+                  Edit…
                 </button>
                 <button type="button" className="secondary" onClick={() => setRemoving(s)}>
-                  Remove
+                  Remove…
                 </button>
               </div>
             </li>

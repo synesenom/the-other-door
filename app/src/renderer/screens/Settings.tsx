@@ -143,7 +143,7 @@ export function Settings({
           {update.checked && update.available && update.mode === 'link' && (
             <p className="body">
               Version {update.version} is available{' '}
-              <button type="button" className="secondary" onClick={() => void window.door.invoke('open-external', update.url)}>
+              <button type="button" className="secondary go" onClick={() => void window.door.invoke('open-external', update.url)}>
                 Download
               </button>
             </p>

@@ -40,7 +40,7 @@ export function Connect({ doctor, onRecheck, onBack }: { doctor: DoctorReport; o
       <Frame title="Connect Claude" lead={<><AppName /> works through Claude, on your Pro or Max plan. Claude is not on this computer yet.</>} onBack={onBack}>
         <div className="actions">
           <button type="button" className="primary" disabled={working} onClick={() => setAsking(true)}>
-            Install Claude
+            Install Claude…
           </button>
         </div>
         {working && <Spinner message="Installing…" />}
@@ -50,7 +50,7 @@ export function Connect({ doctor, onRecheck, onBack }: { doctor: DoctorReport; o
         {(error || (installed && !working)) && (
           <p className="small muted">
             Installed it yourself?{' '}
-            <button type="button" className="quiet" onClick={() => void onRecheck()}>
+            <button type="button" className="secondary" onClick={() => void onRecheck()}>
               Check again
             </button>
           </p>
@@ -76,7 +76,7 @@ export function Connect({ doctor, onRecheck, onBack }: { doctor: DoctorReport; o
       <SignIn onDone={onRecheck} />
       <p className="small muted">
         Signed in some other way?{' '}
-        <button type="button" className="quiet" onClick={() => void onRecheck()}>
+        <button type="button" className="secondary" onClick={() => void onRecheck()}>
           Check again
         </button>
       </p>

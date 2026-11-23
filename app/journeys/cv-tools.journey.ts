@@ -12,7 +12,7 @@ const first = 'Bayesian hierarchical models (PyMC)'
 const second = 'Gave a talk on probabilistic load forecasting at PyData Copenhagen 2024.'
 
 async function readPage(page: Page, url: string) {
-  await page.getByRole('button', { name: 'Add a page' }).click()
+  await page.getByRole('button', { name: 'Add a page…' }).click()
   await expand(page).getByLabel('Which page?').fill(url)
   await expand(page).getByRole('button', { name: 'Read it' }).click()
 }

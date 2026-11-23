@@ -15,7 +15,7 @@ test.describe('the editor', () => {
     await expect(page.getByRole('region', { name: 'Master CV' }).getByRole('heading', { name: 'Skills' })).toBeVisible()
     await expect(cvBox(page)).toHaveCount(0)
     await expect(page.getByRole('note')).toHaveCount(0)
-    await expect(page.getByRole('button', { name: 'Add a page' })).toBeEnabled()
+    await expect(page.getByRole('button', { name: 'Add a page…' })).toBeEnabled()
     await page.getByRole('switch', { name: 'Preview' }).click()
     await expect(cvBox(page)).toHaveValue(world.persona.cv)
   })

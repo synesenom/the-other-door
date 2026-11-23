@@ -52,7 +52,6 @@ export function Pair({
 
   return (
     <main className="onb pair">
-      <span className="dash" aria-hidden="true" />
       <h1 className="display-l">Pair this phone</h1>
       {notice && <p className="notice body">{named(notice)}</p>}
       <p className="body">

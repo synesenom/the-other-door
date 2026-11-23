@@ -42,7 +42,7 @@ function Card({ m, onOpen, onGhost, ghosting }: { m: Match; onOpen: () => void; 
         )}
       </button>
       {silence(m) !== null && (
-        <button type="button" className="quiet board-card-ghost small" onClick={onGhost} disabled={ghosting}>
+        <button type="button" className="secondary board-card-ghost small" onClick={onGhost} disabled={ghosting}>
           Mark ghosted
         </button>
       )}
@@ -198,7 +198,7 @@ export function Applications({
         </div>
         <div className="actions head-actions">
           <button type="button" className="secondary" onClick={() => setImporting(true)}>
-            Add a job
+            Add a job…
           </button>
         </div>
       </div>
@@ -218,7 +218,7 @@ export function Applications({
         <div className={narrow ? 'board-list' : 'board'} role="group" aria-label={narrow ? 'Applications' : 'Applications board'}>
           {shown.map((c) => (
               <section key={c.heading} className="board-column" aria-labelledby={`col-${c.heading}`}>
-                <div className="board-column-head">
+                <div className="board-column-head rule-heavy">
                   <h2 className="label" id={`col-${c.heading}`}>
                     {c.heading}
                   </h2>

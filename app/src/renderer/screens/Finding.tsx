@@ -200,7 +200,7 @@ function Summary({
   // a narrow window stacks the row: a quiet button alone on its line would not read as one
   const narrow = useNarrow()
   return (
-    <section className="summary-card" aria-label="Run summary">
+    <section className="summary-card rule-heavy rule-top" aria-label="Run summary">
       <h2 className="display-l">{n === 0 ? 'No new matches' : `${n} new ${n === 1 ? 'match' : 'matches'}`}</h2>
       {record.top.length > 0 && (
         <ul className="summary-top">
@@ -234,7 +234,7 @@ function Summary({
           View matches
         </button>
         {account !== null && onLowerBar && (
-          <button type="button" className={narrow ? 'secondary' : 'quiet'} onClick={onLowerBar}>
+          <button type="button" className="secondary" onClick={onLowerBar}>
             Show broader matches
           </button>
         )}
