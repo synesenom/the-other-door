@@ -16,7 +16,6 @@ afterEach(() => {
 
 const answers: Partial<WizardState> = {
   step: 'review', name: 'Ada', email: 'ada@x.dk', location: 'Aarhus', languages: ['English'], roleTargets: ['Lead'],
-  titles: [{ title: 'Lead', reason: 'you led a team', recommended: true }, { title: 'Quant', reason: 'maths', recommended: false }],
   keywords: ['lead'], topicTerms: ['data'], cvText: '# Ada\n',
 }
 let seen: WizardState
@@ -279,7 +278,7 @@ describe('Review', () => {
   })
 
   it('with no titles, has no empty list before the box', () => {
-    setup({ ...answers, titles: [], roleTargets: [] })
+    setup({ ...answers, roleTargets: [] })
     expect(within(part('What to look for')).queryByRole('list', { name: 'Role targets, chosen' })).toBeNull()
     expect(within(part('What to look for')).getByRole('textbox', { name: 'Role targets' })).toBeInTheDocument()
   })

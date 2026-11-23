@@ -184,8 +184,6 @@ export interface WizardState {
   email: string
   location: string
   languages: string[]
-  /** The titles offered in the review, with their reasons. */
-  titles: TitleSuggestion[]
   /** The titles picked, saved as `role_targets`. */
   roleTargets: string[]
   remote: Remote
@@ -201,7 +199,6 @@ export interface WizardState {
   discoveryChoices: { byCity: Record<string, DiscoveryChoice[]>; worldwide: DiscoveryChoice[] }
   keywords: string[]
   topicTerms: string[]
-  /** Where the keywords came from: proposed by Claude, skipped (the titles stand in), or already in the config. */
   /** The CV photo, held until Save (`save_photo` is its own tool, called after the profile is written). */
   photo: PhotoChoice
   /** The CV text to save, or null to leave profile/cv.md as it is. */
@@ -230,7 +227,6 @@ export function initialState(profile: ShowProfile): WizardState {
     email: c?.email ?? '',
     location: c?.location ?? '',
     languages: c?.languages?.length ? [...c.languages] : ['English'],
-    titles: (c?.role_targets ?? []).map((title) => ({ title, reason: 'In your profile', recommended: true })),
     roleTargets: [...(c?.role_targets ?? [])],
     remote: c?.remote ?? 'hybrid',
     preferences: c?.preferences ?? '',
@@ -441,7 +437,7 @@ export function wizardReducer(state: WizardState, action: Action): WizardState {
       const recommended = action.titles.filter((t) => t.recommended).map((t) => t.title)
       const roleTargets = [...state.roleTargets, ...recommended.filter((t) => !picked.has(t.toLowerCase()))]
       const missing = roleTargets.length === 0 ? [...without(state.missing, 'titles'), 'titles' as const] : without(state.missing, 'titles')
-      return { ...state, titles: action.titles, roleTargets, missing, warnings: warned(state, 'titles', action.warning) }
+      return { ...state, roleTargets, missing, warnings: warned(state, 'titles', action.warning) }
     }
     case 'keywords':
       return { ...state, keywords: action.keywords, topicTerms: action.topicTerms }

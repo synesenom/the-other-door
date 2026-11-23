@@ -165,7 +165,6 @@ describe('Reading', () => {
     expect(seen.name).toBe('Ada Lovelace')
     expect(h.call).toHaveBeenCalledWith('suggest_titles', { titles: ['Data Scientist'], languages: ['English'] })
     expect(seen.roleTargets).toEqual(['Data Scientist', 'Lead'])
-    expect(seen.titles.map((t) => t.title)).toEqual(['Lead', 'Quant'])
   })
 
   describe('the example story', () => {

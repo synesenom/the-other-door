@@ -39,7 +39,7 @@ describe('the three screens', () => {
     expect(s.mode).toBe('redo')
     expect(s.step).toBe('sources')
     expect(s.name).toBe(savedConfig.name)
-    expect(s.titles).toEqual([{ title: 'Data Scientist', reason: 'In your profile', recommended: true }])
+    expect(s.roleTargets).toEqual(['Data Scientist'])
   })
 
   it('goes sources, reading, review and no further', () => {
@@ -117,7 +117,6 @@ describe('what reading finds', () => {
 
   it('pre-selects the recommended titles', () => {
     const s = wizardReducer(fresh(), { type: 'titles', titles: [title('Lead'), title('Quant', false)] })
-    expect(s.titles.map((t) => t.title)).toEqual(['Lead', 'Quant'])
     expect(s.roleTargets).toEqual(['Lead'])
     expect(s.missing).toEqual([])
   })

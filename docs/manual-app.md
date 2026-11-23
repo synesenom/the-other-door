@@ -243,9 +243,9 @@ scored; "Nothing has scored 0.65 or better yet.", then on its own line "Match fi
 on "New only".
 
 Until the first posting has reached that setting, that empty list also shows the three best ads below it as ordinary rows
-marked "Weak match" (open, prepare or discard them like any other), under one line: "3 weak matches found." and, when
-a discovery source serving your city is off, that the app can also find employers on LinkedIn and the other discovery sources, at your own
-risk, with the legal disclaimer and "Turn it on in Settings" (opens Where to find employers); with every source on, the line is only the count. On the phone the line is plain text. Once any
+marked "Weak match" (open, prepare or discard them like any other), under one line: "3 weak matches found." with
+"Show broader matches" right after it and, when a discovery source serving your city is off, that the app can also find employers on LinkedIn and the other discovery sources, at your own
+risk, with the legal disclaimer and "Turn it on in Settings" (opens Where to find employers); with every source on, the line is only the count and "Show broader matches". On the phone the line is plain text. Once any
 posting has reached your "Match fit" setting, they are never shown again.
 
 Choosing a row opens the posting on the whole page, as a card does in Applications, with a
