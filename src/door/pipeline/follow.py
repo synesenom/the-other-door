@@ -343,8 +343,7 @@ def _detect(
     wished = [(i, item) for i, item in enumerate(entries) if item[1]["name"] in wanted]
     if not wished:
         return rows
-    asked, unasked = utils.fair_share(wished, careers_ai.MAX_ASKS, key=lambda p: (p[1][1]["sources"] or [""])[0],
-                                      rank=lambda p: 0)
+    asked, unasked = utils.fair_share(wished, careers_ai.MAX_ASKS, key=lambda p: (p[1][1]["sources"] or [""])[0])
 
     def question(pair: tuple[int, tuple[str, dict]]) -> None:
         entry = pair[1][1]
