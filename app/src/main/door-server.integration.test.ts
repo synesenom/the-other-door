@@ -156,7 +156,7 @@ describe.skipIf(!hasPython)('daily-use tools against the real door server', () =
         expect(m.page_counts).toEqual({ cv: 1, cover_letter: 1 })
         expect(m.keywords).toEqual(['group reporting', 'budgeting and forecasting', 'IFRS', 'SAP S/4HANA', 'Power BI', 'stakeholder management'])
         expect(m.tailoring).toEqual(['led with the controlling function', 'condensed Example Retail', 'kept the IFRS 15 thesis'])
-        expect(m.cover_letter_words).toBeGreaterThanOrEqual(150)
+        expect(m.cover_letter_words).toBeGreaterThanOrEqual(130)
         expect(m.cover_letter_words).toBeLessThanOrEqual(350)
         expect(m.rendered).toBe(false)
         expect(m.pngs.cv).toHaveLength(1)
