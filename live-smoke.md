@@ -18,7 +18,7 @@ Last checked: 2026-11-24.
 | globalnyt | ✅ | 2026-11-24 |  |
 | jobbank | ✅ | 2026-11-24 |  |
 | reed | ✅ | 2026-11-24 |  |
-| jobs_ac_uk | ❌ | 2026-11-24 | changed: details, listing, page2, zero_hits |
+| jobs_ac_uk | ⛔ | 2026-11-24 | not reached 1 run in a row; last ❌ 2026-11-24 |
 | nhs_jobs | ✅ | 2026-11-24 |  |
 | jobmaskinen | ✅ | 2026-11-24 |  |
 | arbetsformedlingen | ✅ | 2026-11-24 |  |
@@ -39,7 +39,7 @@ Last checked: 2026-11-24.
 | lever | ✅ | 2026-11-24 |  |
 | ashby | ✅ | 2026-11-24 |  |
 | recruitee | ✅ | 2026-11-24 |  |
-| emply | ❌ | 2026-11-24 | changed: listing, page2 |
+| emply | ✅ | 2026-11-24 |  |
 | varbi | ✅ | 2026-11-24 |  |
 | visma_recruit | ✅ | 2026-11-24 |  |
 | talentsoft | ✅ | 2026-11-24 |  |
@@ -75,7 +75,7 @@ Last checked: 2026-11-24.
 
 | Name | Status | Checked | Note |
 |------|--------|---------|------|
-| linkedin | ⛔ | 2026-11-24 | not reached 1 run in a row; last ❌ 2026-11-19 |
+| linkedin | ✅ | 2026-11-24 |  |
 | profession | ✅ | 2026-11-24 |  |
 | hellowork | ✅ | 2026-11-24 |  |
 | jobbsafari | ✅ | 2026-11-24 |  |
