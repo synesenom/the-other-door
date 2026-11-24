@@ -341,10 +341,10 @@ _LISTS = [
 
 
 def test_each_dimension_has_a_badge_with_how_many_passed():
-    """Green when every one in the list passed, red when one changed, orange when one was not reached,
-    not checked or has no live test."""
+    """Coverage's palette: bright green when every one in the list passed, red when one changed, orange
+    when one was not reached, not checked or has no live test."""
     assert smoke_report.dimension_badges([*_LISTS, ("Boards", [("reed", "unreached"), ("jobindex", "pass")])]) == [
-        ("live-boards.svg", "boards", "2/2", "green"),
+        ("live-boards.svg", "boards", "2/2", "brightgreen"),
         ("live-feeds.svg", "employer feeds", "1/2", "red"),
         ("live-matcher.svg", "matcher", "1/2", "red"),
         ("live-boards.svg", "boards", "1/2", "orange"),
@@ -407,7 +407,7 @@ def test_the_discovery_sources_and_wikidata_have_a_list_of_their_own_and_detect_
 
 def test_the_discovery_list_has_its_badge():
     assert smoke_report.dimension_badges([("Employer discovery", [("linkedin", "pass")])]) == [
-        ("live-discovery.svg", "employer discovery", "1/1", "green")]
+        ("live-discovery.svg", "employer discovery", "1/1", "brightgreen")]
 
 
 _FAILED = '<failure message="AssertionError: reed [details]: description: 2/2 break it">x</failure>'
