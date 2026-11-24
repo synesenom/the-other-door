@@ -1,0 +1,19 @@
+{
+  "queuedemployer": {
+    "name": "Queued Employer ApS",
+    "links": [
+      "https://example.com/careers"
+    ],
+    "titles": [
+      "Controller"
+    ],
+    "sources": [
+      "linkedin"
+    ],
+    "first_seen": "2026-03-18T09:00:00+00:00",
+    "last_seen": "2026-03-18T09:00:00+00:00",
+    "job_ids": [
+      "4000000001"
+    ]
+  }
+}

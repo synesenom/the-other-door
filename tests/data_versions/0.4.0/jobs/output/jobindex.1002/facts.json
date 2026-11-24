@@ -1,0 +1,12 @@
+{
+  "checked_at": "2026-01-01T00:00:00+00:00",
+  "unsupported": [
+    {
+      "kind": "number",
+      "value": "25",
+      "context": "Led a team of 25 analysts",
+      "file": "cv",
+      "reason": "the team size is from the interview notes, not the CV"
+    }
+  ]
+}
