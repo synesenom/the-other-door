@@ -88,5 +88,4 @@ scraper parses; walls and network errors are `wall`/`unreachable`, which `doctor
 a warning rather than drift. `tests/scrapers/test_scrapers_probe_contract_unit.py` fails for a
 scraper without `probe()`, and each scraper's fixture test needs an ok and a drift case.
 `run_probe` and `probe_failure` in `src/door/scrapers/__init__.py` do the fetch/parse
-bookkeeping, and `probe_session` builds the probe's session. On drift, `doctor` saves the raw response to `jobs/drift/<site>/`, and `setup`
-can hand it to the scraper-fixer agent (`src/door/prompts/scraper-fixer.md`).
+bookkeeping, and `probe_session` builds the probe's session. On drift, `doctor` saves the raw response to `jobs/drift/<site>/`.

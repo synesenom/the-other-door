@@ -1596,8 +1596,7 @@ def doctor(probe: bool = False, quick: bool = False) -> dict:
         ``{"ok", "checks": [{"name", "status": "ok" | "missing" | "warn" |
         "drift", "required", "detail", "fix"}], "last_run", "last_scrape"}`` —
         ``fix`` is the command to run for a failed check. ``drift`` means a
-        site's page no longer has the structure its scraper reads (offered a
-        fix by `setup` with ``probe=True``); a ``scraper:`` ``warn`` is an unreachable site, a
+        site's page no longer has the structure its scraper reads; a ``scraper:`` ``warn`` is an unreachable site, a
         login/bot wall or a result count far from the recent runs. Neither
         makes ``ok`` false.
     """
@@ -1606,9 +1605,7 @@ def doctor(probe: bool = False, quick: bool = False) -> dict:
 
 @mcp.tool()
 @_tool_errors
-def setup(
-    install: list[str] | None = None, yes: bool = False, fix_scrapers: list[str] | None = None, probe: bool = False
-) -> dict:
+def setup(install: list[str] | None = None, yes: bool = False) -> dict:
     """Install missing prerequisites (Chromium, the `claude` CLI).
 
     Call it first WITHOUT `yes`: nothing runs, and ``plan`` lists the exact
@@ -1622,29 +1619,14 @@ def setup(
         install: Tools to install: "chromium", "claude". Omit
             for every tool `doctor` reports missing.
         yes: The user approved the plan — run it.
-        probe: Probe each configured site live (as `doctor` with
-            ``probe=True``) so ``fixes`` can offer a drifted scraper.
-            Off by default — the installs need no network.
-        fix_scrapers: Sites whose drifted scraper to repair
-            (``doctor`` with ``probe=True`` shows them as ``scraper: <site>``
-            with status ``drift``; the plan's ``fixes`` lists the offers). Only with
-            ``yes``, and only for sites the user approved: each runs the
-            headless scraper-fixer on a new branch, gates it on the offline
-            tests plus a fresh probe, then pushes and opens a PR. Refused
-            while a run is in progress or the working tree is dirty.
 
     Returns:
         ``{"outcome": "needs_confirmation" | "ok" | "incomplete", "platform",
-        "plan", "results", "doctor", "todo", "fixes"}``. ``fixes`` holds the
-        offers (``[{"site", "check"}]``) until fixes run, then one outcome
-        per site: ``pr`` (with ``url``), ``local_branch`` (with ``branch``
-        and the ``commands`` to finish by hand), ``gate_failed``,
-        ``fixer_failed`` or ``refused``.
+        "plan", "results", "doctor", "todo"}``.
     """
     return setup_cmd._setup_core(
         install, yes=yes, skip_profile=True, interactive=False,
         profile_dir=workspace.PROFILE_DIR, jobs_dir=workspace.JOBS_DIR,
-        fix_scrapers=fix_scrapers, probe_sites=probe,
     )
 
 

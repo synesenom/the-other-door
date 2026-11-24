@@ -9,7 +9,7 @@ and returns a dict:
 ``missing`` is a required tool that is absent (doctor exits non-zero);
 ``warn`` is something optional or stale; ``drift`` is a scraper whose live
 site no longer has the structure it parses (``scraper: <site>`` checks, from
-each scraper's ``probe()``; non-fatal, offered a fix by ``doctor --probe --fix``). `run_checks` runs them all and adds
+each scraper's ``probe()``; non-fatal). `run_checks` runs them all and adds
 two informational blocks: the last recorded run (`jobs/runs/`) and each
 configured site's last successful scrape (`jobs/scrape_state.json`, the
 watermark `scrape` counts from).
@@ -447,13 +447,13 @@ def assess_probe(result: ProbeResult, avg: float | None) -> tuple[str, str]:
     return "ok", f"{found} result(s) on page 1"
 
 
-def _scraper_check(name: str, status: str, detail: str, fix: str | None, *, fixable: bool = False) -> dict:
+def _scraper_check(name: str, status: str, detail: str, fix: str | None) -> dict:
     from door.core import sites
 
     site = name.removeprefix("scraper: ")
     return {
         "name": name, "status": status, "required": False, "detail": detail,
-        "fix": None if status == "ok" else fix, "fixable": fixable,
+        "fix": None if status == "ok" else fix,
         # the site in words ("The Hub"), for a list a person reads
         "details": {"site": site, "site_name": sites.source_name(site) or site},
     }
@@ -532,17 +532,16 @@ def check_scrapers(
             checks.append(_scraper_check(name, status, detail, None))
             continue
         blocked = result.get("robots") == "disallowed"
-        fixable = not (result.get("wall") or result.get("unreachable") or blocked)
-        saved = _save_raw(jobs_dir, site, result, now) if (result.get("raw") or fixable) else None
+        saved = _save_raw(jobs_dir, site, result, now) if result.get("raw") else None
         if saved:
             detail += f" (raw response: {saved})"
         if blocked:
             fix = f"the site no longer allows this request; open an issue (or unfollow its employers)"
-        elif fixable:
-            fix = "./door doctor --probe --fix   (offers to repair it)"
+        elif not (result.get("wall") or result.get("unreachable")):
+            fix = "the site may have changed; open an issue for the scraper if it persists"
         else:
             fix = "usually transient; re-run doctor later"
-        checks.append(_scraper_check(name, status, detail, fix, fixable=fixable))
+        checks.append(_scraper_check(name, status, detail, fix))
     return checks
 
 
@@ -612,8 +611,7 @@ def run_checks(
     The local checks are offline and take a few seconds at most: Chromium prints a test page,
     which ``quick`` leaves out (it only starts the shell; the desktop app's status calls). The ``scraper: <site>`` checks
     hit every configured site,
-    so they only run with ``probe_sites=True`` (`doctor --probe`, or `doctor --probe --fix`
-    when it looks for scrapers to fix); ``probe(site, config, profile_dir)``
+    so they only run with ``probe_sites=True`` (`doctor --probe`); ``probe(site, config, profile_dir)``
     is then the probe to use (default: the real network one; tests inject a
     stub). ``drift`` and ``warn`` statuses are non-fatal.
 

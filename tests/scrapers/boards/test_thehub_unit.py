@@ -46,7 +46,7 @@ def test_location_text(node, expected):
 
 @pytest.mark.parametrize("location", ["Copenhagen", "Frederiksberg", "Denmark", "Danmark"])
 def test_country_code_without_the_engine_key_comes_from_the_location(location):
-    """The probe path (`doctor`, `scraper_fix`) skips `_scrape_core`, so no `_country`."""
+    """The probe path (`doctor`) skips `_scrape_core`, so no `_country`."""
     assert thehub._country_code({"location": location}) == "DK"
 
 
