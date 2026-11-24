@@ -384,3 +384,77 @@ def test_setup_cli_names_what_is_missing_on_stderr(env, monkeypatch, prompts):
     result = CliRunner().invoke(cli, ["doctor", "--fix"])
     assert "✗ Missing: chromium — ./door doctor --fix" in result_text(result)
     assert result.exit_code == 1
+
+
+def test_setup_cli_colours_the_marks_on_a_terminal(env, monkeypatch):
+    monkeypatch.setattr(doctor, "run_checks", Sequence(_report(chromium="missing"), _report()))
+    out = CliRunner().invoke(cli, ["doctor", "--fix", "--yes"], color=True).output
+    assert "\x1b[32m✓\x1b[0m Chromium (CV printing)" in out          # installed: green
+    assert "\x1b[32m✓\x1b[0m claude CLI" in out        # already there: green too
+    plain = CliRunner().invoke(cli, ["doctor", "--fix", "--yes"]).output
+    assert "\x1b[" not in plain
+
+
+def test_progress_spinner_is_yellow(monkeypatch, capsys):
+    from door.commands import _progress
+
+    monkeypatch.setattr(_progress.sys.stdout, "isatty", lambda: True, raising=False)
+    _progress.step("Thing", lambda: (_progress.time.sleep(0.15), (True, None))[1])
+    assert "\x1b[33m⠋\x1b[0m Thing" in capsys.readouterr().out
+
+
+def test_doctor_install_flags_need_fix(cli_env):
+    for flag in ("--yes", "--no-chromium", "--no-claude"):
+        result = CliRunner().invoke(cli, ["doctor", flag])
+        assert result.exit_code == 2, flag
+        assert "only go with --fix" in result_text(result)
+
+
+def _render_checks(checks):
+    from io import StringIO
+    from rich.console import Console
+
+    buf = StringIO()
+    setup_cmd._print_checks(Console(file=buf, width=120, force_terminal=False), checks)
+    return buf.getvalue()
+
+
+def test_print_checks_shows_the_connected_account():
+    check = {**_check("claude login", "ok"), "details": {"email": "jane@example.com", "subscriptionType": "pro", "orgName": "Jane Org"}}
+    out = _render_checks([check])
+    assert "Connected as jane@example.com (pro, Jane Org)" in out
+
+
+def test_print_checks_without_details_has_no_account_line():
+    assert "Connected as" not in _render_checks([_check("claude login", "ok")])
+    assert "Connected as" not in _render_checks([{**_check("claude login", "ok"), "details": {"loggedIn": True}}])
+
+
+# --------------------------------------------------------------------------- #
+# A download that fails fails the install (#586)
+# --------------------------------------------------------------------------- #
+
+def _stand_in_curl(tmp_path, monkeypatch, body: str):
+    """A `curl` first on PATH: the planned shell command really runs, against it, offline."""
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    curl = bin_dir / "curl"
+    curl.write_text("#!/bin/sh\n" + body + "\n")
+    curl.chmod(0o755)
+    monkeypatch.setenv("PATH", f"{bin_dir}:/usr/bin:/bin")
+    monkeypatch.setenv("HOME", str(tmp_path))
+
+
+def test_an_installer_that_cannot_be_downloaded_fails_with_curls_error(tmp_path, monkeypatch):
+    _stand_in_curl(tmp_path, monkeypatch, 'echo "curl: (7) Failed to connect" >&2; exit 7')
+    step = installers.plan_install("claude", "macos", which=lambda n: "/usr/bin/curl" if n == "curl" else None, home=tmp_path)
+    result = setup_cmd._install_step(step)
+    assert result["ok"] is False
+    assert "Failed to connect" in result["error"]
+
+
+def test_a_downloaded_installer_runs(tmp_path, monkeypatch):
+    _stand_in_curl(tmp_path, monkeypatch, "echo 'touch \"$HOME/installed\"'")
+    step = installers.plan_install("claude", "macos", which=lambda n: "/usr/bin/curl" if n == "curl" else None, home=tmp_path)
+    assert setup_cmd._install_step(step)["ok"] is True
+    assert (tmp_path / "installed").exists()
