@@ -198,7 +198,7 @@ describe('Profile', () => {
     await waitFor(() => expect(call).toHaveBeenCalledWith('init_profile', { min_score: 0.75 }))
     cleanup()
     await open({}, { min_score: 0.7 })
-    expect(screen.getByRole('radio', { name: 'Your own (0.70)' })).toBeChecked()
+    expect(screen.getByRole('radio', { name: 'Your own (70%)' })).toBeChecked()
   })
 
   it('an error is said under its field, the value stays, and a later valid edit is sent again', async () => {
@@ -320,29 +320,29 @@ describe('Profile', () => {
     await open()
     await screen.findByRole('group', { name: 'Sources' })
     const names = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)
-    expect(names.slice(-3)).toEqual(['Master CV', 'CV style', 'Stories'])
+    expect(names.slice(-3)).toEqual(['Master CV', 'Style', 'Stories'])
     expect(names[0]).toBe('About you')
-    expect(within(screen.getByRole('navigation', { name: 'Sections' })).getAllByRole('link').slice(-3).map((l) => l.textContent)).toEqual(['Master CV', 'CV style', 'Stories'])
+    expect(within(screen.getByRole('navigation', { name: 'Sections' })).getAllByRole('link').slice(-3).map((l) => l.textContent)).toEqual(['Master CV', 'Style', 'Stories'])
     expect(screen.queryByRole('button', { name: 'Save' })).toBeNull()
   })
 
-  it('the CV style is a section of the page, and its two keys are not in the form above it', async () => {
+  it('the Style is a section of the page, and its two keys are not in the form above it', async () => {
     await open()
-    expect(await screen.findByRole('region', { name: 'CV style' })).toBeInTheDocument()
+    expect(await screen.findByRole('region', { name: 'Style' })).toBeInTheDocument()
     expect(screen.queryByRole('group', { name: 'CV colour' })).toBeNull()
     expect(screen.queryByRole('group', { name: 'CV fonts' })).toBeNull()
   })
 
-  it('lists CV style beside the page only when the part is there', async () => {
+  it('lists Style beside the page only when the part is there', async () => {
     await open()
     const links = () => within(screen.getByRole('navigation', { name: 'Sections' })).getAllByRole('link').map((l) => l.textContent)
-    expect(links()).toContain('CV style')
+    expect(links()).toContain('Style')
     cleanup()
     mockDoor({ show_profile: { ...show(), config: null, errors: ['profile/config.json: remote — bad'] }, ...NO_STORIES })
     render(<Profile onSaved={() => {}} onDraft={() => {}} />)
     await screen.findByRole('heading', { name: 'Master CV' })
     expect(links()).toEqual(['Master CV', 'Stories'])
-    expect(screen.queryByRole('region', { name: 'CV style' })).toBeNull()
+    expect(screen.queryByRole('region', { name: 'Style' })).toBeNull()
   })
 
   it('a config that does not load says why, with the lines', async () => {

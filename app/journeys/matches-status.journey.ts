@@ -6,9 +6,9 @@ import { expect, test } from './fixtures'
 import { holdRun, matchesLoaded, matchRows, METTE_ORDER, notificationOpens, openRow, postingHeading, row, shownTitle } from './helpers/matches'
 
 const GRID = 'gridwise-ml-engineer-remote'
-const STATUS_WORDS = ['Not yet applied', 'Prepared', 'Applied', 'Interview', 'Ghosted', 'Rejected', 'Offer', 'Not for me']
+const STATUS_WORDS = ['Not yet applied', 'Prepared', 'Applied', 'Had an interview', 'Ghosted', 'Rejected', 'Offer', 'Not for me']
 
-const statusDialog = (page: Page, title: string) => page.getByRole('dialog', { name: `Status: ${title}` })
+const statusDialog = (page: Page, title: string) => page.getByRole('dialog', { name: `What happened: ${title}` })
 const radio = (page: Page, name: string | RegExp) => page.getByRole('dialog').getByRole('radio', { name, exact: typeof name === 'string' })
 const save = (page: Page) => page.getByRole('dialog').getByRole('button', { name: 'Save' })
 /** The notice a status change leaves (not the list's Loading…). */
@@ -81,7 +81,7 @@ test.describe('the Status dialog', () => {
 
   test('Interview: screening needs the kind picked first', async ({ page, world }) => {
     await openStatus(page, world, GRID)
-    await radio(page, 'Interview').check()
+    await radio(page, 'Had an interview').check()
     const kinds = page.getByRole('radiogroup', { name: 'Kind of interview' })
     await expect(kinds.getByRole('radio')).toHaveCount(4)
     await expect(save(page)).toBeDisabled()
@@ -99,8 +99,8 @@ test.describe('a job already in play', () => {
     await notificationOpens(app, { screen: 'posting', jobId: world.jobId('pakkepost-causal-experimentation'), inPlay: false })
     await expect(postingHeading(page, world, 'pakkepost-causal-experimentation')).toBeVisible()
     await page.getByRole('button', { name: 'Status…', exact: true }).click()
-    await expect(radio(page, 'Interview')).toBeChecked()
-    await expect(radio(page, 'Interview')).toBeFocused({ timeout: 5_000 })
+    await expect(radio(page, 'Had an interview')).toBeChecked()
+    await expect(radio(page, 'Had an interview')).toBeFocused({ timeout: 5_000 })
   })
 
   test('the notice names a job that is not in the list', async ({ app, page, world }) => {

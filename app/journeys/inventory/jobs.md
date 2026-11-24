@@ -6,7 +6,7 @@ Conventions used below:
 - **btn "X"** = `getByRole('button', { name: 'X' })`. **radio "X"**, **switch "X"**, **dialog "X"** and so on work the same way.
 - **status** = `role="status"`, **alert** = `role="alert"`.
 - "named()" means a string containing "The other door" is split around an `<span class="app-name">`. `getByText` on the whole `<p>` still matches the full text.
-- Narrow means `(max-width: 899px)` (`useNarrow`). CSS hides `.sidebar-foot` (the Find button and "Last run") and the problem lines' block under the menu there.
+- Narrow means `(max-width: 899px)` (`useNarrow`). CSS hides `.sidebar-foot` (the Find button and its warning sign) and the problem lines' block under the menu there.
 - How errors reach the renderer: the server returns `{"error": msg, candidates?, conflict?}`. `door-server.ts` turns that into a `DoorError`, `ipc.ts` wraps it in the envelope `{ok:false,error,candidates?,stopped?,conflict?}`, and `api.call` throws `ApiError(message)`. `errorText(e)` is `e.message`. Other main-side messages: `"stopped"` (stopped=true), `"The other door took too long to answer"` (timedOut; for find_jobs it is replaced by `"The run stopped: The other door heard nothing for 15 minutes."` and the child is killed), `"The other door's server stopped; try again"`, `"could not start the door server: …"`, `"unknown tool"`.
 - Call timeouts (main side, idle and restarted by progress where there is any): import_posting 180 s, prepare 180 s (it reports every 30 s), revise 420 s, find_jobs 900 s idle. Every other tool in this area (show, list_matches, set_status, mark_seen, status_summary, show_profile, doctor 600 s) uses the server default.
 
@@ -35,7 +35,7 @@ Calls at start: `info` IPC, then `show_profile` {}. Once the shell is up: `statu
   - Text is "Finding jobs…" when `own` (this window's run is running, or the board says active and own) or `foreign` (board active and not own). Otherwise "Find new jobs". — ✓ Find new jobs runs the five steps…; ✓ a run started in a terminal: the window jumps to Finding jobs…
   - Disabled when `foreign`, or `own && finding` (already on the Finding screen), or `!own && preparingNow` (a Prepare is running in this window). Only in that last case does it carry the title `"Preparing an application. Find new jobs again when it is done."`. — ✓ Find new jobs runs the five steps… (own on Finding); ✓ a run started in a terminal… (foreign); ✓ a Prepare in progress turns Find new jobs off until it is done
   - Click when own: shows Finding (no call). Otherwise: `startRun()` → `find_jobs` {} with progress (see §1). — unit: `app/src/renderer/App.test.tsx`; ✓ a second run reads the boards again and scores nothing twice
-- **"Last run <Mon D, HH:MM>"** (`p.small.muted`). Shown when `status_summary.since_last_review.last_run.finished_at` parses as a date. Missing or unparsable: no line. `status_summary` failing: no line, silently. — unit: `app/src/renderer/App.test.tsx`; ✓ Find new jobs runs the five steps… (updated after a run); not tested: status_summary failing (the caption is silent; Matches area)
+- **The last run** (`screens/lastRun.ts` `runFreshness`, from `status_summary.since_last_review.last_run.finished_at`): the Find button's `title` is "Last run just now|N h ago|yesterday|N days ago"; two days or more with no run, or none ever (missing or unparsable), a warning sign beside the button (`role="img"`, "No run in N days" / "Not run yet", its words on hover), not while a run goes on. Nothing until `status_summary` answered; it failing: nothing, silently. — unit: `lastRun.test.ts`, `App.test.tsx`; ✓ Find new jobs runs the five steps… (the title before and after a run); ✓ lists the matches best first, each with its title, company, place and score (fresh: no sign); not tested: status_summary failing
 - **group "Needs you"** (`problems()`). One button per problem; on the phone they are plain `<p>`s:
   - "Claude is not installed": doctor's `claude CLI` check is not `ok` → Settings. — unit: `app/src/renderer/screens/problems.test.ts` (matches)
   - "Claude is not signed in": the `claude login` check failed, or a logged-in API key → Settings. — unit: `app/src/renderer/App.test.tsx` (matches)
@@ -49,7 +49,7 @@ Calls at start: `info` IPC, then `show_profile` {}. Once the shell is up: `statu
 
 ### Run board (`run-board.ts` → the `door:run-board` push and `runBoard()`)
 - The board is `{active:false}`, or `{active:true, own, started_at, purpose, message, steps[]}`. It is active only while the pid in `jobs/.lock.json` is alive and `jobs/.progress.json` parses as an object. `own` means the pid is the app's own server child. Steps are filtered to objects with string `name` and `status`. Updates come from a file watch (100 ms debounce) plus a 1 s poll, and are sent only when changed.
-- **A foreign run starting** (active and !own) → App calls `setFinding(true)`: the window **jumps to Finding jobs**, read only. **When it ends** → Finding closes and `refreshKey++` (Matches reloads, as does the Last run caption). — ✓ a run started in a terminal: the window jumps to Finding jobs, read only, and comes back when it ends; unit: `app/src/renderer/App.test.tsx`
+- **A foreign run starting** (active and !own) → App calls `setFinding(true)`: the window **jumps to Finding jobs**, read only. **When it ends** → Finding closes and `refreshKey++` (Matches reloads, as does the last run's hover title). — ✓ a run started in a terminal: the window jumps to Finding jobs, read only, and comes back when it ends; unit: `app/src/renderer/App.test.tsx`
 - Test lever: a world can write `jobs/.lock.json` `{pid: <a live pid>, started_at, purpose:"run"}` and `.progress.json` `{message, steps:[…]}` to fake a foreign run **without** blocking the server. `lock_holder` and `ledger_lock` check an OS lock on `jobs/.lock`, not the json. To also make the server refuse, a helper has to hold the real `ledger_lock` (purpose "run" gives "a run is in progress (started HH:MM, pid N); try again when it has finished"). — used: helpers/finding.ts holdLedgerLock (the real lock from a child Python)
 
 ### Notification clicks (`onOpen`, channel `door:open`)
@@ -69,7 +69,7 @@ These only reach the window as IPC. They can be faked with `app.evaluate(({Brows
 | revise revised, compile ok | "Revision done" / "…: the CV is updated." or "the letter is updated." | materials, document by file |
 | revise revised with a compile error | "The PDF could not be rebuilt" / "Undo last change puts it back." | materials |
 | revise undone | (none) | |
-| import_posting **by url only** | "Ad imported" / "…: scored 0.72" or "…: not scored yet" (plain "Scored 0.72" / "Not scored yet") | posting |
+| import_posting **by url only** | "Ad imported" / "…: scored 72%" or "…: not scored yet" (plain "Scored 72%" / "Not scored yet") | posting |
 | find_jobs error, timed out | "The search stopped" / "The other door heard nothing for 15 minutes. Nothing is lost; run it again." | finding | — not tested: OS notification (and a 15-minute idle wait)
 | find_jobs error, other | "The search didn't finish" / first line of the error (max 200 chars) | finding | — not tested: OS notification
 | prepare error | "Preparing didn't finish" / "<title> · <company>: <first line>" | posting, or matches when there is no job id |
@@ -152,7 +152,7 @@ These only reach the window as IPC. They can be faked with `app.evaluate(({Brows
 - **status "Loading…"** while `matches===null` and there is no error. — unit: `app/src/renderer/screens/Matches.test.tsx`
 - **alert** <list_matches error> (named). E.g. an invalid config surfaces here. — ✓ a list that cannot be read says why, and reads again once it can
 - Empty and no error: "Nothing scored yet, run The other door first". This also shows with **New only on and nothing new** (same copy), which is misleading. — unit: `app/src/renderer/screens/Matches.test.tsx`; ✓ New only with every new match seen says there is nothing new, not that nothing was scored
-- `ul.rows` (role list). Each `li` holds **one button** (`.row`, `aria-current="true"|"false"`). Its accessible name is the concatenation of: — ✓ lists the matches best first, each with its title, English title, company, place and score
+- `ul.rows` (role list). Each `li` holds **one button** (`.row`, `aria-current="true"|"false"`). Its accessible name is the concatenation of: — ✓ lists the matches best first, each with its title, company, place and score
   - the new-dot `img` "New since your last review", when `is_new` — ✓ lists the matches best first…
   - the title
   - `title_en`, when present and different from the title — ✓ lists the matches best first… (Fjordpension row)
@@ -207,7 +207,7 @@ These only reach the window as IPC. They can be faked with `app.evaluate(({Brows
   - `title_en` as a muted p, when present and different from the title. — ✓ a Danish ad: its title in English…
   - Meta line: "Company · Location · posted <Mon D> · via <source_name>". Each part is dropped when missing, and an unparsable `posted_at` is dropped. — ✓ a Danish ad… (all parts); unit: `app/src/renderer/screens/Posting.test.tsx`
   - Score line, when the score is a number or `score_reason` is set: — unit: `app/src/renderer/screens/Posting.test.tsx`
-    - `p.score-l` "0.72" (absent when the score is null) — ✓ a Danish ad…; unit: `app/src/renderer/screens/Posting.test.tsx`
+    - `p.score-l` "72%" (absent when the score is null) — ✓ a Danish ad…; unit: `app/src/renderer/screens/Posting.test.tsx`
     - **btn "Why this score"** (Hint). Hover or focus → **tooltip** with `score_reason`; Escape or blur hides it; the mouse-leave grace is 200 ms. — unit: `app/src/renderer/screens/Hint.test.tsx`; Escape: unit `Matches.test.tsx` (Esc on the score’s hint…)
   - While running (`preparing.get(jobId)`): — ✓ while Prepare runs: the progress line, the elapsed time, locked actions and no Find new jobs
     - **status** spinner with the message: "Preparing…" first, then each progress message, e.g. "tailoring <label>", "verifying outputs…", "top match…" — ✓ while Prepare runs: the progress line, the elapsed time, locked actions and no Find new jobs (in this world the heartbeat reads "tailoring <title> — <company> · 0m03s elapsed")
@@ -271,17 +271,17 @@ Opened by the Posting's "Status" (full form) and the Posting's "Not for me" (`pr
 - Success → `onDone` (§2 or §6). Ledger: `status: discarded`, history notes = the reason. — ✓ Discard records the reason and opens the next match in its place
 
 ### Full form
-- **dialog "Status: <title_en || title>"**. Focus starts on the checked radio, else the first radio. — ✓ opens on the current status… (unapplied: the first is the checked one); ✓ the dialog starts on the checked status
-- **radiogroup "Status"**, radios **"Not yet applied"**, **"Prepared"**, **"Applied"**, **"Interview"**, **"Ghosted"**, **"Rejected"**, **"Offer"**, **"Not for me"**. — ✓ opens on the current status, with every status to choose from
-  - The current status's group is pre-checked: unapplied → "Not yet applied"; `interview:*` → "Interview". — ✓ opens on the current status…; unit: `app/src/renderer/screens/StatusDialog.test.tsx`; unit: `tests/commands/test_status_cli.py`
+- **dialog "What happened: <title_en || title>"**. Focus starts on the checked radio, else the first radio. — ✓ opens on the current status… (unapplied: the first is the checked one); ✓ the dialog starts on the checked status
+- **radiogroup "Status"**, radios **"Not yet applied"**, **"Prepared"**, **"Applied"**, **"Had an interview"**, **"Ghosted"**, **"Rejected"**, **"Offer"**, **"Not for me"**. — ✓ opens on the current status, with every status to choose from
+  - The current status's group is pre-checked: unapplied → "Not yet applied"; `interview:*` → "Had an interview". — ✓ opens on the current status…; unit: `app/src/renderer/screens/StatusDialog.test.tsx`; unit: `tests/commands/test_status_cli.py`
   - A ledger status outside the list checks nothing. — not tested: unreachable (every tracker status maps to a radio)
-- With **Interview** checked: a nested **radiogroup "Kind of interview"**. Each radio's accessible name joins word and meaning, so match them with regexes: — unit: `app/src/renderer/screens/StatusDialog.test.tsx`; ✓ Interview: screening needs the kind picked first
-  - "Screening A pre-screening or recruiter call"
-  - "First impression The first non-technical interview"
-  - "Assessment A personality or cognitive test"
-  - "Technical A technical interview, case or take-home"
+- With **Had an interview** checked: a nested **radiogroup "Kind of interview"**. Each radio's accessible name joins word and meaning, so match them with regexes: — unit: `app/src/renderer/screens/StatusDialog.test.tsx`; ✓ Interview: screening needs the kind picked first
+  - "Screening You had a pre-screening or recruiter call"
+  - "First impression You had the first non-technical interview"
+  - "Assessment You took a personality or cognitive test"
+  - "Technical You did a technical interview, case or take-home"
   - The kind starts empty even when the current status is an interview, so Save stays disabled until a kind is picked. — unit: `app/src/renderer/screens/StatusDialog.test.tsx`
-- Textbox **"Notes (optional)"**, or **"Why not?"** when "Not for me" is chosen; there the reason is required. — unit: `app/src/renderer/screens/StatusDialog.test.tsx`
+- Textbox **"Notes (optional)"**, **"How did it go? (optional)"** when "Had an interview" is chosen, or **"Why not?"** when "Not for me" is chosen; there the reason is required. — unit: `app/src/renderer/screens/StatusDialog.test.tsx`
 - **btn "Cancel"**, **btn "Save"**. Save is disabled while busy, when no status is chosen, for Interview with no kind, and for Not for me with no reason. **Save is enabled at once on the current status**, so saving it unchanged is possible. — unit: `app/src/renderer/screens/Matches.test.tsx`; ✓ Interview: screening needs the kind picked first; unit: `app/src/renderer/screens/StatusDialog.test.tsx`
 - Escape closes. Tab is trapped inside. — unit: `app/src/renderer/screens/StatusDialog.test.tsx`
 
@@ -385,15 +385,15 @@ Reached through:
   - `title_en || title` (note: Matches shows the original title, the board the English one)
   - the company
   - the note
-  - for dots: hidden text "N round(s) passed, one under way: "
+  - for dots: hidden text "N round(s) passed: "
 - Note variants (`cardNote`):
   - status rejected / ghosted / discarded → "rejected" / "ghosted" / "withdrawn", no dots — unit: `app/src/renderer/screens/board.test.ts` (rejected, ghosted); ✓ Not for me on a prepared job, through Status, closes it as withdrawn (NOTE: a match discarded before it was prepared or sent is not in `list_matches(closed)` at all, FULL_LEDGER's Kystbanken, right: it was never an application)
   - offer → dots plus "offer" — unit: `app/src/renderer/screens/board.test.ts`
   - `interview:*` → dots plus the last round's `stage`, else the status suffix (e.g. "technical") — unit: `app/src/renderer/screens/board.test.ts`; ✓ an interview round moves an applied card to Interviewing
-  - prepared / applied → "today", "yesterday", "N days ago" (2–6), "1 week ago", "N weeks ago" (2–3), else "Mon D", from `updated_at`; null or unparsable → no note — unit: `app/src/renderer/screens/board.test.ts` ("yesterday"; the other wordings are board.ts unit tests' job)
-  - `no_answer` with `no_answer_days` N (the server's `tracker.NO_ANSWER_DAYS`, #89): applied → "No answer in N days" (instead of the time); `interview:*` → the stage plus " · no answer in N days", dots kept; other statuses ignore it. A silent card has a sibling **btn "Mark ghosted"** (not inside the card button) → `set_status {job_id, status:'ghosted'}`, notice "Ghosted: T.", the card moves to Closed. — unit: `app/src/renderer/screens/board.test.ts`, `Applications.test.tsx`; `applications-no-answer.journey.ts`: an applied card ✓ says so, and Mark ghosted records it (dated the world's today); an interview round ✓ keeps its rounds, says no answer, and Mark ghosted records it; ✓ narrow: the button is on the card
-  - Dots come only from rounds with `result` passed (filled) or pending (outlined). Rejected, ghosted and withdrawn rounds get no dot. — unit: `app/src/renderer/screens/board.test.ts`
-  - Hidden text examples: "1 round passed: ", "2 rounds passed, one under way: ", "one under way: ". — unit: `app/src/renderer/screens/board.test.ts` ("1 round passed, one under way: ", "2 rounds passed: "); ✓ an interview round moves … ("one under way: ")
+  - prepared / applied → no note — unit: `app/src/renderer/screens/board.test.ts`
+  - `stalled_days` N (the server's `tracker.stalled`: prepared 14, applied 45 (`NO_ANSWER_DAYS`), interviewing 21, offer none): the warning mark beside the title, **img "Not sent in N days"** (prepared) or **"No answer in N days"**, its words in the info bubble on hover. The card has no action of its own: opened, its Status → Ghosted records it (`set_status {job_id, status:'ghosted'}`, notice "Ghosted: T.", the card moves to Closed). — unit: `app/src/renderer/screens/board.test.ts`, `Applications.test.tsx`; `applications-no-answer.journey.ts`: an applied card ✓ says so, and Status records it as ghosted (dated the world's today); an interview round ✓ keeps its rounds, has the mark after 21 days, and Status records it as ghosted; ✓ narrow: the card has the mark
+  - Dots come only from rounds with `result` passed, one ink dot each. — unit: `app/src/renderer/screens/board.test.ts`
+  - Hidden text examples: "1 round passed: ", "2 rounds passed: ". — unit: `Applications.test.tsx`
 - Card click → pushed: a Prepared card opens Ready to send (with "See the posting", also when nothing is prepared yet, and "← Applications"), any other card its posting. — unit: `app/src/renderer/screens/Applications.test.tsx`, `Materials.test.tsx`; ✓ a prepared card opens its application on the CV, with a way to the posting and back to the board
 
 ### Pushed view
@@ -413,34 +413,32 @@ Reached through:
 
 ### Calls
 - `import_posting`:
-  - Link mode: `{url, title?, company?, location?, force?}` — ✓ a link is read, scored and shown; unit: `app/src/renderer/screens/ImportDialog.test.tsx`
-  - Text mode: `{text, title, company, location?, force?}` — ✓ a pasted ad is scored and shown; ✓ the same ad twice is said… (force)
+  - Link mode: `{url, force?}` — ✓ a link is read, scored and shown; unit: `app/src/renderer/screens/ImportDialog.test.tsx`
+  - Text mode: `{text, url?, force?}`, plus after a `missing` answer the `found` fields and the ones typed (`url`: the link that could not be read, kept with the ad) — ✓ a pasted ad is read for its title, company and place…; ✓ a pasted ad whose title and company cannot be found asks for them…; ✓ the same ad twice is said… (force)
+  - Answer `{missing: ['title'|'company'], found: {title?, company?, location?}}`: nothing stored (the ad named no title or company that Claude could read, or the read failed). Text mode asks for exactly the missing ones; Link mode turns to Paste text. — ✓ a pasted ad whose title and company cannot be found asks for them, and only them; unit: `app/src/renderer/screens/ImportDialog.test.tsx`
 - Then `show {job_id}`; a failure there is swallowed. — ✓ a link is read, scored and shown (show); the swallowed failure: not tested (the import's own show is not told apart from others by the fault switch)
 
 ### Form
 - **dialog "Add a job"**. Focus starts on the first input. — unit: `app/src/renderer/screens/ImportDialog.test.tsx`
-- **btn "Link"** / **btn "Paste text"** (pills, `aria-pressed`). Link mode is the default. — unit: `app/src/renderer/screens/ImportDialog.test.tsx`; ✓ Link asks only for the link, Paste text for the ad, a title and a company
-- Every field as in the other dialogs: its name above its own box (`.field.onb-field`, `label.field-label`, `.onb-input`).
-- Link mode: textbox **"Link"** only; after a link could not be read, **"Title (optional)"**, **"Company (optional)"** and **"Location (optional)"** too, and only then are they sent. — unit: `app/src/renderer/screens/ImportDialog.test.tsx`
-- Text mode: textbox **"Ad text"** (textarea), **"Title"**, **"Company"**. Use `exact: true`, since "Title (optional)" exists in the other mode. — ✓ Link asks only for the link…
-- Text mode: **"Location (optional)"**. — unit: `app/src/renderer/screens/ImportDialog.test.tsx`; ✓ Link asks only for the link…
-- Title and location typed in Text mode are kept while it is shown. — ✓ Link asks only for the link, Paste text for the ad, a title and a company
-- **btn "Cancel"** (quiet), then **btn "Import"** (primary), disabled while busy and until the form is ready: link needs a non-blank URL; text needs text, title and company. — unit: `app/src/renderer/screens/ImportDialog.test.tsx`; ✓ Link asks only for the link…; unit: `app/src/renderer/screens/Dialog.test.tsx`
+- **btn "Link"** / **btn "Paste text"** (pills, `aria-pressed`). Link mode is the default. — unit: `app/src/renderer/screens/ImportDialog.test.tsx`; ✓ Link asks only for the link, Paste text only for the ad
+- Every Paste text field as in the other dialogs: its name above its own box (`.field.onb-field`, `label.field-label`, `.onb-input`). The link's box has no label (the tab names it), only a placeholder, as the onboarding's page link.
+- Link mode: textbox **"Link"** (its accessible name) only, always. — unit: `app/src/renderer/screens/ImportDialog.test.tsx`
+- Text mode: textbox **"Ad text"** (textarea) only; the title, company and place are read from it (design principle 10). After a `missing` answer, `p.notice` "The title and company could not be found in the ad. Fill them in." (or the one missing, "Fill it in.") and a **"Title"** and/or **"Company"** box for exactly what is missing, the first focused. No location is ever asked. — ✓ Link asks only for the link, Paste text only for the ad; ✓ a pasted ad whose title and company cannot be found asks for them, and only them
+- **btn "Cancel"** (quiet), then **btn "Import"** (primary), disabled while busy and until the form is ready: link needs a non-blank URL; text needs the text and each asked field. — unit: `app/src/renderer/screens/ImportDialog.test.tsx`; ✓ Link asks only for the link…; unit: `app/src/renderer/screens/Dialog.test.tsx`
 - While busy: the spinner "Reading and scoring the ad…"; inputs disabled. Cancel stays enabled; the server call carries on after closing. — ✓ a link is read, scored and shown; unit: `app/src/renderer/screens/ImportDialog.test.tsx`
 
 ### Failure branches
 - Error text matches `/already stored/i` → `p.notice` "You already imported this ad." plus **btn "Import again anyway"**, which resends with `force:true`. Server: "a posting with id 'manual.<sha>' is already stored at … — pass force to replace it". In text mode the id is the sha1 of the trimmed text, so the same text twice triggers it. — ✓ the same ad twice is said, and "Import again anyway" replaces it
-- Any other error → **alert** (a `field-error` line, no box), named. Its text is CLI-flavoured, for example:
-  - "could not fetch <url>: <exc>" — ✓ a link that cannot be fetched is said, and the form can be sent again
-  - "could not fetch <url>: the page has no readable text" — unit: `tests/commands/test_add_cli.py`
-  - "could not read the title and company from <url> (<claude error>) — pass --title and --company" (link without both title and company, and the stand-in claude failing) — unit: `app/src/renderer/screens/ImportDialog.test.tsx`
-  - "could not read the title from <url> — pass --title" — unit: `tests/commands/test_add_cli.py`
+- A link whose page could not be read → Paste text, the link kept and sent with the ad as `url`, no alert, a `p.notice` over the text box:
+  - "could not fetch <url>: …" (a sign-in, a refusal, no readable text) → "That page could not be read: it may need a sign-in. Paste the ad's text here." — ✓ a link that cannot be fetched turns to Paste text, says why, and the ad keeps the link
+  - a `missing` answer for a link → "The title and company could not be found on that page. Paste the ad's text here." (or the one missing) — unit: `app/src/renderer/screens/ImportDialog.test.tsx`
+- Any other error → **alert** (a `field-error` line, no box), named.
   - "the ad is empty" (whitespace-only text can't reach it; Import needs text) — not tested: unreachable
   - Timeout: "The other door took too long to answer" (180 s) — not tested: a 180 s wait is too long for a journey
 
 ### Result: **dialog "Imported"**
 - When `show` worked: `p` title and "company · location". — ✓ a link is read, scored and shown
-- Score is a number → `p.score-l` "0.72" plus the `score_reason` paragraph. — ✓ a link is read, scored and shown; ✓ a pasted ad is scored and shown
+- Score is a number → `p.score-l` "72%" plus the `score_reason` paragraph. — ✓ a link is read, scored and shown; ✓ a pasted ad is read for its title, company and place, scored and shown
 - Score is null → "Not scored yet. It is scored on the next run.", plus a `details` "Why?" with `score_error`. Its text is e.g. "scoring failed; the next `find` scores it", or "Your CV is still the example (Jane Doe's). Add your own CV first.; the next `find` scores it". — unit: `app/src/renderer/screens/ImportDialog.test.tsx`
 - **btn "Close"**. — unit: `app/src/renderer/screens/ImportDialog.test.tsx`
 - **btn "Open"** → pushes the imported job. It is kept selected even when it is not in the list (below min_score, or unscored). — ✓ Open shows the imported ad, kept open though the list does not hold it
@@ -461,7 +459,7 @@ Reached through:
 
 ## 9. Narrow (`<900px`) differences, collected
 
-- Sidebar foot (Find button, Last run) and the Needs-you lines under the menu hidden. The sidebar is entirely hidden while a posting is pushed (App `pushed`). — ✓ Matches has its own "Find new jobs", and the sidebar keeps only the tabs; unit: `app/src/renderer/screens/Posting.test.tsx`
+- Sidebar foot (Find button, its warning sign) and the Needs-you lines under the menu hidden. The sidebar is entirely hidden while a posting is pushed (App `pushed`). — ✓ Matches has its own "Find new jobs", and the sidebar keeps only the tabs; unit: `app/src/renderer/screens/Posting.test.tsx`
 - Matches: a "Find new jobs" pill in its head; the Needs-you group on top of the list (not pushed); a `.tab-dash` on the current tab. — ✓ Matches has its own "Find new jobs"…; unit: `app/src/renderer/App.test.tsx`; the tab dash: not tested (aria-hidden styling)
 - Posting: the actions move to the bottom `.action-bar` in a different order. "Not for me" becomes secondary. "Open" is primary when there is no primary. — unit: `app/src/renderer/screens/Applications.test.tsx`; unit: `app/src/renderer/screens/Posting.test.tsx`
 - Materials: Save goes from under the figure into the action bar (current doc only). "I've applied" moves from the header to the action bar, and shows even when remote. — ✓ narrow: Ready to send saves the shown document and has I’ve applied in the bar
@@ -494,7 +492,7 @@ Reached through:
 **`doctor`** (App, sidebar lines): `checks: [{name: 'claude CLI', status}, {name: 'claude login', status, details: {email?, subscriptionType?, loggedIn?, authMethod?}}]`.
 
 **`status_summary`** (App and Matches):
-- `since_last_review.last_run.finished_at` (the Last run caption)
+- `since_last_review.last_run.finished_at` (the last run: the Find button's title and warning sign)
 - `in_progress.message` (the Matches spinner)
 - `drive: {connected, last_error, account, last_synced, configured?}`. It is passed on only when `connected` is a boolean; `connected && last_error` gives the sidebar line.
 - Foreign-run notice: `since_last_review.last_run.{started_at, new_above_threshold (a number)}`.

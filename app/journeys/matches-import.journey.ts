@@ -1,5 +1,5 @@
-// "Add a job" from Matches: a link read and scored, a pasted ad, the duplicate, a link that cannot be
-// fetched, and the imported ad opened. Checklist: inventory/jobs.md §7.
+// "Add a job" from Matches: a link read and scored, a pasted ad read (and one whose title and company are asked),
+// the duplicate, a link that cannot be fetched, and the imported ad opened. Checklist: inventory/jobs.md §7.
 import { readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Page } from '@playwright/test'
@@ -28,35 +28,31 @@ function manualPostings(world: { home: string }): string[] {
   }
 }
 
-async function pasteAd(page: Page, text = PASTED) {
+/** Pastes PASTED, an ad that names its title and company in a way the stand-in Claude does not read: both are asked, and filled in. */
+async function pasteAd(page: Page) {
   await addDialog(page).getByRole('button', { name: 'Paste text' }).click()
-  await field(page, 'Ad text').fill(text)
+  await field(page, 'Ad text').fill(PASTED)
+  await importButton(page).click()
+  await expect(addDialog(page).getByText('The title and company could not be found in the ad. Fill them in.', { exact: true })).toBeVisible()
   await field(page, 'Title').fill('Junior Forecast Analyst')
   await field(page, 'Company').fill('Lysholm Varme')
 }
 
 test.describe('the form', () => {
 
-  test('Link asks only for the link, Paste text for the ad, a title and a company', async ({ page, world }) => {
+  test('Link asks only for the link, Paste text only for the ad', async ({ page, world }) => {
     await openAdd(page)
+    await expect(addDialog(page).getByRole('textbox')).toHaveCount(1)
     await expect(field(page, 'Link')).toBeVisible()
-    await expect(field(page, 'Title (optional)')).toHaveCount(0)
     await addDialog(page).getByRole('button', { name: 'Paste text' }).click()
-    await field(page, 'Title').fill('Junior Forecast Analyst')
-    await field(page, 'Location (optional)').fill('Copenhagen')
     await expect(addDialog(page).getByRole('button', { name: 'Paste text' })).toHaveAttribute('aria-pressed', 'true')
-    await expect(addDialog(page).getByRole('button', { name: 'Link' })).toHaveAttribute('aria-pressed', 'false')
-    await expect(field(page, 'Link')).toHaveCount(0)
-    await expect(field(page, 'Title')).toHaveValue('Junior Forecast Analyst')
-    await expect(field(page, 'Location (optional)')).toHaveValue('Copenhagen')
+    await expect(addDialog(page).getByRole('textbox')).toHaveCount(1)
     await expect(importButton(page)).toBeDisabled()
     await field(page, 'Ad text').fill(PASTED)
-    await expect(importButton(page)).toBeDisabled()
-    await field(page, 'Company').fill('Lysholm Varme')
     await expect(importButton(page)).toBeEnabled()
     // back to Link: only the link is asked
     await addDialog(page).getByRole('button', { name: 'Link' }).click()
-    await expect(field(page, 'Title (optional)')).toHaveCount(0)
+    await expect(addDialog(page).getByRole('textbox')).toHaveCount(1)
     expect(world.toolCalls('import_posting')).toEqual([])
   })
 })
@@ -74,7 +70,7 @@ test.describe('importing', () => {
     const ad = world.ads['solvang-energi-forecasting-lead']
     await expect(imported(page).getByText(ad.title, { exact: true })).toBeVisible()
     await expect(imported(page).getByText('Solvang Energi A/S · Copenhagen (hybrid)', { exact: true })).toBeVisible()
-    await expect(imported(page).getByText('0.90', { exact: true })).toBeVisible()
+    await expect(imported(page).getByText('90%', { exact: true })).toBeVisible()
     await expect(imported(page).getByText(ad.reason, { exact: true })).toBeVisible()
     expect(world.toolCalls('import_posting').map((c) => c.args)).toEqual([expect.objectContaining({ url: URL })])
     expect(world.claudeCalls('read_ad')).toHaveLength(1)
@@ -96,19 +92,34 @@ test.describe('importing', () => {
     await expect(matchRows(page)).toHaveCount(METTE_ORDER.length)
   })
 
-  test('a pasted ad is scored and shown', async ({ page, world }) => {
+  test('a pasted ad is read for its title, company and place, scored and shown', async ({ page, world }) => {
+    const ad = world.ads['solvang-energi-forecasting-lead']
+    const text = `${ad.title}\n\n${ad.description}`
+    await openAdd(page)
+    await addDialog(page).getByRole('button', { name: 'Paste text' }).click()
+    await field(page, 'Ad text').fill(text)
+    await importButton(page).click()
+    await expect(imported(page).getByText(ad.title, { exact: true })).toBeVisible()
+    await expect(imported(page).getByText(`${ad.company} · ${ad.location}`, { exact: true })).toBeVisible()
+    expect(world.toolCalls('import_posting').map((c) => c.args)).toEqual([expect.objectContaining({ text })])
+    expect(world.claudeCalls('read_ad')).toHaveLength(1)
+    expect(manualPostings(world)).toHaveLength(1)
+  })
+
+  test('a pasted ad whose title and company cannot be found asks for them, and only them', async ({ page, world }) => {
     await openAdd(page)
     await pasteAd(page)
-    await field(page, 'Location (optional)').fill('Copenhagen')
+    expect(manualPostings(world)).toEqual([])
+    await expect(addDialog(page).getByRole('textbox')).toHaveCount(3)
     await importButton(page).click()
     await expect(imported(page).getByText('Junior Forecast Analyst', { exact: true })).toBeVisible()
-    await expect(imported(page).getByText('Lysholm Varme · Copenhagen', { exact: true })).toBeVisible()
-    await expect(imported(page).getByText('0.42', { exact: true })).toBeVisible()
+    await expect(imported(page).getByText('Lysholm Varme', { exact: true })).toBeVisible()
+    await expect(imported(page).getByText('42%', { exact: true })).toBeVisible()
     await expect(imported(page).getByText('Some overlap with the CV, but the role leans elsewhere.')).toBeVisible()
     expect(world.toolCalls('import_posting').map((c) => c.args)).toEqual([
-      expect.objectContaining({ text: PASTED, title: 'Junior Forecast Analyst', company: 'Lysholm Varme', location: 'Copenhagen' }),
+      expect.objectContaining({ text: PASTED }),
+      expect.objectContaining({ text: PASTED, title: 'Junior Forecast Analyst', company: 'Lysholm Varme' }),
     ])
-    expect(world.claudeCalls('read_ad')).toEqual([])
     expect(manualPostings(world)).toHaveLength(1)
   })
 
@@ -124,22 +135,27 @@ test.describe('importing', () => {
     await expect(addDialog(page).getByRole('alert')).toHaveCount(0)
     await addDialog(page).getByRole('button', { name: 'Import again anyway' }).click()
     await expect(imported(page)).toBeVisible()
-    expect(world.toolCalls('import_posting').map((c) => c.args?.force)).toEqual([false, false, true])
+    expect(world.toolCalls('import_posting').map((c) => c.args?.force)).toEqual([false, false, false, false, true])
     expect(manualPostings(world)).toHaveLength(1)
   })
 })
 
 test.describe('failures', () => {
-  test('a link that cannot be fetched is said, and the form can be sent again', async ({ page, world }) => {
+  test('a link that cannot be fetched turns to Paste text, says why, and the ad keeps the link', async ({ page, world }) => {
     await openAdd(page)
     await field(page, 'Link').fill('https://jobs.nowhere.example/123')
     await importButton(page).click()
-    await expect(addDialog(page).getByRole('alert')).toHaveText(/^could not fetch https:\/\/jobs\.nowhere\.example\/123: /)
-    await expect(importButton(page)).toBeEnabled()
-    await expect(field(page, 'Link')).toBeEnabled()
+    await expect(addDialog(page).getByText("That page could not be read: it may need a sign-in. Paste the ad's text here.")).toBeVisible()
+    await expect(addDialog(page).getByRole('button', { name: 'Paste text' })).toHaveAttribute('aria-pressed', 'true')
+    await expect(addDialog(page).getByRole('alert')).toHaveCount(0)
     expect(manualPostings(world)).toEqual([])
-    await field(page, 'Link').fill(URL)
+    await expect(addDialog(page).getByRole('textbox')).toHaveCount(1)
+    await field(page, 'Ad text').fill(PASTED)
+    await importButton(page).click()
+    await field(page, 'Title').fill('Junior Forecast Analyst')
+    await field(page, 'Company').fill('Lysholm Varme')
     await importButton(page).click()
     await expect(imported(page)).toBeVisible()
+    expect(world.toolCalls('import_posting').at(-1)?.args).toEqual(expect.objectContaining({ url: 'https://jobs.nowhere.example/123', title: 'Junior Forecast Analyst' }))
   })
 })

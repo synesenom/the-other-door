@@ -129,6 +129,15 @@ describe('Materials', () => {
     expect(saveMaterial).toHaveBeenLastCalledWith('jobindex.1', 'cv', false, 'Jane Doe - CV.pdf')
   })
 
+  it("has one black button, I've applied: Revise and Undo are text buttons", async () => {
+    mockDoor({ show: posting() })
+    const { container } = render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} initialDoc="cover_letter" />)
+    await screen.findByRole('heading', { name: 'Ready to send' })
+    expect([...container.querySelectorAll('button.primary')].map((b) => b.textContent)).toEqual(["I've applied"])
+    expect(screen.getByRole('button', { name: 'Revise' })).toHaveClass('secondary')
+    expect(screen.getByRole('button', { name: 'Undo last change' })).toHaveClass('secondary')
+  })
+
   it('the change box names the document it changes, and follows the switch', async () => {
     mockDoor({ show: posting() })
     render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} initialDoc="cover_letter" />)

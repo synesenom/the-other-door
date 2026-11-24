@@ -63,21 +63,19 @@ _READ_SCHEMA = {
 }
 
 
-def _read_ad(text: str, url: str) -> dict:
+def _read_ad(text: str) -> dict:
     """The ad's ``title``, ``company`` and ``location`` as Haiku reads them from
-    the page ``text`` (one `claude -p` call); empty strings for what it could not tell.
-
-    Raises:
-        ValueError: the call failed.
-    """
+    its ``text`` (one `claude -p` call); what it could not tell is left out, and a
+    failed call tells nothing (the caller asks the user for what is missing)."""
     from door.core import claude_cli
 
     try:
         answer = claude_cli.ask("posting-reader", text[:_READ_MAX_CHARS], feature="import_posting",
                                 schema=_READ_SCHEMA, timeout_s=120)
-    except claude_cli.ClaudeError as exc:
-        raise ValueError(f"could not read the title and company from {url} ({exc}) — pass --title and --company") from None
-    return {k: " ".join(str(answer.get(k) or "").split()) for k in ("title", "company", "location")}
+    except claude_cli.ClaudeError:
+        return {}
+    read = {k: " ".join(str(answer.get(k) or "").split()) for k in ("title", "company", "location")}
+    return {k: v for k, v in read.items() if v}
 
 
 def _step(message: str, outcome: str | None = None) -> None:
@@ -106,8 +104,8 @@ def _add_core(
 
     The ad comes from a file (plain text / Markdown, or a JSON `JobPosting`),
     as pasted ``text``, or — with neither — from the web page at ``url``,
-    fetched and reduced to its readable text ("here's a link"); a title,
-    company or location not given is then read off the page by Haiku.
+    fetched and reduced to its readable text ("here's a link"); for a text
+    ad, a title, company or location not given is read off it by Haiku.
     Text becomes the ``description`` of a new posting
     with ``source="manual"``; a JSON posting is validated and kept as given
     (``title``/``company``/``url``/``location`` override its fields). It is
@@ -125,12 +123,14 @@ def _add_core(
 
     Returns:
         ``{"job_id", "path", "replaced": bool, "score": float | None,
-        "score_reason": str | None, "score_error"?: str}``.
+        "score_reason": str | None, "score_error"?: str}``; or, when the ad's
+        title or company was neither given nor found in it, nothing stored and
+        ``{"missing": ["title"|"company", ...], "found": {title?, company?, location?}}``
+        for the caller to ask and send again with the ad.
 
     Raises:
-        ValueError: neither/both of path and text, missing title/company for
-            text, an empty ad, an invalid JSON posting, or the id exists
-            without ``force``.
+        ValueError: neither/both of path and text, an empty ad, an invalid JSON
+            posting, or the id exists without ``force``.
         FileNotFoundError: ``path`` does not exist.
     """
     import hashlib
@@ -143,9 +143,8 @@ def _add_core(
 
     if jobs_dir is None:
         jobs_dir = workspace.JOBS_DIR
-    fetched = path is None and text is None and bool(url)
     gated: dict | None = None
-    if fetched:
+    if path is None and text is None and url:
         from urllib.parse import urlparse
 
         host = urlparse(url).netloc or url
@@ -160,18 +159,6 @@ def _add_core(
             _step(f"could not fetch {host}", "failed")
             raise
         _step(f"fetched {host}", "ok")
-        if not (title and company):
-            _step("reading the title and company (Haiku)")
-            try:
-                read = _read_ad(text, url)
-            except ValueError:
-                _step("could not read the title and company", "failed")
-                raise
-            title, company, location = title or read["title"], company or read["company"], location or read["location"]
-            if title and company:
-                _step(f"read {title} at {company}", "ok")
-            else:
-                _step(f"could not read the {'title' if not title else 'company'}", "failed")
     if (path is None) == (text is None):
         raise ValueError(_ONE_SOURCE)
 
@@ -197,10 +184,16 @@ def _add_core(
         description = (raw or "").strip()
         if not description:
             raise ValueError("the ad is empty")
-        for name, value in (("title", title), ("company", company)):
-            if not (value and value.strip()):
-                raise ValueError(f"could not read the {name} from {url} — pass --{name}" if fetched
-                                 else f"--{name} is required when importing an ad as text")
+        if not ((title or "").strip() and (company or "").strip()):
+            # what was not given is read off the ad (its clean text); what is still missing is asked of the user
+            _step("reading the title and company (Haiku)")
+            read = _read_ad(gated["clean_text"] if gated else integrity.check(description)["clean_text"])
+            title, company, location = title or read.get("title"), company or read.get("company"), location or read.get("location")
+            missing = [name for name, value in (("title", title), ("company", company)) if not (value or "").strip()]
+            if missing:
+                _step(f"could not find the {' and '.join(missing)}", "failed")
+                return {"missing": missing, "found": {k: v for k, v in (("title", title), ("company", company), ("location", location)) if v}}
+            _step(f"read {title} at {company}", "ok")
         platform_id = hashlib.sha1(description.encode("utf-8")).hexdigest()[:12]
         posting = JobPosting(
             id=make_job_id("manual", platform_id),
@@ -255,8 +248,8 @@ def _add_core(
 
 @click.command("add")
 @click.argument("source")
-@click.option("--title", default=None, help="Job title (required for a text/Markdown ad; read by Haiku for a URL).")
-@click.option("--company", default=None, help="Company (required for a text/Markdown ad; read by Haiku for a URL).")
+@click.option("--title", default=None, help="Job title (read by Haiku from the ad when left out).")
+@click.option("--company", default=None, help="Company (read by Haiku from the ad when left out).")
 @click.option("--url", default=None, help="Where the ad lives (optional).")
 @click.option("--location", default=None, help="Job location (optional).")
 @click.option("--force", is_flag=True, default=False, help="Replace a posting already stored under the same id.")
@@ -265,8 +258,8 @@ def add(source, title, company, url, location, force):
 
     SOURCE is usually the ad's URL: the page is fetched, and the title,
     company and location you leave out are read off it by Haiku. It can also
-    be a text/Markdown file with the ad (then --title and --company are
-    required), a JSON posting, or `-` to read the ad from stdin. It is stored as
+    be a text/Markdown file with the ad (its title, company and location read
+    the same way), a JSON posting, or `-` to read the ad from stdin. It is stored as
     jobs/postings/<today>/manual/<job_id>.json and scored right away, so list, show,
     prepare and status work on it like on any scraped posting.
     """
@@ -282,6 +275,11 @@ def add(source, title, company, url, location, force):
                 result = _add_core(source, progress=reporter, **kwargs)
     except (ValueError, FileNotFoundError) as exc:
         click.echo(f"Error: {exc}", err=True)
+        sys.exit(1)
+    if result.get("missing"):
+        names = " and ".join(result["missing"])
+        flags = " and ".join(f"--{name}" for name in result["missing"])
+        click.echo(f"Error: could not find the {names} in the ad: pass {flags}", err=True)
         sys.exit(1)
     _render_added(result, interactive=interactive)
 

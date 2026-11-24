@@ -97,7 +97,12 @@ export function FormSections({ specs, options, values, set, errors = {}, keys, i
       const offered = [...options.languages, ...chosen.filter((l) => !options.languages.some((o) => o.toLowerCase() === l.toLowerCase()))]
       return (
         <fieldset key={f.key} className="choices onb-field">
-          <legend className="field-label">{f.label}</legend>
+          <legend className="field-label">
+            <span className="field-name">
+              {f.label}
+              {f.help && <Hint label={`About ${f.label}`}>{f.help}</Hint>}
+            </span>
+          </legend>
           <div className="choice-columns" style={{ '--rows': Math.ceil(offered.length / 3) } as CSSProperties}>
             {offered.map((l) => {
               const on = chosen.some((c) => c.toLowerCase() === l.toLowerCase())
@@ -109,7 +114,6 @@ export function FormSections({ specs, options, values, set, errors = {}, keys, i
               )
             })}
           </div>
-          {f.help && <p className="small muted">{f.help}</p>}
           {err?.map((e) => <p key={e} className="field-error">{named(e)}</p>)}
         </fieldset>
       )
@@ -149,11 +153,14 @@ export function FormSections({ specs, options, values, set, errors = {}, keys, i
         const on = Boolean(value ?? spec.default)
         return (
           <div key={f.key} className="field onb-field">
-            <label className="choice">
-              <input type="checkbox" checked={on} onChange={(e) => set(f.key, e.target.checked)} />
-              <span>{f.label}</span>
-            </label>
-            {f.help && <p className="small muted">{f.help}</p>}
+            {/* the icon beside the label, not in it: a button inside a label would tick the box */}
+            <span className="field-name">
+              <label className="choice">
+                <input type="checkbox" checked={on} onChange={(e) => set(f.key, e.target.checked)} />
+                <span>{f.label}</span>
+              </label>
+              {f.help && <Hint label={`About ${f.label}`}>{f.help}</Hint>}
+            </span>
             {err?.map((e) => <p key={e} className="field-error">{named(e)}</p>)}
           </div>
         )

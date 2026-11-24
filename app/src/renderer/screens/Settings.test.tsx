@@ -73,7 +73,7 @@ describe('Settings', () => {
     show('production', false, { enabled: true, mode: 'install', checked: true, current: '0.1.0', available: false })
     const help = await screen.findByRole('region', { name: 'Help' })
     expect(await within(help).findByText('Version 0.1.0')).toBeInTheDocument()
-    expect(within(help).getByRole('button', { name: 'Legal disclaimer' })).toBeInTheDocument()
+    expect(within(help).getByRole('button', { name: 'Legal disclaimer…' })).toBeInTheDocument()
     expect(within(help).getByRole('button', { name: 'Save logs…' })).toBeInTheDocument()
     for (const gone of ['Documentation', 'Report a problem', 'Version']) expect(screen.queryByRole('heading', { name: gone })).toBeNull()
   })

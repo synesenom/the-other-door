@@ -15,7 +15,7 @@ test.describe('what the posting shows', () => {
     await openRow(page, world, 'fjordpension-senior-ds')
     await expect(article(page).getByText(ad.titleEn!, { exact: true })).toBeVisible()
     await expect(article(page).getByText('Fjordpension · Copenhagen · posted Oct 20 · via Jobindex', { exact: true })).toBeVisible()
-    await expect(article(page).getByText('0.84', { exact: true })).toBeVisible()
+    await expect(article(page).getByText('84%', { exact: true })).toBeVisible()
     await expect(page.getByRole('list', { name: 'Why it fits' }).getByRole('listitem')).toHaveText(ad.matching)
     await expect(page.getByRole('list', { name: 'Gaps' }).getByRole('listitem')).toHaveText(ad.missing)
     // Mette speaks Danish: the language is named, nothing asked of her
@@ -42,7 +42,6 @@ test.describe('a narrow window', () => {
     await narrowWindow(app, page)
     await expect(page.getByRole('main').getByRole('button', { name: 'Find new jobs' })).toBeVisible()
     await expect(page.getByRole('complementary').getByRole('button', { name: 'Find new jobs' })).toBeHidden()
-    await expect(page.getByText(/^Last run/)).toBeHidden()
     await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible()
   })
 })

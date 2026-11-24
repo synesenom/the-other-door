@@ -5,6 +5,7 @@ import { useState, type CSSProperties, type ReactNode } from 'react'
 import { CheckMark, CrossMark, WarningMark } from '../renderer/screens/CheckMark'
 import { Switch } from '../renderer/screens/Switch'
 import { ErrorBox } from '../renderer/screens/AppName'
+import { Hint } from '../renderer/screens/Hint'
 
 const COLOURS = [
   'ground', 'surface', 'page', 'ink', 'ink-muted', 'border',
@@ -101,9 +102,29 @@ export function Guide() {
               </p>
             </div>
           </Row>
+          <Row label="sidebar-find">
+            <div className="sidebar-foot" style={{ width: 140 }}>
+              <span className="sidebar-find">
+                <button type="button" className="secondary" title="Last run 4 days ago">Find new jobs</button>
+                <span className="board-card-warning" role="img" aria-label="No run in 4 days">
+                  <WarningMark />
+                  <span className="hint-pop small" aria-hidden="true">No run in 4 days</span>
+                </span>
+              </span>
+            </div>
+          </Row>
         </Part>
 
         <Part title="Fields">
+          <Row label="field-name + hint-icon">
+            <div className="field onb-field">
+              <span className="field-name">
+                <span className="field-label">City</span>
+                <Hint label="About City">Every job board of the city's country is searched.</Hint>
+              </span>
+              <input className="onb-input" defaultValue="Copenhagen" aria-label="City" />
+            </div>
+          </Row>
           <Row label="field-label">
             <label className="field">
               <span className="field-label">Why not this one?</span>
@@ -119,6 +140,13 @@ export function Guide() {
               <option>Copenhagen</option>
               <option>Aarhus</option>
             </select>
+          </Row>
+          <Row label="choice-columns">
+            <div className="choice-columns" style={{ '--rows': 2 } as CSSProperties}>
+              {['English', 'Danish', 'French', 'Hungarian', 'Swedish'].map((l) => (
+                <label key={l} className="choice"><input type="checkbox" defaultChecked={l === 'English'} /> <span>{l}</span></label>
+              ))}
+            </div>
           </Row>
           <Row label="choices">
             <label className="choice"><input type="checkbox" defaultChecked /> <span>Checked</span></label>
@@ -145,6 +173,12 @@ export function Guide() {
           <Row label="error">
             <ErrorBox className="small" text="The other door could not start the run." />
           </Row>
+          <Row label="part-title + hint-icon">
+            <div className="part-title">
+              <h2 className="display-s">Master CV</h2>
+              <Hint label="About Master CV">Everything about your work, in one place.</Hint>
+            </div>
+          </Row>
           <Row label="title-line">
             <div className="title-line">
               <h3 className="body item-name">Claude</h3>
@@ -160,7 +194,7 @@ export function Guide() {
                 <div className="list-head rule-heavy" style={{ paddingTop: 0 }}><h3 className="display-s">Matches</h3></div>
                 <ul className="rows">
                   {['Senior Financial Controller', 'Økonomichef'].map((t) => (
-                    <li key={t}><button type="button" className="row"><span className="title">{t}</span><span className="score-s">0.88</span></button></li>
+                    <li key={t}><button type="button" className="row"><span className="title">{t}</span><span className="score-s">88%</span></button></li>
                   ))}
                 </ul>
               </div>
@@ -171,7 +205,17 @@ export function Guide() {
               <div className="board-column-head rule-heavy"><h4 className="label">Interviewing · 1</h4></div>
               <ul className="board-cards">
                 <li><div className="board-card"><span className="board-card-title">Head of Finance</span></div></li>
-                <li><div className="board-card"><span className="board-card-title">Finance Lead</span></div></li>
+                <li>
+                  <div className="board-card">
+                    <span className="board-card-head">
+                      <span className="board-card-title">Finance Lead</span>
+                      <span className="board-card-warning" role="img" aria-label="No answer in 21 days">
+                        <WarningMark />
+                        <span className="hint-pop small" aria-hidden="true">No answer in 21 days</span>
+                      </span>
+                    </span>
+                  </div>
+                </li>
               </ul>
             </div>
           </Row>

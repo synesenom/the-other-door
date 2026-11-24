@@ -102,7 +102,7 @@ _UNLOGGED_ANSWERS = ("job_result", "set_status")
 # Tools whose `warning` is advice for the user, not a malfunction (`prepare`'s ATS read-back, #21): their
 # `error` is still logged.
 _UNLOGGED_WARNINGS = ("prepare",)
-# `error` answers the user can act on themselves (the CV style part says to fix the Master CV), not a failure.
+# `error` answers the user can act on themselves (the Style part says to fix the Master CV), not a failure.
 _ACTIONABLE_ERRORS = ("cv_unreadable",)
 
 
@@ -255,7 +255,7 @@ CONVERSATION_ONLY_TOOLS = (
     "revise", "mark_reviewed", "mark_seen", "compile", "check_facts", "save_cv", "job_result", "cancel_job",
     "save_photo", "remove_photo",  # the CV photo: the app's picker, `/onboard` and `init`'s photo question
     "preview_matches",  # onboarding's first look; `init` calls the core itself
-    "cv_style_sample",  # the app's Profile -> CV style: page 1 of the CV in a chosen style (#465)
+    "cv_style_sample",  # the app's Profile -> Style: page 1 of the CV in a chosen style (#465)
     # the phone server, for the desktop app's "Set up your phone" and Claude Code (#444, #424)
     "phone_status", "phone_start", "phone_stop", "pair_phone", "unpair_phone",
 )
@@ -783,10 +783,12 @@ def list_matches(
     Returns:
         ``{"min_score", "last_reviewed_at", "matches": [{"id",
         "score", "title", "title_en", "company", "location", "status",
-        "is_new", "updated_at", "rounds", "no_answer", "no_answer_days"}, ...]}``, best first; ``updated_at`` is
+        "is_new", "updated_at", "rounds", "no_answer", "no_answer_days", "stalled_days"}, ...]}``, best first; ``updated_at`` is
         when the status last changed, ``rounds`` the interview rounds ``[{"stage", "result"}]``,
         ``no_answer`` true for an application (applied or in an interview round) with no change for
-        ``no_answer_days`` days: say so, and offer ``set_status`` ``ghosted``. ``title_en`` is the English
+        ``no_answer_days`` days: say so, and offer ``set_status`` ``ghosted``. ``stalled_days`` is how
+        many quiet days put a warning on the job's Applications card (prepared, applied or interviewing), else
+        None; the conversation goes by ``no_answer``. ``title_en`` is the English
         translation of a title in another language, else ``None``: show it
         next to the title. ``scored`` is how many postings the model has scored. ``weak`` is
         None, or, when no posting has ever reached the bar (default view only), ``{"matches": [the best
@@ -1436,7 +1438,7 @@ async def preview_matches(
 async def cv_style_sample(cv_accent: str = "blue", cv_fonts: str = "door") -> dict:
     """Page 1 of the CV printed in a chosen accent colour and font pair: what a prepared CV will look like.
 
-    The desktop app's Profile -> CV style shows it beside the pickers. Prints the user's own CV (else the example CV)
+    The desktop app's Profile -> Style shows it beside the pickers. Prints the user's own CV (else the example CV)
     as it is, with no tailoring; the first one for a CV costs one cached reading of it, a later one about a second.
     Nothing is saved: a pick is saved with `init_profile` (`cv_accent`, `cv_fonts`) and applies from the next CV
     that is prepared or revised.
@@ -1659,8 +1661,8 @@ def import_posting(
 ) -> dict:
     """Import a job ad the user found outside the scraped boards.
 
-    Give the ad as pasted ``text`` (the usual case in a conversation — ask
-    for the title and company if the ad doesn't make them obvious), as a
+    Give the ad as pasted ``text`` (the usual case in a conversation: pass the
+    text alone; Haiku reads its title, company and location), as a
     ``path`` to a text/Markdown file or a JSON posting, or as its ``url``
     alone ("here's a link": pass only the url — the page is fetched, its
     readable text becomes the description and Haiku reads the title,
@@ -1675,14 +1677,19 @@ def import_posting(
         path: A file with the ad. Exactly one of path/text/url.
         text: The ad's text.
         url: Where the ad lives; with no path/text, the ad is fetched from it.
-        title, company: Required for a text ad; read off the page for a url.
-        location: Optional.
+        title, company: Optional: read off the ad when left out; pass them
+            only when the user gave them, or when a ``missing`` answer asked.
+        location: Optional; read off the ad when left out.
         force: Replace a posting already stored under the same id.
 
     Returns:
         ``{"job_id", "path", "replaced", "score", "score_reason",
         "score_error"?}`` — ``score`` is None when scoring failed (the
-        posting is kept; the next `find_jobs` scores it).
+        posting is kept; the next `find_jobs` scores it). Or, when the ad's
+        title or company could not be found in it, nothing is stored and it
+        returns ``{"missing": [...], "found": {...}}``: ask the user for the
+        missing ones (by name, in words) and call again with the same ad,
+        ``found`` and their answers.
     """
     if path is not None:
         path_scope.check(path)

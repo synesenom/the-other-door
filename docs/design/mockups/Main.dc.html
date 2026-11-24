@@ -29,7 +29,6 @@ button{font:inherit;cursor:pointer}
     </div>
     <div style="margin-top: auto; display: flex; flex-direction: column; gap: 10px; padding: 0 8px">
       <button type="button" style="height: 32px; padding: 0; border: 0; background: none; color: #3D5798; font-weight: 600; font-size: 13px; text-align: left">Find new jobs</button>
-      <span style="color: #5C5249; font-size: 12px">Last run today, 08:14</span>
     </div>
   </nav>
 
@@ -69,7 +68,7 @@ button{font:inherit;cursor:pointer}
     </div>
     <p style="margin: 0; font-size: 15px; max-width: 60ch">Your forecasting work and Python depth line up with the core of the role. The team wants dbt, which your CV doesn't mention yet.</p>
     <div style="display: flex; gap: 10px; flex-wrap: wrap">
-      <button type="button" style="height: 32px; padding: 0 16px; border: 0; border-radius: 2px; background: #1E1A16; color: #FFFCF5; font-weight: 600; font-size: 13px">Prepare application</button>
+      <button type="button" style="height: 32px; padding: 0 16px; border: 0; border-radius: 0; background: #1E1A16; color: #FFFCF5; font-weight: 600; font-size: 13px">Prepare application</button>
       <button type="button" style="height: 32px; padding: 0; border: 0; background: none; color: #3D5798; font-weight: 600; font-size: 13px">Mark applied</button>
       <button type="button" style="height: 32px; padding: 0; border: 0; background: none; color: #5C5249; font-weight: 600; font-size: 13px">Not for me…</button>
     </div>
@@ -101,12 +100,12 @@ class Component extends DCLogic {
   renderVals() {
     const accent = this.props.accent ?? '#3D5798';
     const raw = [
-      { title: 'Senior Data Scientist', company: 'Hooli Labs', place: 'Copenhagen', score: '0.86' },
-      { title: 'Machine Learning Engineer', company: 'Contoso Pay', place: 'Copenhagen', score: '0.81' },
-      { title: 'Analytics Lead', company: 'Initech Insurance', place: 'Aarhus', score: '0.77' },
-      { title: 'Forecasting Specialist', company: 'Globex Energy', place: 'Fredericia', score: '0.74' },
-      { title: 'Data Engineer', company: 'Vandelay Industries', place: 'Copenhagen', score: '0.71' },
-      { title: 'Quantitative Analyst', company: 'Acme Capital', place: 'Hellerup', score: '0.70' }
+      { title: 'Senior Data Scientist', company: 'Hooli Labs', place: 'Copenhagen', score: '86%' },
+      { title: 'Machine Learning Engineer', company: 'Contoso Pay', place: 'Copenhagen', score: '81%' },
+      { title: 'Analytics Lead', company: 'Initech Insurance', place: 'Aarhus', score: '77%' },
+      { title: 'Forecasting Specialist', company: 'Globex Energy', place: 'Fredericia', score: '74%' },
+      { title: 'Data Engineer', company: 'Vandelay Industries', place: 'Copenhagen', score: '71%' },
+      { title: 'Quantitative Analyst', company: 'Acme Capital', place: 'Hellerup', score: '70%' }
     ];
     const base = 'width: 100%; min-height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; border: 0; border-radius: 0; color: #1E1A16; ';
     const jobs = raw.map((j, i) => ({ ...j, selected: i === this.state.picked, style: base + 'background: transparent;' + (i > 0 ? ' border-top: 1px solid #D6C7A8;' : ''), pick: () => this.setState({ picked: i }) }));

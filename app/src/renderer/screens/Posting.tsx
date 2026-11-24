@@ -3,7 +3,7 @@ import { ErrorBox } from './AppName'
 import { call, errorText, languageLine, placeLine, scoreText } from '../api'
 import type { PrepareResult, Posting as PostingData, SetStatusResult } from '../api'
 import { useNarrow } from '../useNarrow'
-import { CheckMark, CrossMark } from './CheckMark'
+import { SkillColumn } from './SkillColumn'
 import { Dialog } from './Dialog'
 import { Hint } from './Hint'
 import { SalaryLine } from './SalaryLine'
@@ -27,27 +27,6 @@ const CAN_PREPARE = ['unapplied', 'prepared']
 const elapsed = (ms: number) => {
   const s = Math.max(0, Math.floor(ms / 1000))
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
-}
-
-/**
- * A skill that fits gets the green check, a gap the red cross: the marks of Finding jobs' sources (and `jobs show`'s ✓/✗).
- * The marks say which column is which; its name is for screen readers only.
- */
-function SkillColumn({ name, skills, fits }: { name: string; skills: string[]; fits: boolean }) {
-  return (
-    <div>
-      <ul className="skill-list small" aria-label={name}>
-        {skills.map((skill) => (
-          <li key={skill} className={`marked ${fits ? 'skill-fits' : 'skill-gap'}`}>
-            <span className="mark" aria-hidden="true">
-              {fits ? <CheckMark /> : <CrossMark />}
-            </span>
-            <span>{skill}</span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  )
 }
 
 /** "Oct 3", or nothing for a date that cannot be read. */
@@ -249,8 +228,8 @@ export function Posting({ jobId, onChanged, onOpenMaterials }: Props) {
       )}
       {(matching.length > 0 || missing.length > 0) && (
         <section className="columns rule-heavy rule-top">
-          {matching.length > 0 && <SkillColumn name="Why it fits" skills={matching} fits />}
-          {missing.length > 0 && <SkillColumn name="Gaps" skills={missing} fits={false} />}
+          {matching.length > 0 && <SkillColumn name="Why it fits" className="skill-list" skills={matching} fits />}
+          {missing.length > 0 && <SkillColumn name="Gaps" className="skill-list" skills={missing} fits={false} />}
         </section>
       )}
       <SalaryLine salary={posting.salary} />

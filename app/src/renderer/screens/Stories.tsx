@@ -236,7 +236,6 @@ export function Stories() {
 
   return (
     <div className="stories">
-      <p className="small muted">The stories the tailor draws on for your applications: the context, what you did, what came of it and what you learned.</p>
       {/* one way in: writing a story. Not drafted from the CV: a story adds what the CV does not say */}
       <div className="actions stories-add">
         <button type="button" className="secondary" onClick={() => { setNote(null); setError(null); setView({ kind: 'text', text: '', drafting: false }) }}>

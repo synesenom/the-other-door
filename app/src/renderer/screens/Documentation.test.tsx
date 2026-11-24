@@ -2,7 +2,8 @@
 import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it } from 'vitest'
-import { DocDialog, Documentation } from './Documentation'
+import { DocDialog, Documentation, USER_GUIDE } from './Documentation'
+import { mockDoor } from '../testing'
 
 afterEach(cleanup)
 
@@ -10,11 +11,20 @@ describe('Documentation', () => {
   it('lists the documents and opens one in place, without repeating its title', async () => {
     render(<Documentation />)
     expect(screen.queryByRole('heading', { name: 'Documentation' })).toBeNull()
-    await userEvent.click(screen.getByRole('button', { name: 'Legal disclaimer' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Legal disclaimer…' }))
     const dialog = within(screen.getByRole('dialog', { name: 'Legal disclaimer' }))
     expect(dialog.getByRole('heading', { name: 'Your data' })).toBeInTheDocument()
     expect(dialog.getAllByRole('heading', { name: /legal disclaimer/i })).toHaveLength(1)
     await userEvent.click(dialog.getByRole('button', { name: 'Close' }))
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('opens the user guide in the browser, beside the documents', async () => {
+    const { actions } = mockDoor({})
+    render(<Documentation />)
+    await userEvent.click(screen.getByRole('button', { name: 'User guide' }))
+    expect(actions['open-external']).toHaveBeenCalledWith(USER_GUIDE)
+    expect(USER_GUIDE).toMatch(/^https:\/\/github\.com\/.*\/docs\/manual-app\.md$/)
     expect(screen.queryByRole('dialog')).toBeNull()
   })
 

@@ -62,6 +62,12 @@ change a colour or a size there, not in a component.
    user can do nothing about, is said nowhere: a site a run could not read, an ad it could not score
    (#478). The run record and the logs keep it. The same failure again and again is something the
    user can act on (send a report, #593): one line, "Something keeps going wrong. Send a report". A limit that only time lifts (the Claude plan's window) is said, as a line that opens nothing. A read that is the whole of what the user opened (a destination, or one of Profile's parts: its details, the CV, the stories) says its failure in the `error` box in that part's place; a read-only section of a page that stands without it (Analytics' Market) says nothing and is left out.
+10. **Find it before asking for it.** What The other door could find out itself, from what it already has, by
+   reading a page or a file, or with a short Claude call, it finds out first; the user types something only
+   when that failed, and then only what is still missing, said by name ("The company could not be found in
+   the ad"). "Add a job" is the pattern: a link or the ad's text alone, the title, company and place read
+   from it, a box for the title or the company only when it could not be found. A detail that only makes a
+   result nicer (an ad's place) is never asked: it is used when found and left out when not.
 
 ## Colour
 
@@ -78,7 +84,7 @@ change a colour or a size there, not in a component.
 | `danger` | `#B3261E` | `#F2877F` | the cross of a board or source that failed, and before every error (a mark) |
 | `warning` | `#E8C04F` | `#E6CB78` | the triangle before a line that needs you (a mark; its words carry the meaning) |
 | `on-warning` | `#1E1A16` | `#1E1A16` | the ! on that triangle |
-| `paper` | `#FFFFFF` | `#FFFFFF` | a printed page and what stands for one (the CV style's sample, colour and font blocks): white in both themes, as paper is |
+| `paper` | `#FFFFFF` | `#FFFFFF` | a printed page and what stands for one (Style's sample, colour and font blocks): white in both themes, as paper is |
 | `paper-ink` | `#1E1A16` | `#1E1A16` | text on paper |
 | `paper-muted` | `#D6C7A8` | `#D6C7A8` | the no-colour tile's diagonal stroke on paper |
 | `scrim` | `rgba(30,26,22,0.4)` | `rgba(0,0,0,0.55)` | the veil behind a dialog |
@@ -121,10 +127,10 @@ the same thing by its shape, and `warning` a triangle with a ! beside words that
 
 ## Space and shape
 
-- Spacing steps: 4, 8, 12, 16, 20, 24, 32, 40, 48, 64 px, and 6 px (`size.gap-s`) between a thing and what belongs to it: a mark and its words, pills in a row. Corners: `radius-s`, `radius-m` and `radius-l` are all 2 px, and `radius-pill` is for anything rounded at its ends (bars, the logo's dash, the switch). Every screen's title sits 40 px from the top (`size.screen-top`) and 40 px from the sidebar (`size.screen-gutter`), on every screen: Finding jobs is a 620 px column on that same edge, not centred; Profile fills the width up to a fixed list of its sections on the right (a list is only for a page taller than about two screens; Settings and Analytics have none) (the onboarding's Check your answers has the same list) (220 px with its gutter, level with the title; the part in view in ink and underlined), left out below the sidebar breakpoint. Screen padding 40–48 px (20 px on a phone; `tokens.json` `phone` holds the phone sizes).
+- Spacing steps: 4, 8, 12, 16, 20, 24, 32, 40, 48, 64 px, and 6 px (`size.gap-s`) between a thing and what belongs to it: a mark and its words, pills in a row. Corners: square, as on paper: `radius-s`, `radius-m` and `radius-l` are all 0, and `radius-pill` is for anything rounded at its ends (bars, the logo's dash, the switch). Every screen's title sits 40 px from the top (`size.screen-top`) and 40 px from the sidebar (`size.screen-gutter`), on every screen, and a screen has one of two widths, however wide the window: a screen read or filled in (a list, a form, text: Matches, Finding jobs, Profile, Settings, Analytics) is one 620 px column (`size.column-width`) on that edge, not centred; a screen of parts side by side (the Applications board, a posting, Ready to send) grows to 1040 px (`size.wide-width`) and no further, so a big window never stretches a line or a column; a narrower window gives each what it has. Profile is one column, its Style part too (the pickers above the sample), with a fixed list of its sections right beside it (a list is only for a page taller than about two screens; Settings and Analytics have none) (the onboarding's Check your answers has the same list) (220 px with its gutter, level with the title; the part in view in ink and underlined), left out below the sidebar breakpoint. Screen padding 40–48 px (20 px on a phone; `tokens.json` `phone` holds the phone sizes).
 - Controls (fields, the switch) are 36 px tall on the desktop; buttons and filters are 32 px (`button-height`). The phone keeps its own larger sizes.
-- Buttons answer the pointer with a 120 ms colour change, one rule per kind: the black button turns `ink-muted` (never blue), a text button is underlined (3 px offset), a quiet one and a filter word and a sidebar item turn ink; pressed, they are ink; a disabled button does not react, and a touch screen has no hover at all.
-- Reading width: the posting pane fills its column, so a long ad uses the window it is given; the score reason keeps a 60-character measure. (`size.content-max-width`, 760 px, is no longer applied to the posting.)
+- Buttons answer the pointer at once, with no fade, one rule per kind: the black button turns `ink-muted` (never blue), a text button is underlined (2 px at a 3 px offset: as thick as the mark of what is chosen, but closer to its words), a quiet one turns ink, a word chosen by its underline (a sidebar item, a filter, an entry of the page list) turns `ink-muted` while it is not the chosen one, and an item of a list that opens (a match, a card in Applications, a top match of a run) has its title underlined the same way and nothing else of it changes; pressed, they are ink; a disabled button does not react, and a touch screen has no hover at all.
+- Reading width: a posting takes the wide width (1040 px) like every screen of parts side by side, so a long ad reads in lines of a sensible length; the score reason keeps a 60-character measure.
 
 ## The blue dash
 
@@ -138,27 +144,28 @@ before the title of a posting that is new since the last review (instead of a �
 - **Primary button**: the black button: ink fill, `ground` text, 600 weight, 32 px high, no outline. One per view
   ("Prepare application", "I've applied").
 - **Order of buttons**: in a row that ends a step (a dialog, a form, a confirmation, a wizard's screen), the way out comes first (Cancel, Back, Skip, Not now) and the main action last, on the right, as macOS orders them. A row of actions that all go forward, with no way out (Draft from my CV, Add a story), starts with the main one.
-- **Secondary button** (a text button): blue words, no box, no side padding; space only between neighbours: 20 px after the black button, 12 px between text buttons. It is every action that stands alone ("Mark ghosted", "Show broader matches", a photo's Remove), and the actions beside the black button that go forward.
+- **Secondary button** (a text button): blue words, no box, no side padding; space only between neighbours: 20 px between any two buttons in a row (12 px read as one run of words). It is every action that stands alone ("Show broader matches", a photo's Remove), and the actions beside the black button that go forward.
 - **Quiet button**: grey words, only as the way out beside the black button (Cancel next to Save, "Not for me" next to Prepare). Grey means only that.
 - **One mark for "this opens something"**: an action that opens a dialog ends in "…" (Status…, Add a job…, Disconnect…); an action that leaves the app ends in an arrow (`.go`: Open in browser →, Download →, the sign-in page); an action done in place has neither. "Finding jobs…" is a progress word, not a dialog.
 - **Dialog or in place**: a dialog for a short task about one thing that leaves the page as it was: a few fields and one answer (Add a job, Edit story, Write a story, Add a page), a confirmation before what cannot be undone, a document to read and close. Its title names the action; Esc or Cancel leaves; the main action is last. Only a confirmation opens over a dialog. In place for what is long, open-ended or worked alongside: many items to review (the drafted stories), a result that stays (the learning plan), a run (Finding jobs), a tool beside what it changes (Revise beside the pages).
 - **Inline link**: `accent` text, underlined, the size and weight of the sentence it is in (the Markdown cheatsheet in the Master CV's "Written in Markdown", "Draft it from your CV file or pages" in a note, a salary's source). Only a word inside a sentence that opens or shows something; an action on its own line is a button.
-- **Filter** (`.pill`): words in ink; the chosen one underlined, 2 px at a 6 px offset. A sidebar item and an entry of the page list beside Profile are chosen the same way. One mark for what is chosen: an underline, or an ink ring on a CV style's tile.
-- **Chip**: a `page` fill and no outline, a 2 px corner, small text (keywords). A posting's skills are not chips: each is a line with
+- **Filter** (`.pill`): words in ink; the chosen one underlined, 2 px at a 6 px offset. A sidebar item and an entry of the page list beside Profile are chosen the same way. One mark for what is chosen: an underline, or an ink ring on a Style tile.
+- **Chip**: a `page` fill and no outline, square corners, small text (keywords). A posting's skills are not chips: each is a line with
   a mark, the green check for one that fits and the red cross for a gap, as Finding jobs marks its sources; the fits and
   the gaps side by side, each in two columns of its own, with no heading (the marks say which is which).
 - **Switch**: one setting on or off, its name to the right (the CV's Preview, on over its Markdown). A 36×20 track, `border` when off, `ink` when on, its round thumb (`ink-muted` off, `ground` on) sliding across in 120 ms; the whole line is the control, 36 px tall. Pills choose between several views; a switch turns one thing on.
 - **Note and error**: one strip, `page` fill and no outline, ink text. A note (`notice`: Stopped, Marked as applied) is only the box; an error (`error`: Import failed) starts with the ✕ mark in `danger`, so a failure shows at a glance. A field's own error is bold ink under the field, with no box (`field-error`).
 - **List row**: title (15 / 600), `company · place` in small `ink-muted` beneath, score-s on
-  the right; a hairline between rows under a heavy ink rule at the list's head; no fill, not on hover, not for the row last opened.
+  the right; a hairline between rows under a heavy ink rule at the list's head; no fill, not on hover, not for the row last opened; on hover its title is underlined, as a text button is. A new one has the accent's 6 px dot in the margin to its left, so its title starts where the others do.
 - **Heavy rule**: 2 px ink, opens a part: the list's head, each board column's head, the run's summary, the posting's skills.
 - **Step row** (a run): a 28 px circle (`success` with a right-angled check when done, accent ring with the number
   when running, `border` ring when waiting), the step name in display-s, what it is doing
   beneath, elapsed time on the right; the running step gets a 4 px accent progress bar.
 - **Document preview**: a `page` sheet at A4 ratio, no shadow, caption beneath
   (name left, page count right).
+- **Info icon**: words that explain how something works, read once, sit behind a small `ink-muted` icon beside the name they are about (a part's heading, a field's name, a score); they open on hover or focus, in an ink bubble. What the user must read before acting (a warning, what a confirmation replaces), a state and an empty list's line stay on the page.
 - **Section label**: the `label` style, 10–12 px above its content.
-- **Field name** (`field-label`): 14 px, Figtree 600, ink, sentence case, 4 px above its box; 28 px between fields. What a box means is in an info bubble (`ink` fill, `ground` text, in both themes) beside its name and how to use it is its placeholder (`ink-muted`); under a box go only its pills, one line each, and its errors. A checkbox's own line stays visible, because some carry terms warnings.
+- **Field name** (`field-label`): 14 px, Figtree 600, ink, sentence case, 4 px above its box; 28 px between fields. What a box means is in an info bubble (`ink` fill, `ground` text, in both themes) beside its name and how to use it is its placeholder (`ink-muted`); under a box go only its pills, one line each, and its errors. A checkbox's help is in an info bubble beside it, as a field's; a warning a user must read before ticking stays on the page.
 - Icons: thin stroke icons (1.5 px), `ink` or `ink-muted`; no emoji.
 - Checkboxes and radios: custom, 18 px, `page` fill with an `ink-muted` line; on, a checkbox fills with `ink` and the right-angled check, a radio gets an `ink` dot.
 - Folded sections: the same thin chevron, right when closed, down when open, centred on the line.
@@ -174,15 +181,15 @@ shared from its Share menu).
 
 What needs you (Claude not signed in, the Claude plan's window nearly full, no CV, a failed Drive sync or one that needs a choice, something that keeps going
 wrong) is a short underlined line each in its own block right under the sidebar's menu, opening
-where it is fixed; the foot holds Find new jobs and the last run alone, so nothing crowds them; nothing when all is well. The plan's line has nothing to fix, it is waited out: it opens nothing and goes when the window resets. The app opens on Matches.
+where it is fixed; the foot holds Find new jobs alone (the last run's time on hover; after two days with no run, or before any, a warning sign beside it, its words on hover), so nothing crowds them; nothing when all is well. The plan's line has nothing to fix, it is waited out: it opens nothing and goes when the window resets. The app opens on Matches.
 
-**Profile is one page**: About you, What to look for, What to skip, Master CV, CV style and Stories, each a part with its `display-s` heading and its entry in the list beside the page. Master CV has one muted line under its heading (everything about the user's work, never sent as it is: each application's CV is picked from it and tailored), then one field like any form's, Sources (Replace CV file…, Add a page and Check again, the CV file and the pages as chips under them, its info bubble, its error under it), then the CV with no name of its own: as it reads, the Preview switch at its top right on, off for the editor with "Written in Markdown" at its top left; both in the same 480 px box that scrolls inside itself, so the parts under it are near and the switch never changes the page's length. A source only adds: a new CV file proposes what it adds, as a page does. The details (About you to What to skip) have no save bar and no Undo: a typed field is written a second after typing stops and when it is left, a choice at once, and what is waiting when the page is left or the window closes; a value the server refuses is said under its field and stays in the field. When the role targets or the ad languages changed during the visit, leaving Profile has Claude propose the search terms again in the background; if that fails, a line under the sidebar's menu says so and opens What to look for (the same `sidebar-problem marked` as every other). The CV's text saves itself (a second after typing stops, when the editor is left, and when the window closes or the app quits; "Saving…" then "Saved" in `small` `ink-muted` beside Preview, the first save of a visit keeping the CV as it was as `cv.md.bak`), and the photo, the CV file, its pages and the stories are saved by their own controls.
+**Profile is one page**: About you, What to look for, What to skip, Master CV, Style and Stories, each a part with its `display-s` heading and its entry in the list beside the page. Master CV has an info icon beside its heading (everything about the user's work, never sent as it is: each application's CV is tailored from it; and what it is read from, the CV file and public pages, which only add), as Style and Stories have, then its sources with no name of their own: the CV file and the pages as chips, Replace CV file…, Add a page and Check again under them, an error under those, then the CV with no name of its own: as it reads, the Preview switch at its top right on, off for the editor with "Written in Markdown" at its top left; both in the same 480 px box that scrolls inside itself, so the parts under it are near and the switch never changes the page's length. A source only adds: a new CV file proposes what it adds, as a page does. The details (About you to What to skip) have no save bar and no Undo: a typed field is written a second after typing stops and when it is left, a choice at once, and what is waiting when the page is left or the window closes; a value the server refuses is said under its field and stays in the field. When the role targets or the ad languages changed during the visit, leaving Profile has Claude propose the search terms again in the background; if that fails, a line under the sidebar's menu says so and opens What to look for (the same `sidebar-problem marked` as every other). The CV's text saves itself (a second after typing stops, when the editor is left, and when the window closes or the app quits; "Saving…" then "Saved" in `small` `ink-muted` beside Preview, the first save of a visit keeping the CV as it was as `cv.md.bak`), and the photo, the CV file, its pages and the stories are saved by their own controls.
 
-**CV style** (a part of Profile, after Master CV; not on the phone, not in the wizard): a `display-s` heading and one muted `small` line (how tailored CVs look; a choice is saved at once; printed from the next one prepared), then two columns, stacked with the pickers first below 700 px of the part. Left, the sample: the top of the user's CV printed on a narrow page (so the text is about 11.5 px), a picture on `paper` in a box 380 px tall and at most 390 px wide, even 32 px margins left, right and top, cut only at the foot with a fade into `paper` (a sample, not the whole CV); while it prints the box shows a quiet placeholder (the old picture stays, faint). A CV that cannot be read is one `field-error` line under the box (no box: check the Master CV); a print that failed is said nowhere (the user cannot act on it); a pick that could not be saved is said under its row. Right, two native radio groups with a `field-label` legend each, both rows 300 px wide (at most the column). **Colour**: nine square tiles in one row (`size-gap-s` between, about 28 px each), each `width: 100%` and square; the default is Blue, the app's own `accent` blue (#3D5798), so a CV looks like the app until another is chosen; "no colour" (ink headings, a hairline rule) is `paper` with a diagonal `paper-muted` stroke; the chosen one has a 2 px `ground` gap and a 2 px `ink` ring; each has a tooltip and an accessible name. **Fonts**: four square blocks in four columns (`space-3` between, about 66 px each) on `paper`, a large "A" in the heading font and a small "a" in the text font, the pair's name under it in `text-small-size`, on one line (it may run past its block, centred; the app's name set as `AppName`); the chosen block has a 2 px `ground` gap and a 2 px `accent` ring outside it, like the colour tiles (an `accent` border on white `paper` is only 2.4:1 in dark mode). Focus is the `accent` outline with a 3 px offset; the arrow keys move within a group. The tiles and blocks show what the server says each choice prints (`show_profile`'s `options.cv_styles`), the CV's own colours and fonts, not the app's. The `paper` tokens are white in both themes.
+**Style** (how tailored CVs and letters look; a part of Profile, after Master CV; not on the phone, not in the wizard): a `display-s` heading with an info icon (how tailored CVs and letters look), then two columns, stacked with the pickers first below 700 px of the part. Left, the sample: the top of the user's CV printed on a narrow page (so the text is about 11.5 px), a picture on `paper` in a box 380 px tall and at most 390 px wide, even 32 px margins left, right and top, cut only at the foot with a fade into `paper` (a sample, not the whole CV); while it prints the box shows a quiet placeholder (the old picture stays, faint). A CV that cannot be read is one `field-error` line under the box (no box: check the Master CV); a print that failed is said nowhere (the user cannot act on it); a pick that could not be saved is said under its row. Right, two native radio groups with a `field-label` legend each, both rows 300 px wide (at most the column). **Colour**: nine square tiles in one row (`size-gap-s` between, about 28 px each), each `width: 100%` and square; the default is Blue, the app's own `accent` blue (#3D5798), so a CV looks like the app until another is chosen; "no colour" (ink headings, a hairline rule) is `paper` with a diagonal `paper-muted` stroke; the chosen one has a 2 px `ground` gap and a 2 px `ink` ring; each has a tooltip and an accessible name. **Fonts**: four square blocks in four columns (`space-3` between, about 66 px each) on `paper`, a large "A" in the heading font and a small "a" in the text font, the pair's name under it in `text-small-size`, on one line (it may run past its block, centred; the app's name set as `AppName`); the chosen block has a 2 px `ground` gap and a 2 px `accent` ring outside it, like the colour tiles (an `accent` border on white `paper` is only 2.4:1 in dark mode). Focus is the `accent` outline with a 3 px offset; the arrow keys move within a group. The tiles and blocks show what the server says each choice prints (`show_profile`'s `options.cv_styles`), the CV's own colours and fonts, not the app's. The `paper` tokens are white in both themes.
 
 **Matches** (the home of a review session): the list, and a row opens its posting on the
 whole page, as a card does in Applications. The list stops at 620 px, the column of Settings and Finding jobs, so a row reads as one
-line; the header spans the page, "Add a job" on its right as in Applications. A row has no fill, on hover or after opening.
+line; the header stops at the column too, "Add a job" at its right edge. A row has no fill, on hover or after opening: hover underlines its title.
 The new dot goes once a posting is opened. (The mockup and `screens/matches.png` still show
 the earlier three panes.)
 
@@ -192,9 +199,9 @@ the earlier three panes.)
 │ Matches  │ (○ New only)                                                 │
 │ Applic.  │                                                              │
 │ Profile  │                                                              │
-│ Settings │ • Senior Data Scientist                                 0.86 │
+│ Settings │ • Senior Data Scientist                                  86% │
 │          │   Hooli Labs · Copenhagen                                    │
-│          │ ML Engineer                                             0.81 │
+│          │ ML Engineer                                              81% │
 │[Find new]│   Contoso Pay · Copenhagen                                   │
 └──────────┴──────────────────────────────────────────────────────────────┘
 
@@ -202,7 +209,7 @@ the earlier three panes.)
 │          │ ← Matches                                      2 of 14  ‹  › │
 │          │ Senior Data Scientist                                        │
 │   …      │ Hooli Labs · Copenhagen · posted Oct 31 · via Jobindex       │
-│          │ 0.86 ⓘ                                                       │
+│          │ 86% ⓘ                                                        │
 │          │ [Prepare application] Open in browser → Status… Not for me… │
 └──────────┴──────────────────────────────────────────────────────────────┘
 ```
@@ -210,12 +217,12 @@ the earlier three panes.)
 ‹ › and the j and k keys step through the list, Esc goes back; Not for me opens the next
 match in its place.
 
-**Prepared application**: title "Ready to send" with the job beneath; one document at a
+**Prepared application**: "← Posting", title "Ready to send" with the job beneath; a line with the warning mark for each thing to check before sending (a claim the CV does not back, text off the page), none when all is well; one document at a
 time, large enough to read, behind a CV · pages | Letter · words switch, its pages scrolling in
-their own column (the mockup's two small side-by-side previews were too small to read); on the right, "Anything to change?" (a text box, Revise, Undo); What you sent has no right column.
+their own column, "Save CV…" (or "Save letter…") under it; on the right, only "Anything to change?" (a text box, Revise, Undo last change): the keywords and what was tailored are Claude's to say in a conversation, not the screen's. What you sent has no right column.
 Primary action: "I've applied".
 
-![Prepared application: CV and letter previews, keywords, revise box](screens/prepared.png)
+![Ready to send: the CV behind its switch, Save CV… under it, and Anything to change? beside it](screens/prepared.png)
 
 **Finding jobs** (a run): one column, 620 px, on the screen's left edge. Title, a line that the
 screens can be switched while it runs (quitting stops it), then the five steps (Search, Discover, Follow, Collect, Match) as step
@@ -225,10 +232,10 @@ When it ends, a summary card replaces the button. With no new match it states th
 ![Finding jobs: the five steps, the fourth running](screens/finding-jobs.png)
 
 **Applications**: five columns, Prepared, Applied, Interviewing, Offer, Closed (rejected,
-ghosted, discarded), under a heavy rule at each column's head, with plain cards divided by hairlines (title, company, when). Interview rounds are dots
-on the card: ink = passed, accent ring = next. A card with no answer for the tracker's days
-says "No answer in 45 days" in place of when (an interview card after its stage), with a
-text-button "Mark ghosted" under it, outside the card's own button. The board scrolls sideways in its own box
+ghosted, discarded), under a heavy rule at each column's head, with plain cards divided by hairlines (title, company, and an interview's round or how it ended). Interview rounds are dots
+on the card, one ink dot per round passed. A card quiet past its stage's days (`tracker.STALLED_DAYS`: prepared 14, applied 45,
+an interview 21) has the warning sign beside its title, its words ("Not sent in 14 days", "No answer in 45 days") on hover; it is marked ghosted
+through its Status, once opened, and the card has no button of its own. The board scrolls sideways in its own box
 on a narrow window.
 
 ![Applications board](screens/applications.png)
@@ -248,15 +255,15 @@ are the Matches list, so neither is drawn again here. Claude usage next: the tot
 plan covers it; an estimate at API prices: no one may read it as a price), then about what one
 search and one application cost in `small` muted, then one 8 px stacked bar for the whole total
 (always full, so it shows where the money went and never reads as a quota filling up), a part per
-activity in its tone (`accent`, `ink-muted`, `border`: largest first). Under it each activity as a
+activity in its tone (`ink`, `ink-muted`, `border`: largest first; data, so never the blue). Under it each activity as a
 row: a 10 px dot in its part's tone, its name, what it did after it in muted (" · 184 postings
 scored", as Finding jobs puts a site's jobs after its name) and its dollars right in tabular figures:
 three rows, no row per feature (lines of money the user does not pay).
 Not the plan's 5-hour window: that is live, and this screen is about the days gone by. Before any call, one muted line. Not on the phone.
 
 **Onboarding** (no mockup yet): the first-launch wizard has no sidebar. One 620 px column,
-centred (there is no sidebar to line up with; Check your answers centres it in the room its list of parts on the right leaves, as Profile has it, the list left out below 900 px), under a strip of thin segments (ink for the steps done, the blue for
-the current one, `border` for the rest). Each step has the Young Serif title (the current segment already marks where you are),
+centred (there is no sidebar to line up with; Check your answers centres it in the room its list of parts on the right leaves, as Profile has it, the list left out below 900 px), under a strip of thin segments (`ink-muted` for the steps done, `ink` for
+the current one, `border` for the rest; where you are is not the blue's). Each step has the Young Serif title (the current segment already marks where you are),
 one primary ink button, and Back and Skip as quiet buttons beside it. Connect Claude comes first, only when Claude is missing or signed out (one action, and a fourth segment), and moves on by itself. Then three screens: Tell me about yourself (the sources: one line in a drop zone, `page` fill with a dashed `border` line, that also opens the file dialog, a URL field with only a placeholder, each with an info icon whose words open on hover or focus), Reading (the step rows of Finding jobs, asking nothing), and Check your answers (a note naming what could not be found, parts each under its heading with no rule, the same parts, names and controls as Profile, fewer of them (About you, What to look for with the role targets as chips and the What matters to you text box, optional), and the CV folded; the CV is
 a textarea in the page colour). Save leads to Finding jobs.
 
@@ -284,7 +291,7 @@ components; only the layout changes below the sidebar breakpoint (`size.sidebar-
   the computer running *The other door* and the phone can be locked.
 - **Applications**: the board becomes a grouped list (Offer, Interviewing, Applied,
   Prepared; Closed collapsed at the end), the interview dots right-aligned on each row; a row
-  with no answer keeps its note and its "Mark ghosted" under it.
+  with no answer keeps its note.
 - Type steps down one size (headings 19 px);
   body text stays 14–15 px.
 

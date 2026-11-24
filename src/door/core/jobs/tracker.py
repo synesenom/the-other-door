@@ -385,11 +385,11 @@ sector, universities) take about that long, while few users mark a silence by ha
 the Applications board marks such a card and offers to record it as ghosted (#89)."""
 
 
-def _silent(tracker: ApplicationTracker, job_id: str, now: datetime) -> bool:
-    """Whether the job's last event is more than :data:`NO_ANSWER_DAYS` days before ``now``."""
+def _silent(tracker: ApplicationTracker, job_id: str, now: datetime, days: int = NO_ANSWER_DAYS) -> bool:
+    """Whether the job's last event is more than ``days`` days before ``now``."""
     history = tracker.history(job_id)
     last = _parsed(history[-1].get("at")) if history else None
-    return last is not None and now - last > timedelta(days=NO_ANSWER_DAYS)
+    return last is not None and now - last > timedelta(days=days)
 
 
 def no_answer(tracker: ApplicationTracker, job_id: str, now: datetime | None = None) -> bool:
@@ -398,6 +398,22 @@ def no_answer(tracker: ApplicationTracker, job_id: str, now: datetime | None = N
     if status != "applied" and interview_stage(status) is None:
         return False
     return _silent(tracker, job_id, now if now is not None else _utcnow())
+
+
+STALLED_DAYS = {"prepared": 14, "applied": NO_ANSWER_DAYS, "interview": 21}
+"""How many quiet days make an application's card on the Applications board show its warning, per stage:
+a prepared job not sent in two weeks (its ad, up to a month old when found, is likely closing), an
+application with no answer (:data:`NO_ANSWER_DAYS`), and an interview round with no news in three weeks
+(employers take about 24 days from interview to decision; a follow-up is due). An offer has none: the
+ledger cannot record taking it, so the warning could never be cleared. A separate rule from
+:func:`no_answer`, which reads an application as ghosted."""
+
+
+def stalled(tracker: ApplicationTracker, job_id: str, now: datetime | None = None) -> int | None:
+    """The job's stage's :data:`STALLED_DAYS` once its last event is more than that many days before ``now``, else None."""
+    status = tracker.get_status(job_id)
+    days = STALLED_DAYS.get("interview" if interview_stage(status) else status or "")
+    return days if days and _silent(tracker, job_id, now if now is not None else _utcnow(), days) else None
 
 
 def no_answer_count(tracker: ApplicationTracker, now: datetime | None = None, job_ids: Iterable[str] | None = None) -> int:

@@ -168,7 +168,12 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
           ...fixtures.status_summary,
           drive,
           search_terms_outdated: scene.searchTermsStale === true,
-          since_last_review: { ...fixtures.status_summary.since_last_review, new_matches: state === 'empty' ? 0 : newCount() },
+          since_last_review: {
+            ...fixtures.status_summary.since_last_review,
+            new_matches: state === 'empty' ? 0 : newCount(),
+            // a run 2 h ago unless the scene says otherwise: fresh, no warning beside Find new jobs
+            last_run: scene.lastRunHoursAgo === null ? null : { finished_at: new Date(Date.now() - (scene.lastRunHoursAgo ?? 2) * 3_600_000).toISOString() },
+          },
           ...(state === 'empty' ? { plan: null, cost: null, pass_rates: {}, pass_rates_by_score: null } : {}),
           // the plan's window nearly full: a line under the sidebar's menu says so
           ...(state === 'plan-low' ? { plan: { ...fixtures.status_summary.plan, five_hour: { used: 0.9, resets_at: new Date(Date.now() + 90 * 60_000).toISOString() }, room: { find: 1, prepare: 2 } } } : {}),
@@ -242,6 +247,10 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
           unreachable: [],
           proposals: ENRICH_PROPOSALS.map((p) => ({ ...p, source: (args['urls'] as string[] | undefined)?.[0] ?? (args['files'] as string[] | undefined)?.[0] ?? fixtures.show_profile.enrich_sources[0] })),
         }
+      case 'import_posting':
+        // the ad names no title or company the reader can find: they are asked, then it is "imported" as the first match
+        if (scene.importMissing && !(args['title'] && args['company'])) return { missing: ['title', 'company'], found: {} }
+        return { job_id: fixtures.list_matches.matches[0]!.id, path: '', replaced: false, score: fixtures.list_matches.matches[0]!.score, score_reason: 'Your forecasting work lines up with the core of the role.' }
       case 'cv_style_sample':
         return { png_base64: pngOf(args['cv_accent'] === 'blue' && args['cv_fonts'] === 'door' ? sampleDefault : sampleStyled), own_cv: true }
       case 'list_stories':

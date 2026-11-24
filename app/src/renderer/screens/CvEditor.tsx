@@ -218,7 +218,7 @@ export function CvEditor({
   /** cv.md was written and the editor left (or the first CV written): what reads the profile (the sidebar's "no CV
    * yet") reads it again. */
   onSaved?: () => void
-  /** The CV text was saved (each autosave): what shows the CV, such as the CV style's sample, may read it again. */
+  /** The CV text was saved (each autosave): what shows the CV, such as the Style's sample, may read it again. */
   onCvSaved?: () => void
 }) {
   const [profile, setProfile] = useState<Profile | null>(null)
@@ -237,7 +237,7 @@ export function CvEditor({
   // the CV file a draft read, by its name (the main process keeps its path); being drafted from; its error
   const [cvFile, setCvFile] = useState<string | null>(null)
   const [drafting, setDrafting] = useState(false)
-  // why a source could not be read, chosen or forgotten: said under Sources
+  // why a source could not be read, chosen or forgotten: said under its chips and buttons
   const [sourceError, setSourceError] = useState<string | null>(null)
   // the live save: writing, or why the last write failed (tried again at the next pause)
   const [writing, setWriting] = useState(false)
@@ -399,9 +399,12 @@ export function CvEditor({
   // Profile's part "Master CV": the file and the pages it is read from, then the text
   const part = (body: ReactNode) => (
     <section className="part cv-editor" aria-labelledby="profile-cv">
-      <h2 className="display-s" id="profile-cv">
-        Master CV
-      </h2>
+      <div className="part-title">
+        <h2 className="display-s" id="profile-cv">
+          Master CV
+        </h2>
+        <Hint label="About Master CV">Everything about your work, in one place. It is never sent as it is: each application gets its own CV, tailored from this one, so put in more than one CV would hold. It is read from your CV file and public pages, like a portfolio or GitHub. Each proposes what it adds; nothing is taken out.</Hint>
+      </div>
       {body}
     </section>
   )
@@ -422,7 +425,6 @@ export function CvEditor({
   return (
     <>
       {part(<>
-      <p className="small muted">Everything about your work, in one place. It is never sent as it is: each application gets a CV of its own, picked from this one and tailored to the ad, so put in more than one CV would hold.</p>
       {/* the wizard may end with no CV; the example CV is never copied in, so only a developer's hand-made profile has it */}
       {!profile.cv.exists && (
         <div role="note" className="cv-example small">
@@ -438,30 +440,8 @@ export function CvEditor({
         </p>
       )}
         {/* one field, Sources: what the Master CV is read from, a CV file or a page, each proposing what it adds */}
-        <div className="field onb-field" role="group" aria-labelledby="cv-sources-name">
-          <div className="field-name">
-            <span id="cv-sources-name" className="field-label">
-              Sources
-            </span>
-            <Hint label="About Sources">Your CV file and public pages: a portfolio, GitHub, a publication list. Each proposes what it shows and your Master CV does not, and adds what you tick; nothing is taken out. Check again reads the pages for what is new.</Hint>
-          </div>
-          <div className="actions">
-            {drafting ? (
-              <Spinner message="Reading your CV file (a minute or two)…" />
-            ) : (
-              <button type="button" className="secondary" onClick={() => from({ kind: 'file' })}>
-                {cvFile ? 'Replace CV file…' : 'Add a CV file…'}
-              </button>
-            )}
-            <button type="button" className="secondary" onClick={() => from({ kind: 'page' })}>
-              Add a page…
-            </button>
-            {remembered.length > 0 && (
-              <button type="button" className="secondary" onClick={() => from({ kind: 'again' })}>
-                Check again
-              </button>
-            )}
-          </div>
+        {/* no name on the page: the chips and their buttons say what they are, and the heading's icon explains them */}
+        <div className="field onb-field" role="group" aria-label="Sources">
           {(cvFile || remembered.length > 0) && (
             <ul className="cv-pages-list" aria-label="What your Master CV is read from">
               {cvFile && (
@@ -481,6 +461,23 @@ export function CvEditor({
               ))}
             </ul>
           )}
+          <div className="actions">
+            {drafting ? (
+              <Spinner message="Reading your CV file (a minute or two)…" />
+            ) : (
+              <button type="button" className="secondary" onClick={() => from({ kind: 'file' })}>
+                {cvFile ? 'Replace CV file…' : 'Add a CV file…'}
+              </button>
+            )}
+            <button type="button" className="secondary" onClick={() => from({ kind: 'page' })}>
+              Add a page…
+            </button>
+            {remembered.length > 0 && (
+              <button type="button" className="secondary" onClick={() => from({ kind: 'again' })}>
+                Check again
+              </button>
+            )}
+          </div>
           {sourceError && <p className="field-error" role="alert">{sourceError}</p>}
         </div>
         {panel && (
@@ -491,7 +488,7 @@ export function CvEditor({
             blocked={dirty}
             onRead={(url) => !remembered.includes(url) && void keepPages([...remembered, url])}
             onFile={() => {
-              // the new file is the CV file now: named under Sources
+              // the new file is the CV file now: named among the chips
               refreshCvFile()
             }}
             onClose={() => setPanel(null)}

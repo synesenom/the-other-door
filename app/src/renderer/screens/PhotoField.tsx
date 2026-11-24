@@ -1,3 +1,4 @@
+import { Hint } from './Hint'
 import { named } from './AppName'
 
 export type PhotoPolicy = 'no' | 'optional' | 'expected'
@@ -28,9 +29,14 @@ interface Props {
  */
 export function PhotoField({ src, pending, help, error, busy, onChoose, onRemove }: Props) {
   const has = Boolean(src || pending)
+  // that the city's CVs carry no photo is a state, not how the field works: it stays on the page
+  const noPhoto = help === photoHelp('no')
   return (
     <div className="field onb-field photo-field">
-      <span className="field-label">Photo</span>
+      <span className="field-name">
+        <span className="field-label">Photo</span>
+        {help && !noPhoto && <Hint label="About Photo">{help}</Hint>}
+      </span>
       {src && <img className="photo-preview" src={src} alt="Your photo" width={96} />}
       {pending && <p className="body">{pending}</p>}
       <div className="actions">
@@ -43,7 +49,7 @@ export function PhotoField({ src, pending, help, error, busy, onChoose, onRemove
           </button>
         )}
       </div>
-      {help && <p className="small muted">{help}</p>}
+      {help && noPhoto && <p className="small muted">{help}</p>}
       {error && (
         <p role="alert" className="field-error">
           {named(error)}

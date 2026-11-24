@@ -36,7 +36,7 @@ button{font:inherit}
                   <span>{{c.note}}</span>
                 </span>
               </button>
-              <sc-if value="{{c.silent}}" hint-placeholder-val="{{ false }}"><button type="button" style="height: 32px; padding: 0; border: 0; background: none; color: #3D5798; font-size: 13px; font-weight: 600; text-align: left">Mark ghosted</button></sc-if>
+              
             </li>
           </sc-for>
         </ul>
@@ -58,7 +58,7 @@ button{font:inherit}
 class Component extends DCLogic {
   renderVals() {
     const passed = 'width: 7px; height: 7px; border-radius: 4px; background: #1E1A16;';
-    const pending = 'width: 7px; height: 7px; box-sizing: border-box; border-radius: 4px; border: 2px solid #3D5798;';
+    const pending = 'display: none;'; // no dot for a round to come: only the rounds passed
     const c = (title, company, note, rounds) => ({ title, company, note, rounds: rounds || [], silent: false });
     const groups = [
       { name: 'Offer', items: [c('Quant Analyst', 'Acme Capital', 'answer by Fri', [passed, passed, passed])] },

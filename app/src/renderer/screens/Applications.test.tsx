@@ -80,78 +80,33 @@ describe('Applications', () => {
     const card = await screen.findByRole('button', { name: /Interview job/ })
     expect(card).toHaveTextContent('Novo')
     expect(card).toHaveTextContent('technical')
-    expect(card.querySelectorAll('.round-passed')).toHaveLength(1)
-    expect(card.querySelectorAll('.round-next')).toHaveLength(1)
-    expect(card).toHaveTextContent('1 round passed, one under way:')
+    expect(card.querySelectorAll('.round-dot')).toHaveLength(1)
+    expect(card).toHaveTextContent('1 round passed:')
     expect(card).not.toHaveTextContent('0.9')
     expect(card).not.toHaveTextContent('jobindex')
   })
 
-  describe('a card with no answer', () => {
-    const silent = match({ id: 'jobindex.2', title: 'Silent job', company: 'Globex', status: 'applied', no_answer: true, no_answer_days: 45 })
-    const quiet = match({ id: 'jobindex.6', title: 'Quiet job', status: 'applied', no_answer: false, no_answer_days: 45 })
+  describe('a card quiet too long', () => {
+    const stalled = match({ id: 'jobindex.2', title: 'Silent job', company: 'Globex', status: 'applied', stalled_days: 45 })
+    const quiet = match({ id: 'jobindex.6', title: 'Quiet job', status: 'applied', stalled_days: null })
 
-    it('says so and offers Mark ghosted beside the card, not inside it', async () => {
+    it('has the warning mark with its words, and no time on any card', async () => {
       stubNarrow(false)
-      setup([silent, quiet])
+      setup([stalled, quiet])
       render(<Applications />)
       const card = await screen.findByRole('button', { name: /Silent job/ })
-      expect(card).toHaveTextContent('No answer in 45 days')
-      const ghost = screen.getByRole('button', { name: 'Mark ghosted' })
-      expect(ghost).toHaveClass('secondary')
-      expect(ghost).not.toHaveClass('quiet')
-      expect(card.contains(ghost)).toBe(false)
-      expect(card.parentElement).toBe(ghost.parentElement)
-      expect(screen.getAllByRole('button', { name: 'Mark ghosted' })).toHaveLength(1)
+      expect(within(card).getByRole('img', { name: 'No answer in 45 days' })).toBeInTheDocument()
+      const other = screen.getByRole('button', { name: /Quiet job/ })
+      expect(within(other).queryByRole('img')).toBeNull()
+      expect(other).not.toHaveTextContent(/ago|today|yesterday/)
     })
 
-    it('records ghosted, says so, and lists again', async () => {
-      stubNarrow(false)
-      const { call } = setup([silent, quiet], { set_status: { status: 'ghosted', current: 'ghosted' } })
-      render(<Applications />)
-      await userEvent.click(await screen.findByRole('button', { name: 'Mark ghosted' }))
-      expect(call).toHaveBeenCalledWith('set_status', { job_id: 'jobindex.2', status: 'ghosted' })
-      expect(await screen.findByRole('status')).toHaveTextContent('Ghosted: Silent job.')
-      await waitFor(() => expect(call.mock.calls.filter((c) => c[0] === 'list_matches').length).toBeGreaterThan(2))
-    })
-
-    it('records it once however quickly it is clicked again', async () => {
-      stubNarrow(false)
-      const { call } = setup([silent], { set_status: () => new Promise(() => {}) })
-      render(<Applications />)
-      const ghost = await screen.findByRole('button', { name: 'Mark ghosted' })
-      await userEvent.click(ghost)
-      await userEvent.click(ghost)
-      expect(call.mock.calls.filter((c) => c[0] === 'set_status')).toHaveLength(1)
-    })
-
-    it('narrow: the grouped list says so and Mark ghosted records it', async () => {
+    it('narrow: the grouped list has the mark too', async () => {
       stubNarrow(true)
-      const { call } = setup([silent, quiet], { set_status: { status: 'ghosted', current: 'ghosted' } })
+      setup([stalled, quiet])
       render(<Applications />)
-      expect(await screen.findByRole('button', { name: /Silent job/ })).toHaveTextContent('No answer in 45 days')
-      await userEvent.click(screen.getByRole('button', { name: 'Mark ghosted' }))
-      expect(call).toHaveBeenCalledWith('set_status', { job_id: 'jobindex.2', status: 'ghosted' })
-    })
-
-    it('offers nothing when the server does not say how many days', async () => {
-      stubNarrow(false)
-      setup([match({ id: 'jobindex.7', title: 'Odd job', status: 'applied', no_answer: true })])
-      render(<Applications />)
-      await screen.findByRole('button', { name: /Odd job/ })
-      expect(screen.queryByRole('button', { name: 'Mark ghosted' })).toBeNull()
-    })
-
-    it('shows the error when the server refuses', async () => {
-      stubNarrow(false)
-      setup([silent], {
-        set_status: () => {
-          throw { message: 'a run is in progress' }
-        },
-      })
-      render(<Applications />)
-      await userEvent.click(await screen.findByRole('button', { name: 'Mark ghosted' }))
-      expect(await screen.findByRole('alert')).toHaveTextContent('a run is in progress')
+      const card = await screen.findByRole('button', { name: /Silent job/ })
+      expect(within(card).getByRole('img', { name: 'No answer in 45 days' })).toBeInTheDocument()
     })
   })
 

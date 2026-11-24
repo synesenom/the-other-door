@@ -79,10 +79,10 @@ describe('generateTheme', () => {
   it('declares sizes, spacing, radii and the type scale', () => {
     expect(root['--size-control-height']).toBe('36px')
     expect(root['--size-sidebar-width']).toBe('180px')
-    expect(root['--size-content-max-width']).toBe('760px')
+    expect(root['--size-wide-width']).toBe('1040px')
     expect(root['--space-1']).toBe('4px')
     expect(root['--space-10']).toBe('64px')
-    expect(root['--radius-m']).toBe('2px')
+    expect(root['--radius-m']).toBe('0px')
     expect(root['--radius-pill']).toBe('999px')
     expect(root['--text-score-s-size']).toBe('22px')
     expect(root['--text-display-l-line']).toBe('1.1')

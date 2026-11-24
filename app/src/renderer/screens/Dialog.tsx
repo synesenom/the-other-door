@@ -20,7 +20,8 @@ export function Dialog({ title, onClose, children, initialFocus }: Props) {
     const root = dialog.current
     if (!root) return
     const target = (initialFocus && root.querySelector<HTMLElement>(initialFocus)) || root.querySelector<HTMLElement>(FOCUSABLE)
-    target?.focus()
+    // the dialog opens at its top: a first control under a long text (a document's Close) must not scroll it to the end
+    target?.focus({ preventScroll: true })
     // only on opening: a later render must not pull focus back
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])

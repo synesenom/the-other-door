@@ -80,16 +80,16 @@ describe('StatusDialog', () => {
   it('lists the eight statuses in words with the current one chosen', () => {
     mockDoor({})
     open({ current: 'applied' })
-    const words = ['Not yet applied', 'Prepared', 'Applied', 'Interview', 'Ghosted', 'Rejected', 'Offer', 'Not for me']
+    const words = ['Not yet applied', 'Prepared', 'Applied', 'Had an interview', 'Ghosted', 'Rejected', 'Offer', 'Not for me']
     for (const w of words) expect(screen.getByRole('radio', { name: w })).toBeInTheDocument()
-    expect(screen.getAllByRole('radio', { name: /^(Not yet applied|Prepared|Applied|Interview|Ghosted|Rejected|Offer|Not for me)$/ })).toHaveLength(8)
+    expect(screen.getAllByRole('radio', { name: /^(Not yet applied|Prepared|Applied|Had an interview|Ghosted|Rejected|Offer|Not for me)$/ })).toHaveLength(8)
     expect(screen.getByRole('radio', { name: 'Applied' })).toBeChecked()
   })
 
   it('starts with the focus on the current status, not the first one', () => {
     mockDoor({})
     render(<StatusDialog jobId="jobindex.1" title="Analyst" current="interview:screening" onClose={() => {}} onDone={() => {}} />)
-    expect(screen.getByRole('radio', { name: 'Interview' })).toHaveFocus()
+    expect(screen.getByRole('radio', { name: 'Had an interview' })).toHaveFocus()
   })
 
   it('starts on the first status when none is current', () => {
@@ -102,11 +102,12 @@ describe('StatusDialog', () => {
     const { call } = mockDoor({ set_status: { status: 'interview:technical' } })
     const { onDone } = open({ current: 'applied' })
     expect(screen.queryByRole('radio', { name: /Screening/ })).toBeNull()
-    await userEvent.click(screen.getByRole('radio', { name: 'Interview' }))
+    await userEvent.click(screen.getByRole('radio', { name: 'Had an interview' }))
     for (const k of ['Screening', 'First impression', 'Assessment', 'Technical']) {
       expect(screen.getByRole('radio', { name: new RegExp(k) })).not.toBeChecked()
     }
-    expect(screen.getByText(/technical interview, case or take-home/i)).toBeInTheDocument()
+    expect(screen.getByText(/did a technical interview, case or take-home/i)).toBeInTheDocument()
+    expect(screen.getByLabelText('How did it go? (optional)')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled()
     await userEvent.click(screen.getByRole('radio', { name: /Technical/ }))
     await save()
@@ -167,7 +168,7 @@ describe('StatusDialog', () => {
   it('shows no id, path or raw interview status', async () => {
     mockDoor({})
     const { container } = render(<StatusDialog jobId="jobindex.1" title="Analyst" current="interview:screening" onClose={() => {}} onDone={() => {}} />)
-    await userEvent.click(screen.getByRole('radio', { name: 'Interview' }))
+    await userEvent.click(screen.getByRole('radio', { name: 'Had an interview' }))
     expect(container.textContent).not.toMatch(/jobindex\.1|interview:|\//)
   })
 })

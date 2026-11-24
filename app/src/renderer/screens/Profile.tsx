@@ -1,3 +1,4 @@
+import { Hint } from './Hint'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { ErrorBox, ErrorList } from './AppName'
 import { call, errorText } from '../api'
@@ -47,7 +48,7 @@ export function Profile({ onSaved, onDraft, onLeave, start }: { onSaved: () => v
   const [photoBusy, setPhotoBusy] = useState(false)
   const [photoError, setPhotoError] = useState<string | null>(null)
   const [photoVersion, setPhotoVersion] = useState(0)
-  // Counts the saves of the CV text, for the CV style's sample
+  // Counts the saves of the CV text, for the Style's sample
   const [cvSaves, setCvSaves] = useState(0)
 
   const specs = profile?.options.fields ?? []
@@ -192,7 +193,7 @@ export function Profile({ onSaved, onDraft, onLeave, start }: { onSaved: () => v
       sections={[
         ...(profile?.config ? shown.map((x) => ({ id: `profile-${x.section.id}`, label: x.section.label })) : []),
         { id: 'profile-cv', label: 'Master CV' },
-        ...(profile?.config && profile.options.cv_styles ? [{ id: 'profile-cv-style', label: 'CV style' }] : []),
+        ...(profile?.config && profile.options.cv_styles ? [{ id: 'profile-cv-style', label: 'Style' }] : []),
         { id: 'profile-stories', label: 'Stories' },
       ]}
     />
@@ -234,9 +235,12 @@ export function Profile({ onSaved, onDraft, onLeave, start }: { onSaved: () => v
       <CvEditor onDraft={onDraft} onSaved={onSaved} onCvSaved={() => setCvSaves((n) => n + 1)} />
       {profile?.config && profile.options.cv_styles && <CvStyle specs={specs} config={profile.config} styles={profile.options.cv_styles} cvSaves={cvSaves} />}
       <section className="part" aria-labelledby="profile-stories">
-        <h2 className="display-s" id="profile-stories">
-          Stories
-        </h2>
+        <div className="part-title">
+          <h2 className="display-s" id="profile-stories">
+            Stories
+          </h2>
+          <Hint label="About Stories">The stories the tailor draws on for your applications: the context, what you did, what came of it and what you learned.</Hint>
+        </div>
         <Stories />
       </section>
     </Wrap>

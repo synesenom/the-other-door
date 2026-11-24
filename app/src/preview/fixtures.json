@@ -1588,7 +1588,8 @@
     "updated_at": "2026-09-08T18:04:12.319Z",
     "rounds": [],
     "no_answer": true,
-    "no_answer_days": 45
+    "no_answer_days": 45,
+    "stalled_days": 45
    }
   ]
  },

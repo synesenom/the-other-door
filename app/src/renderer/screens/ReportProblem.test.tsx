@@ -14,10 +14,12 @@ function show() {
 }
 
 describe('Report a problem', () => {
-  it('says what it saves and what it never holds, before anything is saved', () => {
+  it('says what it saves and what it never holds behind its info icon, before anything is saved', async () => {
     const { actions } = show()
     const reportProblem = actions['report-problem']
-    expect(screen.getByText(/^Saves one file to send when something does not work/)).toHaveTextContent('No CV, profile, job ads or applications; emails and folder names are hidden.')
+    expect(screen.queryByText(/^Saves one file/)).toBeNull()
+    await userEvent.hover(screen.getByRole('button', { name: 'About Save logs' }))
+    expect(screen.getByRole('tooltip')).toHaveTextContent(/^Saves one file to send when something does not work.*No CV, profile, job ads or applications; emails and folder names are hidden\.$/)
     expect(reportProblem).not.toHaveBeenCalled()
   })
 

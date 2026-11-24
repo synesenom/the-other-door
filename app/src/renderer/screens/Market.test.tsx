@@ -40,6 +40,13 @@ describe('Market', () => {
     expect(dbt).toHaveTextContent('25% of the ads')
     expect(dbt).toHaveClass('skill-gap')
     expect(within(section).getAllByRole('listitem')).toHaveLength(3)
+    // two columns, as a posting's skills: what the CV has, then what it lacks, each in the ads' order
+    const [have, lack] = within(section).getAllByRole('list')
+    expect(have).toHaveAccessibleName('In your CV')
+    expect(within(have!).getAllByRole('listitem').map((li) => li.getAttribute('aria-label'))).toEqual(['SQL, in your CV'])
+    expect(lack).toHaveAccessibleName('Not in your CV')
+    expect(within(lack!).getAllByRole('listitem').map((li) => li.getAttribute('aria-label'))).toEqual(['dbt, not in your CV', 'Power BI, not in your CV'])
+    expect(have!.closest('.columns')).toBe(lack!.closest('.columns'))
     expect(section).not.toHaveTextContent(/Analytics Engineer|Trustpilot|Python|left as written/)
     expect(call.mock.calls.map((c) => c[0])).toEqual(['market'])
   })

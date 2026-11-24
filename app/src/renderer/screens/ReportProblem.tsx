@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { ErrorBox } from './AppName'
+import { Hint } from './Hint'
 import { Spinner } from './Spinner'
 
 const basename = (p: string) => p.split(/[\\/]/).pop() ?? p
@@ -8,7 +9,7 @@ export const REPORT_TO = 'enys.mones@gmail.com'
 
 /**
  * Settings' Report a problem (issue 593): one archive, saved where a save dialog the main process runs says, for
- * the user to send. It says first that it holds no personal data; the window never names a file. What the
+ * the user to send. Its info icon says what it holds and that it holds no personal data; the window never names a file. What the
  * screens leave unsaid (docs/design/README.md, principle 9) is in its log.
  */
 export function ReportProblem({ onSaved }: { onSaved?: () => void } = {}) {
@@ -30,14 +31,14 @@ export function ReportProblem({ onSaved }: { onSaved?: () => void } = {}) {
 
   return (
     <div className="report-problem">
-      <p className="small muted">
-        Saves one file to send when something does not work: what went wrong lately, the last runs and the checks of this computer. No CV, profile, job
-        ads or applications; emails and folder names are hidden.
-      </p>
       <div className="actions">
         <button type="button" className="secondary" disabled={busy} onClick={() => void report()}>
           Save logs…
         </button>
+        <Hint label="About Save logs">
+          Saves one file to send when something does not work: what went wrong lately, the last runs and the checks of this computer. No CV, profile, job
+          ads or applications; emails and folder names are hidden.
+        </Hint>
       </div>
       {busy && <Spinner message="Saving…" />}
       {saved && <p className="small">{`Saved as ${saved}. Send it to ${REPORT_TO}.`}</p>}

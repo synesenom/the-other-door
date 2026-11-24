@@ -40,18 +40,21 @@ strong, b { font-weight: 600; }
 .shell { display: grid; grid-template-columns: var(--size-sidebar-width) 1fr; height: 100%; }
 .sidebar {
   display: flex; flex-direction: column; gap: 28px;
-  padding: var(--space-2) 20px 20px; /* the first item's word 20 px from the top, as from the side and the foot from the bottom */
+  padding: var(--space-2) 20px var(--space-3); /* the first item's word 20 px from the top (its 40 px box centres it) and Find new jobs' 20 px from the bottom (its 32 px box), as from the side */
   border-right: 1px solid var(--color-border);
 }
 .demo-tag { align-self: flex-start; margin: 0; padding: 2px 0; color: var(--color-ink-muted); cursor: help; }
-.sidebar nav { display: flex; flex-direction: column; gap: var(--space-1); }
+.sidebar nav { display: flex; flex-direction: column; gap: var(--space-2); }
 .nav-item {
   min-height: 40px;
   text-align: left;
   border-radius: var(--radius-m);
 }
 .nav-item[aria-current='page'] { font-weight: 600; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 6px; }
-.sidebar-foot { margin-top: auto; display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2); }
+.sidebar-foot { margin-top: auto; display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2); border-top: 1px solid var(--color-border); padding-top: var(--space-3); } /* a hairline for it to sit on */
+.sidebar-find { position: relative; display: flex; align-items: center; gap: var(--size-gap-s); } /* the words open over the button, inside the sidebar */
+.sidebar-find .board-card-warning { position: static; margin-top: 0; }
+.sidebar-find .hint-pop { left: 0; right: auto; }
 
 .rule-heavy { border: 0 solid var(--color-ink); border-bottom-width: 2px; }
 .rule-heavy.rule-top { border-bottom-width: 0; border-top-width: 2px; }
@@ -74,23 +77,32 @@ strong, b { font-weight: 600; }
 .score-line .hint-pop { left: 0; right: auto; }
 .columns { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6); padding-top: var(--space-6); }
 .columns .label { margin: 0 0 var(--space-2); }
+.part > .columns { padding-top: 0; } /* in a part (Analytics' Market) the part's gap is above it already */
 /* Each side (fits, gaps) is two columns of its own: the window is wider than the terminal `jobs show` fills. */
-.skill-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2) var(--space-4); }
+.skill-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2) var(--space-4); align-content: start; } /* rows as tall as their words, beside a longer list too */
 .skill-fits > .mark { color: var(--color-success); }
 .skill-gap > .mark { color: var(--color-danger); }
 .posting a { color: var(--color-accent); }
 .link-inline { color: var(--color-accent); text-decoration: underline; text-underline-offset: 3px; }
 .doc-text { overflow-y: auto; }
 .doc-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+/* Help's text buttons, User guide to Save logs…, one column with one gap */
+.help-actions { display: flex; flex-direction: column; gap: var(--space-1); }
+/* a stack of text buttons alone: the height of a black button beside them would space them out by itself */
+.help-actions .secondary { min-height: 0; padding: 0; }
+.help-actions .hint-icon { margin: -2px 0; } /* its padding is for the pointer, not the line's height */
+.report-problem .hint { position: relative; } /* the words open by their icon, not at the top of the page */
+.report-problem .hint-pop { left: 0; right: auto; }
 
 /* An info icon and the words behind it (Hint.tsx). The ::before bridges the gap, so the pointer can reach the words. */
 .hint { display: inline-flex; }
-.hint-icon { display: inline-flex; padding: var(--space-1); border-radius: var(--radius-pill); color: var(--color-ink-muted); cursor: help; }
+.hint-icon { display: inline-flex; padding: 2px; border-radius: var(--radius-pill); color: var(--color-ink-muted); cursor: help; }
 .hint-icon:hover { color: var(--color-ink); }
+.hint-icon svg { width: 15px; height: 15px; } /* one size everywhere: beside a heading, a field's name or a score */
 .hint-pop { position: absolute; z-index: 10; bottom: calc(100% + var(--space-1)); right: 0; width: 280px; max-width: calc(100vw - var(--space-8)); padding: var(--space-2) var(--space-3); background: var(--color-ink); border-radius: var(--radius-m); color: var(--color-ground); }
 .hint-pop::before { content: ""; position: absolute; left: 0; right: 0; bottom: calc(-1 * var(--space-1) - 1px); height: var(--space-1); }
 .app-name { font-family: var(--font-display); }
-.new-dot { display: inline-block; width: 6px; height: 6px; border-radius: var(--radius-pill); background: var(--color-accent); margin-right: var(--space-2); }
+.new-dot { position: absolute; right: calc(100% + var(--space-2)); width: 6px; height: 6px; border-radius: var(--radius-pill); background: var(--color-accent); } /* in the margin, so a new title starts where the others do */
 
 .pills { display: flex; gap: var(--size-gap-s); margin-top: var(--space-4); }
 .pill {
@@ -107,7 +119,7 @@ strong, b { font-weight: 600; }
   padding: var(--space-3) 0; text-align: left;
 }
 .row-main { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
-.row-title { display: flex; align-items: center; }
+.row-title { position: relative; display: flex; align-items: center; }
 .title { font-size: var(--text-body-size); font-weight: 600; }
 .row .score-s { text-align: center; }
 
@@ -121,8 +133,8 @@ strong, b { font-weight: 600; }
 .photo-preview { display: block; height: auto; border-radius: var(--radius-m); }
 .secondary { background: none; border: 0; padding: 0; color: var(--color-accent); }
 /* Text buttons: no side padding (the reset above); space only between neighbours. */
-.primary + :is(.secondary, .quiet) { margin-left: var(--space-5); }
-:is(.secondary, .quiet) + :is(.primary, .secondary, .quiet) { margin-left: var(--space-3); }
+/* 20 px between any two buttons in a row: text buttons have no box, so the space alone keeps them apart */
+:is(.primary, .secondary, .quiet) + :is(.primary, .secondary, .quiet) { margin-left: var(--space-5); }
 .quiet { color: var(--color-ink-muted); }
 /* An action that leaves the app ends in an arrow, drawn here and left out of the spoken name. */
 .go::after { content: " →" / ""; }
@@ -131,6 +143,7 @@ strong, b { font-weight: 600; }
 /* One box for a note and an error; an error starts with the failed mark (the ✕ of a board that failed) in the danger colour,
    drawn here so every error has it, whatever element it is (a line, a list of them). */
 .notice, .error { color: var(--color-ink); background: var(--color-page); border: 0; border-radius: var(--radius-m); padding: var(--space-2) var(--space-3); margin: var(--space-2) 0; }
+.dialog :is(.notice, .error) { background: var(--color-ground); } /* the dialog is page already: its strip is the ground, so it still shows */
 .error { position: relative; padding-left: calc(var(--space-3) + 1.15em + var(--size-gap-s)); }
 .error::before {
   content: ''; position: absolute; left: var(--space-3); top: calc(var(--space-2) + (1lh - 1.15em) / 2); width: 1.15em; height: 1.15em;
@@ -189,7 +202,7 @@ textarea { resize: none; }
 
 /* Finding jobs: one centred column, five step rows, then Stop or the summary card. */
 .main:has(> .finding) { overflow-y: auto; }
-.finding { box-sizing: content-box; max-width: 620px; margin: 0; padding: var(--size-screen-top) var(--size-screen-gutter) var(--space-9); /* on the gutter, like every screen */ display: flex; flex-direction: column; gap: var(--space-4); }
+.finding { box-sizing: content-box; max-width: var(--size-column-width); margin: 0; padding: var(--size-screen-top) var(--size-screen-gutter) var(--space-9); /* on the gutter, like every screen */ display: flex; flex-direction: column; gap: var(--space-4); }
 .finding > * { margin: 0; }
 .finding .subtitle { margin: 0; }
 .steps { list-style: none; margin: var(--space-5) 0 0; padding: 0; }
@@ -246,18 +259,18 @@ textarea { resize: none; }
 .back { margin-bottom: var(--space-4); color: var(--color-ink); }
 .pushed-bar { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); margin-bottom: var(--space-4); }
 .matches.pushed .pushed-bar .back { margin-bottom: 0; align-self: center; }
-.stepper { display: flex; align-items: center; gap: var(--space-1); }
+.stepper { display: flex; align-items: center; gap: var(--space-2); }
 .stepper .small { margin-right: var(--space-2); font-variant-numeric: tabular-nums; }
 .quiet.step { width: 28px; min-width: 0; height: 28px; min-height: 0; padding: 0; display: inline-flex; align-items: center; justify-content: center; font-size: 1.25em; line-height: 1; border-radius: var(--radius-m); }
 .quiet.step:disabled { opacity: 0.35; }
 /* The list alone on the screen: no rule beside it, and rows no wider than they read. */
 .matches:not(.pushed) .list-pane { border-right: 0; }
-.matches:not(.pushed) .list-pane > :not(.list-head):not(.rows) { max-width: 620px; }
-.matches:not(.pushed) .list-head { max-width: 620px; }
-.matches:not(.pushed) .rows { max-width: calc(620px + 2 * var(--size-screen-gutter)); }
+.matches:not(.pushed) .list-pane > :not(.list-head):not(.rows) { max-width: var(--size-column-width); }
+.matches:not(.pushed) .list-head { max-width: var(--size-column-width); }
+.matches:not(.pushed) .rows { max-width: calc(var(--size-column-width) + 2 * var(--size-screen-gutter)); }
 
 @media (max-width: 899px) {
-  .story-text > div { grid-template-columns: minmax(0, 1fr); row-gap: var(--space-1); }
+  .story-text > div { grid-template-columns: minmax(0, 1fr); row-gap: var(--space-2); }
   .page-aside { display: none; }
   .board-screen { padding: var(--space-6) var(--space-4) var(--space-8); }
   .shell { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
@@ -270,7 +283,6 @@ textarea { resize: none; }
   .tab-icon { display: block; }
   .board-list { display: flex; flex-direction: column; gap: var(--space-5); }
   .board-list .board-column { width: auto; min-width: 0; }
-  .board-list .board-card-ghost { padding: 0; }
   .narrow-top { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4) var(--phone-gutter) 0; }
   .nav-item[aria-current='page'] { background: none; color: var(--color-ink); font-weight: 600; }
   .nav-item:not([aria-current='page']) { color: var(--color-ink-muted); }
@@ -316,14 +328,14 @@ textarea { resize: none; }
 .primary:disabled, .secondary:disabled, .quiet:disabled, .pill:disabled { opacity: 0.4; }
 /* Buttons answer the pointer: a quick colour change, the same for each kind everywhere; a disabled one stays still.
    Only where there is a pointer to hover with: a tap on a phone leaves nothing lit. */
-.primary, .secondary, .quiet, .pill, .nav-item, .back { transition: background-color 120ms ease, color 120ms ease, opacity 120ms ease; }
 @media (hover: hover) {
   .primary:hover:not(:disabled) { background: var(--color-ink-muted); }
-  .secondary:hover:not(:disabled) { text-decoration: underline; text-underline-offset: 3px; }
+  .secondary:hover:not(:disabled) { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
   .quiet:hover:not(:disabled) { color: var(--color-ink); }
-  .pill:hover:not(:disabled):not([aria-pressed='true']) { color: var(--color-ink); }
-  .nav-item:hover:not([aria-current='page']) { color: var(--color-ink); }
+  /* a word that is chosen by its underline (a sidebar item, a filter, an entry of the page list): on hover it turns ink-muted, as the black button does */
+  :is(.nav-item:not([aria-current='page']), .pill:not([aria-pressed='true']), .page-aside a:not([aria-current])):hover:not(:disabled) { color: var(--color-ink-muted); }
   .switch:hover .switch-track { box-shadow: 0 0 0 1px var(--color-ink); }
+  .row:hover .title, .board-card:hover .board-card-title { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; } /* an item of a list: its title, as a text button */
 }
 .primary:active:not(:disabled) { background: var(--color-ink); }
 .secondary:active:not(:disabled), .quiet:active:not(:disabled) { color: var(--color-ink); }
@@ -351,7 +363,7 @@ textarea { resize: none; }
 .switch-thumb { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--color-ink-muted); transition: transform 120ms ease, background-color 120ms ease; }
 .switch[aria-checked='true'] .switch-track { background: var(--color-ink); }
 .switch[aria-checked='true'] .switch-thumb { transform: translateX(16px); background: var(--color-ground); }
-.preparing { display: flex; flex-direction: column; gap: var(--space-1); }
+.preparing { display: flex; flex-direction: column; gap: var(--space-2); }
 .preparing .spinner-line { margin-left: 0; margin-right: 0; }
 
 /* Wherever the page and Revise sit side by side (900 px and up; the phone stacks them), Ready to send fits the window:
@@ -376,27 +388,26 @@ textarea { resize: none; }
 
 /* Onboarding: the first-launch wizard, one centred column like Finding, a strip of segments above it. */
 .main:has(> .onb) { overflow-y: auto; }
-.onb { max-width: 620px; margin: 0 auto; padding: var(--space-7) var(--space-6) var(--space-9); display: flex; flex-direction: column; gap: var(--space-6); }
+.onb { max-width: var(--size-column-width); margin: 0 auto; padding: var(--space-7) var(--space-6) var(--space-9); display: flex; flex-direction: column; gap: var(--space-6); }
 .onb > * { margin: 0; }
 .segments { list-style: none; margin: 0; padding: 0; display: flex; gap: var(--space-2); }
 .segment { flex: 1; height: 4px; border-radius: var(--radius-pill); background: var(--color-border); }
-.segment-done { background: var(--color-ink); }
-.segment[aria-current='step'] { background: var(--color-accent); }
+.segment-done { background: var(--color-ink-muted); }
+.segment[aria-current='step'] { background: var(--color-ink); } /* where you are, in ink: the blue is for actions and what runs */
 .onb-step { display: flex; flex-direction: column; gap: var(--space-4); }
 .onb-step > * { margin: 0; }
 .onb-step .subtitle { margin: 0; }
 /* A field's name: 4 px above its own box, far from the field above. */
-.onb-field { gap: var(--space-1); }
+.onb-field { gap: var(--space-2); }
 /* A help icon beside a field's name, as tall as its line, so the name stays as close to its box. */
-.field-name { position: relative; display: flex; align-items: center; gap: var(--space-1); }
-.field-name .hint-icon { padding: 2px; margin: -2px 0; }
-.field-name .hint-icon svg { width: 15px; height: 15px; }
+.field-name { position: relative; display: flex; align-items: center; gap: var(--space-2); }
+.field-name .hint-icon { margin: -2px 0; }
 .field-name .hint-pop { left: 0; right: auto; }
-.choices.onb-field { gap: var(--space-1); }
+.choices.onb-field { gap: var(--space-2); }
 /* a group of checkboxes under one legend: one under another, as the choices of one field */
 .checks > .field { gap: 0; }
 /* a long list of short choices (Profile's ad languages) in three columns, read down each */
-.choice-columns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-flow: column; grid-template-rows: repeat(var(--rows, 2), auto); column-gap: var(--space-4); row-gap: var(--space-1); }
+.choice-columns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-flow: column; grid-template-rows: repeat(var(--rows, 2), auto); column-gap: var(--space-4); row-gap: var(--space-2); }
 /* A field's name: body size, 600, ink, sentence case, the same in every form (the wizard, Profile, dialogs). `.label` is a heading over a group. */
 .field-label { display: block; font-size: var(--text-body-size); line-height: var(--text-body-line); font-weight: 600; color: var(--color-ink); margin: 0; }
 legend { padding: 0; }
@@ -413,22 +424,26 @@ legend.field-label { padding-bottom: var(--space-2); }
 .onb-errors { list-style: none; margin: 0; }
 .part { display: flex; flex-direction: column; gap: 28px; padding-top: var(--space-4); /* no rule: the heading and the space above it start a part */ }
 .part > * { margin: 0; }
-.part-head { display: flex; flex-direction: column; gap: var(--space-1); }
+.part-head { display: flex; flex-direction: column; gap: var(--space-2); }
 .part-head > * { margin: 0; }
 /* A part of a screen (the review, Profile, Settings): a serif title over a thin rule. Its heading stays with
    what it heads; the wider gap is between its fields. */
-.part > :is(.part-head, h2, h3) + * { margin-top: calc(var(--space-4) - 28px); }
+/* a part's title with an info icon beside it: the words open from its left, under no edge */
+.part-title { position: relative; display: flex; align-items: center; gap: var(--size-gap-s); }
+.part-title .hint-pop { left: 0; right: auto; top: calc(100% + var(--space-1)); bottom: auto; } /* downward: a heading a jump puts at the top keeps its words in view */
+.part-title .hint-pop::before { top: calc(-1 * var(--space-1) - 1px); bottom: auto; }
+.part > :is(.part-head, .part-title, h2, h3) + * { margin-top: calc(var(--space-4) - 28px); }
 details.part { display: block; }
 /* Analytics' Claude usage: one stacked bar for the whole total (always full: where it went, never a quota
    filling up), then an activity per row, its dot in its part's tone, what it did after its name, its dollars
    at the right. */
 .usage-stack { display: flex; gap: 3px; height: 8px; }
 .usage-stack > span { min-width: 4px; border-radius: var(--radius-pill); }
-.usage-tone-0 { background: var(--color-accent); }
+.usage-tone-0 { background: var(--color-ink); } /* data, not an action: no blue */
 .usage-tone-1 { background: var(--color-ink-muted); }
 .usage-tone-2 { background: var(--color-border); }
 .usage-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: var(--space-2); }
-.usage-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-5); }
+.usage-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); } /* as the Market lists */
 .usage-row { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-4); }
 .usage-row > h3 { margin: 0; font-weight: inherit; }
 .usage-row > span:last-child { font-variant-numeric: tabular-nums; }
@@ -451,21 +466,20 @@ details.part > summary + * { margin-top: var(--space-4); }
 .shell-bare .main { height: 100%; }
 
 /* Settings (issues 222 and 393): one reading-width column of sections, each under a section label. */
-.settings { box-sizing: content-box; max-width: 620px; margin: 0; padding: var(--size-screen-top) var(--size-screen-gutter) var(--space-5); /* on the gutter, like every screen; it ends level with the sidebar's foot (20 px up), no room to scroll below its last buttons */ display: flex; flex-direction: column; gap: var(--space-7); }
+.settings { box-sizing: content-box; max-width: var(--size-column-width); margin: 0; padding: var(--size-screen-top) var(--size-screen-gutter) var(--space-5); /* on the gutter, like every screen; it ends level with the sidebar's foot (20 px up), no room to scroll below its last buttons */ display: flex; flex-direction: column; gap: var(--space-7); }
 .profile-details { display: flex; flex-direction: column; gap: var(--space-7); } /* the details' parts, spaced as the page's other parts */
 .main:has(> .settings), .main:has(> .page-with-aside) { overflow-y: auto; }
 /* A one-column screen with a list of its sections beside it, on a wide window only. */
 .page-with-aside { display: flex; align-items: flex-start; }
 /* the list keeps its width; the page takes the rest of the window */
-.page-with-aside > .settings { flex: 1; min-width: 0; max-width: none; }
+.page-with-aside > .settings { flex: 0 1 var(--size-column-width); min-width: 0; } /* one column, its list of sections right beside it */
 /* its rows keep a reading width, as Matches' list does, the list of sections staying at the window's edge */
-.page-with-aside > .settings > * { max-width: 620px; }
+.page-with-aside > .settings > * { max-width: var(--size-column-width); }
 /* the wizard's review: its column stays centred in the room the list leaves */
 .page-with-aside > .onb { flex: 1; min-width: 0; }
 .page-aside { position: sticky; top: 0; flex: 0 0 calc(140px + var(--size-screen-gutter)); padding: calc(var(--size-screen-top) + 8px) var(--size-screen-gutter) 0 0; /* level with the title */ }
-.page-aside ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+.page-aside ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
 .page-aside a { display: block; position: relative; padding: var(--space-1) 0; font-size: var(--text-small-size); color: var(--color-ink); text-decoration: none; }
-.page-aside a:hover { color: var(--color-ink); }
 /* the other views of the screen after its sections, set apart by a gap */
 .page-aside a:is([aria-current='location'], [aria-current='page']) { color: var(--color-ink); font-weight: 600; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 6px; }
 .page-with-aside :is(h2, summary)[id] { scroll-margin-top: var(--size-screen-top); }
@@ -542,7 +556,7 @@ details.part > summary + * { margin-top: var(--space-4); }
 .item-name { margin: 0; font-weight: 600; } /* a row's name in a list under a part's title: Connections */
 /* The applications board (issue 222): five columns of plain cards; it scrolls sideways in its own box when narrow. */
 .board-screen { height: 100%; overflow-y: auto; padding: var(--size-screen-top) var(--size-screen-gutter) var(--space-9); display: flex; flex-direction: column; gap: var(--space-6); box-sizing: border-box; }
-.board-screen > * { margin: 0; }
+.board-screen > * { margin: 0; max-width: var(--size-wide-width); } /* columns side by side: wide, but never the whole of a big window */
 .board-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--space-4); }
 .board-head h1, .board-head .subtitle { margin: 0; }
 .board { display: grid; grid-template-columns: repeat(5, minmax(160px, 1fr)); gap: var(--space-4); overflow-x: auto; padding-bottom: var(--space-3); }
@@ -553,12 +567,13 @@ details.part > summary + * { margin-top: var(--space-4); }
 .board-cards > li + li .board-card { border-top: 1px solid var(--color-border); }
 .board-card { width: 100%; text-align: left; display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-3) 0; background: none; border: 0; border-radius: 0; color: var(--color-ink); }
 .board-card-title { font-weight: 600; }
-.board-card-item { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); }
-.board-card-ghost { text-align: left; flex-wrap: wrap; }
+.board-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-2); }
+/* a card quiet too long: the warning mark, its words in the info bubble while the pointer is on it */
+.board-card-warning { position: relative; flex: none; width: 16px; height: 16px; margin-top: 2px; cursor: help; }
+.board-card-warning > .hint-pop { display: none; width: max-content; max-width: 220px; }
+.board-card-warning:hover > .hint-pop { display: block; }
 .board-card-note { display: flex; align-items: center; gap: var(--size-gap-s); margin-top: var(--space-2); }
-.round-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-.round-passed { background: var(--color-ink); }
-.round-next { border: 2px solid var(--color-accent); width: 6px; height: 6px; }
+.round-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: var(--color-ink); }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 /* What needs you (issue 404): a short line each in its own block under the sidebar's menu, opening where it is fixed;
    the foot keeps Find new jobs alone. */
@@ -640,16 +655,15 @@ details[open] > summary::before { transform: rotate(90deg); }
   .splash-dash::before { animation: none; left: 0; right: 0; }
   .step-working .step-mark::before { animation: none; border-color: var(--color-accent); }
   .step-item-running .step-item-mark { animation: none; }
-  .primary, .secondary, .quiet, .pill, .nav-item, .switch-track, .switch-thumb { transition: none; }
+  .switch-track, .switch-thumb { transition: none; }
 }
 
 
-/* Profile -> CV style: the sample on the left, the pickers on the right; stacked, pickers first, when narrow */
+/* Profile -> Style: the sample on the left, the pickers on the right; stacked, pickers first, when narrow */
 .style-part { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-5); align-items: start; }
 .style-pickers { display: grid; gap: var(--space-4); align-content: start; }
 /* stacked, pickers first, when the part is narrow (a container query: the one width media query is the phone's) */
 .style-container { container-type: inline-size; }
-.page-with-aside > .settings > .style-container { max-width: 880px; } /* two columns need more than the 620 px of a form */
 @container (max-width: 700px) { .style-part { grid-template-columns: minmax(0, 1fr); } .style-pickers { order: -1; } }
 .style-group { border: 0; margin: 0; padding: 0; display: grid; gap: var(--space-2); min-width: 0; }
 .style-group legend { padding: 0; margin-bottom: var(--space-2); }
@@ -682,3 +696,15 @@ details[open] > summary::before { transform: rotate(90deg); }
 .style-sample[aria-busy="true"] img { opacity: 0.5; }
 .style-sample-wait { position: absolute; inset: 0; display: grid; place-items: center; color: var(--color-ink-muted); background: var(--color-page); }
 .style-sample-column { display: grid; gap: var(--space-2); min-width: 0; align-content: start; max-width: 390px; }
+
+/* A posting and Ready to send: side-by-side parts, wide but never the whole of a big window (as the board) */
+.matches.pushed .reading-pane > * { max-width: var(--size-wide-width); }
+
+/* A touch screen has no hover: the card's warning says its words beside the mark */
+@media (hover: none) {
+  .board-card-head:has(> .board-card-warning) { flex-wrap: wrap; }
+  .board-card-warning { width: auto; height: auto; display: inline-flex; align-items: center; gap: var(--size-gap-s); flex-basis: 100%; order: 1; }
+  .board-card-warning > svg { flex: none; width: 16px; height: 16px; }
+  .board-card-warning > .hint-pop { display: inline; position: static; width: auto; padding: 0; background: none; color: var(--color-ink-muted); }
+  .board-card-warning > .hint-pop::before { content: none; }
+}

@@ -125,22 +125,31 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'Applications' })).not.toHaveAttribute('aria-current')
   })
 
-  it('names the last run at the foot when the summary has one', async () => {
+  it('a recent run: Find new jobs alone, its time on hover, no warning', async () => {
     mockDoor({
       status_summary: summary({
-        since_last_review: { last_reviewed_at: null, runs: 1, last_run: { finished_at: '2026-10-28T09:30:00' }, new_matches: 0, site_failures: [] },
+        since_last_review: { last_reviewed_at: null, runs: 1, last_run: { finished_at: new Date(Date.now() - 2 * 3_600_000).toISOString() }, new_matches: 0, site_failures: [] },
       }),
       list_matches: matchesResult([]),
     })
-    const { container } = render(<App />)
-    await waitFor(() => expect(container.querySelector('.sidebar-foot .small.muted')).toHaveTextContent(/^Last run /), { timeout: 5000 }) // a slow Windows runner missed the 1 s default
+    render(<App />)
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Find new jobs' })).toHaveAttribute('title', 'Last run 2 h ago'), { timeout: 5000 }) // a slow Windows runner missed the 1 s default
+    expect(screen.queryByRole('img', { name: /^No run|^Not run/ })).toBeNull()
   })
 
-  it('has no last-run caption when there was no run', async () => {
+  it('no run for days, or none ever: a warning beside Find new jobs says so', async () => {
+    mockDoor({
+      status_summary: summary({
+        since_last_review: { last_reviewed_at: null, runs: 1, last_run: { finished_at: new Date(Date.now() - 4 * 24 * 3_600_000).toISOString() }, new_matches: 0, site_failures: [] },
+      }),
+      list_matches: matchesResult([]),
+    })
+    render(<App />)
+    expect(await screen.findByRole('img', { name: 'No run in 4 days' }, { timeout: 5000 })).toBeInTheDocument()
+    cleanup()
     setup()
     render(<App />)
-    await screen.findByRole('heading', { name: 'Matches' })
-    expect(screen.queryByText(/^Last run/)).toBeNull()
+    expect(await screen.findByRole('img', { name: 'Not run yet' }, { timeout: 5000 })).toBeInTheDocument()
   })
 
   describe('in a narrow window', () => {

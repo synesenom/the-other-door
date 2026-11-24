@@ -23,43 +23,20 @@ export function boardColumns(ongoing: Match[], closed: Match[]): BoardColumn[] {
   ]
 }
 
-const DAY = 86_400_000
-
-/** "today", "yesterday", "4 days ago", "2 weeks ago", else the date; null when there is no readable time. */
-export function whenText(iso: string | null | undefined, now: Date = new Date()): string | null {
-  if (!iso) return null
-  const then = new Date(iso)
-  if (Number.isNaN(then.getTime())) return null
-  const start = (d: Date) => Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
-  const days = Math.round((start(now) - start(then)) / DAY)
-  if (days <= 0) return 'today'
-  if (days === 1) return 'yesterday'
-  if (days < 7) return `${days} days ago`
-  if (days < 28) {
-    const weeks = Math.floor(days / 7)
-    return weeks === 1 ? '1 week ago' : `${weeks} weeks ago`
-  }
-  return then.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-}
-
 const ENDED: Record<string, string> = { rejected: 'rejected', ghosted: 'ghosted', discarded: 'withdrawn' }
 
-/** The server says when an application has had no answer, and for how many days (the tracker's one rule); else null. */
-export function silence(m: Match): string | null {
-  return m.no_answer && m.no_answer_days ? `no answer in ${m.no_answer_days} days` : null
+/** Under a card's title and company: a dot per interview round passed, and a few words (the round, or how it ended). */
+export function cardNote(m: Match): { passed: number; text: string | null } {
+  const rounds = m.rounds ?? []
+  const passed = rounds.filter((r) => r.result === 'passed').length
+  if (m.status in ENDED) return { passed: 0, text: ENDED[m.status]! }
+  if (m.status === 'offer') return { passed, text: 'offer' }
+  if (m.status.startsWith('interview:')) return { passed, text: rounds[rounds.length - 1]?.stage ?? m.status.slice('interview:'.length) }
+  return { passed: 0, text: null }
 }
 
-/** Under a card's title and company: the interview rounds as dots (passed, or the one now) and a few words. */
-export function cardNote(m: Match, now: Date = new Date()): { dots: ('passed' | 'pending')[]; text: string | null } {
-  const rounds = m.rounds ?? []
-  const dots = rounds.filter((r) => r.result === 'passed' || r.result === 'pending').map((r) => r.result as 'passed' | 'pending')
-  if (m.status in ENDED) return { dots: [], text: ENDED[m.status]! }
-  if (m.status === 'offer') return { dots, text: 'offer' }
-  const silent = silence(m)
-  if (m.status.startsWith('interview:')) {
-    const stage = rounds[rounds.length - 1]?.stage ?? m.status.slice('interview:'.length)
-    return { dots, text: silent ? `${stage} · ${silent}` : stage }
-  }
-  if (silent && m.status === 'applied') return { dots: [], text: silent[0]!.toUpperCase() + silent.slice(1) }
-  return { dots: [], text: whenText(m.updated_at, now) }
+/** The words of a card's warning, when the server says its stage has been quiet too long; else null. */
+export function stalledText(m: Match): string | null {
+  if (!m.stalled_days) return null
+  return `${m.status === 'prepared' ? 'Not sent' : 'No answer'} in ${m.stalled_days} days`
 }

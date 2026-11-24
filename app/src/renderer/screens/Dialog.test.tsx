@@ -53,4 +53,18 @@ describe('Dialog', () => {
     )
     expect(screen.getByRole('button', { name: 'A' })).toHaveFocus()
   })
+
+  it('opens at its top even when the first control is at the bottom of a long text', () => {
+    // the legal disclaimer's only control is Close, under the whole text: focusing it scrolled the dialog to the end
+    const focus = vi.spyOn(HTMLElement.prototype, 'focus')
+    render(
+      <Dialog title="T" onClose={() => {}}>
+        <p>a long text</p>
+        <button type="button">Close</button>
+      </Dialog>,
+    )
+    expect(screen.getByRole('button', { name: 'Close' })).toHaveFocus()
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true })
+    focus.mockRestore()
+  })
 })

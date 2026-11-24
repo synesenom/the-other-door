@@ -76,7 +76,7 @@ def test_list_core_returns_summaries_best_first_without_descriptions(env):
     assert top == {
         "id": "job-top", "score": 0.95, "title": "Lead DS", "title_en": None,
         "company": "Acme", "location": "Copenhagen", "work_permit": None, "status": "unapplied", "is_new": True,
-        "updated_at": None, "rounds": [], "no_answer": False, "no_answer_days": 45,
+        "updated_at": None, "rounds": [], "no_answer": False, "no_answer_days": 45, "stalled_days": None,
     }
     assert all("description" not in m for m in result["matches"])
 

@@ -15,6 +15,7 @@ the same, Prepare and Revise say "The browser that prints your CVs is not instal
 <!-- toc -->
 **Contents**
 
+- [How it works](#how-it-works)
 - [Installing the app](#installing-the-app)
   - [Opening it on macOS the first time](#opening-it-on-macos-the-first-time)
 - [First launch](#first-launch)
@@ -34,12 +35,27 @@ the same, Prepare and Revise say "The browser that prints your CVs is not instal
 - [Notifications](#notifications)
 - [Profile](#profile)
   - [Master CV](#master-cv)
-  - [CV style](#cv-style)
+  - [Style](#style)
   - [Your stories](#your-stories)
 - [Settings](#settings)
 - [Analytics](#analytics)
 - [On your phone](#on-your-phone)
 <!-- /toc -->
+
+## How it works
+
+1. **Set up once.** The wizard reads your CV and asks what work you want. Profile keeps it all, and
+   you can change it any time ([First launch](#first-launch), [Profile](#profile)).
+2. **Find new jobs.** The button at the foot of the sidebar searches the job boards and employers' own
+   career pages, then scores every new ad against your profile. It takes
+   minutes ([Finding new jobs](#finding-new-jobs)).
+3. **Pick from Matches.** The best fits come first. Open one to read it, or drop it with "Not for me"
+   ([Matches](#matches)).
+4. **Prepare.** Claude writes a CV and a letter for that job from your Master CV and your stories. Read
+   them, ask for changes, then save the PDFs and send them yourself ([Prepare](#prepare)).
+5. **Record what happened.** Once you have sent it, mark it Applied. After each interview, record it
+   with how it went. Applications shows where each one stands, and a mark tells you when one has been
+   quiet too long ([Status](#status), [Applications](#applications)).
 
 ## Installing the app
 
@@ -162,7 +178,8 @@ for real (real runs too) on a throwaway folder (see Environments in [`app/README
 
 "Find new jobs" (the button at the foot of the sidebar; in a window narrower than 900 px, where
 the sidebar is a tab bar, a text button beside "Add a job…" on Matches) starts a run: the same five steps as `./door find`. The window shows them one under
-the other.
+the other. Hovering the button says when the last run ended ("Last run 2 h ago"); after two days with no run, or
+before the first one, a warning sign beside it says so ("No run in 4 days").
 
 1. **Search** reads the job boards for your country.
 2. **Discover** finds employers on LinkedIn (slow: it is paced, so it can take minutes).
@@ -196,7 +213,7 @@ Which discovery sources run is your choice in Profile, not something asked per r
 
 "Stop", beside the title, ends the run at once and takes you back to the screen you started it from. Nothing is lost: the postings already read stay on disk and are
 scored by the next run, which picks up where this one stopped. A stopped run writes no run
-record, so "Last run" under the button does not move. If your data is synced with Google
+record, so the last run's time does not move. If your data is synced with Google
 Drive, the push happens at the next run that finishes. A run that makes no sign of life for 15
 minutes is stopped the same way.
 
@@ -213,10 +230,10 @@ A card says how many new matches the run found ("2 new matches": the ads this ru
 about what did not work, because nothing there needs you: a site that could not be read is read
 again on the next run, and a posting that could not be scored is scored then. Every site's outcome
 and error is in the run record. "View matches" opens Matches on
-"New only". Matches and "Last run" are refreshed.
+"New only". Matches and the last run's time are refreshed.
 
 When no match is new, the card says what the run did in one line ("917 jobs found, 40 close enough to
-score, none scored 0.65 or better", then on its own line "Match fit: Balanced") and offers what you can do about it: "Show broader matches" opens Profile at What to look for, where "Match fit" is. When the
+score, none scored 65% or better", then on its own line "Match fit: Balanced") and offers what you can do about it: "Show broader matches" opens Profile at What to look for, where "Match fit" is. When the
 run skipped Discover, Follow or Collect, it adds that the next full run also reads employers' own career sites.
 
 After the first run, if it found fewer than three new matches and every employer discovery source
@@ -239,7 +256,7 @@ switch shows only the unopened ones. The header says how many are new, and shows
 board that failed on the last run.
 
 An empty list says why: "Nothing scored yet. Find new jobs to start." only when nothing has been
-scored; "Nothing has scored 0.65 or better yet.", then on its own line "Match fit: Balanced" (with "Show broader matches", which opens Profile at "Match fit") when ads were scored but none cleared it; "Nothing new since your last review." only after a review,
+scored; "Nothing has scored 65% or better yet.", then on its own line "Match fit: Balanced" (with "Show broader matches", which opens Profile at "Match fit") when ads were scored but none cleared it; "Nothing new since your last review." only after a review,
 on "New only".
 
 Until the first posting has reached that setting, that empty list also shows the three best ads below it as ordinary rows
@@ -351,14 +368,14 @@ pages out of date.
 
 ## Status
 
-**Status…** lists the eight states in words: Not yet applied, Prepared, Applied, Interview,
-Ghosted, Rejected, Offer and Not for me. The current one is chosen.
+**Status…** asks what happened, with the eight states in words: Not yet applied, Prepared, Applied,
+Had an interview, Ghosted, Rejected, Offer and Not for me. The current one is chosen.
 
-- **Interview** asks which kind, one per round: Screening (a pre-screening or recruiter
+- **Had an interview** asks which kind, one per round: Screening (a pre-screening or recruiter
   call), First impression (the first non-technical interview), Assessment (a personality or
   cognitive test) or Technical (a technical interview, case or take-home). Save waits for
-  your choice. Record each round as it happens; Rejected or Ghosted ends the last one.
-- **Notes** are optional, and say why or how it went. For Not for me a reason is required.
+  your choice. Record each round once it has taken place, not before; Rejected or Ghosted ends the last one.
+- **Notes** are optional, and say why or how it went; for an interview the box asks "How did it go?". For Not for me a reason is required.
 
 After saving, a line says what happened ("Applied: ... It is in Applications now.") and any
 warning from *The other door*, for example that the ad is only a snippet, above the list, which
@@ -370,9 +387,10 @@ to Not yet applied stays in Matches.
 **Add a job…** (in Matches and in Applications) brings in a posting you found yourself.
 
 - **Link**: paste the address. *The other door* reads the page and finds the title and company. When
-  it cannot read them, it asks for the title, company and location; a page behind a login or built only with
-  JavaScript fails: use Paste text.
-- **Paste text**: the ad's text, plus its title and company (both required).
+  it cannot (a page behind a sign-in, one built only with JavaScript, or one that names no title and
+  company), the dialog turns to Paste text and says why; the link is kept with the ad.
+- **Paste text**: the ad's text alone. *The other door* reads its title, company and location the same way; only when
+  the title or company cannot be found does the dialog ask for that one, by name.
 
 The ad is scored on the spot, which takes a little while (a spinner says so; **Cancel** leaves). The result shows its score and the
 reason; **Open** shows the posting even if it scored below your minimum. Without a profile
@@ -386,9 +404,9 @@ its count, the most recently changed job first. A card is the job's title and co
 line: when it last moved, its interview rounds as dots (ink for a round passed, a blue ring for
 the one now) with the round's name, or how it ended. Closed holds the applications that ended,
 rejected, ghosted or withdrawn after you prepared or sent them (a match you dismissed with
-"Not for me" is not one). An applied job, or one in interviews, with no change for 45 days
-says "No answer in 45 days" on its card, with a **Mark ghosted** button under it that records it as
-ghosted, dated today. The line under the title counts
+"Not for me" is not one). A card quiet for too long has a warning sign beside its title, its words on hover: a prepared job not
+sent in 14 days ("Not sent in 14 days"), an application with no answer in 45 days ("No answer in 45 days"), an
+interview round with no news in 21 days; open it and choose Ghosted under Status to record one that went quiet. The line under the title counts
 the jobs in play and in interviews. Clicking a card opens its posting across the whole window,
 where you change its status; "← Applications" goes back. A card in Prepared opens Ready to send
 instead, with "See the posting" under the title for its status and Prepare again.
@@ -421,7 +439,7 @@ on macOS they are shown as coming from "Electron" until the app has its own name
 ## Profile
 
 Who you are and the jobs you want (how the app works is in [Settings](#settings)). One page: the settings below,
-then your [Master CV](#master-cv), the [CV style](#cv-style) and your [Stories](#your-stories). The list on the right names its sections, the one you
+then your [Master CV](#master-cv), the [Style](#style) of your tailored CVs and letters, and your [Stories](#your-stories). The list on the right names its sections, the one you
 are reading marked; a click jumps to it (a window narrower than 900 px leaves the list out). Nothing here has a Save
 button: a setting you type is saved a second after you stop and when you leave the field, a choice at once, and what is
 still waiting when you leave Profile or close the app; your CV and your stories save themselves too.
@@ -455,11 +473,11 @@ never has one. It is not on the phone.
 
 ### Master CV
 
-Everything about your work, in one place. It is never sent as it is: each application gets a CV of its own,
-picked from this one and tailored to the ad, so put in more than one CV would hold.
+Everything about your work, in one place (the ⓘ beside the heading says so too). It is never sent as it is: each
+application gets its own CV, tailored from this one, so put in more than one CV would hold.
 
-**Sources** is what your Master CV is read from: **Replace CV file…** (**Add a CV file…** when there is none), **Add a
-page** and **Check again**, and under them your CV file and each page as a chip (a page's × forgets it). A source only
+Under the heading are what your Master CV is read from, your CV file and each page as a chip (a page's × forgets it),
+and under them **Replace CV file…** (**Add a CV file…** when there is none), **Add a page** and **Check again**. A source only
 ever adds: a new CV file, like a page, is read in one Claude call on your plan (a minute or two), and what it has that
 your Master CV does not is proposed, all ticked; what you keep is added, tinted blue, and nothing is taken out or
 rewritten (what changed, such as an end date, you change yourself in the text). With no Master CV yet, a CV file is
@@ -486,7 +504,7 @@ kept as `cv.md.bak`.
 What you typed is saved before either reads, since they rewrite the CV. What was added is tinted in the editor and
 the preview, brought into view, until you next type.
 
-### CV style
+### Style
 
 How your tailored CVs and cover letters look: an accent colour and a pair of fonts. Left is a sample of your CV's first
 page (your own CV, or the example one until you have yours) in the choice, fading at its foot; right are the pickers.
@@ -494,7 +512,7 @@ page (your own CV, or the example one until you have yours) in the choice, fadin
 rust, which colour the section headings and the rule under your name; entry titles stay ink. **Fonts** is four blocks
 showing a heading letter and a text letter: The other door (the default), Editorial, Friendly and Plain. The arrow keys
 move within a group. A choice is saved at once (nothing to Save) and the sample is printed again, a second or two; your tailored CVs and cover letters are printed with it from the next one you prepare or revise. The choice is `cv_accent` and `cv_fonts` in
-`profile/config.json` ([Configuration](configuration.md)). CV style is not on the phone and not part of set-up.
+`profile/config.json` ([Configuration](configuration.md)). Style is not on the phone and not part of set-up.
 
 ### Your stories
 
@@ -507,8 +525,8 @@ Stories are not on the phone.
 ## Settings
 
 How *The other door* works for you (who you are and what you want is in [Profile](#profile)). One column of
-sections: **Connections**, **Where to find employers**, **Your data**, **Appearance** and, last, **Help**: the version you have (installed builds), the documents (the
-legal disclaimer) and **Save logs…** to report a problem. A page this short has no list of its parts.
+sections: **Connections**, **Where to find employers**, **Your data**, **Appearance** and, last, **Help**: the version you have (installed builds), the **User guide** (this page,
+opened in your browser), the documents (the legal disclaimer) and **Save logs…** to report a problem. A page this short has no list of its parts.
 Opening it checks Claude's sign-in again; nothing else runs until you click.
 
 **Connections** lists what *The other door* is connected to, each with its state in words (a ✓ when it is
@@ -621,7 +639,7 @@ charged per call: this is what the same calls would cost on the API, a figure th
 whatever your plan. Before the first search it says only that the figures show here after it.
 
 **Market** lists the eight skills the ads of the last 30 days ask for most, each with its share of the ads:
-a check when your CV has it, a cross when it does not, as on a job. It counts the ads once, when you open
+in two columns as on a job: those your CV has, with a check, and those it does not, with a cross. It counts the ads once, when you open
 Analytics (new skill names may take one short Claude call on your plan), and writes no report. When a skill is crossed, **Add the missing skill to your CV** under the list opens your CV in Profile.
 
 ## On your phone

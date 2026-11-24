@@ -48,7 +48,7 @@ test.describe('a run', () => {
   test('Find new jobs runs the five steps against the boards, scores the new ads and sums the run up', { tag: '@core' }, async ({ page, world }) => {
     await ready(page)
     const before = runRecords(world)
-    await expect(page.getByRole('complementary').getByText(/^Last run /)).toHaveText('Last run Oct 25, 02:41 PM')
+    await expect(runButton(page)).toHaveAttribute('title', /^Last run 1[89] h ago$/)
 
     await runUntilMatch(page, world)
     // the screen while Match scores: the first four steps settled, Stop on the title's line
@@ -73,8 +73,8 @@ test.describe('a run', () => {
     await expect(steps(page)).toHaveCount(0)
     const top = summary(page).getByRole('listitem')
     await expect(top.filter({ hasText: 'Havtorn Energi' })).toContainText('Lead Data Scientist')
-    await expect(top.filter({ hasText: 'Havtorn Energi' })).toContainText('0.89')
-    await expect(top.filter({ hasText: 'Varmeværk Øst I/S' })).toContainText('0.76')
+    await expect(top.filter({ hasText: 'Havtorn Energi' })).toContainText('89%')
+    await expect(top.filter({ hasText: 'Varmeværk Øst I/S' })).toContainText('76%')
     await expect(top.filter({ hasText: 'Nordlys Retail' })).toHaveCount(0)
     await expect(summary(page).getByText(/^Took \d+ s$/)).toBeVisible()
     await expect(summary(page).getByRole('button', { name: 'View matches' })).toBeVisible()
@@ -82,7 +82,7 @@ test.describe('a run', () => {
     await expect(summary(page).getByRole('button')).toHaveCount(3)
     await expect(runButton(page)).toHaveText('Find new jobs')
     await expect(runButton(page)).toBeEnabled()
-    await expect(page.getByRole('complementary').getByText(/^Last run /)).toHaveText(/^Last run Oct 26, \d\d:\d\d (AM|PM)$/)
+    await expect(runButton(page)).toHaveAttribute('title', 'Last run just now')
 
     // the disk: a record of the run, the fresh ads stored and scored
     const after = runRecords(world)
@@ -131,7 +131,7 @@ test.describe('a run', () => {
     await expect(page.getByRole('switch', { name: 'New only' })).toHaveAttribute('aria-checked', 'true')
     await expect(nav(page, 'Matches')).toHaveAttribute('aria-current', 'page')
     await expect(matchRow(page, 'Havtorn Energi')).toHaveCount(1)
-    await expect(matchRow(page, 'Varmeværk Øst I/S')).toContainText('Data Scientist for heat demand forecasts')
+    await expect(matchRow(page, 'Varmeværk Øst I/S')).toContainText('Data Scientist til varmeprognoser')
     await expect(matchRow(page, 'Nordlys Retail')).toHaveCount(0)
     // every row shown is new
     const rows = page.getByRole('main').getByRole('list').first().getByRole('button')
@@ -327,7 +327,7 @@ test.describe('a Prepare in progress', () => {
     await expect(runButton(page)).toHaveText('Find new jobs')
     await expect.poll(() => world.readJson('jobs/applications.json')[world.jobId('baltic-power-lead-ds')]?.status, { timeout: 60_000 }).toBe('prepared')
     await expect(runButton(page)).toBeEnabled({ timeout: 30_000 })
-    await expect(runButton(page)).not.toHaveAttribute('title', /./)
+    await expect(runButton(page)).toHaveAttribute('title', /^Last run /) // the Prepare tip gone, the last run's time back
     expect(world.toolCalls('find_jobs')).toHaveLength(0)
   })
 })

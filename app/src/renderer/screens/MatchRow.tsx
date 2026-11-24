@@ -21,7 +21,6 @@ export function MatchRow({ match: m, selected, onSelect, weak = false }: Props) 
             {m.is_new && <span className="new-dot" role="img" aria-label="New since your last review" />}
             <span className="title">{m.title}</span>
           </span>
-          {m.title_en && m.title_en !== m.title && <span className="small muted">{m.title_en}</span>}
           <span className="small muted">{placeLine(m.company, m.location)}</span>
           {word && <span className="small muted">{word}</span>}
           {weak && <span className="small muted">Weak match</span>}

@@ -289,15 +289,16 @@ export function Materials({ jobId, onBack, backLabel = '← Posting', onPosting,
                   onChange={(e) => setInstruction(e.target.value)}
                 />
                 <div className="actions">
+                  {/* a text button: the black one is the screen's own, I've applied (one per view) */}
                   <button
                     type="button"
-                    className="primary"
+                    className="secondary"
                     disabled={busy || instruction.trim() === ''}
                     onClick={() => void run({ instruction: instruction.trim() })}
                   >
                     Revise
                   </button>
-                  <button type="button" className="quiet" disabled={busy} onClick={() => void run({ undo: true })}>
+                  <button type="button" className="secondary" disabled={busy} onClick={() => void run({ undo: true })}>
                     Undo last change
                   </button>
                 </div>
