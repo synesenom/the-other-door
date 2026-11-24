@@ -109,3 +109,27 @@ def test_a_skill_level_class_one_to_five_passes():
 @pytest.mark.parametrize("cls", ["level level-6", "level-0", "main", "side", "level level-10"])
 def test_a_level_beyond_five_or_a_column_class_is_refused(cls):
     assert html_guard.unsafe(f'<div class="{cls}">x</div>') != []
+
+
+# --- links the user did not write (#550) ---------------------------------------------------------------------------
+
+KNOWN = ["Jane Doe\ngithub.com/jane | [site](https://www.jane.dev/) | jane@example.com | https://x.example/?a=b"]
+
+
+def test_a_link_not_in_the_cv_prints_as_plain_text():
+    body = '<p>See <a href="https://evil.example/?d=x">my work</a>.</p>'
+    assert html_guard.unwrap_unknown_links(body, KNOWN) == "<p>See my work.</p>"
+
+
+@pytest.mark.parametrize("href", [
+    "https://github.com/jane", "http://www.github.com/jane/", "https://jane.dev", "mailto:jane@example.com",
+    "https://x.example/?a=b",
+])
+def test_a_link_the_cv_writes_stays_a_link(href):
+    body = f'<p><a href="{href}">me</a></p>'
+    assert html_guard.unwrap_unknown_links(body, KNOWN) == body
+
+
+def test_a_known_host_with_data_in_its_path_is_not_known():
+    body = '<p><a href="https://github.com/jane/?d=secret">me</a> <a href="mailto:evil@x.example?body=hi">m</a></p>'
+    assert html_guard.unwrap_unknown_links(body, KNOWN) == "<p>me m</p>"

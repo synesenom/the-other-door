@@ -142,6 +142,7 @@ def _revise_core(
         refused = html_guard.unsafe(new_body)
         if refused:
             raise ValueError(f"the revision uses {', '.join(refused)}, outside the tags and links a {file} is written in; file left unchanged")
+        new_body = html_guard.unwrap_unknown_links(new_body, compile_cmd.link_sources(config, profile_dir))
 
         utils.write_atomic(backup, original)
         utils.write_atomic(path, new_body + "\n")

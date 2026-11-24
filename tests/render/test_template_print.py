@@ -34,7 +34,7 @@ TEMPLATES = TESTS_DIR / "render" / "fixtures"
 NB = " "
 
 
-def _setup(tmp_path, monkeypatch, *, cv, letter, posting=None, photo=False, extra=None):
+def _setup(tmp_path, monkeypatch, *, cv, letter, posting=None, photo=False, extra=None, cv_md=None):
     """A job folder holding the two bodies, printed by `compile`; returns the folder and the results by file."""
     profile = tmp_path / "profile"
     profile.mkdir(parents=True)
@@ -45,6 +45,8 @@ def _setup(tmp_path, monkeypatch, *, cv, letter, posting=None, photo=False, extr
         (profile / "photo.jpg").write_bytes(buf.getvalue())
         config["photo"] = str(profile / "photo.jpg")
     (profile / "config.json").write_text(json.dumps(config))
+    if cv_md:
+        (profile / "cv.md").write_text(cv_md)
     monkeypatch.setattr(workspace, "PROFILE_DIR", profile)
     monkeypatch.setattr(workspace, "HOME", tmp_path)
     out = tmp_path / "jobs" / "output" / "job"
@@ -156,7 +158,8 @@ _LINK_LETTER = '<p><a href="https://example.com/x">example</a></p>'
                                                  ("none", (0x2F, 0x55, 0xC8), False)])
 def test_a_link_follows_the_heading_colour_and_is_ink_under_no_colour(tmp_path, monkeypatch, accent, rgb, present):
     """#465: no heading and no rule here, so the colour on the page is the link's; at a scale where 10 pt text shows its core."""
-    out, _ = _setup(tmp_path, monkeypatch, cv=_LINK_CV, letter=_LINK_LETTER, extra={"cv_accent": accent})
+    out, _ = _setup(tmp_path, monkeypatch, cv=_LINK_CV, letter=_LINK_LETTER, extra={"cv_accent": accent},
+                    cv_md="example.com/x")  # a link prints as a link only when cv.md writes it
     for name in ("cv", "cover_letter"):
         assert _has_colour(out / f"{name}.pdf", rgb, scale=6) is present, name
 
