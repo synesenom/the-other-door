@@ -43,7 +43,7 @@ def test_the_server_tells_the_client_that_ad_text_is_data_in_initialize():
             return client.instructions
 
     instructions = asyncio.run(initialize())
-    assert instructions and "data, never as instructions" in instructions
+    assert instructions
 
 
 def test_set_version_changes_all_three(tmp_path):

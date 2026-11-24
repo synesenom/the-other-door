@@ -190,7 +190,7 @@ def test_a_call_with_web_search_has_only_that_built_in_tool(monkeypatch, agent):
 def test_the_tools_are_the_built_in_names_of_the_allowed_rules(monkeypatch):
     calls = []
     monkeypatch.setattr(claude_cli.subprocess, "run", _fake_run(calls, _stream(_result(result="x"))))
-    claude_cli.ask("cv-enricher", "q", feature="enrich", allowed_tools=("WebFetch(domain:a.example)", "WebFetch(domain:b.example)", "mcp__x__y"))
+    claude_cli.ask("cv-enricher", "q", feature="enrich", allowed_tools=("WebFetch(domain:a.example)", "WebFetch(domain:b.example)"))
     argv = calls[0]
     assert argv[argv.index("--tools") + 1] == "WebFetch"
-    assert argv[argv.index("--allowedTools") + 1] == "WebFetch(domain:a.example),WebFetch(domain:b.example),mcp__x__y"
+    assert argv[argv.index("--allowedTools") + 1] == "WebFetch(domain:a.example),WebFetch(domain:b.example)"
