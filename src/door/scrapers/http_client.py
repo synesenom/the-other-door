@@ -104,23 +104,6 @@ def _wait(seconds: float) -> None:
     time.sleep(seconds)
 
 
-class SystemTrustAdapter(HTTPAdapter):
-    """An adapter that verifies HTTPS against the operating system's trust store (`truststore`) instead of
-    certifi's bundle: for a site whose root certificate certifi does not carry yet. Verification stays on."""
-
-    @staticmethod
-    def _context() -> ssl.SSLContext:
-        return truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-
-    def init_poolmanager(self, *args: Any, **kwargs: Any) -> None:
-        kwargs["ssl_context"] = self._context()
-        super().init_poolmanager(*args, **kwargs)
-
-    def proxy_manager_for(self, *args: Any, **kwargs: Any):
-        kwargs["ssl_context"] = self._context()
-        return super().proxy_manager_for(*args, **kwargs)
-
-
 class NotPublicAddress(RequestException):
     """The host is, or resolves to, an address on this computer or a private network (#548): never connected to."""
 
@@ -158,7 +141,7 @@ def _is_public(ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
 
 
 class _Refused(NewConnectionError):
-    """Inside urllib3: `_PublicOnly.send` turns it into `NotPublicAddress`."""
+    """Inside urllib3: `_PublicAdapter.send` turns it into `NotPublicAddress`."""
 
     def __init__(self, conn, host: str) -> None:
         super().__init__(conn, host)
@@ -205,10 +188,18 @@ class _PublicHTTPSPool(HTTPSConnectionPool):
     ConnectionCls = _PublicHTTPSConnection
 
 
-class _PublicOnly:
-    """Mixed into an adapter: its pools connect only to public addresses (#548)."""
+class _PublicAdapter(HTTPAdapter):
+    """Its pools connect only to public addresses (#548). With `system_trust`, HTTPS is verified against the
+    operating system's trust store (`truststore`) instead of certifi's bundle: for a site whose root
+    certificate certifi does not carry yet. Verification stays on."""
+
+    def __init__(self, *, system_trust: bool = False) -> None:
+        self.system_trust = system_trust
+        super().__init__()
 
     def init_poolmanager(self, *args: Any, **kwargs: Any) -> None:
+        if self.system_trust:
+            kwargs["ssl_context"] = truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         super().init_poolmanager(*args, **kwargs)
         self.poolmanager.pool_classes_by_scheme = {"http": _PublicHTTPPool, "https": _PublicHTTPSPool}
 
@@ -220,14 +211,6 @@ class _PublicOnly:
             if isinstance(reason, _Refused):
                 raise NotPublicAddress(f"{reason.refused_host} is not a public internet address; it is not fetched") from None
             raise
-
-
-class _PublicAdapter(_PublicOnly, HTTPAdapter):
-    pass
-
-
-class _PublicSystemTrustAdapter(_PublicOnly, SystemTrustAdapter):
-    pass
 
 
 class RobotsBlocked(Exception):
@@ -322,8 +305,9 @@ class PoliteSession:
                 # check could not bind to the address it connects to.
                 session.trust_env = False
                 session.headers.update(self._session.headers)
-                session.mount("http://", _PublicAdapter())
-                session.mount("https://", _PublicSystemTrustAdapter() if self.system_trust else _PublicAdapter())
+                adapter = _PublicAdapter(system_trust=self.system_trust)
+                session.mount("http://", adapter)
+                session.mount("https://", adapter)
                 self._host_sessions[host] = session
             return self._host_sessions[host]
 

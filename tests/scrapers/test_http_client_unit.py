@@ -703,19 +703,19 @@ def test_system_trust_mounts_the_truststore_adapter():
     """With system_trust, a host's session verifies through truststore; by default it does not."""
     session = PoliteSession(system_trust=True)
     adapter = session._session_for("example.com").get_adapter("https://example.com/")
-    assert isinstance(adapter, http_client.SystemTrustAdapter)
+    assert adapter.system_trust
 
 
 def test_default_session_keeps_the_stock_adapter():
     session = PoliteSession()
     adapter = session._session_for("example.com").get_adapter("https://example.com/")
-    assert not isinstance(adapter, http_client.SystemTrustAdapter)
+    assert not adapter.system_trust
 
 
 def test_system_trust_adapter_builds_a_verifying_truststore_context():
     import ssl
 
-    ctx = http_client.SystemTrustAdapter()._context()
+    ctx = http_client._PublicAdapter(system_trust=True).poolmanager.connection_pool_kw["ssl_context"]
     assert ctx.verify_mode == ssl.CERT_REQUIRED
     assert ctx.check_hostname is True
     assert type(ctx).__module__.startswith("truststore")
