@@ -79,7 +79,7 @@ strong, b { font-weight: 600; }
 .columns .label { margin: 0 0 var(--space-2); }
 .part > .columns { padding-top: 0; } /* in a part (Analytics' Market) the part's gap is above it already */
 /* Each side (fits, gaps) is two columns of its own: the window is wider than the terminal `jobs show` fills. */
-.skill-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2) var(--space-4); }
+.skill-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2) var(--space-4); align-content: start; } /* rows as tall as their words, beside a longer list too */
 .skill-fits > .mark { color: var(--color-success); }
 .skill-gap > .mark { color: var(--color-danger); }
 .posting a { color: var(--color-accent); }
@@ -202,7 +202,7 @@ textarea { resize: none; }
 
 /* Finding jobs: one centred column, five step rows, then Stop or the summary card. */
 .main:has(> .finding) { overflow-y: auto; }
-.finding { box-sizing: content-box; max-width: 620px; margin: 0; padding: var(--size-screen-top) var(--size-screen-gutter) var(--space-9); /* on the gutter, like every screen */ display: flex; flex-direction: column; gap: var(--space-4); }
+.finding { box-sizing: content-box; max-width: var(--size-column-width); margin: 0; padding: var(--size-screen-top) var(--size-screen-gutter) var(--space-9); /* on the gutter, like every screen */ display: flex; flex-direction: column; gap: var(--space-4); }
 .finding > * { margin: 0; }
 .finding .subtitle { margin: 0; }
 .steps { list-style: none; margin: var(--space-5) 0 0; padding: 0; }
@@ -265,9 +265,9 @@ textarea { resize: none; }
 .quiet.step:disabled { opacity: 0.35; }
 /* The list alone on the screen: no rule beside it, and rows no wider than they read. */
 .matches:not(.pushed) .list-pane { border-right: 0; }
-.matches:not(.pushed) .list-pane > :not(.list-head):not(.rows) { max-width: 620px; }
-.matches:not(.pushed) .list-head { max-width: 620px; }
-.matches:not(.pushed) .rows { max-width: calc(620px + 2 * var(--size-screen-gutter)); }
+.matches:not(.pushed) .list-pane > :not(.list-head):not(.rows) { max-width: var(--size-column-width); }
+.matches:not(.pushed) .list-head { max-width: var(--size-column-width); }
+.matches:not(.pushed) .rows { max-width: calc(var(--size-column-width) + 2 * var(--size-screen-gutter)); }
 
 @media (max-width: 899px) {
   .story-text > div { grid-template-columns: minmax(0, 1fr); row-gap: var(--space-2); }
@@ -388,7 +388,7 @@ textarea { resize: none; }
 
 /* Onboarding: the first-launch wizard, one centred column like Finding, a strip of segments above it. */
 .main:has(> .onb) { overflow-y: auto; }
-.onb { max-width: 620px; margin: 0 auto; padding: var(--space-7) var(--space-6) var(--space-9); display: flex; flex-direction: column; gap: var(--space-6); }
+.onb { max-width: var(--size-column-width); margin: 0 auto; padding: var(--space-7) var(--space-6) var(--space-9); display: flex; flex-direction: column; gap: var(--space-6); }
 .onb > * { margin: 0; }
 .segments { list-style: none; margin: 0; padding: 0; display: flex; gap: var(--space-2); }
 .segment { flex: 1; height: 4px; border-radius: var(--radius-pill); background: var(--color-border); }
@@ -466,7 +466,7 @@ details.part > summary + * { margin-top: var(--space-4); }
 .shell-bare .main { height: 100%; }
 
 /* Settings (issues 222 and 393): one reading-width column of sections, each under a section label. */
-.settings { box-sizing: content-box; max-width: 620px; margin: 0; padding: var(--size-screen-top) var(--size-screen-gutter) var(--space-5); /* on the gutter, like every screen; it ends level with the sidebar's foot (20 px up), no room to scroll below its last buttons */ display: flex; flex-direction: column; gap: var(--space-7); }
+.settings { box-sizing: content-box; max-width: var(--size-column-width); margin: 0; padding: var(--size-screen-top) var(--size-screen-gutter) var(--space-5); /* on the gutter, like every screen; it ends level with the sidebar's foot (20 px up), no room to scroll below its last buttons */ display: flex; flex-direction: column; gap: var(--space-7); }
 .profile-details { display: flex; flex-direction: column; gap: var(--space-7); } /* the details' parts, spaced as the page's other parts */
 .main:has(> .settings), .main:has(> .page-with-aside) { overflow-y: auto; }
 /* A one-column screen with a list of its sections beside it, on a wide window only. */
@@ -474,7 +474,7 @@ details.part > summary + * { margin-top: var(--space-4); }
 /* the list keeps its width; the page takes the rest of the window */
 .page-with-aside > .settings { flex: 0 1 var(--size-column-width); min-width: 0; } /* one column, its list of sections right beside it */
 /* its rows keep a reading width, as Matches' list does, the list of sections staying at the window's edge */
-.page-with-aside > .settings > * { max-width: 620px; }
+.page-with-aside > .settings > * { max-width: var(--size-column-width); }
 /* the wizard's review: its column stays centred in the room the list leaves */
 .page-with-aside > .onb { flex: 1; min-width: 0; }
 .page-aside { position: sticky; top: 0; flex: 0 0 calc(140px + var(--size-screen-gutter)); padding: calc(var(--size-screen-top) + 8px) var(--size-screen-gutter) 0 0; /* level with the title */ }
