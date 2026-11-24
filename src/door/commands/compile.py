@@ -121,15 +121,14 @@ def _compile_core(job_id: str, render: bool = False, jobs_dir: Path | None = Non
             results.append(entry)
             continue
         refused = html_guard.unsafe(body)
+        if not refused:
+            body = html_guard.unwrap_unknown_links(body, link_sources(config, workspace.PROFILE_DIR))
+        if body != text:
+            utils.write_atomic(path, body)
         if refused:  # model output never gets to load another file, reach the network or run anything
-            if body != text:
-                utils.write_atomic(path, body)
             entry.update(status="error", stderr=f"refused: {file} uses {', '.join(refused)}, which is outside the tags and links a CV or letter is written in")
             results.append(entry)
             continue
-        body = html_guard.unwrap_unknown_links(body, link_sources(config, workspace.PROFILE_DIR))
-        if body != text:
-            utils.write_atomic(path, body)
         try:
             template_path = templates.resolve(key, config)
             template = template_path.read_text(encoding="utf-8")
