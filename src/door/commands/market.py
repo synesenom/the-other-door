@@ -31,6 +31,7 @@ _TREND_MIN = 50  # scored ads needed in both windows before a trend means anythi
 _NEAR_BAND = 0.15
 _SKILLS, _NEAR_ROWS, _TITLES, _COMPANIES = 15, 10, 10, 10
 _NOT_SCORED = ("duplicate", "excluded", "prefilter:", "prescreen:")
+MAX_SKILL_NAME = 60  # a longer skill name (or canonical) is a steered one: never sent, never stored
 _CHUNK = 200  # names per Haiku call
 _CONTEXT = 300  # existing canonical names shown to the model
 _SCHEMA = {
@@ -124,7 +125,7 @@ def _unknown_names(scored: list[dict], prev_scored: list[dict], aliases: dict) -
         for key in ("matching_skills", "missing_skills"):
             for skill in p.get(key) or []:
                 name = str(skill).strip()
-                if name and name.lower() not in aliases:
+                if name and len(name) <= MAX_SKILL_NAME and name.lower() not in aliases:
                     found.setdefault(name.lower(), name)
     return sorted(found.values(), key=str.lower)
 
@@ -154,6 +155,8 @@ def _ask_aliases(unknown: list[str], known: list[str], profile_dir: Path) -> tup
             if low not in sent or low in new:
                 continue
             canonical = g["canonical"].strip()
+            if len(canonical) > MAX_SKILL_NAME or "\n" in canonical:
+                canonical = ""
             new[low] = (canonical or sent[low]) if g["skill"] else None
         for low, name in sent.items():
             new.setdefault(low, name)

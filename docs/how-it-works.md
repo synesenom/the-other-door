@@ -76,7 +76,7 @@ tracks status, but does not fill or submit live application forms. See [Status](
    parallel, one queue per host and at most four hosts of one provider at once, each host paced.
    Each employer is recorded and dequeued as soon as its result is known, so an interrupted
    follow keeps what it did. The employers whose feed *The other door* could not find by itself are put to
-   Claude Haiku four at a time, after every other check. A **dormant** employer (see `collect`)
+   Claude Haiku four at a time, after every other check, and for at most 30 employers a run (the rest stay queued for the next run). A **dormant** employer (see `collect`)
    seen again with an on-topic ad is followed again at once on the feed it kept, with no detection.
    Queue entries not seen for `max_age_days` are dropped.
 4. **`collect`** — every followed employer's own feed, one scraper per platform that has a
@@ -115,7 +115,9 @@ tracks status, but does not fill or submit live application forms. See [Status](
    `max_age_days` is scored against a fixed rubric (`src/door/prompts/matcher.md`, read at runtime as
    the system prompt) via parallel Haiku `claude -p` calls. Postings that already have a
    `score` are skipped, so a re-run or an interrupted run never pays twice, and whatever an
-   interrupted run left unscored is picked up by the next `find`.
+   interrupted run left unscored is picked up by the next `find`. A run scores at most 150 postings (30
+   Haiku calls), taken in turn from each employer or source, the best-ranked first, so one site that floods the
+   list cannot crowd out the others; the rest wait for the next run (`waiting` in the run record and its summary).
 
 Every run writes `jobs/runs/<timestamp>.json` with one block per step that ran (counts, timing,
 per-site outcomes, a one-line `summary`) and a line summarising them in `jobs/runs/latest.log` (a failure count names the failed sites and counts the ads that could not be scored: `3 failures (jobindex, thehub, 1 unscored ads)`).

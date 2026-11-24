@@ -39,6 +39,7 @@ from door.core.employers import careers_ai
 from door.core.employers import wikidata
 from door.core.employers import companies as store
 from door.core import progress as progress_mod
+from door.core import utils
 from door.scrapers import _parallel, http_client
 from door.scrapers.feeds import hr_manager
 
@@ -339,9 +340,11 @@ def _detect(
             on_row(entries[index][0], row)
 
     rows = _parallel.map_by_group(entries, lambda item: _group(item[1]), check, workers, on_result=heard)
-    asked = [(i, item) for i, item in enumerate(entries) if item[1]["name"] in wanted]
-    if not asked:
+    wished = [(i, item) for i, item in enumerate(entries) if item[1]["name"] in wanted]
+    if not wished:
         return rows
+    asked, unasked = utils.fair_share(wished, careers_ai.MAX_ASKS, key=lambda p: (p[1][1]["sources"] or [""])[0],
+                                      rank=lambda p: 0)
 
     def question(pair: tuple[int, tuple[str, dict]]) -> None:
         entry = pair[1][1]
@@ -353,6 +356,10 @@ def _detect(
     with ThreadPoolExecutor(max_workers=careers_ai.MAX_PARALLEL) as pool:
         list(pool.map(question, asked))
     final[0] = True
+    for i, _ in unasked:  # over the cap: not asked, so not settled either: queued for a later run
+        if rows[i]["status"] == "unresolved" and not rows[i]["error"]:
+            rows[i] = {**rows[i], "retry": True}
+        heard(i, rows[i])
     # No answer: the first result stands (and its notes); an answer is fed back into the same checks.
     answered = [(i, item) for i, item in asked if answers.get(item[1]["name"])]
     again = _parallel.map_by_group(
@@ -363,7 +370,7 @@ def _detect(
     for i, item in asked:
         if not answers.get(item[1]["name"]):
             heard(i, rows[i])
-    unanswered = len(asked) - len(answered)
+    unanswered = len(asked) - len(answered) + len(unasked)
     with lock:
         for _ in range(unanswered):
             done[0] += 1
