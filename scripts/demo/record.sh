@@ -67,13 +67,19 @@ config["follow_ai_fallback"] = False
 (profile / "companies.json").unlink()  # its example employers are real ones, read over the network
 EOF
 
+    # A `claude` that only fails: every model call is stubbed in shim.py, so one that gets here is a call the demo
+    # must not make (it would spend the plan and change between recordings).
+    mkdir -p "$sandbox/bin"
+    printf '#!/bin/sh\necho "demo: unexpected claude call: $*" >&2\nexit 1\n' > "$sandbox/bin/claude"
+    chmod +x "$sandbox/bin/claude"
+
     cat > "$sandbox/door" <<EOF
 #!/usr/bin/env bash
-DOOR_DEMO_DIR="$sandbox" PYTHONPATH="$repo/src" exec poetry -C "$repo" run python "$demo/shim.py" "\$@"
+PATH="$sandbox/bin:\$PATH" DOOR_DEMO_DIR="$sandbox" PYTHONPATH="$repo/src" exec poetry -C "$repo" run python "$demo/shim.py" "\$@"
 EOF
     cat > "$sandbox/claude-demo" <<EOF
 #!/usr/bin/env bash
-DOOR_DEMO_DIR="$sandbox" PYTHONPATH="$repo/src" exec poetry -C "$repo" run python "$demo/claude_session.py" "\$@"
+PATH="$sandbox/bin:\$PATH" DOOR_DEMO_DIR="$sandbox" PYTHONPATH="$repo/src" exec poetry -C "$repo" run python "$demo/claude_session.py" "\$@"
 EOF
     chmod +x "$sandbox/door" "$sandbox/claude-demo"
 }

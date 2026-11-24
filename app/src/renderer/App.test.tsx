@@ -235,15 +235,13 @@ describe('App', () => {
     expect(call.mock.calls.filter((c) => c[0] === 'status_summary')).toHaveLength(1)
   })
 
-  it('says so in a banner and the window title when it runs in the sandbox', async () => {
+  it('says only in the window title that it runs in the sandbox: the sidebar stays as a user sees it', async () => {
     const { actions } = setup()
     const info = actions['info']
     info.mockResolvedValue({ environment: 'sandbox' })
     render(<App />)
-    const tag = await screen.findByRole('note', { name: 'Sandbox' })
-    expect(tag).toHaveTextContent('Sandbox')
-    expect(tag).toHaveAttribute('title', expect.stringContaining('made-up data'))
     await waitFor(() => expect(document.title).toBe('The other door (sandbox)'))
+    expect(screen.queryByRole('note', { name: 'Sandbox' })).toBeNull()
   })
 
   it('shows no banner on your own data', async () => {

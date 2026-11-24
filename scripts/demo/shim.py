@@ -9,14 +9,18 @@ reach outside are replaced:
 - `follow` finds each employer's feed in `postings.FEEDS` instead of reading the web, and
   `collect` reads those feeds from a fake Greenhouse module,
 - scoring hands back each ad's canned score instead of calling `claude -p`,
-- tailoring writes a ready-made CV and cover letter (real PDFs, made with pypdfium2)
-  instead of running the tailor agent.
+- tailoring hands back the app's prepared example (`app/test/fixtures/prepared/`: the
+  example CV and a letter, printed by the real compile) instead of running the tailor agent,
+- every other model call (`claude_cli.ask`) gets a stand-in answer: the CV is read by the app
+  test world's plain reader, the fact check finds nothing; any other call fails loudly.
 
 `DOOR_DEMO_DIR` is the sandbox: its `profile/` and `jobs/` replace the repo's, so a
 recording never shows (or touches) your own data.
 """
 
+import importlib.util
 import os
+import shutil
 import sys
 import time
 import types
@@ -31,11 +35,10 @@ from door.commands import _common as common  # noqa: E402
 from door.commands import companies as companies_cmd  # noqa: E402
 from door.commands import prepare as prepare_cmd  # noqa: E402
 from door.commands import salary as salary_cmd  # noqa: E402
-from door.core import lock, sites, workspace  # noqa: E402
+from door.core import claude_cli, lock, sites, workspace  # noqa: E402
 from door.core.employers import discovery_sources  # noqa: E402
 from door.core.models import JobPosting, make_job_id  # noqa: E402
 from door.matching import scorer  # noqa: E402
-from door.render import readability  # noqa: E402
 from door.scrapers import report  # noqa: E402
 
 # Pauses that make the live output readable at recording speed.
@@ -149,46 +152,9 @@ def _fake_score_postings(postings, *, on_result=None, **kwargs):
     return results, []
 
 
-_CV_HTML = """<!-- Keywords: budgeting and forecasting, team leadership, IFRS, Power BI, stakeholder communication -->
-<!-- Tailoring: led with building the Acme Corp controlling function; kept the IFRS 15 thesis; condensed the Example Retail role to one line -->
-<header class="cv-header"><h1>Jane Doe</h1></header>
-<h2>Profile</h2>
-<p>Jane Doe -- Senior Financial Controller</p>
-"""
-
-_LETTER_HTML = """<p>Dear hiring team,</p>
-<p>%s</p>
-"""
-
-_LETTER_BODY = (
-    "I built the group controlling function at Acme Corp from nothing: setting the "
-    "reporting calendar, halving the month-end close and partnering with sales and "
-    "operations on the budgets the company plans with today. Your Head of Finance role asks "
-    "for exactly that, at a company growing as fast as Globex Energy. "
-) * 6
-
-
-def _pdf(path: Path, pages: list[str]) -> None:
-    """One A4 page per string, its paragraphs wrapped at about 80 characters, in 11 pt Helvetica."""
-    import ctypes
-    import textwrap
-
-    import pypdfium2 as pdfium
-    import pypdfium2.raw as raw
-
-    doc = pdfium.PdfDocument.new()
-    font = raw.FPDFText_LoadStandardFont(doc, b"Helvetica")
-    for text in pages:
-        page = doc.new_page(595, 842)
-        lines = [line for para in text.split("\n") for line in (textwrap.wrap(para, 80) or [""])]
-        for i, line in enumerate(lines):
-            obj = raw.FPDFPageObj_CreateTextObj(doc, font, ctypes.c_float(11))
-            buf = ctypes.create_string_buffer((line + "\0").encode("utf-16-le"))
-            raw.FPDFText_SetText(obj, ctypes.cast(buf, ctypes.POINTER(raw.FPDF_WCHAR)))
-            raw.FPDFPageObj_Transform(obj, 1, 0, 0, 1, 72, 842 - 84 - i * 15)
-            raw.FPDFPage_InsertObject(page.raw, obj)
-        raw.FPDFPage_GenerateContent(page.raw)
-    doc.save(str(path))
+# What the stand-in tailor hands back: the app's prepared example (the example CV and a letter, printed by the real compile).
+_REPO = Path(__file__).resolve().parents[2]
+_PREPARED = _REPO / "app" / "test" / "fixtures" / "prepared"
 
 
 def _fake_run_tailor(job_id: str, posting_path: Path, timeout_s=None) -> bool:
@@ -196,11 +162,30 @@ def _fake_run_tailor(job_id: str, posting_path: Path, timeout_s=None) -> bool:
     out = workspace.JOBS_DIR / "output" / job_id
     out.mkdir(parents=True, exist_ok=True)
     (out / "posting.json").write_text(posting_path.read_text())
-    (out / "cv.html").write_text(_CV_HTML)
-    (out / "cover_letter.html").write_text(_LETTER_HTML % _LETTER_BODY)
-    _pdf(out / "cv.pdf", ["Jane Doe\nSenior Financial Controller\n\n" + _LETTER_BODY, _LETTER_BODY])
-    _pdf(out / "cover_letter.pdf", ["Dear hiring team,\n\n" + _LETTER_BODY])
+    for name in ("cv.html", "cv.pdf", "cover_letter.html", "cover_letter.pdf"):
+        shutil.copyfile(_PREPARED / name, out / name)
     return True
+
+
+# The example CV's headings, as the app's test world names their kinds.
+_SECTION_KINDS = {"Profile": "summary", "Work Experience": "experience", "Education": "education",
+                  "Skills": "skills", "Certifications": "certifications", "Languages": "languages"}
+
+
+def _world_cv_reader():
+    spec = importlib.util.spec_from_file_location("world_cv_read", _REPO / "app" / "test" / "world" / "cv_read.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _fake_ask(prompt_name, user_message, *, feature, **kwargs):
+    if feature == "cv_read":
+        md = user_message.split("<<<\n", 1)[1].rsplit("\n>>>", 1)[0]
+        return _world_cv_reader().read(md, {"kinds": _SECTION_KINDS, "languages": []})
+    if feature == "facts":
+        return {"findings": []}
+    raise RuntimeError(f"the demo has no stand-in for the model call {feature!r}")
 
 
 def install(sandbox: Path) -> None:
@@ -222,12 +207,11 @@ def install(sandbox: Path) -> None:
     companies_cmd._session = lambda: None
     companies_cmd._classify = _fake_classify
     scorer.score_postings = _fake_score_postings
+    claude_cli.ask = _fake_ask
     prepare_cmd._run_tailor = _fake_run_tailor
     prepare_cmd._HEARTBEAT_INTERVAL_S = 2.0
     # no web search for a salary: none found, so prepare says nothing about it
     salary_cmd._salary_core = lambda job_id, **kwargs: {"job_id": job_id, "found": False}
-    # the stand-in PDFs hold a summary, not the tailored .tex: an ATS reading them back would miss it all
-    readability.check_pdf = lambda *args, **kwargs: []
     common._claude_available = lambda: True
     # the stand-in tailor writes the PDFs itself: nothing is printed, so no Chromium is needed
     common._chromium_available = lambda: True

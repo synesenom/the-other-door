@@ -1697,29 +1697,31 @@
     },
     "pngs": {
      "cv": [
-      "/demo/jobs/output/greenhouse.demo-8/sent/cv_page_1.png",
-      "/demo/jobs/output/greenhouse.demo-8/sent/cv_page_2.png"
+      "/demo/jobs/output/greenhouse.demo-8/sent/cv_page_1.png"
      ],
      "cover_letter": [
       "/demo/jobs/output/greenhouse.demo-8/sent/cover_letter_page_1.png"
      ]
     },
     "keywords": [
-     "SQL",
-     "dashboards",
-     "stakeholder reporting"
+     "group reporting",
+     "budgeting and forecasting",
+     "IFRS",
+     "SAP S/4HANA",
+     "Power BI",
+     "stakeholder management"
     ],
     "tailoring": [
-     "Led with the dashboards project",
-     "Cut the retail job",
-     "Condensed education"
+     "led with the controlling function",
+     "condensed Example Retail",
+     "kept the IFRS 15 thesis"
     ],
     "page_counts": {
-     "cv": 2,
+     "cv": 1,
      "cover_letter": 1
     },
     "cv_max_pages": 2,
-    "cover_letter_words": 311,
+    "cover_letter_words": 162,
     "rendered": false,
     "revisable": true,
     "unsupported": [],
@@ -1840,29 +1842,31 @@
     },
     "pngs": {
      "cv": [
-      "/demo/jobs/output/jobindex.demo-7/sent/cv_page_1.png",
-      "/demo/jobs/output/jobindex.demo-7/sent/cv_page_2.png"
+      "/demo/jobs/output/jobindex.demo-7/sent/cv_page_1.png"
      ],
      "cover_letter": [
       "/demo/jobs/output/jobindex.demo-7/sent/cover_letter_page_1.png"
      ]
     },
     "keywords": [
-     "SQL",
-     "dashboards",
-     "stakeholder reporting"
+     "group reporting",
+     "budgeting and forecasting",
+     "IFRS",
+     "SAP S/4HANA",
+     "Power BI",
+     "stakeholder management"
     ],
     "tailoring": [
-     "Led with the dashboards project",
-     "Cut the retail job",
-     "Condensed education"
+     "led with the controlling function",
+     "condensed Example Retail",
+     "kept the IFRS 15 thesis"
     ],
     "page_counts": {
-     "cv": 2,
+     "cv": 1,
      "cover_letter": 1
     },
     "cv_max_pages": 2,
-    "cover_letter_words": 311,
+    "cover_letter_words": 162,
     "rendered": false,
     "revisable": true,
     "unsupported": [],
@@ -1918,43 +1922,45 @@
     },
     "pngs": {
      "cv": [
-      "/demo/jobs/output/successfactors.demo-6/cv_page_1.png",
-      "/demo/jobs/output/successfactors.demo-6/cv_page_2.png"
+      "/demo/jobs/output/successfactors.demo-6/cv_page_1.png"
      ],
      "cover_letter": [
       "/demo/jobs/output/successfactors.demo-6/cover_letter_page_1.png"
      ]
     },
     "keywords": [
-     "SQL",
-     "dashboards",
-     "stakeholder reporting"
+     "group reporting",
+     "budgeting and forecasting",
+     "IFRS",
+     "SAP S/4HANA",
+     "Power BI",
+     "stakeholder management"
     ],
     "tailoring": [
-     "Led with the dashboards project",
-     "Cut the retail job",
-     "Condensed education"
+     "led with the controlling function",
+     "condensed Example Retail",
+     "kept the IFRS 15 thesis"
     ],
     "page_counts": {
-     "cv": 2,
+     "cv": 1,
      "cover_letter": 1
     },
     "cv_max_pages": 2,
-    "cover_letter_words": 311,
+    "cover_letter_words": 162,
     "rendered": false,
     "revisable": true,
     "readability": [
      {
       "file": "cv",
       "kind": "overflow",
-      "detail": "text cut off: stakeholder, reporting"
+      "detail": "text cut off: stakeholder, management"
      }
     ],
     "unsupported": [
      {
       "kind": "skill",
-      "value": "ApS",
-      "context": "Analyst at Example ApS.",
+      "value": "Microsoft Dynamics 365",
+      "context": "Microsoft Dynamics 365, Excel (advanced), internal controls, stakeholder management",
       "file": "cv"
      }
     ],

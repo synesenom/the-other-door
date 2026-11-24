@@ -418,15 +418,16 @@ export function App({ start }: { start?: AppStart } = {}) {
     <div className={narrow && pushed ? 'shell pushed' : 'shell'}>
       {!(narrow && pushed) && (
       <aside className="sidebar">
-        {environment !== 'production' && (
-          // A small tag; the sentence is its tooltip.
+        {environment === 'staging' && (
+          // A small tag; the sentence is its tooltip. The sandbox has none: its screens are shown as a user sees them
+          // (the README's pictures), and the window title says where it runs.
           <p
             role="note"
-            aria-label={sandbox ? 'Sandbox' : 'Staging'}
+            aria-label="Staging"
             className="demo-tag small"
-            title={sandbox ? 'Sandbox (app/.sandbox): made-up data and a simulated job search. Nothing here changes your real data or Drive.' : 'Staging (app/.staging): everything is real but the data, kept apart from yours and from Drive.'}
+            title="Staging (app/.staging): everything is real but the data, kept apart from yours and from Drive."
           >
-            {sandbox ? 'Sandbox' : 'Staging'}
+            Staging
           </p>
         )}
         <nav aria-label="Main">

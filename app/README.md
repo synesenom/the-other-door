@@ -53,7 +53,7 @@ added: a new need is a start of one of them (like the sandbox's `:empty`), not a
 Use staging to try a feature for real from a fresh start; use the sandbox to look at every screen in every state, or to
 try the first launch, without waiting on job boards. In both, the server's `DOOR_HOME` and the config folders that hold
 the Drive connection point inside the folder, the main process refuses the Drive tools (Settings says Drive is not
-available, the wizard does not offer it), and the sidebar and the window title say Staging or Sandbox. `HOME` stays
+available, the wizard does not offer it), and the window title says staging or sandbox (the sidebar too, in staging only: the sandbox's screens look as a user sees them). `HOME` stays
 yours, so `claude` is signed in and runs on your plan. Both refuse a folder that is or holds the checkout's real data.
 Delete the folder when you are done. A packaged app is always production.
 
@@ -189,7 +189,7 @@ before opening it, Windows SmartScreen warns once.
 | `npm run record:gif` | re-record the README's `docs/demo/app.gif`: the built app on the sandbox's made-up data in a temp folder (never `app/.sandbox`), driven by `demo-record/app.record.ts` (Playwright; the stand-in claude, light theme by emulation, a drawn cursor), its screencast frames turned into the GIF by `scripts/demo/app_gif.py` (Pillow, from Poetry). Not a test; CI never runs it. |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm test` | vitest unit tests: no Python, no network (what CI runs) |
-| `npm run test:integration` | the real Python server on a generated `DOOR_HOME` (`test/home-fixture.ts`; `buildHome({ prepared: 'jobindex.123' })` adds a finished prepare from `test/fixtures/prepared/`: a 2-page CV, a 1-page letter, their page images and `.html` bodies) with isolated `HOME` and a stand-in `claude` first on `PATH` (it fails and leaves `claude-was-called` in the scratch folder, so a test never reaches your real one); skips with a message when there is no `.venv` or `DOOR_PYTHON` |
+| `npm run test:integration` | the real Python server on a generated `DOOR_HOME` (`test/home-fixture.ts`; `buildHome({ prepared: 'jobindex.123' })` adds a finished prepare from `test/fixtures/prepared/`: a 1-page CV, a 1-page letter, their page images and `.html` bodies) with isolated `HOME` and a stand-in `claude` first on `PATH` (it fails and leaves `claude-was-called` in the scratch folder, so a test never reaches your real one); skips with a message when there is no `.venv` or `DOOR_PYTHON` |
 | `npm run test:e2e` | builds, then the Playwright smoke tests (`e2e/`) drive the built app in the sandbox, which the journeys never start (its simulated run, and the first launch on an empty sandbox), against the real server on a temp `DOOR_HOME` (Python as above; skips with a message without it). CI runs it under `xvfb-run` |
 | `npm run test:journeys` | builds, then every journey (`journeys/`): each user action in the built app against the real server in a test world (`test/world/`), the screen and the data checked after each (`journeys/README.md`). CI runs all of them on each PR and on main, split over four runners and retried once: a journey that passes only on its retry is reported flaky, not failed (#121) |
 | `npm run test:journeys:core` | builds, then only the journeys tagged `@core` (the main paths): the quick local check before a push |

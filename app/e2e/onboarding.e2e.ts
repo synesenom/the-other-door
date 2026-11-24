@@ -111,7 +111,6 @@ test('a good CV goes from the sources to the review, Save and a first run, askin
     await page.getByRole('button', { name: /View .*matches/i }).click({ timeout: 60_000 })
     await expect(page.getByRole('heading', { name: 'Matches', level: 1 })).toBeVisible()
     await expect(page.getByText('Finance Controller')).toBeVisible()
-    await expect(page.getByRole('note', { name: 'Sandbox' })).toBeVisible()
   } finally {
     await app.close()
   }
