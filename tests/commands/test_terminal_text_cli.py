@@ -47,3 +47,29 @@ def test_the_top_matches_of_a_run_print_as_text(cli_env, monkeypatch):
     monkeypatch.setattr(find_cmd, "_stdout_is_tty", lambda: True)
     text = _clean(click.unstyle(result_text(CliRunner().invoke(cli, ["find"]))))
     assert MARKUP in text
+
+
+def test_model_and_employer_text_printed_by_other_commands_has_no_control_characters(capsys):
+    from door.commands import companies as companies_cmd
+    from door.commands import enrich as enrich_cmd
+
+    evil = "Acme \x1b]0;pwn\x07 Ltd"
+    enrich_cmd._echo_proposals({"unreachable": [evil], "proposals": [{"n": 1, "section": evil, "text": evil, "source": evil}]})
+    enrich_cmd._echo_applied({"added": [{"section": evil, "text": evil}], "cv_path": "cv.md", "backup": None})
+    line = companies_cmd._company_line({"status": "unresolved", "name": evil, "feed": None, "found_via": evil, "aliases": [evil], "reason": "x"})
+    assert "Acme ]0;pwn Ltd" in line
+    out = capsys.readouterr().out
+    assert "Acme ]0;pwn Ltd" in out and "\x1b]" not in out + line and "\x07" not in out + line
+
+
+def test_the_first_look_ad_titles_have_no_control_characters(capsys, monkeypatch):
+    from door.commands import cv as cv_cmd
+    from door.commands import preview as preview_cmd
+    from door.commands import profile as profile_cmd
+
+    look = {"matches": [{"title": "Lead\x1b]0;pwn\x07", "company": "Acme\x1b", "score_reason": "r\x07"}]}
+    monkeypatch.setattr(preview_cmd, "_preview_core", lambda *a, **k: look)
+    monkeypatch.setattr(cv_cmd, "_onboarding_cv_text", lambda *a, **k: "")
+    profile_cmd._first_look({})
+    out = capsys.readouterr().out
+    assert "Lead" in out and "\x1b" not in out and "\x07" not in out

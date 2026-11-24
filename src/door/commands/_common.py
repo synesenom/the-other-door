@@ -54,6 +54,12 @@ def _is_url(value: str) -> bool:
     return re.match(r"https?://", value, re.IGNORECASE) is not None
 
 
+def web_address(value: str) -> str:
+    """A page the user typed, with `https://` when it has no scheme (`github.com/jane`)."""
+    value = value.strip()
+    return value if re.match(r"[a-z][a-z0-9+.-]*://", value, re.IGNORECASE) else f"https://{value}"
+
+
 # The sha256 of each earlier profile.example/cv.md that a user may still hold a copy of (#189). Add the hash of the
 # old file whenever the example changes (tests/commands/test_example_cv_guard_cli.py pins the current one and fails when it changes).
 _PAST_EXAMPLE_CV_SHA256 = frozenset({

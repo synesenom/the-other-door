@@ -116,6 +116,7 @@ def _propose(urls, files, *, config, cv_path, profile_dir, model, timeout_s) -> 
         urls = list(config.get("enrich_sources") or [])
     if not urls and not files:
         raise ValueError("no URLs to read: pass some, or list them under enrich_sources in profile/config.json")
+    urls = [common.web_address(u) for u in urls if str(u).strip()]  # the rules and the prompt's page list read the same addresses
     if not cv_path.is_file():
         raise FileNotFoundError(f"{cv_path} not found (profile/cv.md): set up the profile first")
     cv_text = cv_path.read_text(encoding="utf-8")
@@ -230,14 +231,14 @@ def _numbers(text: str) -> list[int]:
 
 def _echo_proposals(result: dict) -> None:
     for url in result["unreachable"]:
-        click.echo(f"Could not fetch {url} — skipping.")
+        click.echo(f"Could not fetch {common.plain(url)} — skipping.")
     if not result["proposals"]:
         return
     click.echo(f"Found {len(result['proposals'])} potential addition(s):")
     for p in result["proposals"]:
-        click.echo(f"  {p['n']}. [{p['section']}] {p['text']}")
+        click.echo(common.plain(f"  {p['n']}. [{p['section']}] {p['text']}"))
         if p["source"]:
-            click.echo(f"     Source: {p['source']}")
+            click.echo(common.plain(f"     Source: {p['source']}"))
 
 
 def _echo_applied(result: dict) -> None:
@@ -247,7 +248,7 @@ def _echo_applied(result: dict) -> None:
         + "."
     )
     for a in result["added"]:
-        click.echo(f"  [{a['section']}] {a['text']}")
+        click.echo(common.plain(f"  [{a['section']}] {a['text']}"))
     click.echo("Review the changes before your next run.")
 
 

@@ -121,6 +121,22 @@ def test_a_linkedin_or_indeed_page_gets_no_webfetch_rule(env, monkeypatch):
     assert "Never fetch a LinkedIn or Indeed URL" in calls[0]["args"][calls[0]["args"].index("--system-prompt") + 1]
 
 
+def test_a_page_given_without_a_scheme_is_fetched_over_https(env, monkeypatch):
+    calls = []
+    _answer(monkeypatch, calls=calls)
+    result = enrich_cmd._enrich_core(["github.com/jane"], profile_dir=env.profile_dir)
+    assert _rules(calls[0]) == ["WebFetch(domain:github.com)", "WebFetch(domain:www.github.com)", "WebFetch(domain:api.github.com)"]
+    assert "https://github.com/jane" in calls[0]["input"] and result["urls"] == ["https://github.com/jane"]
+
+
+def test_a_page_that_redirects_to_linkedin_gets_no_rule_for_it(env, monkeypatch):
+    calls = []
+    _answer(monkeypatch, calls=calls)
+    monkeypatch.setattr(http_client.PoliteSession, "redirect_target", lambda self, url: "https://www." + "linked" + "in.com/in/jane")
+    enrich_cmd._enrich_core(["https://jane.example"], profile_dir=env.profile_dir)
+    assert _rules(calls[0]) == ["WebFetch(domain:jane.example)", "WebFetch(domain:www.jane.example)"]
+
+
 def test_a_redirect_that_cannot_be_read_leaves_only_the_given_hosts(env, monkeypatch):
     calls = []
     _answer(monkeypatch, calls=calls)

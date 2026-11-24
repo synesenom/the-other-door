@@ -585,13 +585,15 @@ def _first_look(answers: dict) -> None:
     from door.commands import cv as cv_cmd
     from door.commands import preview as preview_cmd
 
+    from door.commands import _common as common
+
     click.echo("A first look while we finish setting up...")
     config = {key: answers.get(key) for key in ("location", "languages", "role_targets", "search_keywords", "topic_terms", "preferences", "remote")}
     look = preview_cmd._preview_core(config, cv_cmd._onboarding_cv_text(workspace.PROFILE_DIR, {}))
     for match in look["matches"]:
-        click.echo(f"  {match['title']} at {match['company']}: {match['score_reason']}")
+        click.echo(common.plain(f"  {match['title']} at {match['company']}: {match['score_reason']}"))
     if look.get("warning"):
-        click.echo(f"  {look['warning']}")
+        click.echo(common.plain(f"  {look['warning']}"))
 
 
 def _pick_titles(answers: dict) -> None:
