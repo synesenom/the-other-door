@@ -391,6 +391,7 @@ A rule that only lives in prose gets forgotten; this table lists the ones someth
 | A quiet zero-hit board is told from a broken one | `tests/scrapers/test_zero_hit_guard_unit.py` | before #478 |
 | The example CV is never scored or tailored | `tests/commands/test_example_cv_guard_cli.py` | before #478 |
 | The app's renderer runs no CLI or model | `app/src/main/guard.test.ts` | before #478 |
+| A screen's width is one of the two width tokens, never a number in the stylesheet | `app/src/renderer/styles.test.ts` ("screen widths") | v0.4.0 |
 | No test of a doc's or asset's content; docs, prompt and skill steps get no `[TEST]` | `issue-planner` and `issue-implementer` prompts (#483) | #483 |
 | Reading the meaning of free-form text is a model call, not Python rules or word lists | `epic-architect` ("a model understands; code verifies"), `simplicity-reviewer` item 6 | #482 |
 | A rule fits the general case, not only the example at hand | `simplicity-reviewer` item 6 (a special case needs a second case and a counter-case) | #482 |
