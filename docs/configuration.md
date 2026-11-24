@@ -244,7 +244,7 @@ Tuning knobs with sensible defaults; most profiles never set them.
 | `translate_titles` | bool | `true` | `scrape`'s language pass (below) |
 | `translate_model` | string | `"haiku"` | `scrape`'s language pass |
 | `revise_model` | string | `"sonnet"` | `revise` |
-| `claude_config_dir` | path | — (the environment's `CLAUDE_CONFIG_DIR`, else `~/.claude`) | every `claude -p` call (`match`, `scrape`'s title translation, `prepare`, `revise`, `setup`'s scraper fix) and `doctor`'s login check |
+| `claude_config_dir` | path | — (the environment's `CLAUDE_CONFIG_DIR`, else `~/.claude`) | every `claude -p` call (`match`, `scrape`'s title translation, `prepare`, `revise`) and `doctor`'s login check |
 
 More detail on a few of them:
 
