@@ -124,10 +124,6 @@ class SystemTrustAdapter(HTTPAdapter):
 class NotPublicAddress(RequestException):
     """The host is, or resolves to, an address on this computer or a private network (#548): never connected to."""
 
-    def __init__(self, host: str) -> None:
-        super().__init__(f"{host} is not a public internet address; it is not fetched")
-        self.host = host
-
 
 class BodyTooLarge(RequestException):
     """A response body passed `MAX_BODY_BYTES` once decoded."""
@@ -216,7 +212,7 @@ class _PublicOnly:
         except requests.exceptions.ConnectionError as e:
             reason = getattr(e.args[0] if e.args else None, "reason", None)
             if isinstance(reason, _Refused):
-                raise NotPublicAddress(reason.refused_host) from None
+                raise NotPublicAddress(f"{reason.refused_host} is not a public internet address; it is not fetched") from None
             raise
 
 
