@@ -304,7 +304,13 @@ def ask(
     if schema is not None:
         args += ["--json-schema", json.dumps(schema)]
     args += STREAM_ARGS
-    args += ["--allowedTools", ",".join(allowed_tools)] if allowed_tools else ["--tools", ""]
+    if allowed_tools:
+        # Restricted, with only the built-in tools the rules name: a hostile page or ad read by the call can then
+        # reach nothing else (no shell, no file, no other web address than the rules allow).
+        builtin = list(dict.fromkeys(t.split("(")[0] for t in allowed_tools if not t.startswith("mcp__")))
+        args += ["--restricted", "--tools", ",".join(builtin), "--allowedTools", ",".join(allowed_tools)]
+    else:
+        args += ["--tools", ""]
     args.append("--no-session-persistence")
     if effort:
         args += ["--effort", effort]

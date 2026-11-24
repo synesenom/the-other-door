@@ -235,7 +235,7 @@ def _draft_cv_core(
     )
     answer = claude_cli.ask(
         "cv-drafter", prompt, model=model, fields={"webfetch_rules": common._WEBFETCH_RULES}, feature="draft_cv", schema=_SCHEMA,
-        timeout_s=timeout_s, profile_dir=profile_dir,
+        allowed_tools=common.webfetch_rules(urls), timeout_s=timeout_s, profile_dir=profile_dir,
     )
     markdown = answer.get("cv_markdown")
     if not isinstance(markdown, str) or not markdown.strip():

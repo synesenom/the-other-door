@@ -130,7 +130,7 @@ def _propose(urls, files, *, config, cv_path, profile_dir, model, timeout_s) -> 
     )
     answer = claude_cli.ask(
         "cv-enricher", prompt, model=model, fields={"webfetch_rules": common._WEBFETCH_RULES}, feature="enrich", schema=_SCHEMA,
-        allowed_tools=None if urls else (), timeout_s=timeout_s, profile_dir=profile_dir,
+        allowed_tools=common.webfetch_rules(urls), timeout_s=timeout_s, profile_dir=profile_dir,
     )
     if not isinstance(answer.get("proposals"), list):
         raise claude_cli.ClaudeError("claude's answer has no `proposals` list")

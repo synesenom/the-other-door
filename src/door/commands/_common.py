@@ -8,6 +8,7 @@ import re
 import shutil
 import sys
 from pathlib import Path
+from urllib.parse import urlsplit
 
 import click
 
@@ -122,6 +123,49 @@ _WEBFETCH_RULES = (
     "with stars or a description, with what each one does. Never fetch a LinkedIn or "
     "Indeed URL: skip it and say so."
 )
+
+
+# Pages the model is never given a fetch rule for (the prompt tells it so, so the user is told it was skipped).
+_NO_FETCH_NAMES = ("linkedin", "indeed")   # the name label of the host, any subdomain or country: not the host itself, which only discovery names
+
+
+def _is_no_fetch(host: str) -> bool:
+    return any(label in _NO_FETCH_NAMES for label in host.split("."))
+
+
+def _twin(host: str) -> str:
+    return host[4:] if host.startswith("www.") else "www." + host
+
+
+def _redirect_host(url: str) -> str | None:
+    """The host *url* redirects to (one request), or None: it does not redirect, or it could not be asked."""
+    import requests
+
+    from door.scrapers.http_client import PoliteSession, RobotsBlocked
+
+    try:
+        target = PoliteSession(min_delay=0.3, max_delay=0.6, timeout=15, max_retries=0).redirect_target(url)
+    except (requests.RequestException, RobotsBlocked):
+        return None
+    return (urlsplit(target).hostname or "").lower() or None if target else None
+
+
+def webfetch_rules(urls: list[str]) -> tuple[str, ...]:
+    """`WebFetch(domain:<host>)` for each page the user gave, built here and never by the model: the host, its
+    www/apex twin and the host its address redirects to (a rule matches one host, no subdomains); `github.com`
+    also gets `api.github.com`, which the prompt reads repositories through. None for LinkedIn and Indeed."""
+    hosts: list[str] = []
+    for url in urls:
+        given = (urlsplit(url).hostname or "").lower()
+        if not given or _is_no_fetch(given):
+            continue
+        for host in (given, _redirect_host(url)):
+            if not host or _is_no_fetch(host):
+                continue
+            hosts += [host, _twin(host)]
+            if host in ("github.com", "www.github.com"):
+                hosts.append("api.github.com")
+    return tuple(f"WebFetch(domain:{h})" for h in dict.fromkeys(hosts))
 
 
 def _resolve_job_ref(ref: str, jobs_dir: Path | None = None) -> str:

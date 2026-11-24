@@ -14,6 +14,7 @@ import pytest
 from door.commands import cv as cv_cmd
 from door.commands import _common as common
 from door.core import claude_cli, workspace
+from door.scrapers import http_client
 from paths import REPO_ROOT
 from pdf_utils import make_pdf
 from profile_utils import write_config
@@ -43,6 +44,7 @@ def env(tmp_path, monkeypatch):
     write_config(profile_dir, {"name": "Jane Doe", "role_targets": ["Data Scientist"]})
     monkeypatch.setattr(workspace, "PROFILE_DIR", profile_dir)
     monkeypatch.setattr(workspace, "PROFILE_EXAMPLE_DIR", REPO_ROOT / "profile.example")
+    monkeypatch.setattr(http_client.PoliteSession, "redirect_target", lambda self, url: None)
     _pdf(tmp_path / "old-cv.pdf", "Jane Doe, Lead Data Scientist at Acme since 2021")
     _docx(tmp_path / "old-cv.docx", ["Jane Doe", "Senior Data Scientist at Big Bank"])
     (tmp_path / "notes.md").write_text("PhD Copenhagen 2015")
@@ -190,7 +192,8 @@ def test_core_drafts_from_files_and_urls(env, monkeypatch):
     args = call["args"]
     assert args[args.index("--system-prompt") + 1] == claude_cli.prompt("cv-drafter", webfetch_rules=common._WEBFETCH_RULES)
     assert json.loads(args[args.index("--json-schema") + 1]) == cv_cmd._SCHEMA
-    assert args[args.index("--allowedTools") + 1] == "WebFetch"
+    assert args[args.index("--allowedTools") + 1] == "WebFetch(domain:github.com),WebFetch(domain:www.github.com),WebFetch(domain:api.github.com)"
+    assert "--restricted" in args and args[args.index("--tools") + 1] == "WebFetch"
     assert args[args.index("--model") + 1] == claude_cli.model_of("cv-drafter")
     for needle in ("Lead Data Scientist at Acme", "Senior Data Scientist at Big Bank", "PhD Copenhagen 2015", "https://github.com/jane"):
         assert needle in call["input"], needle
@@ -199,6 +202,14 @@ def test_core_drafts_from_files_and_urls(env, monkeypatch):
     assert call["profile_dir"] == env.profile_dir
     for word in ("backbone", "subpages", "api.github.com", "never invent", "TODO"):
         assert word in claude_cli.prompt("cv-drafter", webfetch_rules=common._WEBFETCH_RULES), word
+
+
+def test_a_draft_from_files_alone_has_no_tools(env, monkeypatch):
+    calls = []
+    _answer(monkeypatch, calls=calls)
+    cv_cmd._draft_cv_core([str(env.tmp / "notes.md")], profile_dir=env.profile_dir)
+    args = calls[0]["args"]
+    assert args[args.index("--tools") + 1] == "" and "--allowedTools" not in args
 
 
 def test_core_returns_the_draft_text(env, monkeypatch):

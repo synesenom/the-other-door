@@ -14,6 +14,7 @@ from door.cli import cli
 from door.commands import enrich as enrich_cmd
 from door.commands import _common as common
 from door.core import claude_cli, workspace
+from door.scrapers import http_client
 from cli_utils import result_text
 from profile_utils import write_config
 
@@ -49,6 +50,7 @@ def env(tmp_path, monkeypatch):
     config["cv_content"] = str(cv_path)
     (profile_dir / "config.json").write_text(json.dumps(config))
     monkeypatch.setattr(workspace, "PROFILE_DIR", profile_dir)
+    monkeypatch.setattr(http_client.PoliteSession, "redirect_target", lambda self, url: None)
     return types.SimpleNamespace(profile_dir=profile_dir, cv_path=cv_path, proposals_path=profile_dir / ".enrich_proposals.json")
 
 
@@ -79,7 +81,9 @@ def test_propose_asks_claude_with_webfetch_the_cv_and_the_urls(env, monkeypatch)
     assert env.cv_path.read_text() == CV  # nothing written yet
 
     args = calls[0]["args"]
-    assert args[args.index("--allowedTools") + 1] == "WebFetch"
+    assert args[args.index("--allowedTools") + 1].split(",") == [
+        "WebFetch(domain:github.com)", "WebFetch(domain:www.github.com)", "WebFetch(domain:api.github.com)",
+        "WebFetch(domain:down.example)", "WebFetch(domain:www.down.example)"]
     assert args[args.index("--system-prompt") + 1] == claude_cli.prompt("cv-enricher", webfetch_rules=common._WEBFETCH_RULES)
     assert "never fabricate" in claude_cli.prompt("cv-enricher", webfetch_rules=common._WEBFETCH_RULES).lower() or "never invent" in claude_cli.prompt("cv-enricher", webfetch_rules=common._WEBFETCH_RULES).lower()
     assert json.loads(args[args.index("--json-schema") + 1]) == enrich_cmd._SCHEMA
@@ -88,6 +92,44 @@ def test_propose_asks_claude_with_webfetch_the_cv_and_the_urls(env, monkeypatch)
     assert "Data Scientist" in calls[0]["input"]
     assert "https://github.com/jane\nhttps://down.example" in calls[0]["input"]
     assert calls[0]["profile_dir"] == env.profile_dir
+
+
+def _rules(call):
+    args = call["args"]
+    return args[args.index("--allowedTools") + 1].split(",") if "--allowedTools" in args else []
+
+
+def test_enrich_with_a_url_allows_webfetch_on_that_host_only(env, monkeypatch):
+    calls = []
+    _answer(monkeypatch, calls=calls)
+    monkeypatch.setattr(http_client.PoliteSession, "redirect_target", lambda self, url: "https://jane.pages.example/home")
+    enrich_cmd._enrich_core(["https://jane.example/"], profile_dir=env.profile_dir)
+    args = calls[0]["args"]
+    assert "--restricted" in args and args[args.index("--tools") + 1] == "WebFetch"
+    assert _rules(calls[0]) == ["WebFetch(domain:jane.example)", "WebFetch(domain:www.jane.example)",
+                                "WebFetch(domain:jane.pages.example)", "WebFetch(domain:www.jane.pages.example)"]
+
+
+def test_a_linkedin_or_indeed_page_gets_no_webfetch_rule(env, monkeypatch):
+    calls = []
+    _answer(monkeypatch, calls=calls)
+    enrich_cmd._enrich_core(["https://www.linkedin.com/in/jane", "https://dk.indeed.com/x", "https://jane.example"], profile_dir=env.profile_dir)
+    assert _rules(calls[0]) == ["WebFetch(domain:jane.example)", "WebFetch(domain:www.jane.example)"]
+    calls.clear()
+    enrich_cmd._enrich_core(["https://linkedin.com/in/jane"], profile_dir=env.profile_dir)
+    assert _rules(calls[0]) == [] and calls[0]["args"][calls[0]["args"].index("--tools") + 1] == ""
+    assert "Never fetch a LinkedIn or Indeed URL" in calls[0]["args"][calls[0]["args"].index("--system-prompt") + 1]
+
+
+def test_a_redirect_that_cannot_be_read_leaves_only_the_given_hosts(env, monkeypatch):
+    calls = []
+    _answer(monkeypatch, calls=calls)
+
+    def refuse(self, url):
+        raise http_client.RobotsBlocked(url)
+    monkeypatch.setattr(http_client.PoliteSession, "redirect_target", refuse)
+    enrich_cmd._enrich_core(["https://jane.example"], profile_dir=env.profile_dir)
+    assert _rules(calls[0]) == ["WebFetch(domain:jane.example)", "WebFetch(domain:www.jane.example)"]
 
 
 def test_propose_from_a_cv_file_reads_its_text_and_fetches_nothing(env, monkeypatch, tmp_path):
@@ -103,7 +145,7 @@ def test_propose_from_a_cv_file_reads_its_text_and_fetches_nothing(env, monkeypa
     sent = calls[0]["input"]
     assert "Spoke at PyData Copenhagen 2025" in sent and "Built a churn model" in sent
     assert "https://github.com/jane" not in sent  # the remembered pages are not read with a file
-    assert "--allowedTools" not in calls[0]["args"]  # nothing to fetch
+    assert "--allowedTools" not in calls[0]["args"] and calls[0]["args"][calls[0]["args"].index("--tools") + 1] == ""  # nothing to fetch
     # the rules say what a CV file is and what its proposals' source is
     rules = calls[0]["args"][calls[0]["args"].index("--system-prompt") + 1]
     assert "CV file" in rules and "file name" in rules
@@ -118,7 +160,7 @@ def test_propose_from_pages_and_a_cv_file_fetches_the_pages_and_reads_the_file(e
     result = enrich_cmd._enrich_core(["https://jane.example"], files=[str(new_cv)], profile_dir=env.profile_dir)
     assert result["urls"] == ["https://jane.example"] and result["files"] == [str(new_cv)]
     args = calls[0]["args"]
-    assert args[args.index("--allowedTools") + 1] == "WebFetch"
+    assert args[args.index("--allowedTools") + 1] == "WebFetch(domain:jane.example),WebFetch(domain:www.jane.example)"
     assert "CV file new-cv.md:" in calls[0]["input"] and "https://jane.example" in calls[0]["input"]
 
 
