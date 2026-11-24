@@ -133,9 +133,15 @@ class BodyTooLarge(RequestException):
 MAX_BODY_BYTES = 50 * 1024 * 1024
 
 
+# The 96-bit prefixes whose last 32 bits are an IPv4 address: NAT64, IPv4-translated (SIIT), IPv4-compatible.
+_IPV4_CARRYING_PREFIXES = (
+    bytes.fromhex("0064ff9b" + "00" * 8), bytes.fromhex("00" * 8 + "ffff0000"), bytes(12),
+)
+
+
 def _is_public(ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
     """Whether *ip* is on the public internet. An IPv6 address that carries an IPv4 one (IPv4-mapped,
-    6to4, Teredo, NAT64 `64:ff9b::/96`, `::a.b.c.d`) is judged by the IPv4 address inside: `is_global`
+    6to4, Teredo, NAT64 `64:ff9b::/96`, IPv4-translated `::ffff:0:a.b.c.d`, `::a.b.c.d`) is judged by the IPv4 address inside: `is_global`
     alone calls `64:ff9b::a00:1`, `::127.0.0.1` and `2002:7f00:1::` public. NAT64 is unwrapped, not
     refused: on a DNS64 network every IPv4-only site arrives there."""
     if isinstance(ip, ipaddress.IPv6Address):
@@ -146,7 +152,7 @@ def _is_public(ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
         if ip.teredo is not None:
             return all(_is_public(part) for part in ip.teredo)
         packed = ip.packed
-        if packed[:12] == bytes.fromhex("0064ff9b" + "00" * 8) or not any(packed[:12]):
+        if packed[:12] in _IPV4_CARRYING_PREFIXES:
             return _is_public(ipaddress.IPv4Address(packed[12:]))
     return ip.is_global
 

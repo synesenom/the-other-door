@@ -773,6 +773,15 @@ def test_a_redirect_to_a_private_address_is_refused_before_connecting(hit_counte
     assert hit_counter.hits == 1
 
 
+def test_a_public_address_check_is_not_bypassed_by_a_system_proxy(hit_counter, real_network, loopback_public, monkeypatch):
+    # The proxy would resolve the name itself, so the check could not bind: the system proxy is not read.
+    monkeypatch.setenv("HTTP_PROXY", hit_counter.base)
+    monkeypatch.setenv("http_proxy", hit_counter.base)
+    with pytest.raises(requests.exceptions.RequestException):
+        _session().get("http://door-test.invalid/")
+    assert hit_counter.hits == 0
+
+
 def test_a_local_server_is_not_reached_directly(hit_counter, real_network):
     with pytest.raises(requests.exceptions.RequestException):
         _session().get(f"{hit_counter.base}/")
@@ -822,7 +831,8 @@ def test_is_public_plain_addresses(address, public):
 @pytest.mark.parametrize("address, public", [
     ("64:ff9b::a00:1", False), ("64:ff9b::5db8:d822", True), ("::127.0.0.1", False), ("::5db8:d822", True),
     ("2002:7f00:1::", False), ("2002:5db8:d822::1", True), ("::ffff:10.0.0.5", False), ("::ffff:93.184.216.34", True),
-    ("2001:0:4136:e378:8000:63bf:f5ff:fffa", False),
+    ("2001:0:4136:e378:8000:63bf:f5ff:fffa", False), ("::ffff:0:7f00:1", False), ("::ffff:0:a00:5", False),
+    ("::ffff:0:5db8:d822", True),
 ])
 def test_is_public_unwraps_embedded_ipv4(address, public):
     import ipaddress

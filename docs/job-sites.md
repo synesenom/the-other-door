@@ -125,7 +125,7 @@ is not read separately.
 
 ## How The other door fetches
 
-Every request *The other door* makes, by any scraper, follows the same rules:
+Every request *The other door* makes, by any scraper, follows the same rules (the discovery sources, which reach only their own fixed sites, keep their own sessions, so the proxy and public-internet rules below are not theirs):
 
 - **robots.txt is read for its `Sitemap:` lines** (how `career_sites` finds job pages) and its
   `Crawl-delay`, which is honoured. The discovery sources keep their own, slower pace. Employer feeds are paced 0.2 to 0.5 s per host
@@ -143,7 +143,7 @@ Every request *The other door* makes, by any scraper, follows the same rules:
 - **Plain HTTP, logged out:** no browser, no CAPTCHA solving, no proxies, no logins. The system proxy
   and `.netrc` are not read.
 - **Only the public internet.** A request, and every redirect hop of it, connects only when every address
-  its host resolves to is public (an IPv4 address inside an IPv6 one, as in `64:ff9b::/96`, `::ffff:`, 6to4
+  its host resolves to is public (an IPv4 address inside an IPv6 one, as in `64:ff9b::/96`, `::ffff:`, `::ffff:0:`, 6to4
   and Teredo, is judged as the IPv4 address). A link to this computer, the home network or a cloud
   metadata address is refused, naming the host, and never connected to. No response body is read past
   50 MB.
