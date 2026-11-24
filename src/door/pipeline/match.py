@@ -28,7 +28,8 @@ from door.core.jobs.selection import select_matches
 
 def _summary(block: dict) -> str:
     text = f"{block['scored']} scored, {block['above_threshold']} above {block['min_score']:g}"
-    return text + (f", {len(block['failed'])} failed" if block["failed"] else "")
+    text += f", {len(block['failed'])} failed" if block["failed"] else ""
+    return text + (f", {block['waiting']} waiting" if block.get("waiting") else "")
 
 
 def _stamp_relevant(matches: list[dict], profile_dir: Path) -> None:

@@ -514,3 +514,20 @@ def test_an_employer_that_keeps_follow_waiting_past_its_budget_is_an_error_and_t
     assert [e["company"] for e in block["errors"]] == ["Sander"]
     assert "budget" in block["errors"][0]["error"]
     assert clock[0] <= 100.0 + 20.0
+
+
+@responses.activate
+def test_the_careers_model_is_asked_about_at_most_the_cap_and_the_rest_stay_queued(env, monkeypatch):
+    from door.core.employers import careers_ai
+
+    calls = []
+    monkeypatch.setattr(careers_ai, "ask_careers_url", lambda name, *a, **k: calls.append(name))
+    for i in range(50):
+        queue_up(env, f"Acme{i}", f"https://acme{i}.dk/jobs/1", source="linkedin" if i % 2 else "profession")
+    responses.add(responses.GET, re.compile(r"https?://.*"), status=404)
+
+    block = run(env)
+
+    assert len(calls) == careers_ai.MAX_ASKS == 30
+    assert block["kept"] == 20
+    assert len(candidates.load(env.jobs_dir)) == 20

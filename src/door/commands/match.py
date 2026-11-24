@@ -45,6 +45,7 @@ def _recent_candidates_dirs(jobs_dir: Path, max_age_days: int | None, today=None
     return dirs
 
 
+MAX_SCORED_PER_RUN = 150  # 30 Haiku calls; the rest wait for the next run (#551)
 MAX_FAILURES = 20  # failures kept with their reason in the run record
 
 
@@ -112,7 +113,7 @@ def _match_core(
             are persisted.
 
     Returns:
-        ``{"candidates_dir", "candidate_dirs", "unscored_before", "scored",
+        ``{"candidates_dir", "candidate_dirs", "unscored_before", "waiting", "scored",
         "failed": [job_id, ...], "above_threshold", "model", "elapsed_s"}``
         — ``candidates_dir`` is the newest directory scanned,
         ``candidate_dirs`` all of them.
@@ -169,6 +170,12 @@ def _match_core(
         entries_by_id[job_id] = (path, data)
         postings.append(data)
 
+    # A cap by score alone would let keyword-stuffed fakes take every slot: interleave by employer or source.
+    postings, held_back = utils.fair_share(
+        postings, MAX_SCORED_PER_RUN,
+        key=lambda p: str(p.get("employer") or p.get("source") or ""),
+        rank=lambda p: -float(p.get("prescreen_score") or 0))
+
     min_score = config.get("min_score", common._DEFAULT_MIN_SCORE)
     needs_permit = bool(config.get("needs_work_permit", False))
 
@@ -204,6 +211,7 @@ def _match_core(
         "candidates_dir": str(candidates_dir),
         "candidate_dirs": [str(d) for d in candidate_dirs],
         "unscored_before": unscored_before,
+        "waiting": len(held_back),
         "scored": counters["scored"],
         "failed": failed,
         "failures": [{"id": i, "error": errors.get(i, "")} for i in failed[:MAX_FAILURES]],

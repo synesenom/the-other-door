@@ -149,3 +149,25 @@ def write_atomic(path: Path, data: str | bytes, *, mode: int | None = None) -> N
 def write_json_atomic(path: Path, data, *, indent: int | None = 2, default=str) -> None:
     """Write `data` as JSON to `path` through `write_atomic`."""
     write_atomic(path, json.dumps(data, indent=indent, ensure_ascii=False, default=default))
+
+
+def fair_share(items: list, limit: int, *, key, rank=None) -> tuple[list, list]:
+    """``(chosen, rest)``: at most *limit* of *items*, taken round-robin over the groups *key* names (the group with the
+    best item first), the lowest *rank* first within each group (in their order without one). One flooded group cannot crowd out the
+    others, a cap's whole purpose. Pure."""
+    groups: dict = {}
+    for item in sorted(items, key=rank) if rank else items:
+        groups.setdefault(key(item), []).append(item)
+    chosen: list = []
+    queues = [iter(g) for g in groups.values()]
+    while queues and len(chosen) < limit:
+        for queue in list(queues):
+            item = next(queue, None)
+            if item is None:
+                queues.remove(queue)
+                continue
+            chosen.append(item)
+            if len(chosen) >= limit:
+                break
+    taken = {id(i) for i in chosen}
+    return chosen, [i for i in items if id(i) not in taken]
