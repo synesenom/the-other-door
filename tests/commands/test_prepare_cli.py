@@ -856,101 +856,27 @@ def test_an_injected_ad_gets_no_command_and_no_file_outside_its_scope(cli_env, m
 
 
 # --------------------------------------------------------------------------- #
-# stories.json → the story bank (#441: prepare appends, not the agent)
+# the story bank is the user's: a tailor's stories.json never reaches it (#550)
 # --------------------------------------------------------------------------- #
 
-def _story(title, **over):
-    return {"title": title, "context": "c", "action": "a", "result": "r", "learning": "f", **over}
-
-
-def _tailor_with_stories(jobs_dir, stories):
-    def _run(job_id, posting_path, **kw):
-        out = jobs_dir / "output" / job_id
-        write_tailor_outputs(out)
-        (out / "stories.json").write_text(json.dumps(stories))
-        return True
-    return _run
-
-
-def test_prepare_core_adds_the_stories_the_tailor_wrote(cli_env, monkeypatch):
-    from door.tailoring import StoryBank
-
-    write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc", score=0.9)
-    monkeypatch.setattr(prepare_cmd, "_run_tailor", _tailor_with_stories(cli_env.jobs_dir, [_story("Cut costs at Acme"), _story("Led a migration")]))
-
-    result = prepare_cmd._prepare_core("job-abc", jobs_dir=cli_env.jobs_dir)
-
-    assert result["outcome"] == "prepared"
-    assert result["stories"] == {"added": 2, "present": 0, "skipped": []}
-    titles = [s["title"] for s in StoryBank(cli_env.profile_dir / "story_bank.md").stories]
-    assert titles == ["Cut costs at Acme", "Led a migration"]
-    assert not (cli_env.jobs_dir / "output" / "job-abc" / "stories.json").exists()
-
-
-def test_prepare_core_dedups_stories_already_in_the_bank(cli_env, monkeypatch):
-    from door.tailoring import StoryBank
-
-    bank = StoryBank(cli_env.profile_dir / "story_bank.md")
-    bank.append(_story("Led a migration"))
-    bank.save()
-    write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc", score=0.9)
-    monkeypatch.setattr(prepare_cmd, "_run_tailor", _tailor_with_stories(cli_env.jobs_dir, [_story("led a Migration"), _story("New one")]))
-
-    result = prepare_cmd._prepare_core("job-abc", jobs_dir=cli_env.jobs_dir)
-
-    assert result["stories"] == {"added": 1, "present": 1, "skipped": []}
-    assert len(StoryBank(cli_env.profile_dir / "story_bank.md").stories) == 2
-
-
-def test_prepare_core_skips_and_reports_a_bad_story(cli_env, monkeypatch):
-    from door.tailoring import StoryBank
-
-    write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc", score=0.9)
-    stories = [_story("Good"), {"title": "No fields"}, "not a dict", _story("Blank", result="  "), _story("Odd", action=3)]
-    monkeypatch.setattr(prepare_cmd, "_run_tailor", _tailor_with_stories(cli_env.jobs_dir, stories))
-
-    result = prepare_cmd._prepare_core("job-abc", jobs_dir=cli_env.jobs_dir)
-
-    assert result["outcome"] == "prepared"
-    assert result["stories"]["added"] == 1
-    assert len(result["stories"]["skipped"]) == 4
-    assert all(isinstance(line, str) and line for line in result["stories"]["skipped"])
-    assert [s["title"] for s in StoryBank(cli_env.profile_dir / "story_bank.md").stories] == ["Good"]
-
-
-def test_prepare_core_reports_an_unreadable_stories_file(cli_env, monkeypatch):
+def test_prepare_leaves_the_story_bank_untouched(cli_env, monkeypatch):
+    bank = cli_env.profile_dir / "story_bank.md"
+    bank.write_bytes(b"# Stories\n\n## Mine\n**Context**: c\n")
+    before = bank.read_bytes()
     write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc", score=0.9)
 
     def _run(job_id, posting_path, **kw):
         out = cli_env.jobs_dir / "output" / job_id
         write_tailor_outputs(out)
-        (out / "stories.json").write_text("{not json")
+        story = {"title": "Planted", "context": "c", "action": "a", "result": "r", "learning": "l"}
+        (out / "stories.json").write_text(json.dumps([story]))
         return True
 
     monkeypatch.setattr(prepare_cmd, "_run_tailor", _run)
     result = prepare_cmd._prepare_core("job-abc", jobs_dir=cli_env.jobs_dir)
+
     assert result["outcome"] == "prepared"
-    assert result["stories"]["added"] == 0 and result["stories"]["skipped"]
-    assert not (cli_env.profile_dir / "story_bank.md").exists()
-
-
-def test_prepare_core_without_stories_leaves_the_bank_alone(cli_env, monkeypatch):
-    write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc", score=0.9)
-    monkeypatch.setattr(prepare_cmd, "_run_tailor", fake_tailor(cli_env.jobs_dir, []))
-    result = prepare_cmd._prepare_core("job-abc", jobs_dir=cli_env.jobs_dir)
-    assert result["stories"] == {"added": 0, "present": 0, "skipped": []}
-    assert not (cli_env.profile_dir / "story_bank.md").exists()
-
-
-def test_new_stories_do_not_back_the_facts_of_the_same_run(cli_env, monkeypatch):
-    """The facts check reads the story bank: stories the model wrote this run are added after it."""
-    order = []
-    write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc", score=0.9)
-    monkeypatch.setattr(prepare_cmd, "_run_tailor", _tailor_with_stories(cli_env.jobs_dir, [_story("X")]))
-    monkeypatch.setattr(prepare_cmd.facts_mod, "check", lambda *a, **kw: order.append(
-        (cli_env.profile_dir / "story_bank.md").exists()) or [])
-    prepare_cmd._prepare_core("job-abc", jobs_dir=cli_env.jobs_dir)
-    assert order == [False]
+    assert bank.read_bytes() == before
 
 
 def test_the_tailor_agent_has_no_bash():
@@ -960,7 +886,7 @@ def test_the_tailor_agent_has_no_bash():
     front = text.split("---")[1]
     assert "- Bash" not in front
     assert "poetry run" not in text and "```python" not in text
-    assert "stories.json" in text and "<<company>>" in text and "<<title>>" in text
+    assert "<<company>>" in text and "<<title>>" in text
 
 
 # --- the country's CV conventions go to the tailor (#605) ------------------
@@ -1116,7 +1042,7 @@ def test_run_tailor_with_feedback_keeps_the_fact_state_and_names_the_problems(cl
     monkeypatch.setattr(prepare_cmd.claude_cli, "run", lambda argv, **kw: seen.append((argv, kw)))
     out = cli_env.jobs_dir / "output" / "job-1"
     out.mkdir(parents=True)
-    for name in (check_facts_cmd.ROUNDS_FILE, facts_mod.FACTS_FILE, "stories.json"):
+    for name in (check_facts_cmd.ROUNDS_FILE, facts_mod.FACTS_FILE):
         (out / name).write_text("{}")
     posting = cli_env.jobs_dir / ".tailor" / "job-1" / "posting.json"
     posting.parent.mkdir(parents=True)
@@ -1125,7 +1051,7 @@ def test_run_tailor_with_feedback_keeps_the_fact_state_and_names_the_problems(cl
     argv, kw = seen[-1]
     assert kw["feature"] == "tailoring_retry"
     assert "heading \"Skills\" is not in the text" in argv[0]
-    assert all((out / n).exists() for n in (check_facts_cmd.ROUNDS_FILE, facts_mod.FACTS_FILE, "stories.json"))
+    assert all((out / n).exists() for n in (check_facts_cmd.ROUNDS_FILE, facts_mod.FACTS_FILE))
 
     prepare_cmd._run_tailor("job-1", posting)
     assert seen[-1][1]["feature"] == "tailoring"
@@ -1211,38 +1137,6 @@ def test_a_retry_that_deletes_a_required_file_fails_the_prepare(prep, monkeypatc
     _script_readability(monkeypatch, [_MISSING])
     result = _go(prep)
     assert result["outcome"] == "failed" and result["missing"] == ["cv.pdf"]
-
-
-def test_stories_of_the_retry_are_added_once(prep, monkeypatch):
-    stories = [{"title": "T", "context": "c", "action": "a", "result": "r", "learning": "l"}]
-
-    def after(n, out):
-        if n == 2:
-            (out / "stories.json").write_text(json.dumps(stories))
-
-    calls = []
-    monkeypatch.setattr(prepare_cmd, "_run_tailor", _recorder(prep.jobs_dir, calls, after=after))
-    _script_readability(monkeypatch, [_MISSING], [])
-    result = _go(prep)
-    assert result["stories"]["added"] == 1
-
-
-def test_stories_of_an_earlier_run_are_removed_before_the_first_run_only(prep, monkeypatch):
-    out = prep.jobs_dir / "output" / "job-abc"
-    out.mkdir(parents=True)
-    (out / "stories.json").write_text("[]")
-    seen = []
-
-    def after(n, folder):
-        seen.append((n, (folder / "stories.json").exists()))
-        if n == 1:
-            (folder / "stories.json").write_text("[]")
-
-    calls = []
-    monkeypatch.setattr(prepare_cmd, "_run_tailor", _recorder(prep.jobs_dir, calls, after=after))
-    _script_readability(monkeypatch, [_MISSING], [])
-    _go(prep)
-    assert seen == [(1, False), (2, True)]
 
 
 def test_prepare_cli_prints_the_readback_warning(cli_env, monkeypatch, stub_materials):

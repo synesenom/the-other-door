@@ -326,7 +326,6 @@ def make_output() -> None:
             f"<p>Dear {company}, I would like to own your close.</p>\n", encoding="utf-8")
         pdf_utils.make_pdf(folder / "cv.pdf", ["Alex Example\nSummary\nExperience\nSkills\nEducation\nclose forecast IFRS"])
         pdf_utils.make_pdf(folder / "cover_letter.pdf", [f"Alex Example\nDear {company},\nI would like to own your close."])
-        (folder / "stories.json").write_text(json.dumps([]), encoding="utf-8")
         # What the tailor's fact check leaves, with no model call: the claim above, with the reason the tailor kept it for.
         flagged = [] if sent else [{"kind": "number", "value": "25", "context": "Led a team of 25 analysts", "file": "cv",
                                     "reason": "the team size is from the interview notes, not the CV"}]

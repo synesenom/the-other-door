@@ -29,6 +29,12 @@ def _language(posting: dict) -> str:
     return i18n.language_code(str(posting.get("language") or "")) or "en"
 
 
+def _link_sources(config: dict, profile_dir: Path) -> list[str]:
+    """The texts a link in a CV or letter may be taken from: cv.md and the story bank (what the user wrote)."""
+    paths = [workspace.cv_path(config, profile_dir), profile_dir / "story_bank.md"]
+    return [p.read_text(encoding="utf-8", errors="replace") for p in paths if p.is_file()]
+
+
 def _fill_placeholders(body: str, posting: dict, output_dir: Path) -> str:
     """`body` with each `_PLACEHOLDERS` token replaced by the posting's field, escaped, and `<<date>>` by today's date
     in the ad's language.
@@ -114,9 +120,11 @@ def _compile_core(job_id: str, render: bool = False, jobs_dir: Path | None = Non
             entry.update(status="error", stderr=str(exc))
             results.append(entry)
             continue
+        refused = html_guard.unsafe(body)
+        if not refused:
+            body = html_guard.unwrap_unknown_links(body, _link_sources(config, workspace.PROFILE_DIR))
         if body != text:
             utils.write_atomic(path, body)
-        refused = html_guard.unsafe(body)
         if refused:  # model output never gets to load another file, reach the network or run anything
             entry.update(status="error", stderr=f"refused: {file} uses {', '.join(refused)}, which is outside the tags and links a CV or letter is written in")
             results.append(entry)
