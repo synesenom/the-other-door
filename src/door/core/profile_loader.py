@@ -158,12 +158,18 @@ class Profile(BaseModel):
         return v
 
     @model_validator(mode="after")
-    def _resolve_paths(self) -> "Profile":
+    def _resolve_paths(self, info: ValidationInfo) -> "Profile":
+        folder = Path((info.context or {}).get("profile_dir") or workspace.PROFILE_DIR).resolve()
         for field in ("cv_template", "cv_content", "cover_letter_template", "photo"):
             p: Path | None = getattr(self, field)
-            if p is not None and not p.is_absolute():
-                resolved = (workspace.HOME / p).resolve()
-                object.__setattr__(self, field, resolved)
+            if p is None:
+                continue
+            resolved = (p if p.is_absolute() else workspace.HOME / p).resolve()
+            # An imported archive or a Drive pull writes config.json: a path out of profile/ would hand the
+            # tailor any file of the computer.
+            if not resolved.is_relative_to(folder):
+                raise ValueError(f"{field} must be a file inside the profile folder ({folder}), not {p}")
+            object.__setattr__(self, field, resolved)
         return self
 
     @model_validator(mode="after")
@@ -242,7 +248,7 @@ def load_profile_config(profile_dir: Path, check_paths: bool = False) -> dict:
         raise FileNotFoundError(f"profile/config.json not found: {config_path}")
     data = read_config_data(config_path)
     try:
-        profile = Profile.model_validate(data, context={"check_paths": check_paths})
+        profile = Profile.model_validate(data, context={"check_paths": check_paths, "profile_dir": profile_dir})
     except ValidationError as exc:
         raise ConfigError(format_validation_error(exc, config_path)) from None
     return profile.model_dump(mode="json", exclude_unset=True)

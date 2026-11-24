@@ -82,14 +82,9 @@ def _tailor_templates(profile_dir: Path) -> dict[str, Path]:
 
 
 def _tailor_read_files(profile_dir: Path) -> list[Path]:
-    """The CV and the two templates, when they live outside the profile folder (the code's templates do)."""
-    try:
-        config = profile_loader.load_config_or_defaults(profile_dir)
-    except Exception:  # noqa: BLE001 - an invalid config fails the run on its own; the rules stay narrow
-        config = {}
-    files = [workspace.cv_path(config, profile_dir), *_tailor_templates(profile_dir).values()]
+    """The two templates, when they live outside the profile folder (the code's do). The CV never does: `Profile` refuses it."""
     profile = profile_dir.absolute()
-    return [f.absolute() for f in files if not f.absolute().is_relative_to(profile)]
+    return [f.absolute() for f in _tailor_templates(profile_dir).values() if not f.absolute().is_relative_to(profile)]
 
 
 def _tailor_tools(job_id: str, posting_path: Path) -> list[str]:

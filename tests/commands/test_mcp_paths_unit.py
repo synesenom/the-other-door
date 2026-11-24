@@ -29,8 +29,6 @@ def scoped(tmp_path, monkeypatch):
     lambda: server.import_posting(path="/etc/passwd"),
     lambda: server.export_data(path="/tmp/elsewhere"),
     lambda: server.import_data("/tmp/elsewhere/door.tar.gz"),
-    lambda: server.init_profile(other={"cv_content": "/root/.ssh/id_rsa"}),
-    lambda: server.init_profile(other={"cv_template": "../../etc/x.tex"}),
 ])
 def test_a_path_outside_is_refused_before_the_core_runs(scoped, call):
     _, calls = scoped

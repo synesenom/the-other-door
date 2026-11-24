@@ -41,7 +41,7 @@ def init_env(tmp_path, monkeypatch):
 
     Copies the real, committed profile.example/ tree into
     tmp_path/profile.example and rewrites the three template path fields in
-    its config.json to absolute paths pointing at the copied files, so
+    its config.json to a CV path inside the profile folder, so
     `Profile.model_validate` (which resolves relative template paths against
     the real project root) succeeds against files that actually exist under
     tmp_path — independent of the dev machine's real profile/ directory.
@@ -53,14 +53,10 @@ def init_env(tmp_path, monkeypatch):
     shutil.copytree(_REAL_PROFILE_EXAMPLE_DIR, example_dir)
 
     config_path = example_dir / "config.json"
-    config = json.loads(config_path.read_text())
-    for field, filename in (
-        ("cv_content", "cv.md"),
-    ):
-        config[field] = str(example_dir / filename)
-    config_path.write_text(json.dumps(config))
-
     profile_dir = tmp_path / "profile"
+    config = json.loads(config_path.read_text())
+    config["cv_content"] = str(profile_dir / "cv.md")  # a CV path must lie inside the profile folder
+    config_path.write_text(json.dumps(config))
 
     monkeypatch.setattr(workspace, "PROFILE_DIR", profile_dir)
     monkeypatch.setattr(workspace, "PROFILE_EXAMPLE_DIR", example_dir)

@@ -23,9 +23,6 @@ _MANIFEST = "manifest.json"
 _LOCK_FILES = (".lock", ".lock.json", ".progress.json", usage.LOG_NAME)
 _EXCLUDED = {"profile": (migrations.MARKER,), "jobs": (*_LOCK_FILES, migrations.MARKER)}
 
-# Config keys holding a path that may only exist on the computer that exported.
-_PATH_KEYS = ("cv_template", "cv_content", "cover_letter_template", "photo")
-
 # Config keys that belong to one computer: left out of the archive, and an import keeps this computer's own.
 _LOCAL_KEYS = ("claude_config_dir",)
 
@@ -252,23 +249,6 @@ def _swap_in(staging: Path, profile_dir: Path, jobs_dir: Path, backup: Path | No
             shutil.move(child, jobs_dir / child.name)
 
 
-def _path_warnings(config_path: Path) -> list[str]:
-    """Config paths that point somewhere this computer doesn't have."""
-    try:
-        config = json.loads(config_path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return [f"{config_path} is not valid JSON; run `doctor`"]
-    warnings = []
-    for key in _PATH_KEYS:
-        value = config.get(key)
-        if not isinstance(value, str):
-            continue
-        p = Path(value).expanduser()
-        if p.is_absolute() and not p.exists():
-            warnings.append(f"{key} points to {value}, which doesn't exist on this computer; update profile/config.json")
-    return warnings
-
-
 @lock.locked("import")
 def _import_core(
     archive: Path | str,
@@ -329,7 +309,7 @@ def _import_core(
             _swap_in(staging, profile_dir, jobs_dir, backup)
 
     migrations.ensure_folder(jobs_dir, "jobs")  # an archive with no jobs: the folder is new, so stamped
-    warnings = _path_warnings(profile_dir / "config.json")
+    warnings: list[str] = []
     upgrade = migrations.upgrade_all(profile_dir, jobs_dir, backups_dir)
     if upgrade:
         warnings.append(upgrade["message"])

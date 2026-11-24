@@ -14,6 +14,7 @@ import pytest
 from door.commands import cv as cv_cmd
 from door.commands import _common as common
 from door.core import claude_cli, workspace
+from door.render import pdf_draft
 from paths import REPO_ROOT
 from pdf_utils import make_pdf
 from profile_utils import write_config
@@ -65,6 +66,29 @@ def test_extract_text_reads_pdf_docx_and_text(env):
         cv_cmd._extract_text(env.tmp / "x.xlsx")
     with pytest.raises(FileNotFoundError):
         cv_cmd._extract_text(env.tmp / "missing.pdf")
+
+
+def test_a_docx_whose_document_expands_past_the_cap_is_refused(tmp_path):
+    path = tmp_path / "bomb.docx"
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("word/document.xml", b"<w:document " + _NS.encode() + b">" + b" " * (21 * 1024 * 1024) + b"</w:document>")
+    with pytest.raises(ValueError, match="too large"):
+        cv_cmd._extract_text(path)
+
+
+def test_a_pdf_past_the_page_cap_is_refused(tmp_path):
+    path = tmp_path / "long.pdf"
+    make_pdf(path, ["Jane Doe"] * 31)
+    with pytest.raises(ValueError, match="pages"):
+        cv_cmd._extract_text(path)
+
+
+def test_a_pdf_past_the_text_cap_is_refused(tmp_path, monkeypatch):
+    path = tmp_path / "dense.pdf"
+    make_pdf(path, ["\n".join(["x" * 90] * 55)] * 3)
+    monkeypatch.setattr(pdf_draft, "MAX_TEXT", 10_000)
+    with pytest.raises(ValueError, match="text"):
+        cv_cmd._extract_text(path)
 
 
 _NS = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'

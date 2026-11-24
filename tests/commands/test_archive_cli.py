@@ -139,23 +139,6 @@ def test_import_cli(env, monkeypatch):
     assert result.stderr == ""
 
 
-def test_import_cli_warns_on_stderr(env, monkeypatch):
-    config = json.loads((env.profile_dir / "config.json").read_text())
-    config["cv_template"] = str(env.tmp_path / "no-such-template.html")
-    (env.profile_dir / "config.json").write_text(json.dumps(config))
-    archive = _export(env, env.tmp_path / "out.tar.gz")["path"]
-    monkeypatch.setattr(workspace, "PROFILE_DIR", env.dst_profile)
-    monkeypatch.setattr(workspace, "JOBS_DIR", env.dst_jobs)
-
-    result = CliRunner().invoke(cli, ["data", "import", str(archive)])
-
-    assert result.exit_code == 0, result_text(result)
-    warning = _line(result.stderr, "cv_template")
-    assert warning.lstrip().startswith("⚠")
-    assert "cv_template" not in result.stdout
-    assert "Backup" not in result.stdout  # nothing was there to back up
-
-
 def test_import_cli_errors_cleanly(env):
     result = CliRunner().invoke(cli, ["data", "import", str(env.tmp_path / "nope.tar.gz")])
     assert result.exit_code == 1

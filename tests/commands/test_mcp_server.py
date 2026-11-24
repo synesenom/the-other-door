@@ -687,14 +687,6 @@ def test_enrich_refuses_a_cv_file_outside_the_data_folder(tmp_path, monkeypatch)
     assert "outside the data folder" in server.enrich(files=[str(outside)])["error"]
 
 
-def test_init_profile_keeps_the_photo_key_inside_the_data_folder(tmp_path, monkeypatch):
-    from door.core import workspace
-
-    monkeypatch.setattr(workspace, "HOME", tmp_path / "home")
-    (tmp_path / "home").mkdir()
-    assert "outside the data folder" in server.init_profile(other={"photo": str(tmp_path / "x.jpg")})["error"]
-
-
 def test_story_tools_wrap_the_cores_and_turn_expected_errors_into_error(tmp_path, monkeypatch):
     from door.core import workspace
 

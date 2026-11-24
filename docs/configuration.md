@@ -41,7 +41,9 @@ or empty, everything stays where it is today. What moves: `profile/`, `jobs/`, `
 running *The other door*, and rewritten when that changes; the checkout's own `.mcp.json` is used when
 `DOOR_HOME` is unset). What does not: `profile.example/`, and `src/`,
 which ship with the code. Relative paths in `config.json` (`cv_content`, `cv_template`,
-`cover_letter_template`, `photo`, e.g. `profile/cv.md`) resolve from `DOOR_HOME`. `./door doctor` prints
+`cover_letter_template`, `photo`, e.g. `profile/cv.md`) resolve from `DOOR_HOME`, and must name a file
+inside `profile/` (one that points elsewhere is refused with the key's name, so an imported archive or a
+Drive copy cannot make the tailor read any file). `./door doctor` prints
 `data folder: <path>`. Register the MCP server for Claude Code with the same variable in its
 `env` if you use it with a custom folder.
 
@@ -201,9 +203,9 @@ The keys you set up — `init` and `/onboard` ask for the ones without a default
 |-----|------|----------------------|---------|
 | `name`, `email` | string | required | tailoring |
 | `location` | string | required | scrapers (search location), pre-filter, prescreen |
-| `cv_template`, `cover_letter_template` | path or `null` | the built-in template (`profile/<name>` if you put one there); a path set must exist | tailoring |
-| `cv_content` | path | required (the file may not exist yet) | `match`, prescreen, tailoring |
-| `photo` | path or `null` | none | your CV photo, a JPEG or PNG; `compile` puts it in the CV where the job country's conventions allow one (below). Set it by giving the picture to `init`, the desktop app's Profile screen or `/onboard`, not by hand: they check it, drop its EXIF and GPS data, scale it to CV size and keep it as `profile/photo.jpg`. A file `config.json` names that is missing, over 10 MB or not a JPEG or PNG is refused with the reason under the key |
+| `cv_template`, `cover_letter_template` | path or `null` | the built-in template (`profile/<name>` if you put one there); a path set must exist and lie inside `profile/` | tailoring |
+| `cv_content` | path | required (the file may not exist yet; it must lie inside `profile/`) | `match`, prescreen, tailoring |
+| `photo` | path or `null` | none | your CV photo, a JPEG or PNG; `compile` puts it in the CV where the job country's conventions allow one (below). Set it by giving the picture to `init`, the desktop app's Profile screen or `/onboard`, not by hand: they check it, drop its EXIF and GPS data, scale it to CV size and keep it as `profile/photo.jpg`. A file `config.json` names that lies outside `profile/`, is missing, over 10 MB or not a JPEG or PNG is refused with the reason under the key |
 | `role_targets` | list of strings, ≥1 | required | scrapers, prescreen, `match` |
 | `search_keywords` | list of strings | `[]` (falls back to `role_targets`) | scrapers; `init`'s reading step (or "expand my search keywords") fills it in, in English and each of your `languages` (a Hungarian reader gets "accountant" and "könyvelő"); one list, any mix of languages |
 | `topic_terms` | list of strings | `[]` (any content word of the keywords) | what makes a job title *on topic* (which employers are queued and followed, which feed postings are kept): one of these or a whole keyword. Proposed with the keywords, in each of your `languages`: your field, its subjects and neighbours (for an accountant "accounting", "audit", "tax"), never a bare role noun like "analyst". Plain words are enough: a term of six letters or more also matches as the end of a word ("physics" in "Astrophysics"), inside a word when `languages` has a compounding one (Danish, Hungarian, Swedish: "sygeplejerske" in "Intensivsygeplejerske"), and with the plural endings of your `languages` ("reward" in "Rewards"). Write `x*` (starts a word), `*x` (ends one) or `*x*` (inside one) to say it yourself. "&" reads as "and" (`m&e` matches "M&amp;E Officer"), and an all-caps term of three letters or more (`MEAL`) is case-sensitive, so it is not a "meal" |

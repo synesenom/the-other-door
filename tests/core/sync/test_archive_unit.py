@@ -269,17 +269,6 @@ def test_import_holds_the_ledger_lock(env, monkeypatch):
     assert seen["holder"]["purpose"] == "import"
 
 
-def test_import_warns_about_paths_missing_on_this_machine(env):
-    config = json.loads((env.profile_dir / "config.json").read_text())
-    config["cv_template"] = str(env.tmp_path / "no-such-template.html")
-    (env.profile_dir / "config.json").write_text(json.dumps(config))
-    archive = _export(env, env.tmp_path / "out.tar.gz")["path"]
-
-    result = _import(env, archive)
-
-    assert any("cv_template" in w for w in result["warnings"])
-
-
 def _set_plan(profile_dir, path):
     config = json.loads((profile_dir / "config.json").read_text())
     config["claude_config_dir"] = path
@@ -307,17 +296,6 @@ def test_the_claude_plan_folder_stays_on_its_computer(env):
     result = _import(env, archive)
     assert json.loads((env.dst_profile / "config.json").read_text())["claude_config_dir"] == own
     assert result["warnings"] == []
-
-
-def test_import_relative_template_paths_are_not_warned_about(env):
-    config = json.loads((env.profile_dir / "config.json").read_text())
-    config["cv_content"] = "profile/cv.md"
-    (env.profile_dir / "config.json").write_text(json.dumps(config))
-    archive = _export(env, env.tmp_path / "out.tar.gz")["path"]
-
-    result = _import(env, archive)
-
-    assert not any("cv_content" in w for w in result["warnings"])
 
 
 def test_import_missing_archive(env):

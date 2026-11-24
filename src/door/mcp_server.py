@@ -283,9 +283,6 @@ WRITING_TOOLS = frozenset({
 # model as ``{"error": "<message>"}`` — the same wording the CLI prints after
 # ``Error: `` — rather than as a stack trace. Anything else is a bug and
 # propagates.
-# Config keys naming a file the tailor reads (`init_profile`'s `other`): kept inside the data folder.
-_PATH_KEYS = ("cv_content", "cv_template", "cover_letter_template", "photo")
-
 _EXPECTED_ERRORS = (
     ValueError,
     LookupError,
@@ -1014,9 +1011,6 @@ def init_profile(
         ``{"linkedin_discovery": true}``) comes back with its disclaimer in `disclaimers`: show each text to
         the user verbatim. A source stays off unless the user chose it.
     """
-    for key in _PATH_KEYS:  # the tailor reads these files: never one outside the data folder
-        if isinstance((other or {}).get(key), str):
-            path_scope.check(other[key])
     fields = profile_cmd._profile_fields(
         name=name, email=email, location=location, languages=languages, role_targets=role_targets,
         search_keywords=search_keywords, topic_terms=topic_terms, remote=remote, min_score=min_score,
