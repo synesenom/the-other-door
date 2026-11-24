@@ -184,9 +184,10 @@ def test_doctor_quick_reaches_the_checks_from_core_cli_and_tool(env, monkeypatch
     assert seen == [True, False, True, False, True]
 
 
-def test_doctor_fix_refuses_quick(env):
-    result = CliRunner().invoke(cli, ["doctor", "--fix", "--quick"])
-    assert result.exit_code == 2 and "--quick" in result.output
+@pytest.mark.parametrize("flag", ["--quick", "--probe"])
+def test_doctor_fix_refuses_quick_and_probe(env, flag):
+    result = CliRunner().invoke(cli, ["doctor", "--fix", flag])
+    assert result.exit_code == 2 and flag in result.output
 
 
 def test_doctor_shows_a_line_while_chromium_prints(env, monkeypatch):

@@ -538,7 +538,7 @@ def check_scrapers(
         if blocked:
             fix = f"the site no longer allows this request; open an issue (or unfollow its employers)"
         elif not (result.get("wall") or result.get("unreachable")):
-            fix = "the site's page changed; open an issue for the scraper"
+            fix = "the site may have changed; open an issue for the scraper if it persists"
         else:
             fix = "usually transient; re-run doctor later"
         checks.append(_scraper_check(name, status, detail, fix))

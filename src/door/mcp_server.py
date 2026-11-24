@@ -1596,8 +1596,7 @@ def doctor(probe: bool = False, quick: bool = False) -> dict:
         ``{"ok", "checks": [{"name", "status": "ok" | "missing" | "warn" |
         "drift", "required", "detail", "fix"}], "last_run", "last_scrape"}`` —
         ``fix`` is the command to run for a failed check. ``drift`` means a
-        site's page no longer has the structure its scraper reads (offered a
-        fix by `setup` with ``probe=True``); a ``scraper:`` ``warn`` is an unreachable site, a
+        site's page no longer has the structure its scraper reads; a ``scraper:`` ``warn`` is an unreachable site, a
         login/bot wall or a result count far from the recent runs. Neither
         makes ``ok`` false.
     """

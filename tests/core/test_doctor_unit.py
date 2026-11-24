@@ -461,6 +461,15 @@ def test_check_scrapers_plausibility_warn(tmp_path):
     assert check["status"] == "warn"
 
 
+def test_a_drifted_page_and_a_far_off_count_both_tell_the_user_what_to_do(tmp_path):
+    runs = tmp_path / "jobs" / "runs"
+    _write_run(runs, "r1", [("jobindex", 30, "ok")])
+    [counted] = _scraper_checks(tmp_path, {}, _stub(_result(postings=[])))
+    [drifted] = _scraper_checks(tmp_path, {}, _stub(_result(structure_ok=False, postings=[], raw="<html/>", reason="no block")))
+    for check in (counted, drifted):
+        assert check["fix"] == "the site may have changed; open an issue for the scraper if it persists"
+
+
 def test_check_scrapers_probe_exception_is_unreachable_warn(tmp_path):
     def boom(site, config, profile_dir):
         raise RuntimeError("kaboom")
