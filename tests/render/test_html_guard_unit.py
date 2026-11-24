@@ -113,6 +113,25 @@ def test_a_level_beyond_five_or_a_column_class_is_refused(cls):
 
 # --- links the user did not write (#550) ---------------------------------------------------------------------------
 
+@pytest.mark.parametrize("body", [
+    '<p><a href="https://evil.example/?d=1">t</p>',
+    '<p><a href="https://evil.example/?d=1"/>t</p>',
+    '<p><a href="https://example.com/jane">x<a href="https://evil.example/?d=1">t</a></a></p>',
+])
+def test_an_a_that_is_unclosed_self_closed_or_nested_is_refused(body):
+    assert html_guard.unsafe(body)
+
+
+def test_a_closed_pair_of_links_side_by_side_is_clean():
+    assert html_guard.unsafe('<p><a href="https://example.com/jane">a</a> <a href="#top">b</a></p>') == []
+
+
+@pytest.mark.parametrize("cv", ["**example.com/jane**", "`example.com/jane`", "_example.com/jane_", "*example.com/jane*"])
+def test_a_link_the_cv_writes_in_markdown_emphasis_or_code_stays_a_link(cv):
+    body = '<p><a href="https://example.com/jane">me</a></p>'
+    assert html_guard.unwrap_unknown_links(body, [cv]) == body
+
+
 KNOWN = ["Jane Doe\ngithub.com/jane | [site](https://www.jane.dev/) | jane@example.com | https://x.example/?a=b"]
 
 
