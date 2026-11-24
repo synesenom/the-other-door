@@ -11,7 +11,7 @@ describe('styles.css', () => {
     expect(css).not.toMatch(/rgba?\(|color-mix/)
   })
 
-  // A screen's width is size.column-width or size.wide-width (#536): screens that typed their own drifted apart.
+  // A screen's width is size.column-width or size.wide-width (PR 536): screens that typed their own drifted apart.
   describe('screen widths', () => {
     const column = tokens.size['column-width'] as number
     const typedWidths = (sheet: string): string[] =>
