@@ -264,18 +264,18 @@ def test_the_portal_is_verified_against_the_system_trust_store(monkeypatch):
     from door.scrapers import http_client
 
     mounted = []
-    real_init = http_client.SystemTrustAdapter.__init__
+    real_init = http_client._PublicAdapter.__init__
 
     def spy(self, *a, **k):
-        mounted.append(self)
         real_init(self, *a, **k)
+        mounted.append(self.system_trust)
 
-    monkeypatch.setattr(http_client.SystemTrustAdapter, "__init__", spy)
+    monkeypatch.setattr(http_client._PublicAdapter, "__init__", spy)
     _serve_list()
     _serve_details(_ALL)
 
     assert kozigallas.scrape(_CFG)
-    assert mounted
+    assert mounted and all(mounted)
 
 
 @responses.activate

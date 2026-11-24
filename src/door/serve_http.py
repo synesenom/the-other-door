@@ -248,7 +248,7 @@ def build_app(*, home: Path, web_dir: Path | None, name: str):
                 seen[device] = now
                 pairing.touch(home, device, now=now)
         if path == "/mcp" and scope.get("method") == "POST":
-            # A phone is not a Claude Code session: only its own tools, no paths, no home-network addresses.
+            # A phone is not a Claude Code session: only its own tools, no paths.
             body = await _read_body(receive)
             if body is None:
                 return await JSONResponse({"error": "That request is too large."}, status_code=413)(scope, receive, send_secured)
