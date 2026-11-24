@@ -93,6 +93,13 @@ def test_failed_postings_are_listed_and_counted_in_the_summary(env, fakes):
     assert block["failed"] == ["job-x", "job-y"] and block["summary"].endswith(", 2 failed")
 
 
+def test_the_summary_names_the_waiting_postings_only_when_there_are_some(env, fakes):
+    fakes.scored = {"scored": 1, "waiting": 4}
+    assert run(env)["summary"].endswith(", 4 waiting")
+    fakes.scored = {"scored": 1, "waiting": 0}
+    assert "waiting" not in run(env)["summary"]
+
+
 def test_a_day_with_nothing_written_still_has_a_directory_to_score(env, fakes):
     run(env)
     assert (env.jobs_dir / "postings" / date.today().isoformat()).is_dir()

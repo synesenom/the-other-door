@@ -155,7 +155,7 @@ def _ask_aliases(unknown: list[str], known: list[str], profile_dir: Path) -> tup
             if low not in sent or low in new:
                 continue
             canonical = g["canonical"].strip()
-            if len(canonical) > MAX_SKILL_NAME or "\n" in canonical:
+            if len(canonical) > MAX_SKILL_NAME or len(canonical.splitlines()) > 1:
                 canonical = ""
             new[low] = (canonical or sent[low]) if g["skill"] else None
         for low, name in sent.items():

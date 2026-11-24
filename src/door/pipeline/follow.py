@@ -133,7 +133,8 @@ def _verdict(entry: dict, found: tuple[str, dict] | None) -> dict:
 
 def _retry(row: dict) -> bool:
     """An employer whose only missing answer was Wikidata's, which was not asked (it stopped answering or the
-    run's budget was spent): not recorded, so it is not settled for 90 days and a later run asks again."""
+    run's budget was spent), or the careers model's, which was over `careers_ai.MAX_ASKS`: not recorded, so it
+    is not settled for 90 days and a later run asks again."""
     return row["status"] == "unresolved" and bool(row.get("retry")) and not row["error"]
 
 
