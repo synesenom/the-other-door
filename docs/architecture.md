@@ -365,7 +365,7 @@ A site module imports `door` code only from `door.scrapers.sdk` (re-exports and 
 
 `known_ids` are platform ids already in history (a scraper may skip fetching their details); `since` (in `kwargs`) is the freshness cutoff, a `datetime` or `None`. `jobindex` also exposes `iter_scrape`, so postings are written as they arrive. Network and parse errors never raise: they are reported live with `report()` and recorded with `record_error()` (`src/door/scrapers/__init__.py`) so `_scrape_core` can tell a broken scraper (`failed`) from a quiet day (`ok`). Scrapers never `print`.
 
-The per-company feed scrapers stay stateless: they read their employers from the config dict under the key in the table's "Employers key" column, and `_scrape_core` fills those keys from the employer list (`companies.feed_config(profile_dir)` merged into the config it hands the scrapers; `doctor`'s probes and the scraper-fix gate do the same). `Site.config_key` names that key, and a feed whose platform has no followed employer is `not_configured`.
+The per-company feed scrapers stay stateless: they read their employers from the config dict under the key in the table's "Employers key" column, and `_scrape_core` fills those keys from the employer list (`companies.feed_config(profile_dir)` merged into the config it hands the scrapers; `doctor`'s probes do the same). `Site.config_key` names that key, and a feed whose platform has no followed employer is `not_configured`.
 
 | Module | Countries | Site | Auth | Employers key (from `companies.json`) | Transport |
 |--------|--------|------|------|------------|-----------|
