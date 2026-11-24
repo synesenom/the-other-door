@@ -1,4 +1,4 @@
-"""`doctor`: check prerequisites; with `--fix`, install what is missing and offer scraper fixes."""
+"""`doctor`: check prerequisites; with `--fix`, install what is missing."""
 
 import shutil
 import subprocess
@@ -61,7 +61,7 @@ def _check_kind(check: dict) -> str:
 
 
 @click.command()
-@click.option("--probe", "probe", is_flag=True, default=False, help="Also probe each configured site live for a scraper that no longer fits it (slow). With --fix, offer to repair a drifted one.")
+@click.option("--probe", "probe", is_flag=True, default=False, help="Also probe each configured site live for a scraper that no longer fits it (slow).")
 @click.option("--quick", "quick", is_flag=True, default=False, help="Skip the test print: Chromium only has to start (what the desktop app asks for).")
 @click.option("--fix", "fix", is_flag=True, default=False, help="Install what is missing (Chromium, the claude CLI), then check the MCP server starts.")
 @click.option("--yes", is_flag=True, default=False, help="With --fix: install without asking.")
@@ -82,20 +82,17 @@ def doctor(probe: bool, quick: bool, fix: bool, yes: bool, no_chromium: bool, no
     installs the rest with one progress line each, and ends with a live
     handshake with the MCP server Claude Code will start
     (./scripts/setup.sh ends with this). Safe to re-run — it is the repair
-    command. With --probe too, a drifted scraper is offered a fix: after
-    asking, the scraper-fixer agent repairs it on a new branch, the offline
-    tests and a fresh probe gate it, and a PR is opened (or the branch and
-    commands are printed when push or `gh` is unavailable). Exit 0 only when
-    every required tool is in place and the MCP server answers.
+    command. Exit 0 only when every required tool is in place and the MCP
+    server answers.
     """
     if not fix:
         if yes or no_chromium or no_claude:
             raise click.UsageError("--yes, --no-chromium and --no-claude only go with --fix.")
         _check(probe, quick)
         return
-    if quick:
-        raise click.UsageError("--quick does not go with --fix.")
-    _fix(yes, no_chromium, no_claude, fix_scrapers=probe)
+    if quick or probe:
+        raise click.UsageError("--quick and --probe do not go with --fix.")
+    _fix(yes, no_chromium, no_claude)
 
 
 def _err_console():
@@ -247,9 +244,7 @@ def _setup_core(
     interactive: bool = False,
     profile_dir: Path | None = None,
     jobs_dir: Path | None = None,
-    fix_scrapers: list[str] | None = None,
     report: dict | None = None,
-    probe_sites: bool = False,
 ) -> dict:
     """Install the missing prerequisites `doctor` reports. Never prints.
 
@@ -267,26 +262,14 @@ def _setup_core(
         interactive: A person is at the terminal: `sudo` may prompt and the
             commands' output streams through. Otherwise `sudo -n` (fail
             fast instead of hanging) and output is captured.
-        fix_scrapers: Sites whose drifted scraper to repair (with ``yes``):
-            each runs the headless scraper-fixer on a fix branch, gates it
-            and opens a PR (`door.core.scraper_fix`). Never run unless
-            named here.
         report: A `doctor` report to reuse instead of running the checks
             again (the CLI passes the one it already has).
-        probe_sites: Probe each configured site live (as `doctor --probe`)
-            so ``fixes`` can offer a drifted scraper; implied by
-            ``fix_scrapers``. Off by default: the installs need no network.
 
     Returns:
         ``{"outcome": "needs_confirmation" | "ok" | "incomplete",
         "platform", "plan": [{"tool", "commands", "hint", "note"}],
         "results": [{"tool", "ok", "ran": [argv...], "error"?}], "doctor":
-        <run_checks>, "todo": [str, ...], "fixes": [...]}``. ``fixes`` is the
-        offer — ``[{"site", "check"}]`` for each ``scraper: <site>`` check
-        with a code-level drift — until fixes run, then one outcome per site:
-        ``{"site", "outcome": "pr" | "local_branch" | "gate_failed" |
-        "fixer_failed" | "refused", "url"?, "branch"?, "commands"?,
-        "detail"?, "error"?}``.
+        <run_checks>, "todo": [str, ...]}``.
 
     Raises:
         ValueError: `install` names an unknown tool.
@@ -298,12 +281,7 @@ def _setup_core(
     jobs_dir = jobs_dir if jobs_dir is not None else workspace.JOBS_DIR
     platform = _detect_platform()
 
-    probe_sites = probe_sites or bool(fix_scrapers)
-    before = report if report is not None else doctor.run_checks(profile_dir, jobs_dir, probe_sites=probe_sites, quick=install is not None)
-    offered = [
-        {"site": c["name"].split(": ", 1)[1], "check": c} for c in before["checks"]
-        if c["name"].startswith("scraper: ") and c["status"] in ("drift", "warn") and c.get("fixable")
-    ]
+    before = report if report is not None else doctor.run_checks(profile_dir, jobs_dir, quick=install is not None)
     if install is None:
         tools = _tools_to_install(before["checks"])
     else:
@@ -313,7 +291,7 @@ def _setup_core(
         tools = list(install)
 
     plan = [plan_install(t, platform, which=shutil.which) for t in tools]
-    result = {"outcome": "needs_confirmation", "platform": platform, "plan": plan, "results": [], "doctor": before, "todo": [], "fixes": offered}
+    result = {"outcome": "needs_confirmation", "platform": platform, "plan": plan, "results": [], "doctor": before, "todo": []}
     if not yes:
         return result
 
@@ -327,59 +305,7 @@ def _setup_core(
         doctor=after,
         todo=_setup_todo(after, profile_dir, workspace.PROFILE_EXAMPLE_DIR, skip_profile),
     )
-    if fix_scrapers:
-        result["fixes"] = _setup_run_fixes(fix_scrapers, before, profile_dir, jobs_dir)
     return result
-
-
-def _setup_run_fixes(sites: list[str], report: dict, profile_dir: Path, jobs_dir: Path) -> list[dict]:
-    """Run the gated scraper fix for each named site; one outcome dict per site."""
-    from door.core import scraper_fix
-    from door.core.lock import LockHeldError
-
-    checks = {c["name"]: c for c in report["checks"]}
-    outcomes = []
-    for site in sites:
-        check = checks.get(f"scraper: {site}") or {"status": "none"}
-        try:
-            outcomes.append(scraper_fix.fix_scraper(
-                site, jobs_dir=jobs_dir, repo_root=workspace.REPO_ROOT, profile_dir=profile_dir, check=check,
-            ))
-        except LockHeldError as exc:
-            outcomes.append({"site": site, "outcome": "refused", "error": str(exc)})
-    return outcomes
-
-
-def _setup_fix_pass(yes: bool) -> dict:
-    """Probe the sites once, offer the drifted-scraper repairs, ask first, run and
-    print each outcome; return the probed doctor report."""
-    plan = _setup_core(install=[], skip_profile=True, probe_sites=True)
-    report, offers = plan["doctor"], plan["fixes"]
-    from rich.text import Text
-
-    console = common._console()
-    if offers:
-        common._section(console, "Scrapers")
-    approved = []
-    for offer in offers:
-        common._mark_line(console, "warn", Text(f"fix scraper: {offer['site']} — {offer['check']['detail']}"))
-        console.print("      [dim]runs the scraper-fixer agent on a new branch, gates it on the tests and a fresh probe, opens a PR[/]", soft_wrap=True)
-        if yes or _prompts.confirm(f"fix_{offer['site']}", f"Fix scraper: {offer['site']}?", default=False):
-            approved.append(offer["site"])
-    if not approved:
-        return report
-    result = _setup_core(install=[], fix_scrapers=approved, yes=True, report=report, skip_profile=True, interactive=True)
-    for fix in result["fixes"]:
-        outcome = fix["outcome"]
-        if outcome == "pr":
-            common._mark_line(console, "ok", Text(f"{fix['site']}: PR opened {fix['url']} (branch {fix['branch']})"))
-        elif outcome == "local_branch":
-            common._mark_line(console, "warn", Text(f"{fix['site']}: fix committed on branch {fix['branch']}; finish by hand:"))
-            for command in fix["commands"]:
-                console.print(Text.assemble("      ", ("$ ", "dim"), (command, "bold")), soft_wrap=True)
-        else:
-            common._mark_line(console, "fail", Text(f"{fix['site']}: {outcome} — {fix.get('detail') or fix.get('error')}"))
-    return report
 
 
 def _tools_to_install(checks: list[dict], skipped: frozenset[str] = frozenset()) -> list[str]:
@@ -412,8 +338,8 @@ def _register_mcp_server(platform: str) -> tuple[bool, str | None]:
     return check["status"] == "ok", None if check["status"] == "ok" else f"{check['detail']} — {check['fix']}"
 
 
-def _fix(yes: bool, no_chromium: bool, no_claude: bool, fix_scrapers: bool) -> None:
-    """`doctor --fix`: install what is missing, check the MCP server, optionally fix drifted scrapers."""
+def _fix(yes: bool, no_chromium: bool, no_claude: bool) -> None:
+    """`doctor --fix`: install what is missing, check the MCP server."""
     from rich.text import Text
 
     from door.core import doctor
@@ -445,9 +371,6 @@ def _fix(yes: bool, no_chromium: bool, no_claude: bool, fix_scrapers: bool) -> N
         report = doctor.run_checks(workspace.PROFILE_DIR, workspace.JOBS_DIR)
 
     mcp_ok = _progress.step("MCP server", lambda: _register_mcp_server(_detect_platform()))
-
-    if fix_scrapers:
-        report = _setup_fix_pass(yes)
 
     missing = [c for c in report["checks"] if c["status"] == "missing" and c["name"] != "profile"]
     login = next((c for c in report["checks"] if c["name"] == "claude login" and c["status"] != "ok"), None)

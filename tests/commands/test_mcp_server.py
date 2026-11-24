@@ -444,7 +444,7 @@ _SURFACE_ONLY = {"quiet", "ctx"}
 # parameter on one side covers several on the other.
 _ALIASES = {
     ("jobs add", "source"): {"path", "text"},  # a file argument, or pasted text
-    ("doctor", "fix"): {"install", "fix_scrapers"},  # `--fix` is the `setup` tool
+    ("doctor", "fix"): {"install"},  # `--fix` is the `setup` tool
     ("doctor", "no_chromium"): {"install"},
     ("doctor", "no_claude"): {"install"},
     ("init", "show"): set(),  # `--show` is the no-argument `show_profile` tool
@@ -759,26 +759,6 @@ def test_show_with_open_opens_both_prepared_pdfs(cli_env, monkeypatch):
     assert opened == []
     server.show("jobindex-top", open=True)
     assert opened == [str(out / "cv.pdf"), str(out / "cover_letter.pdf")]
-
-
-def test_setup_runs_the_scraper_fix_it_is_given(cli_env, monkeypatch):
-    import door.core.doctor as doctor
-    from door.core import scraper_fix
-
-    checks = [
-        {"name": "claude CLI", "status": "ok", "required": True, "detail": "", "fix": None},
-        {"name": "scraper: jobindex", "status": "drift", "required": False, "detail": "no results block",
-         "fix": "choose `fix scraper` in `setup`", "fixable": True},
-    ]
-    monkeypatch.setattr(doctor, "run_checks", lambda *a, **k: {"ok": True, "checks": checks, "last_run": None, "last_scrape": []})
-    fixed = []
-    monkeypatch.setattr(scraper_fix, "fix_scraper", lambda site, **kw: fixed.append(site) or {"site": site, "outcome": "pr", "url": "u"})
-
-    server.setup(install=[], yes=True)
-    assert fixed == []
-    result = server.setup(install=[], yes=True, fix_scrapers=["jobindex"])
-    assert fixed == ["jobindex"]
-    assert result["fixes"] == [{"site": "jobindex", "outcome": "pr", "url": "u"}]
 
 
 class _Drive:

@@ -15,7 +15,7 @@ import types
 import pytest
 
 from door.commands import prepare as prepare_cmd
-from door.core import scraper_fix, usage, workspace
+from door.core import usage, workspace
 from door.matching import language, scorer
 from door.matching.language import _run_claude as real_language_run_claude  # conftest stubs the attribute
 
@@ -70,13 +70,7 @@ def _tailor(calls, tmp_path, monkeypatch):
     return "tailoring", None
 
 
-def _scraper_fixer(calls, tmp_path, monkeypatch):
-    monkeypatch.setattr(subprocess, "run", _capture(calls, _stdout("fixed")))
-    assert scraper_fix._run_scraper_fixer("jobindex", tmp_path / "raw.html", repo_root=tmp_path) == "fixed"
-    return "scraper_fix", None
-
-
-@pytest.mark.parametrize("call_site", [_scoring, _title_translation, _tailor, _scraper_fixer],
+@pytest.mark.parametrize("call_site", [_scoring, _title_translation, _tailor],
                          ids=lambda f: f.__name__.strip("_"))
 def test_each_claude_call_site(call_site, tmp_path, monkeypatch):
     profile_dir = tmp_path / "profile"

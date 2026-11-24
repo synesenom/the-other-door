@@ -432,22 +432,13 @@ return nothing. Two things catch that:
   page 1 of the first search keyword (or the first board you configured), run through that
   scraper's `probe()`, shown as a `scraper: <site>` line (a site whose terms reserve it is never probed). The probes make live
   requests, so they can take a while — which is why a plain `doctor`
-  stays offline and instant. `doctor --probe --fix` probes once to offer fixes. `✓` means the page still
+  stays offline and instant. `✓` means the page still
   has the structure the scraper reads. `≠` (drift) means the request succeeded but that
   structure is gone, which is what a site redesign looks like. `!` (warn) is a site that is
   unreachable, a login or bot wall, or a result count far from your recent `jobs/runs/`
   (none where runs average 3 or more, or over five times the average). On drift or warn the
   raw response is saved to `jobs/drift/<site>/<timestamp>.<ext>`. Neither changes the exit
   code.
-
-When a scraper has drifted, `./door doctor --probe --fix` offers `fix scraper: <site>`
-and asks first. On yes it needs a clean git working tree and no `find` in progress, makes a
-`fix/scraper-<site>-<date>` branch, and has the headless scraper-fixer agent (`claude -p`,
-your plan's quota) patch the scraper test-first with a trimmed fixture. The fix is kept only
-if the offline test suite passes and a fresh probe reports the site healthy; it is then
-committed, pushed and opened as a pull request with `gh`. Without push access or `gh`, the
-local branch and the commands to finish by hand are printed instead. A failed fix is
-discarded and your branch left as it was. Check the fixture in the PR before you merge it.
 
 ## Discovery sources
 

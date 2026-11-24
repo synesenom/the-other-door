@@ -33,7 +33,7 @@ A branch is named `<type>/<slug>` (with an issue: `<type>/<issue>-<slug>`), `<sl
 | `docs` | documentation only |
 | `refactor`, `test`, `ci`, `chore` | internal: no user would notice |
 
-Dependabot's `dependabot/...` branches and the skills' own (`feat/country-<cc>`, `feat/profession-...`, `release/vX.Y.Z`, `fix/scraper-...`) already follow it. If `BRANCH` has no such prefix, or its prefix does not match what the commits do (`git log <FROM>..HEAD --oneline`), propose a name with AskUserQuestion (the proposal first, "Keep <BRANCH>" second). On a new name, and only if the branch was never pushed (`git ls-remote --heads origin <BRANCH>` is empty), `git branch -m <new>` and use it as `BRANCH`; a pushed branch keeps its name and the body's **Type** line says the kind.
+Dependabot's `dependabot/...` branches and the skills' own (`feat/country-<cc>`, `feat/profession-...`, `release/vX.Y.Z`) already follow it. If `BRANCH` has no such prefix, or its prefix does not match what the commits do (`git log <FROM>..HEAD --oneline`), propose a name with AskUserQuestion (the proposal first, "Keep <BRANCH>" second). On a new name, and only if the branch was never pushed (`git ls-remote --heads origin <BRANCH>` is empty), `git branch -m <new>` and use it as `BRANCH`; a pushed branch keeps its name and the body's **Type** line says the kind.
 
 ---
 

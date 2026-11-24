@@ -438,27 +438,36 @@ def test_check_scrapers_one_check_per_site_and_none_is_omitted(tmp_path, monkeyp
 def test_check_scrapers_drift_saves_raw_response(tmp_path):
     probe = _stub(_result(structure_ok=False, postings=[], raw="<html>new</html>", reason="no block"))
     [check] = _scraper_checks(tmp_path, {}, probe)
-    assert check["status"] == "drift" and check["fixable"] is True
+    assert check["status"] == "drift"
     saved = tmp_path / "jobs" / "drift" / "jobindex" / "20260924T120000Z.html"
     assert saved.read_text(encoding="utf-8") == "<html>new</html>"
     assert str(saved) in check["detail"]
 
 
-def test_check_scrapers_warn_saves_raw_but_wall_is_not_fixable(tmp_path, monkeypatch):
+def test_check_scrapers_warn_saves_raw(tmp_path, monkeypatch):
     from door.core import sites
 
     monkeypatch.setattr(sites, "boards_for_location", lambda location: [])
     probe = _stub(_result(structure_ok=False, postings=[], wall=True, ext="json", raw="{}"))
     [check] = _scraper_checks(tmp_path, {"lever_companies": ["acme"]}, probe)
-    assert check["status"] == "warn" and check["fixable"] is False
+    assert check["status"] == "warn"
     assert (tmp_path / "jobs" / "drift" / "lever" / "20260924T120000Z.json").exists()
 
 
-def test_check_scrapers_plausibility_warn_is_fixable(tmp_path):
+def test_check_scrapers_plausibility_warn(tmp_path):
     runs = tmp_path / "jobs" / "runs"
     _write_run(runs, "r1", [("jobindex", 30, "ok")])
     [check] = _scraper_checks(tmp_path, {}, _stub(_result(postings=[])))
-    assert check["status"] == "warn" and check["fixable"] is True
+    assert check["status"] == "warn"
+
+
+def test_a_drifted_page_and_a_far_off_count_both_tell_the_user_what_to_do(tmp_path):
+    runs = tmp_path / "jobs" / "runs"
+    _write_run(runs, "r1", [("jobindex", 30, "ok")])
+    [counted] = _scraper_checks(tmp_path, {}, _stub(_result(postings=[])))
+    [drifted] = _scraper_checks(tmp_path, {}, _stub(_result(structure_ok=False, postings=[], raw="<html/>", reason="no block")))
+    for check in (counted, drifted):
+        assert check["fix"] == "the site may have changed; open an issue for the scraper if it persists"
 
 
 def test_check_scrapers_probe_exception_is_unreachable_warn(tmp_path):
@@ -466,7 +475,7 @@ def test_check_scrapers_probe_exception_is_unreachable_warn(tmp_path):
         raise RuntimeError("kaboom")
 
     [check] = _scraper_checks(tmp_path, {}, boom)
-    assert check["status"] == "warn" and check["fixable"] is False
+    assert check["status"] == "warn"
     assert "unreachable" in check["detail"] and "Traceback" not in check["detail"]
 
 
@@ -680,7 +689,7 @@ def test_a_robots_disallowed_probe_is_a_warning_nobody_can_fix_in_code(tmp_path)
 
     result = probe_failure(RobotsBlocked("https://www.jobindex.dk/jobsoegning?q=x"), "html")
     [check] = _scraper_checks(tmp_path, {}, _stub(result))
-    assert check["status"] == "warn" and check["fixable"] is False
+    assert check["status"] == "warn"
     assert "robots.txt disallows it" in check["detail"]
     assert "--fix" not in check["fix"]
 

@@ -533,6 +533,8 @@ def _score_chunk(
                 for item in items:
                     entry = dict(item)
                     job_id = entry.pop("job_id")
+                    if job_id not in ids or job_id in results:  # only this chunk's jobs, each once: the first answer wins
+                        continue
                     entry["scored_by"] = model
                     entry["scored_at"] = now
                     results[job_id] = entry

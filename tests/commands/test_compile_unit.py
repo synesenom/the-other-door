@@ -338,6 +338,7 @@ def test_an_english_ad_is_not_respaced(world):
 
 
 def test_a_link_stays_as_written_in_french(world):
+    (world.profile / "cv.md").write_text("arXiv: https://x.example/?a=b")
     world.make(cv='<p><a href="https://x.example/?a=b">arXiv:2408.10754</a></p>', posting={**POSTING, "language": "fr"})
     _compile(world)
     assert 'href="https://x.example/?a=b">arXiv:2408.10754</a>' in world.print.calls[0]["html"]
@@ -403,6 +404,7 @@ def test_a_header_with_a_tagline_and_kinds_compiles_and_the_file_stays_as_writte
     body = ('<header class="cv-header"><h1>Jane Doe</h1><p class="tagline">Controller | Reporting</p>'
             '<p class="contact"><span class="phone">+45 1</span><span class="linkedin">'
             '<a href="https://www.linkedin.com/in/jane">LinkedIn</a></span></p></header><h2>Experience</h2>')
+    (world.profile / "cv.md").write_text("linkedin.com/in/jane")
     world.make(cv=body)
     cv = _compile(world)["results"][0]
     assert cv["status"] == "compiled", cv
@@ -414,6 +416,7 @@ def test_a_plain_span_for_any_other_detail_passes_beside_the_kinded_ones(world):
     body = ('<header class="cv-header"><h1>Jane Doe</h1><p class="contact"><span class="phone">+45 1</span>'
             '<span>Born 1 May 1990</span><span><a href="https://example.com/jane">Portfolio</a></span></p></header>'
             "<h2>Experience</h2>")
+    (world.profile / "cv.md").write_text("https://example.com/jane")
     world.make(cv=body)
     assert _compile(world)["results"][0]["status"] == "compiled"
 
@@ -422,3 +425,11 @@ def test_a_hand_edited_location_that_is_no_text_does_not_stop_a_compile_with_no_
     (world.profile / "config.json").write_text(json.dumps({"name": "Jane Doe", "location": 5}))
     world.make(cv="<<photo>><p>Jane Doe</p>", posting={"title": "T", "company": "C"})
     assert _compile(world)["results"][0]["status"] == "compiled"
+
+
+def test_compile_prints_a_link_the_cv_does_not_write_as_its_text(world):
+    (world.profile / "cv.md").write_text("github.com/jane")
+    world.make(cv='<p><a href="https://evil.example/?d=x">my work</a> <a href="https://github.com/jane">gh</a></p>')
+    assert _compile(world)["results"][0]["status"] == "compiled"
+    assert (world.out / "cv.html").read_text(encoding="utf-8") == '<p>my work <a href="https://github.com/jane">gh</a></p>'
+    assert "evil.example" not in world.print.calls[0]["html"]

@@ -14,6 +14,7 @@ refused, and the count of markup openers must equal the count of tokens the pars
 
 from __future__ import annotations
 
+import html
 import re
 from html.parser import HTMLParser
 
@@ -63,6 +64,8 @@ class _Reader(HTMLParser):
 
 
 class _Collector(_Reader):
+    open_a = 0
+
     def _start(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         self.events += 1
         if tag not in TAGS:
@@ -82,14 +85,22 @@ class _Collector(_Reader):
 
     def handle_starttag(self, tag, attrs):
         self._start(tag, attrs)
+        if tag == "a":  # a link is one closed pair: an unclosed or nested one could keep a target the unwrap cannot see
+            self.open_a += 1
+            if self.open_a > 1:
+                self._flag("a link inside a link")
 
     def handle_startendtag(self, tag, attrs):
         self._start(tag, attrs)
+        if tag == "a":
+            self._flag("a link that is not closed")
 
     def handle_endtag(self, tag):
         self.events += 1
         if tag not in TAGS or tag in VOID:
             self._flag(f"</{tag}>")
+        elif tag == "a":
+            self.open_a = max(self.open_a - 1, 0)
 
     def handle_comment(self, data):
         self.events += 1
@@ -110,7 +121,36 @@ def unsafe(body: str) -> list[str]:
     parser = _Collector()
     parser.feed(text)
     parser.close()
-    found = parser.found
+    found = parser.found + (["a link that is not closed"] if parser.open_a else [])
     if len(_OPENER.findall(text)) != parser.events or text.count("<!--") != text.count("-->"):
         found = found + ["markup a browser could read differently (an unclosed tag or comment)"]
     return list(dict.fromkeys(found))
+
+
+_A = re.compile(r"<a\b([^<>]*)>(.*?)</a\s*>", re.S | re.I)
+_HREF = re.compile(r"""\bhref\s*=\s*(?:"([^"]*)"|'([^']*)')""", re.I)
+_WORD = re.compile(r"[^\s()<>\[\]\"'|,;]+")
+
+
+def _target(text: str) -> str:
+    """A link target without its scheme, `www.` and trailing slashes, lower case: what two spellings of one address share."""
+    t = html.unescape(text).strip().strip(".:*`_~").lower()
+    t = re.sub(r"^(?:https?://|mailto:)", "", t)
+    return re.sub(r"^www\.", "", t).rstrip("/")
+
+
+def unwrap_unknown_links(body: str, sources: list[str]) -> str:
+    """`body` with each `<a>` whose whole target is not written in one of `sources` (cv.md, the story bank) as its text.
+
+    The tailor reads the ad and the profile, so an ad can steer it into a link target that carries what it read to a
+    stranger: the target is the one part of the PDF nobody sees. The whole target is compared, scheme, `www.` and a
+    trailing slash apart, so no data rides in a known host's path.
+    """
+    known = {_target(w) for text in sources for w in _WORD.findall(text)}
+
+    def unwrap(match: re.Match) -> str:
+        href = _HREF.search(match.group(1))
+        target = _target(href.group(1) if href.group(1) is not None else href.group(2)) if href else ""
+        return match.group(0) if target and target in known else match.group(2)
+
+    return _A.sub(unwrap, body)
