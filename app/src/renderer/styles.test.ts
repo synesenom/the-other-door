@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 const css = readFileSync(join(__dirname, 'styles.css'), 'utf8')
+const tokens = JSON.parse(readFileSync(join(__dirname, '..', '..', '..', 'docs', 'design', 'tokens.json'), 'utf8'))
 
 describe('styles.css', () => {
   // Hex colours are refused for every renderer file by scripts/theme.test.ts.
@@ -12,8 +13,7 @@ describe('styles.css', () => {
 
   // A screen's width is size.column-width or size.wide-width (#536): screens that typed their own drifted apart.
   describe('screen widths', () => {
-    const column = JSON.parse(readFileSync(join(__dirname, '..', '..', '..', 'docs', 'design', 'tokens.json'), 'utf8'))
-      .size['column-width'] as number
+    const column = tokens.size['column-width'] as number
     const typedWidths = (sheet: string): string[] =>
       sheet
         .replace(/@(media|container)[^{]*\{/g, '{')
@@ -36,7 +36,6 @@ describe('styles.css', () => {
   })
 
   describe('the narrow layout', () => {
-    const tokens = JSON.parse(readFileSync(join(__dirname, '..', '..', '..', 'docs', 'design', 'tokens.json'), 'utf8'))
     const queries = [...css.matchAll(/@media \(max-width: (\d+)px\)\s*\{/g)]
 
     it('has one width media query, one pixel under the sidebar breakpoint', () => {
