@@ -29,7 +29,7 @@ change fails the run and opens the failure issue.
 
 With ``--badges DIR`` it also writes one badge per list into DIR (``live-boards.svg``,
 ``live-feeds.svg``, ``live-discovery.svg``, ``live-matcher.svg``): "boards | 3/3", how
-many passed of how many, green when every one passed, red when one changed, and orange when one was not
+many passed of how many, bright green when every one passed (the coverage badge's colours), red when one changed, and orange when one was not
 reached, not checked or has no live test. The badges are committed SVGs rather than GitHub's workflow badge URL, which can only say whether the
 whole run passed.
 
@@ -168,14 +168,15 @@ def param_outcomes(junit_xml: str, module: str, keys: list[str]) -> dict[str, st
 
 
 def dimension_badges(lists: list[tuple[str, list[tuple[str, str]]]]) -> list[tuple[str, str, str, str]]:
-    """``(file, label, "passed/total", color)`` per list: green when every one in it passed, red when one
-    changed, orange when one was not reached, not checked or has no live test."""
+    """``(file, label, "passed/total", color)`` per list, in the coverage badge's palette: bright green when
+    every one in it passed, red when one changed, orange when one was not reached, not checked or has no
+    live test."""
     out = []
     for title, rows in lists:
         file, label = _DIMENSION_BADGES[title]
         statuses = [status for _, status, *_ in rows]
         passed = statuses.count("pass")
-        color = "red" if "fail" in statuses else "green" if rows and passed == len(rows) else "orange"
+        color = "red" if "fail" in statuses else "brightgreen" if rows and passed == len(rows) else "orange"
         out.append((file, label, f"{passed}/{len(rows)}", color))
     return out
 
