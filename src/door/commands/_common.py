@@ -482,6 +482,22 @@ def _console(max_width: int = _SHOW_MAX_WIDTH):
     return Console(force_terminal=_stdout_is_tty(), highlight=False, width=width)
 
 
+_CONTROL_RE = re.compile(r"[\x00-\x08\x0b-\x1f\x7f-\x9f]")
+
+
+def plain(text) -> str:
+    """Text that came from an ad, a page or the model, safe to print: control characters (a terminal escape
+    that retitles the window, a bell) dropped, newlines and tabs kept."""
+    return _CONTROL_RE.sub("", str(text if text is not None else ""))
+
+
+def literal(text):
+    """`plain(text)` as a rich `Text`, so what looks like markup ("[link=...]") prints as itself."""
+    from rich.text import Text
+
+    return Text(plain(text))
+
+
 def _score_style(score: float | None) -> str:
     if score is None:
         return "dim"

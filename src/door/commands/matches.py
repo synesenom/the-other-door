@@ -218,12 +218,12 @@ def _render_matches_table(result: dict, *, title: str | None = None) -> None:
         headline = Text(no_wrap=True, overflow="ellipsis")
         if mark_new and match["is_new"]:
             headline.append("✦ ", style="yellow")
-        headline.append(match.get("title", ""), style="bold")
+        headline.append(common.plain(match.get("title", "")), style="bold")
         if match.get("title_en"):
-            headline.append(f" ({match['title_en']})", style="italic")
-        headline.append(f" · {match.get('company', '')}", style="cyan")
+            headline.append(f" ({common.plain(match['title_en'])})", style="italic")
+        headline.append(f" · {common.plain(match.get('company', ''))}", style="cyan")
         if match.get("location"):
-            headline.append(f" · {match['location']}", style="dim")
+            headline.append(f" · {common.plain(match['location'])}", style="dim")
         cells = [common._score_text(match.get("score")), headline]
         if show_status:
             status_text = Text(match.get("status", "unapplied"), style="magenta")
@@ -537,7 +537,7 @@ def _skill_list(skills: list[str], mark: str, style: str):
     grid.add_column(no_wrap=True)
     grid.add_column(overflow="fold")
     for skill in skills:
-        grid.add_row(Text(mark, style=style), skill)
+        grid.add_row(Text(mark, style=style), common.literal(skill))
     return grid
 
 
@@ -552,12 +552,12 @@ def _render_posting_detail(posting: dict, status: str, console=None, *, descript
 
     console = console or common._console()
 
-    header = Text(posting.get("title", ""), style="bold")
+    header = Text(common.plain(posting.get("title", "")), style="bold")
     if posting.get("title_en"):
-        header.append(f"\n{posting['title_en']}", style="italic")
-    header.append(f"\n{posting.get('company', '')}", style="cyan")
+        header.append(f"\n{common.plain(posting['title_en'])}", style="italic")
+    header.append(f"\n{common.plain(posting.get('company', ''))}", style="cyan")
     if posting.get("location"):
-        header.append(f" · {posting['location']}", style="dim")
+        header.append(f" · {common.plain(posting['location'])}", style="dim")
     console.print(Panel(header, border_style=common._score_style(posting.get("score")), padding=(0, 1)))
 
     grid = Table.grid(padding=(0, 2))
@@ -568,7 +568,7 @@ def _render_posting_detail(posting: dict, status: str, console=None, *, descript
     if posting.get("no_answer"):
         grid.add_row("", Text(f"No answer in {posting['no_answer_days']} days", style="yellow"))
     grid.add_row("Posted", _posted_text(posting.get("posted_at")))
-    grid.add_row("Source", posting.get("source", ""))
+    grid.add_row("Source", common.literal(posting.get("source", "")))
     if "language" in posting:
         language = i18n.language_label(posting["language"])
         requirement = posting.get("language_requirement")
@@ -580,21 +580,21 @@ def _render_posting_detail(posting: dict, status: str, console=None, *, descript
         grid.add_row("Work permit", permit)
     if posting.get("salary"):
         grid.add_row("Salary", f"{salary_cmd.range_text(posting['salary'])}, an estimate from public pages")
-    grid.add_row("URL", Text(posting.get("url", ""), style="blue underline"))
+    grid.add_row("URL", Text(common.plain(posting.get("url", "")), style="blue underline"))
     apply_url = posting.get("apply_url")
     if apply_url and apply_url != posting.get("url"):
-        grid.add_row("Apply", Text(apply_url, style="blue underline"))
+        grid.add_row("Apply", Text(common.plain(apply_url), style="blue underline"))
     console.print(grid)
 
     common._section(console, "Why this score")
-    console.print(Padding(Text(posting.get("score_reason") or "(unscored)", style="italic"), (0, 2)))
+    console.print(Padding(Text(common.plain(posting.get("score_reason") or "(unscored)"), style="italic"), (0, 2)))
 
     findings = (posting.get("integrity") or {}).get("findings") or []
     if (posting.get("integrity") or {}).get("verdict") == "suspicious" and findings:
         common._section(console, "Suspicious ad")
         console.print(Padding(Text("Text hidden from readers or aimed at a model was removed before scoring:", style="yellow"), (0, 2)))
         for finding in findings:
-            console.print(Padding(Text(f"{finding.get('kind', '')}: {finding.get('excerpt', '')}"), (0, 4)))
+            console.print(Padding(common.literal(f"{finding.get('kind', '')}: {finding.get('excerpt', '')}"), (0, 4)))
 
     matching = posting.get("matching_skills") or []
     missing = posting.get("missing_skills") or []
@@ -635,7 +635,7 @@ def _page_description(posting: dict, console) -> None:
 
     os.environ.setdefault("LESS", "-RF")
     with console.pager(styles=True):
-        console.print(Text.assemble((posting.get("title", ""), "bold"), " · ", (posting.get("company", ""), "cyan")))
+        console.print(Text.assemble((common.plain(posting.get("title", "")), "bold"), " · ", (common.plain(posting.get("company", "")), "cyan")))
         common._section(console, "Description")
         for renderable in _description_renderables(posting.get("description", ""), console.width - 2):
             console.print(Padding(renderable, (0, 2)))

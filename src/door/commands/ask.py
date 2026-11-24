@@ -103,9 +103,9 @@ def ask(question: tuple[str, ...], model: str | None):
         click.echo(f"Error: {exc}", err=True)
         raise SystemExit(1) from None
     console = common._console()
-    console.print(result["answer"])
+    console.print(common.literal(result["answer"]))
     go_to = result["go_to"]
     if go_to and go_to.get("job_ids"):
         by_id = {p.get("id"): p for p in selection.read_postings(workspace.JOBS_DIR)}
         names = [f"{by_id[i].get('title', '')} · {by_id[i].get('company', '')}" for i in go_to["job_ids"] if i in by_id]
-        console.print("See: " + "; ".join(names))
+        console.print(common.literal("See: " + "; ".join(names)))

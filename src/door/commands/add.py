@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 
 import click
+from rich.markup import escape
 
 from door.commands import _common as common
 from door.commands import _progress
@@ -299,7 +300,7 @@ def _render_added(result: dict, *, interactive: bool) -> None:
     # soft_wrap: a path or a command is never broken across lines, so it stays copyable.
     console.print(f"  [dim]{'Replaced' if result['replaced'] else 'Saved':<8}[/] [green]{common._display_path(result['path'])}[/]", soft_wrap=True)
     if result.get("score_error"):
-        console.print(f"  [dim]{'Score':<8}[/] [yellow]not scored: {result['score_error']}[/]", soft_wrap=True)
+        console.print(f"  [dim]{'Score':<8}[/] [yellow]not scored: {escape(common.plain(result['score_error']))}[/]", soft_wrap=True)
     common._next_steps(console, [
         (f"./door jobs prepare {words}", "tailor a CV and cover letter"),
         (f"./door jobs show {words}", "the whole ad"),
