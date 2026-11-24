@@ -1,0 +1,28 @@
+name: verify-media cleanup
+
+# The verifier keeps a PR's before-and-after screenshots on the branch verify-media/<pr>.
+# Once the PR is merged that branch is deleted; the pictures in the PR's comment go with it.
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: write
+
+jobs:
+  delete:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete verify-media/${{ github.event.pull_request.number }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          BRANCH: verify-media/${{ github.event.pull_request.number }}
+        run: |
+          if gh api "repos/$REPO/git/ref/heads/$BRANCH" --silent 2>/dev/null; then
+            gh api -X DELETE "repos/$REPO/git/refs/heads/$BRANCH"
+            echo "deleted $BRANCH"
+          else
+            echo "no $BRANCH"
+          fi

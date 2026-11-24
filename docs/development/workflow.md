@@ -25,7 +25,7 @@ Only the maintainer's (`synesenom`). The repo is public, so anyone can open an i
 2. **Claude builds it** (`/dev-resolve`): research, plan, test-first code, validation, then the reviewers (gap, simplicity, design for screens, integration). Every finding a reviewer reports carries the command it ran and its output.
 3. **A small PR into `main`** (`/dev-pr`). Its body starts with `## In short`: at most five plain sentences (what changed, why, how it was proven). Everything else is folded under Details.
 4. **CI runs.** Claude waits for it in the background and fixes what fails.
-5. **The checker runs** (the `verifier` agent), only once CI is green. It reads the goals, tries each one the way a user would, and writes one note per goal: the goal in the issue's own words, what it saw, whether that matches, whether it ran. A script (`scripts/decide.py --checks`), not the agent, turns the notes into the result and posts it as the `verify` check, linked to a short report comment on the PR.
+5. **The checker runs** (the `verifier` agent), only once CI is green. It reads the goals, tries each one the way a user would, and writes one note per goal: the goal in the issue's own words, what it saw, whether that matches, whether it ran. A script (`scripts/decide.py --checks`), not the agent, turns the notes into the result and posts it as the `verify` check, linked to a short report comment on the PR. A screen change's before-and-after shots sit on the branch `verify-media/<pr>`, which is deleted once the PR merges.
 6. **Auto-merge.** On success Claude arms `gh pr merge --auto --squash --match-head-commit <sha>`; GitHub merges once every required check holds. A new push needs a new check.
 
 The maintainer is told only when a PR needs them.
