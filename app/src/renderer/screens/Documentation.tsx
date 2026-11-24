@@ -11,6 +11,9 @@ export interface Doc {
 
 export const LEGAL_DISCLAIMER: Doc = { title: 'Legal disclaimer', text: disclaimer }
 
+/** The app's manual, read in the browser on GitHub (it follows main, which can be ahead of an installed release). */
+export const USER_GUIDE = 'https://github.com/synesenom/the-other-door/blob/main/docs/manual-app.md'
+
 /** Every document the app carries: a new one is a line here. */
 const DOCS: Doc[] = [LEGAL_DISCLAIMER]
 
@@ -30,16 +33,21 @@ export function DocDialog({ doc, onClose }: { doc: Doc; onClose: () => void }) {
   )
 }
 
-/** The documents, one quiet link each, in Settings' Help. */
+/** The user guide (in the browser) and the documents, one text button each on its own line, in Settings' Help. */
 export function Documentation() {
   const [open, setOpen] = useState<Doc | null>(null)
   return (
     <>
       <ul className="doc-list">
+        <li>
+          <button type="button" className="secondary go" onClick={() => void window.door.invoke('open-external', USER_GUIDE)}>
+            User guide
+          </button>
+        </li>
         {DOCS.map((doc) => (
           <li key={doc.title}>
-            <button type="button" className="link-inline small" onClick={() => setOpen(doc)}>
-              {doc.title}
+            <button type="button" className="secondary" onClick={() => setOpen(doc)}>
+              {`${doc.title}…`}
             </button>
           </li>
         ))}

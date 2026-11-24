@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { Hint } from './Hint'
 import { call, errorText } from '../api'
 import { named } from './AppName'
 import { toInitArgs, type FieldSpec } from './profile-form/form'
@@ -27,7 +28,7 @@ interface Props {
 }
 
 /**
- * Profile -> CV style: the look of the tailored CVs and letters. Left a sample of the CV's first page in the chosen
+ * Profile -> Style: the look of the tailored CVs and letters. Left a sample of the CV's first page in the chosen
  * style (`cv_style_sample`), right the two pickers. A pick is saved at once with `init_profile` and applies from the
  * next CV that is prepared; an answer for a pick that a newer one replaced is ignored.
  */
@@ -90,11 +91,11 @@ export function CvStyle({ specs, config, styles, cvSaves = 0 }: Props) {
 
   return (
     <section className="part style-container" aria-labelledby="profile-cv-style">
-      <div className="part-head">
+      <div className="part-title">
         <h2 className="display-s" id="profile-cv-style">
-          CV style
+          Style
         </h2>
-        <p className="small muted">How your tailored CVs and cover letters look. A choice is saved at once; they are printed with it from the next one you prepare or revise.</p>
+        <Hint label="About Style">How your tailored CVs and cover letters look.</Hint>
       </div>
       <div className="style-part">
         <div className="style-sample-column">

@@ -67,6 +67,17 @@ def _score_with(monkeypatch, seen, score=0.8, fail=False):
     monkeypatch.setattr(scorer_mod, "score_postings", fake_score_postings)
 
 
+from door.core import claude_cli
+
+
+def _haiku_reads(answer, asked=None):
+    def fake_ask(system_prompt, input, **kwargs):
+        if asked is not None:
+            asked.update(input=input, model=claude_cli.model_of(system_prompt))
+        return answer
+    return fake_ask
+
+
 def _today_dir(env):
     return env.jobs_dir / "postings" / date.today().isoformat() / "manual"
 
@@ -113,12 +124,34 @@ def test_import_needs_exactly_one_of_path_and_text(env):
         add_cmd._add_core(env.ad, text="x", title="T", company="C", jobs_dir=env.jobs_dir)
 
 
+def test_pasted_text_alone_is_read_by_haiku_for_title_company_and_location(env, monkeypatch):
+    asked = {}
+    monkeypatch.setattr(claude_cli, "ask", _haiku_reads({"title": "Lead Data Scientist", "company": "Acme", "location": "Aarhus"}, asked))
+    result = add_cmd._add_core(None, text=AD, jobs_dir=env.jobs_dir)
+    data = json.loads(open(result["path"]).read())
+    assert (data["title"], data["company"], data["location"]) == ("Lead Data Scientist", "Acme", "Aarhus")
+    assert "forecasting platform" in asked["input"] and asked["model"] == "haiku"
+
+
 @pytest.mark.parametrize("missing", ["title", "company"])
-def test_import_text_requires_title_and_company(env, missing):
-    kwargs = {"title": "Lead Data Scientist", "company": "Acme"}
-    kwargs[missing] = None
-    with pytest.raises(ValueError, match=missing):
-        add_cmd._add_core(env.ad, jobs_dir=env.jobs_dir, **kwargs)
+def test_a_title_or_company_not_in_the_ad_is_asked_for_and_nothing_is_stored(env, monkeypatch, missing):
+    read = {"title": "Lead Data Scientist", "company": "Acme", "location": "Aarhus"}
+    read[missing] = ""
+    monkeypatch.setattr(claude_cli, "ask", _haiku_reads(read))
+    result = add_cmd._add_core(env.ad, jobs_dir=env.jobs_dir)
+    assert result["missing"] == [missing]
+    assert result["found"] == {k: v for k, v in read.items() if v}
+    assert "job_id" not in result
+    assert not env.jobs_dir.exists() or not list(env.jobs_dir.rglob("manual.*.json"))
+
+
+def test_what_is_given_is_not_read_again_and_a_failed_read_asks_for_both(env, monkeypatch):
+    def broken(*a, **k):
+        raise claude_cli.ClaudeError("claude exited 1: boom")
+
+    monkeypatch.setattr(claude_cli, "ask", broken)
+    assert add_cmd._add_core(None, text=AD, jobs_dir=env.jobs_dir)["missing"] == ["title", "company"]
+    assert add_cmd._add_core(None, text=AD, title="Lead Data Scientist", company="Acme", jobs_dir=env.jobs_dir)["job_id"] == AD_ID
 
 
 def test_import_empty_ad_is_rejected(env):
@@ -323,17 +356,19 @@ def test_add_cli_reads_stdin(env):
     assert (_today_dir(env) / f"{AD_ID}.json").exists()
 
 
-def test_add_cli_errors_cleanly(env):
+def test_add_cli_errors_cleanly(env, monkeypatch):
+    monkeypatch.setattr(claude_cli, "ask", _haiku_reads({"title": "T", "company": "", "location": ""}))
     result = CliRunner().invoke(cli, ["jobs", "add", str(env.ad), "--title", "T"])
     assert result.exit_code == 1
-    assert "company" in result_text(result)
+    assert "could not find the company in the ad: pass --company" in result_text(result)
 
 
-def test_import_tool(env):
+def test_import_tool(env, monkeypatch):
     assert server.CLI_COMMAND_TOOLS["jobs add"] == ("import_posting",)
     result = server.import_posting(text=AD, title="Lead Data Scientist", company="Acme")
     assert result["job_id"] == AD_ID
-    assert "company" in server.import_posting(text=AD, title="T")["error"]
+    monkeypatch.setattr(claude_cli, "ask", _haiku_reads({"title": "", "company": "", "location": ""}))
+    assert server.import_posting(text=AD, title="T") == {"missing": ["company"], "found": {"title": "T"}}
 
 
 # --------------------------------------------------------------------------- #
@@ -400,15 +435,6 @@ def test_import_tool_and_cli_fetch_a_url(env, monkeypatch):
 # add from a URL alone: Haiku reads the title and company off the page
 # --------------------------------------------------------------------------- #
 
-from door.core import claude_cli
-
-
-def _haiku_reads(answer, asked=None):
-    def fake_ask(system_prompt, input, **kwargs):
-        if asked is not None:
-            asked.update(input=input, model=claude_cli.model_of(system_prompt))
-        return answer
-    return fake_ask
 
 
 @responses.activate
@@ -452,12 +478,10 @@ def test_import_url_alone_says_what_haiku_could_not_read(env, monkeypatch):
         raise claude_cli.ClaudeError("claude exited 1: boom")
 
     monkeypatch.setattr(claude_cli, "ask", broken)
-    with pytest.raises(ValueError, match="--title"):
-        add_cmd._add_core(None, url=_AD_URL, jobs_dir=env.jobs_dir)
+    assert add_cmd._add_core(None, url=_AD_URL, jobs_dir=env.jobs_dir)["missing"] == ["title", "company"]
     _fetch_ok()
     monkeypatch.setattr(claude_cli, "ask", _haiku_reads({"title": "Lead Data Scientist", "company": "", "location": ""}))
-    with pytest.raises(ValueError, match="--company"):
-        add_cmd._add_core(None, url=_AD_URL, jobs_dir=env.jobs_dir)
+    assert add_cmd._add_core(None, url=_AD_URL, jobs_dir=env.jobs_dir) == {"missing": ["company"], "found": {"title": "Lead Data Scientist"}}
 
 
 @responses.activate

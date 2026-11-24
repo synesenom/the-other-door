@@ -21,37 +21,81 @@ function open(handlers: Record<string, unknown> = {}) {
 describe('ImportDialog', () => {
   it('Link asks only for the link, and sends only it', async () => {
     const { call } = open()
+    expect(screen.queryByText('Link', { selector: 'label' })).toBeNull() // the tab names the box; it has a placeholder, no label
+    expect(screen.getByLabelText('Link')).toHaveAttribute('placeholder')
     await userEvent.type(screen.getByLabelText('Link'), 'https://example.com/job/1')
     expect(screen.queryByLabelText('Title (optional)')).toBeNull()
     expect(screen.queryByLabelText('Company (optional)')).toBeNull()
-    expect(screen.queryByLabelText('Location (optional)')).toBeNull()
     await userEvent.click(screen.getByRole('button', { name: 'Import' }))
     await waitFor(() => expect(call).toHaveBeenCalledWith('import_posting', { url: 'https://example.com/job/1' }))
   })
 
-  it('a link sends no title, company or location typed in Paste text, which it does not show', async () => {
+  it('a link sends no text typed in Paste text', async () => {
     const h = mockDoor({ import_posting: { job_id: 'manual.a', path: '/x', replaced: false, score: 0.8 }, show: { id: 'manual.a', title: 'T', company: 'C', status: 'unapplied' } })
     render(<ImportDialog onClose={vi.fn()} onOpen={vi.fn()} />)
     await userEvent.click(screen.getByRole('button', { name: 'Paste text' }))
-    await userEvent.type(screen.getByLabelText('Title'), 'Wrong Title')
-    await userEvent.type(screen.getByLabelText('Company'), 'Wrong Co')
-    await userEvent.type(screen.getByLabelText('Location (optional)'), 'Nowhere')
+    await userEvent.type(screen.getByLabelText('Ad text'), 'Another ad')
     await userEvent.click(screen.getByRole('button', { name: 'Link' }))
     await userEvent.type(screen.getByLabelText('Link'), 'https://example.com/job/1')
     await userEvent.click(screen.getByRole('button', { name: 'Import' }))
     await waitFor(() => expect(h.call).toHaveBeenCalledWith('import_posting', { url: 'https://example.com/job/1' }))
   })
 
-  it('after a link could not be read, Title, Company and Location are asked, and sent', async () => {
-    const h = mockDoor({ import_posting: () => { throw new Error('That page needs a sign-in. Paste the ad text instead.') } })
+  it('a page that cannot be fetched (a sign-in, a refusal) turns to Paste text, says why, and keeps the link with the ad', async () => {
+    const h = mockDoor({ import_posting: (args: Record<string, unknown>) => {
+      if (!args.text) throw new Error('could not fetch https://example.com/job/1: 403 Client Error: Forbidden')
+      return scored
+    }, show: shown })
     render(<ImportDialog onClose={vi.fn()} onOpen={vi.fn()} />)
     await userEvent.type(screen.getByLabelText('Link'), 'https://example.com/job/1')
     await userEvent.click(screen.getByRole('button', { name: 'Import' }))
-    await userEvent.type(await screen.findByLabelText('Company (optional)'), 'Acme')
-    expect(screen.getByLabelText('Title (optional)')).toBeInTheDocument()
-    expect(screen.getByLabelText('Location (optional)')).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Paste text' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByText('That page could not be read: it may need a sign-in. Paste the ad\'s text here.')).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(screen.getByLabelText('Ad text')).toHaveFocus()
+    await userEvent.type(screen.getByLabelText('Ad text'), 'We need an analyst.')
     await userEvent.click(screen.getByRole('button', { name: 'Import' }))
-    await waitFor(() => expect(h.call).toHaveBeenLastCalledWith('import_posting', { url: 'https://example.com/job/1', company: 'Acme' }))
+    await waitFor(() => expect(h.call).toHaveBeenCalledWith('import_posting', { text: 'We need an analyst.', url: 'https://example.com/job/1' }))
+  })
+
+  it('a page whose title or company cannot be found turns to Paste text too: the Link tab is only ever the link', async () => {
+    mockDoor({ import_posting: { missing: ['title', 'company'], found: {} } })
+    render(<ImportDialog onClose={vi.fn()} onOpen={vi.fn()} />)
+    await userEvent.type(screen.getByLabelText('Link'), 'https://example.com/job/1')
+    await userEvent.click(screen.getByRole('button', { name: 'Import' }))
+    expect(await screen.findByText('The title and company could not be found on that page. Paste the ad\'s text here.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Paste text' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getAllByRole('textbox')).toHaveLength(1)
+    await userEvent.click(screen.getByRole('button', { name: 'Link' }))
+    expect(screen.getAllByRole('textbox')).toHaveLength(1)
+  })
+
+  it('Paste text is the text alone: the title, company and place are read from it', async () => {
+    const { call } = open()
+    await userEvent.click(screen.getByRole('button', { name: 'Paste text' }))
+    expect(screen.getAllByRole('textbox')).toHaveLength(1)
+    await userEvent.type(screen.getByLabelText('Ad text'), 'We need an analyst.')
+    await userEvent.click(screen.getByRole('button', { name: 'Import' }))
+    await waitFor(() => expect(call).toHaveBeenCalledWith('import_posting', { text: 'We need an analyst.' }))
+  })
+
+  it('asks only for what could not be found in the ad, by name, and sends it with what was found', async () => {
+    const h = mockDoor({
+      import_posting: (args: Record<string, unknown>) => (args.company ? scored : { missing: ['company'], found: { title: 'Analyst', location: 'Aarhus' } }),
+      show: shown,
+    })
+    render(<ImportDialog onClose={vi.fn()} onOpen={vi.fn()} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Paste text' }))
+    await userEvent.type(screen.getByLabelText('Ad text'), 'We need an analyst.')
+    await userEvent.click(screen.getByRole('button', { name: 'Import' }))
+    expect(await screen.findByText('The company could not be found in the ad. Fill it in.')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Title')).toBeNull()
+    expect(screen.getByLabelText('Company')).toHaveFocus()
+    expect(screen.getByRole('button', { name: 'Import' })).toBeDisabled()
+    await userEvent.type(screen.getByLabelText('Company'), 'Acme')
+    await userEvent.click(screen.getByRole('button', { name: 'Import' }))
+    await waitFor(() => expect(h.call).toHaveBeenCalledWith('import_posting', { text: 'We need an analyst.', title: 'Analyst', location: 'Aarhus', company: 'Acme' }))
+    expect(await screen.findByRole('dialog', { name: 'Imported' })).toBeInTheDocument()
   })
 
   it('Import waits for a link', () => {
@@ -59,20 +103,13 @@ describe('ImportDialog', () => {
     expect(screen.getByRole('button', { name: 'Import' })).toBeDisabled()
   })
 
-  it('Paste text needs the text, a title and a company', async () => {
-    const { call } = open()
+  it('Paste text waits for the text', async () => {
+    open()
     await userEvent.click(screen.getByRole('button', { name: 'Paste text' }))
     const go = screen.getByRole('button', { name: 'Import' })
+    expect(go).toBeDisabled()
     await userEvent.type(screen.getByLabelText('Ad text'), 'We need an analyst')
-    expect(go).toBeDisabled()
-    await userEvent.type(screen.getByLabelText('Title'), 'Data Analyst')
-    expect(go).toBeDisabled()
-    await userEvent.type(screen.getByLabelText('Company'), 'Acme')
     expect(go).toBeEnabled()
-    await userEvent.click(go)
-    await waitFor(() =>
-      expect(call).toHaveBeenCalledWith('import_posting', { text: 'We need an analyst', title: 'Data Analyst', company: 'Acme' }),
-    )
   })
 
   it('says it is reading and scoring while it waits', async () => {
@@ -92,7 +129,7 @@ describe('ImportDialog', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Import' }))
     expect(await screen.findByText('Data Analyst')).toBeInTheDocument()
     expect(screen.getByText(/Acme/)).toBeInTheDocument()
-    expect(screen.getByText('0.82')).toBeInTheDocument()
+    expect(screen.getByText('82%')).toBeInTheDocument()
     expect(screen.getByText('Good SQL fit.')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Open' }))
     expect(onOpen).toHaveBeenCalledWith('manual.ab12')

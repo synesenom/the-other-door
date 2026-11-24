@@ -57,7 +57,7 @@ Sources I read in full: `app/src/renderer/screens/{Settings,Connections,SignIn,D
 - `region "Connections"` (h2 `#settings-connections`) containing `list "Connections"`. — ✓ Settings shows who is signed in and the plan, with Use another account
 - `region "Your data"` (h2 `#settings-data`, §5). — unit: `app/src/renderer/screens/Settings.test.tsx`
 - `region "Appearance"` (h2): a `group` (fieldset) named by the heading and three radios named **"Same as the system"**, **"Light"**, **"Dark"** (`name="theme"`). — unit: `app/src/renderer/theme.test.ts`
-- `region "Help"` (h2 `#settings-help`), last: the version line "Version X" (only when updates are on, with Download or "Restart to update to X" when a newer one is there), the documents (a link-styled button each, "Legal disclaimer", opened in a dialog) and the report: Save logs… (§5b). Not on the phone. — ✓ Save logs… saves an archive with what went wrong, emails and the home folder masked, nothing of the profile; unit: `app/src/renderer/screens/Settings.test.tsx`, `Documentation.test.tsx`
+- `region "Help"` (h2 `#settings-help`), last: the version line "Version X" (only when updates are on, with Download or "Restart to update to X" when a newer one is there), the "User guide" link (docs/manual-app.md on GitHub, in the browser), the documents (a text button each, "Legal disclaimer", opened in a dialog) and the report: Save logs… (§5b). Not on the phone. — ✓ Save logs… saves an archive with what went wrong, emails and the home folder masked, nothing of the profile; unit: `app/src/renderer/screens/Settings.test.tsx`, `Documentation.test.tsx`
 - No side nav: the page is about one screen tall (only Profile keeps its list of parts). — unit: `app/src/renderer/screens/Settings.test.tsx`
 
 ### The data folder (Your data, `DataMoves.tsx`)
@@ -338,7 +338,7 @@ Outcome by what claude does:
 
 ## 5b. Report a problem (`ReportProblem.tsx` + `archive-files.ts` `reportTarget` + ipc `door:report-problem`), region "Report a problem"
 
-- Intro (muted): "Saves one file to send when something does not work: what went wrong lately, the last runs and the checks of this computer. No CV, profile, job ads or applications; emails and folder names are hidden." — ✓ Save logs… saves an archive with what went wrong, emails and the home folder masked, nothing of the profile
+- Info icon beside Save logs… ("About Save logs", words on hover or focus): "Saves one file to send when something does not work: what went wrong lately, the last runs and the checks of this computer. No CV, profile, job ads or applications; emails and folder names are hidden." — ✓ Save logs… saves an archive with what went wrong, emails and the home folder masked, nothing of the profile
 - Button **"Save logs…"** (secondary), disabled while saving; spinner "Saving…". — unit: `app/src/renderer/screens/ReportProblem.test.tsx`; the spinner: not tested (under a second)
 - IPC `door:report-problem`. Main runs `reportTarget()`: a save dialog titled "Report a problem", message "Choose a new name: a report never replaces a file.", default `door-report-<YYYY-MM-DD>.zip`, filter "Problem report" (`zip`); a name without `.zip` gets it. Then `report_problem {path}` (120 s). The window never names the file (`report_problem` is in `PATH_ARGS`). — ✓ Save logs… saves an archive with what went wrong, emails and the home folder masked, nothing of the profile; the added `.zip`: archive-files.test.ts
 - Branches: — ✓ each below
@@ -355,7 +355,7 @@ Outcome by what claude does:
 
 ## 6. Documentation (`Documentation.tsx`)
 
-- `region "Documentation"` with `list` → one button per doc. Only one exists: **"Legal disclaimer"** (link-inline). — unit: `app/src/renderer/screens/Documentation.test.tsx`
+- `region "Documentation"` with `list` → **"User guide"** first (a text button with its arrow, opens `USER_GUIDE`, the app manual on GitHub, through `open-external`), then one button per doc. Only one exists: **"Legal disclaimer"** (a text button). — unit: `app/src/renderer/screens/Documentation.test.tsx`
 - Clicking it opens `dialog "Legal disclaimer"`: — unit: `app/src/renderer/screens/Documentation.test.tsx`
   - The body is `LEGAL_DISCLAIMER.md` with its first `# Legal disclaimer` heading stripped, rendered by `Markdown` (real elements). — unit: `app/src/renderer/screens/Documentation.test.tsx`
   - The h2 sections inside: "You decide what it reads, and you answer for it", "Your data", "What Claude writes for you", "No affiliation, no warranty, no legal advice", "For site owners". — unit: `app/src/renderer/screens/Documentation.test.tsx`

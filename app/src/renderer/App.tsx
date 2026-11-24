@@ -19,6 +19,7 @@ import { Settings } from './screens/Settings'
 import { planReset, problems, type Problem } from './screens/problems'
 import { Wizard } from './screens/onboarding/Wizard'
 import { PREPARING_TIP } from './screens/Matches'
+import { runFreshness } from './screens/lastRun'
 import { usePreparing } from './screens/prepare-store'
 
 const DESTINATIONS = ['Matches', 'Applications', 'Profile', 'Settings', 'Analytics'] as const
@@ -26,14 +27,6 @@ type Destination = (typeof DESTINATIONS)[number]
 /** The phone finds new jobs, prepares them and keeps the applications: the profile, the CV and the
  * employers are changed, and Analytics read, on the computer running The other door. */
 const PHONE_DESTINATIONS: readonly Destination[] = ['Matches', 'Applications', 'Settings']
-
-/** "Oct 28, 09:30", or null when the run has no readable end. */
-function lastRunText(finishedAt: string | null | undefined): string | null {
-  if (!finishedAt) return null
-  const d = new Date(finishedAt)
-  if (Number.isNaN(d.getTime())) return null
-  return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-}
 
 /** Search and match only on the first run: following and collecting employers wait for the next one. */
 const FIRST_RUN_SKIP = ['discover', 'follow', 'collect']
@@ -48,7 +41,7 @@ export interface AppStart {
   cv?: boolean
   /** Profile opens on its Stories part. */
   stories?: boolean
-  /** Profile opens on its CV style part. */
+  /** Profile opens on its Style part. */
   cvStyle?: boolean
   /** The Finding jobs screen, in this state. */
   run?: FindingState
@@ -73,7 +66,8 @@ export function App({ start }: { start?: AppStart } = {}) {
   const [settingsStart, setSettingsStart] = useState<{ n: number; at: 'report' | 'risky' } | null>(null)
   const narrow = useNarrow()
   const [pushed, setPushed] = useState(false)
-  const [lastRun, setLastRun] = useState<string | null>(null)
+  // the last run's end (undefined until status_summary answered, so nothing is said before it has)
+  const [lastRun, setLastRun] = useState<string | null | undefined>(undefined)
   const [home, setHome] = useState<string | undefined>(undefined)
   const [remote, setRemote] = useState(false)
   // The connections (Settings and the sidebar's lines): Claude from doctor, Drive from the summary.
@@ -258,7 +252,7 @@ export function App({ start }: { start?: AppStart } = {}) {
     statusSummary().then(
       (s) => {
         if (!live) return
-        setLastRun(lastRunText(s.since_last_review?.last_run?.finished_at))
+        setLastRun(s.since_last_review?.last_run?.finished_at ?? null)
         setDrive(s.drive && typeof s.drive.connected === 'boolean' ? s.drive : null)
         setRecurring(typeof s.recurring_problem === 'boolean' ? s.recurring_problem : null)
         setSearchStale(typeof s.search_terms_outdated === 'boolean' ? s.search_terms_outdated : null)
@@ -400,6 +394,7 @@ export function App({ start }: { start?: AppStart } = {}) {
       setCurrent('Settings')
     }
   }
+  const freshness = lastRun === undefined ? null : runFreshness(lastRun)
   const problemLines = (
     <div className="sidebar-problems" role="group" aria-label="Needs you">
       {lines.map((p) =>
@@ -447,10 +442,20 @@ export function App({ start }: { start?: AppStart } = {}) {
         </nav>
         {lines.length > 0 && problemLines}
         <div className="sidebar-foot">
-          <button type="button" className="secondary" disabled={foreign || (own && finding) || (!own && preparingNow)} title={!own && preparingNow ? PREPARING_TIP : undefined} onClick={() => (own ? setFinding(true) : void startRun())}>
-            {own || foreign ? 'Finding jobs…' : 'Find new jobs'}
-          </button>
-          {lastRun && <p className="small muted">Last run {lastRun}</p>}
+          {/* the button alone on its hairline; a warning beside it only when the matches are not fresh, the last run's time on hover */}
+          <span className="sidebar-find">
+            <button type="button" className="secondary" disabled={foreign || (own && finding) || (!own && preparingNow)} title={!own && preparingNow ? PREPARING_TIP : (freshness?.last ?? undefined)} onClick={() => (own ? setFinding(true) : void startRun())}>
+              {own || foreign ? 'Finding jobs…' : 'Find new jobs'}
+            </button>
+            {freshness?.stale && !own && !foreign && (
+              <span className="board-card-warning" role="img" aria-label={freshness.stale}>
+                <WarningMark />
+                <span className="hint-pop small" aria-hidden="true">
+                  {freshness.stale}
+                </span>
+              </span>
+            )}
+          </span>
         </div>
       </aside>
       )}

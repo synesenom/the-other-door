@@ -40,7 +40,7 @@ button{font:inherit}
                 <span style="color: #5C5249; font-size: 12px">{{c.note}}</span>
               </span>
             </button>
-            <sc-if value="{{c.silent}}" hint-placeholder-val="{{ false }}"><button type="button" style="height: 32px; padding: 0; border: 0; background: none; color: #3D5798; font-size: 13px; font-weight: 600; text-align: left">Mark ghosted</button></sc-if>
+            
             </div>
           </sc-for>
         </section>
@@ -53,7 +53,7 @@ button{font:inherit}
 class Component extends DCLogic {
   renderVals() {
     const passed = 'width: 8px; height: 8px; border-radius: 4px; background: #1E1A16;';
-    const pending = 'width: 8px; height: 8px; box-sizing: border-box; border-radius: 4px; border: 2px solid #3D5798;';
+    const pending = 'display: none;'; // no dot for a round to come: only the rounds passed
     const card = (title, company, note, rounds) => ({ title, company, note, rounds: rounds || [], silent: false });
     const cols = [
       { name: 'Prepared', cards: [card('Senior Data Scientist', 'Hooli Labs', 'today'), card('Analytics Lead', 'Initech Insurance', 'yesterday')] },

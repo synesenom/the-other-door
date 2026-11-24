@@ -169,9 +169,11 @@ export function Settings({
               )}
             </>
           )}
-          <Documentation />
-          <div ref={reportPart}>
-            <ReportProblem onSaved={onReported} />
+          <div className="help-actions">
+            <Documentation />
+            <div ref={reportPart}>
+              <ReportProblem onSaved={onReported} />
+            </div>
           </div>
         </section>
       )}

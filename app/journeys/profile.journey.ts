@@ -40,7 +40,7 @@ test.describe('the Details form', () => {
     await expect(page.getByRole('button', { name: 'Undo changes' })).toHaveCount(0)
     // the sections aside
     const sections = page.getByRole('navigation', { name: 'Sections' })
-    await expect(sections.getByRole('link')).toHaveText(['About you', 'What to look for', 'What to skip', 'Master CV', 'CV style', 'Stories'])
+    await expect(sections.getByRole('link')).toHaveText(['About you', 'What to look for', 'What to skip', 'Master CV', 'Style', 'Stories'])
   })
 
   test('each edit is written on its own, with nothing to press, and is there when you come back', { tag: '@core' }, async ({ page, world }) => {

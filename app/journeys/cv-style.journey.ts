@@ -1,12 +1,12 @@
-// Profile → CV style: the sample of the CV, a colour and a font pair picked and saved at once.
+// Profile → Style: the sample of the CV, a colour and a font pair picked and saved at once.
 import { expect, test } from './fixtures'
 import { argsOf, config, openDetails } from './helpers/profile'
 
-test.describe('CV style', () => {
+test.describe('Style', () => {
   test('shows a sample of the CV, and a pick is saved at once and printed again', { tag: '@core' }, async ({ page, world }) => {
     await openDetails(page)
-    await page.getByRole('navigation', { name: 'Sections' }).getByRole('link', { name: 'CV style', exact: true }).click()
-    const part = page.getByRole('region', { name: 'CV style', exact: true })
+    await page.getByRole('navigation', { name: 'Sections' }).getByRole('link', { name: 'Style', exact: true }).click()
+    const part = page.getByRole('region', { name: 'Style', exact: true })
     await expect(part.getByRole('img', { name: /sample of your CV/ })).toBeVisible({ timeout: 60_000 })
     await expect(part.getByRole('radio', { name: 'Blue' })).toBeChecked()
     await expect(part.getByRole('radio', { name: 'The other door' })).toBeChecked()

@@ -1,6 +1,6 @@
 """`cv_style_sample` (#465): the CV in a chosen accent colour and font pair, page 1 as a picture.
 
-The desktop app's Profile -> CV style shows it beside the pickers. It prints the user's own CV (else the example CV)
+The desktop app's Profile -> Style shows it beside the pickers. It prints the user's own CV (else the example CV)
 as it is, with no model but the one cached reading of it (`cv_read`), through the same template and style that `compile`
 uses for a prepared CV, so the sample is what the next prepared CV looks like. Cached under `HOME/.style/preview/` by the
 CV, the style, the photo, the template and the fonts. The picture is a close-up: the top of a narrow page (`SAMPLE_PAGE`), so the text

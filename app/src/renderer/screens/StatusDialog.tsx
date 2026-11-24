@@ -76,7 +76,7 @@ export function StatusDialog({ jobId, title, current, preset, onClose, onDone }:
     )
 
   return (
-    <Dialog title={`Status: ${title}`} onClose={onClose} initialFocus="input:checked">
+    <Dialog title={`What happened: ${title}`} onClose={onClose} initialFocus="input:checked">
       <div role="radiogroup" aria-label="Status" className="choices">
         {STATUSES.map((s) => (
           <div key={s.value}>
@@ -100,7 +100,7 @@ export function StatusDialog({ jobId, title, current, preset, onClose, onDone }:
           </div>
         ))}
       </div>
-      {reason(discarding ? 'Why not?' : 'Notes (optional)')}
+      {reason(discarding ? 'Why not?' : group === 'interview' ? 'How did it go? (optional)' : 'Notes (optional)')}
       {failure}
       {buttons('Save')}
     </Dialog>

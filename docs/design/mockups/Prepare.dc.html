@@ -15,65 +15,42 @@ a{color:#3D5798}a:hover{color:#1E1A16}
 button,textarea{font:inherit}
 </style>
 </helmet>
-<div style="min-height: 800px; box-sizing: border-box; background: #F1E6CF; color: #1E1A16; font-family: Figtree, system-ui, sans-serif; font-size: 14px; line-height: 1.5; padding: 32px 48px 48px; display: flex; flex-direction: column; gap: 32px">
+<div style="min-height: 800px; box-sizing: border-box; background: #F1E6CF; color: #1E1A16; font-family: Figtree, system-ui, sans-serif; font-size: 14px; line-height: 1.5; padding: 20px 48px 40px; display: flex; flex-direction: column; gap: 24px">
 
-  <header style="display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; flex-wrap: wrap">
+  <header style="display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; flex-wrap: wrap">
     <div>
-      <a href="#" style="font-size: 13px; text-decoration: none">← Matches</a>
-      <h1 style="margin: 10px 0 0; font-family: 'Young Serif', Georgia, serif; font-size: 32px; font-weight: 400; letter-spacing: -0.01em; line-height: 1.1">Ready to send</h1>
-      <p style="margin: 6px 0 0; color: #5C5249; font-size: 15px">Senior Data Scientist · Hooli Labs</p>
+      <a href="#" style="font-size: 13px; text-decoration: none; color: #1E1A16">← Posting</a>
+      <h1 style="margin: 8px 0 0; font-family: 'Young Serif', Georgia, serif; font-size: 32px; font-weight: 400; letter-spacing: -0.01em; line-height: 1.1">Ready to send</h1>
+      <p style="margin: 8px 0 0; color: #6B6157; font-size: 13px">Senior Data Scientist · Hooli Labs</p>
     </div>
-    <div style="display: flex; gap: 10px; flex-wrap: wrap">
-      <button type="button" style="height: 32px; padding: 0; border: 0; background: none; color: #3D5798; font-weight: 600; font-size: 13px">Open folder</button>
-      <button type="button" style="height: 32px; padding: 0 16px; border: 0; border-radius: 2px; background: #1E1A16; color: #FFFCF5; font-weight: 600; font-size: 13px">I've applied</button>
-    </div>
+    <button type="button" style="margin-top: 20px; height: 32px; padding: 0 16px; border: 0; border-radius: 0; background: #1E1A16; color: #FFFCF5; font-weight: 600; font-size: 13px">I've applied</button>
   </header>
 
-  <div style="display: flex; flex-wrap: wrap; gap: 48px; align-items: flex-start">
+  <div style="display: flex; gap: 12px; font-size: 13px">
+    <span style="font-weight: 400; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 6px">CV · 2 pages</span>
+    <span>Letter · 310 words</span>
+  </div>
 
-    <div style="flex: 999 1 560px; min-width: 0; display: flex; gap: 32px; flex-wrap: wrap">
-      <sc-for list="{{docs}}" as="doc" hint-placeholder-count="2">
-        <figure style="margin: 0; display: flex; flex-direction: column; gap: 12px">
-          <div style="width: 300px; height: 424px; box-sizing: border-box; background: #FFFCF5; border-radius: 2px; padding: 36px 32px; display: flex; flex-direction: column; gap: 9px" aria-hidden="true">
-            <span style="display: block; width: 120px; height: 10px; border-radius: 2px; background: #1E1A16"></span>
-            <span style="display: block; height: 0; margin: 6px 0 10px"></span>
-            <sc-for list="{{doc.lines}}" as="w" hint-placeholder-count="12">
-              <span style="display: block; height: 5px; border-radius: 2px; background: #D6C7A8; width: {{w}}"></span>
-            </sc-for>
-          </div>
-          <figcaption style="display: flex; justify-content: space-between; align-items: baseline">
-            <span style="font-weight: 600">{{doc.name}}</span>
-            <span style="color: #5C5249; font-size: 13px">{{doc.meta}}</span>
-          </figcaption>
-        </figure>
-      </sc-for>
-    </div>
+  <div style="display: flex; flex-wrap: wrap; gap: 40px; align-items: flex-start">
 
-    <aside style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 28px">
-      <section>
-        <h2 style="margin: 0 0 12px; padding-top: 12px; border-top: 2px solid #1E1A16; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #1E1A16">Keywords woven in</h2>
-        <div style="display: flex; gap: 6px; flex-wrap: wrap">
-          <sc-for list="{{keywords}}" as="k" hint-placeholder-count="6">
-            <span style="padding: 4px 12px; border-radius: 2px; background: #FFFCF5; font-size: 13px">{{k}}</span>
-          </sc-for>
-        </div>
-      </section>
-      <section>
-        <h2 style="margin: 0 0 12px; padding-top: 12px; border-top: 2px solid #1E1A16; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #1E1A16">What changed</h2>
-        <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px">
-          <li>Summary leads with forecasting at scale</li>
-          <li>Retail project moved up, review analytics added</li>
-          <li>Letter opens on their trust-score work</li>
-        </ul>
-      </section>
-      <section style="display: flex; flex-direction: column; gap: 10px">
-        <label for="revise" style="font-family: 'Young Serif', Georgia, serif; font-size: 20px; font-weight: 400">Anything to change?</label>
-        <textarea id="revise" rows="3" placeholder="Make the letter shorter and warmer…" style="box-sizing: border-box; width: 100%; padding: 12px 14px; border: 1px solid #D6C7A8; border-radius: 2px; background: #FFFCF5; color: #1E1A16; resize: vertical"></textarea>
-        <div style="display: flex; gap: 10px; align-items: center">
-          <button type="button" style="height: 32px; padding: 0; border: 0; background: none; color: #3D5798; font-weight: 600; font-size: 13px">Revise</button>
-          <button type="button" style="height: 32px; padding: 0; border: 0; background: none; color: #3D5798; font-weight: 600; font-size: 13px">Undo last change</button>
-        </div>
-      </section>
+    <figure style="flex: 0 1 620px; min-width: 0; margin: 0; display: flex; flex-direction: column; gap: 16px">
+      <div style="height: 500px; box-sizing: border-box; background: #FFFFFF; padding: 72px 100px 0; display: flex; flex-direction: column; gap: 10px; overflow: hidden" aria-hidden="true">
+        <span style="display: block; width: 150px; height: 12px; border-radius: 0; background: #1E1A16"></span>
+        <span style="display: block; height: 0; margin: 6px 0 10px"></span>
+        <sc-for list="{{lines}}" as="w" hint-placeholder-count="20">
+          <span style="display: block; height: 5px; border-radius: 0; background: #D6C7A8; width: {{w}}"></span>
+        </sc-for>
+      </div>
+      <figcaption><button type="button" style="padding: 0; border: 0; background: none; color: #3D5798; font-weight: 600; font-size: 13px">Save CV…</button></figcaption>
+    </figure>
+
+    <aside style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 12px">
+      <label for="revise" style="font-family: 'Young Serif', Georgia, serif; font-size: 22px; font-weight: 400">Anything to change?</label>
+      <textarea id="revise" rows="3" placeholder="Change the CV: lead with the forecasting project…" style="box-sizing: border-box; width: 100%; padding: 12px 14px; border: 1px solid #D6C7A8; border-radius: 0; background: #FFFCF5; color: #1E1A16; resize: none"></textarea>
+      <div style="display: flex; gap: 20px; align-items: center">
+        <button type="button" style="height: 32px; padding: 0; border: 0; background: none; color: #3D5798; font-weight: 600; font-size: 13px">Revise</button>
+        <button type="button" style="height: 32px; padding: 0; border: 0; background: none; color: #6B6157; font-weight: 600; font-size: 13px">Undo last change</button>
+      </div>
     </aside>
   </div>
 </div>
@@ -81,15 +58,7 @@ button,textarea{font:inherit}
 <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
 class Component extends DCLogic {
   renderVals() {
-    const cv = ['92%','100%','84%','96%','70%','100%','88%','60%','94%','100%','78%','90%','66%','100%','82%','58%'];
-    const letter = ['100%','96%','100%','88%','100%','72%','0%','100%','94%','100%','90%','64%','0%','98%','100%','40%'];
-    return {
-      docs: [
-        { name: 'CV', meta: '2 pages', lines: cv },
-        { name: 'Cover letter', meta: '1 page · 310 words', lines: letter }
-      ],
-      keywords: ['Python', 'forecasting', 'A/B testing', 'SQL', 'stakeholders', 'review data']
-    };
+    return { lines: ['92%','100%','84%','96%','0%','70%','100%','88%','60%','94%','100%','0%','78%','90%','66%','100%','82%','58%','96%','74%'] };
   }
 }
 </script>

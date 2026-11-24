@@ -109,19 +109,12 @@ describe('Matches', () => {
     expect(within(rows[1]).getByText('BI Developer')).toBeInTheDocument()
   })
 
-  it('shows the English title next to a title in another language', async () => {
-    setup()
-    render(<Matches />)
-    const row = (await screen.findAllByRole('listitem'))[0]
-    expect(within(row).getByText('Data Analyst')).toBeInTheDocument()
-  })
-
   it('shows company and place, the score, and a status as a word', async () => {
     setup()
     render(<Matches />)
     const rows = await screen.findAllByRole('listitem')
     expect(within(rows[1]).getByText('Globex · Aarhus')).toBeInTheDocument()
-    expect(within(rows[0]).getByText('0.91')).toBeInTheDocument()
+    expect(within(rows[0]).getByText('91%')).toBeInTheDocument()
     expect(within(rows[1]).getByText('Prepared')).toBeInTheDocument()
     expect(within(rows[0]).queryByText(/unapplied/i)).toBeNull()
   })
@@ -181,8 +174,8 @@ describe('Matches', () => {
     setup({}, [], { scored: 40 })
     const onLowerBar = vi.fn()
     render(<Matches newOnlyFirst onLowerBar={onLowerBar} />)
-    expect(await screen.findByText('Nothing has scored 0.65 or better yet.')).toBeInTheDocument()
-    expect(screen.getByText('Match fit: Balanced').closest('p')).toBe(screen.getByText('Nothing has scored 0.65 or better yet.').closest('p'))
+    expect(await screen.findByText('Nothing has scored 65% or better yet.')).toBeInTheDocument()
+    expect(screen.getByText('Match fit: Balanced').closest('p')).toBe(screen.getByText('Nothing has scored 65% or better yet.').closest('p'))
     expect(screen.queryByText(/since your last review/)).toBeNull()
     expect(screen.queryByText(/Nothing scored yet/)).toBeNull()
     await userEvent.click(screen.getByRole('button', { name: 'Show broader matches' }))
@@ -199,8 +192,8 @@ describe('Matches', () => {
   it('after a review, without New only, nothing at the bar is said as such', async () => {
     setup({}, [], { scored: 40, last_reviewed_at: '2026-10-29T08:00:00+00:00' })
     render(<Matches />)
-    expect(await screen.findByText('Nothing has scored 0.65 or better yet.')).toBeInTheDocument()
-    expect(screen.getByText('Match fit: Balanced').closest('p')).toBe(screen.getByText('Nothing has scored 0.65 or better yet.').closest('p'))
+    expect(await screen.findByText('Nothing has scored 65% or better yet.')).toBeInTheDocument()
+    expect(screen.getByText('Match fit: Balanced').closest('p')).toBe(screen.getByText('Nothing has scored 65% or better yet.').closest('p'))
   })
 
   it('shows an {error} from the server plainly', async () => {
@@ -626,7 +619,7 @@ describe('Matches', () => {
     setup()
     render(<Matches />)
     const rows = await screen.findAllByRole('listitem')
-    expect(within(rows[0]).getByText('0.91')).toHaveClass('score-s')
+    expect(within(rows[0]).getByText('91%')).toHaveClass('score-s')
   })
 
   describe('in a narrow window', () => {
@@ -816,8 +809,8 @@ describe('Matches, weak matches before a first real one (issue 643)', () => {
   it('without weak matches the empty state is the old one', async () => {
     setup({}, [], { scored: 5, weak: null })
     render(<Matches />)
-    expect(await screen.findByText('Nothing has scored 0.65 or better yet.')).toBeInTheDocument()
-    expect(screen.getByText('Match fit: Balanced').closest('p')).toBe(screen.getByText('Nothing has scored 0.65 or better yet.').closest('p'))
+    expect(await screen.findByText('Nothing has scored 65% or better yet.')).toBeInTheDocument()
+    expect(screen.getByText('Match fit: Balanced').closest('p')).toBe(screen.getByText('Nothing has scored 65% or better yet.').closest('p'))
   })
 
   it('New only after a review shows no weak block', async () => {

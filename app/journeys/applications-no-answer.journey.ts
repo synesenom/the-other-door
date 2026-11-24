@@ -1,9 +1,10 @@
-// Applications, an application with no answer (inventory/jobs.md §6, #89): the card says so and one action
-// records it as ghosted. The seed ages one ledger entry; the other journeys' ledger stays as it is.
+// Applications, an application quiet too long (inventory/jobs.md §6, #89): the card has the warning mark with
+// its words, and the opened application's Status records it as ghosted. The seed ages one ledger entry; the other journeys' ledger stays as it is.
 import { writeFileSync } from 'node:fs'
+import type { Page } from '@playwright/test'
 import { join } from 'node:path'
 import { expect, notice } from './fixtures'
-import { card, column, ledgerEntry, narrow, ready, toApplications } from './helpers/applications'
+import { card, column, ledgerEntry, narrow, openCard, ready, toApplications } from './helpers/applications'
 import { before, test } from './helpers/settings'
 import { NOW, type World } from '../test/world/build'
 
@@ -24,18 +25,27 @@ function age(world: World, key: string, daysAgo: number): void {
   writeFileSync(file, JSON.stringify(book, null, 2))
 }
 
+/** Opens the card and records it as ghosted through Status. */
+async function markGhosted(page: Page, title: string): Promise<void> {
+  await openCard(page, title)
+  await page.getByRole('button', { name: 'Status…', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: `What happened: ${title}` })
+  await dialog.getByRole('radio', { name: 'Ghosted', exact: true }).check()
+  await dialog.getByRole('button', { name: 'Save' }).click()
+  await expect(notice(page)).toContainText('Ghosted')
+}
+
 test.describe('an applied card silent for 50 days', () => {
   test.use({ seed: before((world) => age(world, 'sundline-network-optimisation', 50)) })
 
-  test('says so, and Mark ghosted records it', async ({ page, world }) => {
+  test('says so, and Status records it as ghosted', async ({ page, world }) => {
     await toApplications(page)
     const applied = column(page, 'Applied')
-    await expect(card(applied, SUNDLINE)).toContainText('No answer in 45 days')
-    // only this card is silent
-    await expect(page.getByRole('button', { name: 'Mark ghosted' })).toHaveCount(1)
+    await expect(card(applied, SUNDLINE).getByRole('img', { name: 'No answer in 45 days' })).toBeVisible()
+    // only this card is quiet too long
+    await expect(page.getByRole('group', { name: 'Applications board' }).getByRole('img', { name: /^(No answer|Not sent) in/ })).toHaveCount(1)
 
-    await applied.getByRole('button', { name: 'Mark ghosted' }).click()
-    await expect(notice(page)).toContainText('Ghosted')
+    await markGhosted(page, SUNDLINE)
     await expect(applied.getByRole('button')).toHaveCount(0)
     await expect(card(column(page, 'Closed'), SUNDLINE)).toContainText('ghosted')
     const entry = ledgerEntry(world, 'sundline-network-optimisation')
@@ -45,23 +55,23 @@ test.describe('an applied card silent for 50 days', () => {
     expect(new Date(last.at).toDateString()).toBe(new Date(NOW).toDateString())
   })
 
-  test('narrow: the button is on the card', async ({ app, page }) => {
+  test('narrow: the card has the mark', async ({ app, page }) => {
     await ready(page)
     await narrow(app, page)
     await page.getByRole('navigation').getByRole('button', { name: 'Applications', exact: true }).click()
-    await expect(page.getByRole('button', { name: 'Mark ghosted' })).toBeVisible()
+    await expect(card(page, SUNDLINE).getByRole('img', { name: 'No answer in 45 days' })).toBeVisible()
   })
 })
 
 test.describe('an interview round silent for 50 days', () => {
   test.use({ seed: before((world) => age(world, 'pakkepost-causal-experimentation', 50)) })
 
-  test('keeps its rounds, says no answer, and Mark ghosted records it', async ({ page, world }) => {
+  test('keeps its rounds, has the mark after 21 days, and Status records it as ghosted', async ({ page, world }) => {
     await toApplications(page)
     const interviewing = column(page, 'Interviewing')
-    await expect(card(interviewing, PAKKEPOST)).toContainText('technical · no answer in 45 days')
-    await interviewing.getByRole('button', { name: 'Mark ghosted' }).click()
-    await expect(notice(page)).toContainText('Ghosted')
+    await expect(card(interviewing, PAKKEPOST)).toContainText('technical')
+    await expect(card(interviewing, PAKKEPOST).getByRole('img', { name: 'No answer in 21 days' })).toBeVisible()
+    await markGhosted(page, PAKKEPOST)
     await expect(card(column(page, 'Closed'), PAKKEPOST)).toContainText('ghosted')
     expect(ledgerEntry(world, 'pakkepost-causal-experimentation')?.status).toBe('ghosted')
   })

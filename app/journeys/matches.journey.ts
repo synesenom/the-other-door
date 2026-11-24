@@ -20,21 +20,23 @@ const stepper = (page: import('@playwright/test').Page) => page.getByRole('group
 const nav = (page: import('@playwright/test').Page, name: string) => page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name, exact: true })
 
 test.describe('the list', () => {
-  test('lists the matches best first, each with its title, English title, company, place and score', async ({ page, world }) => {
+  test('lists the matches best first, each with its title, company, place and score', async ({ page, world }) => {
     await matchesLoaded(page)
     const names = await matchRows(page).getByRole('button').allInnerTexts()
     METTE_ORDER.forEach((key, i) => expect(names[i]).toContain(world.ads[key].title))
     const fjord = world.ads['fjordpension-senior-ds']
     await expect(row(page, world, 'fjordpension-senior-ds')).toHaveAccessibleName(
-      new RegExp(`^${fjord.title}\\s*${fjord.titleEn}\\s*Fjordpension · Copenhagen\\s*0\\.84$`),
+      new RegExp(`^${fjord.title}\\s*Fjordpension · Copenhagen\\s*84%$`),
     )
     // a new match: its dot is named first
-    await expect(row(page, world, 'baltic-power-lead-ds')).toHaveAccessibleName(/^New since your last review\s*Lead Data Scientist, Energy Trading\s*Baltic Power Trading ApS · Copenhagen \(hybrid\)\s*0\.94$/)
+    await expect(row(page, world, 'baltic-power-lead-ds')).toHaveAccessibleName(/^New since your last review\s*Lead Data Scientist, Energy Trading\s*Baltic Power Trading ApS · Copenhagen \(hybrid\)\s*94%$/)
     await expect(page.getByRole('img', { name: 'New since your last review' })).toHaveCount(3)
     for (const key of METTE_NEW) await expect(row(page, world, key).getByRole('img', { name: 'New since your last review' })).toBeVisible()
     await expect(page.getByRole('switch', { name: 'New only' })).toHaveAttribute('aria-checked', 'false')
     await expect(nav(page, 'Matches')).toHaveAttribute('aria-current', 'page')
-    await expect(page.getByText('Last run Oct 25, 02:41 PM')).toBeVisible()
+    // the last run (Oct 25, 14:41) is fresh at the world's now: its time on hover, no warning
+    await expect(page.getByRole('complementary').getByRole('button', { name: 'Find new jobs' })).toHaveAttribute('title', /^Last run 1[89] h ago$/)
+    await expect(page.getByRole('img', { name: /^No run|^Not run/ })).toHaveCount(0)
     expect(world.toolCalls('list_matches')[0].args).toMatchObject({ new_only: false, ongoing: false, closed: false })
     expect(world.toolCalls('mark_seen')).toEqual([])
   })

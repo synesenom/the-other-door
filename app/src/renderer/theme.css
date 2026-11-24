@@ -58,9 +58,9 @@
   --space-8: 40px;
   --space-9: 48px;
   --space-10: 64px;
-  --radius-s: 2px;
-  --radius-m: 2px;
-  --radius-l: 2px;
+  --radius-s: 0px;
+  --radius-m: 0px;
+  --radius-l: 0px;
   --radius-pill: 999px;
   --size-control-height: 36px;
   --size-button-height: 32px;
@@ -70,7 +70,8 @@
   --size-screen-top: 40px;
   --size-screen-gutter: 40px;
   --size-gap-s: 6px;
-  --size-content-max-width: 760px;
+  --size-column-width: 620px;
+  --size-wide-width: 1040px;
   --size-dash-width: 40px;
   --size-dash-height: 5px;
   --shadow-page: 0 1px 2px rgba(30,26,22,0.08), 0 12px 32px rgba(30,26,22,0.08);

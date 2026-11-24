@@ -36,30 +36,30 @@ button,input{font:inherit}
     </div>
     <div style="display: flex; gap: 14px; margin-right: -20px">
       <sc-for list="{{pages}}" as="pg" hint-placeholder-count="2">
-        <div aria-hidden="true" style="flex: none; width: 236px; height: 334px; box-sizing: border-box; background: #FFFCF5; border-radius: 2px; padding: 26px 22px; display: flex; flex-direction: column; gap: 7px">
+        <div aria-hidden="true" style="flex: none; width: 236px; height: 334px; box-sizing: border-box; background: #FFFCF5; border-radius: 0; padding: 26px 22px; display: flex; flex-direction: column; gap: 7px">
           <sc-if value="{{pg.first}}" hint-placeholder-val="{{ true }}">
-            <span style="display: block; width: 96px; height: 8px; border-radius: 2px; background: #1E1A16"></span>
+            <span style="display: block; width: 96px; height: 8px; border-radius: 0; background: #1E1A16"></span>
             <span style="display: block; height: 0; margin: 4px 0 8px"></span>
           </sc-if>
           <sc-for list="{{pg.lines}}" as="w" hint-placeholder-count="14">
-            <span style="display: block; height: 4px; border-radius: 2px; background: #D6C7A8; width: {{w}}"></span>
+            <span style="display: block; height: 4px; border-radius: 0; background: #D6C7A8; width: {{w}}"></span>
           </sc-for>
         </div>
       </sc-for>
     </div>
     <div aria-hidden="true" style="display: flex; justify-content: center; gap: 6px">
-      <span style="width: 16px; height: 4px; border-radius: 2px; background: #1E1A16"></span>
-      <span style="width: 4px; height: 4px; border-radius: 2px; background: #C9B993"></span>
+      <span style="width: 16px; height: 4px; border-radius: 0; background: #1E1A16"></span>
+      <span style="width: 4px; height: 4px; border-radius: 0; background: #C9B993"></span>
     </div>
     <div style="display: flex; gap: 8px; align-items: center">
       <label for="revise" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">What should change?</label>
-      <input id="revise" placeholder="What should change?" style="flex: 1; min-width: 0; height: 44px; box-sizing: border-box; padding: 0 14px; border: 1px solid #D6C7A8; border-radius: 2px; background: #FFFCF5; color: #1E1A16">
+      <input id="revise" placeholder="What should change?" style="flex: 1; min-width: 0; height: 44px; box-sizing: border-box; padding: 0 14px; border: 1px solid #D6C7A8; border-radius: 0; background: #FFFCF5; color: #1E1A16">
       <button type="button" style="height: 32px; padding: 0; border: 0; background: none; color: #3D5798; font-weight: 600; font-size: 13px">Revise</button>
     </div>
   </main>
   <div style="flex: none; display: flex; gap: 10px; padding: 12px 20px 30px; border-top: 1px solid #D6C7A8; background: #F1E6CF">
     <button type="button" style="flex: 0 0 auto; height: 48px; padding: 0 8px 0 0; border: 0; background: none; color: #3D5798; font-weight: 600">Open PDF</button>
-    <button type="button" style="flex: 1; height: 48px; border: 0; border-radius: 2px; background: #1E1A16; color: #FFFCF5; font-weight: 600">I've applied</button>
+    <button type="button" style="flex: 1; height: 48px; border: 0; border-radius: 0; background: #1E1A16; color: #FFFCF5; font-weight: 600">I've applied</button>
   </div>
 </div>
 </x-dc>

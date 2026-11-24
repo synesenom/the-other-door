@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { call, draftCv, findJobs, languageLine, statusSummary, statusWord, STATUSES, INTERVIEW_KINDS, materialUrl, visiblePages, type Materials, type Posting } from './api'
+import { call, draftCv, findJobs, languageLine, scoreText, statusSummary, statusWord, STATUSES, INTERVIEW_KINDS, materialUrl, visiblePages, type Materials, type Posting } from './api'
 import tools from '../generated/tools.json'
 import { mockDoor } from './testing'
 
@@ -219,5 +219,15 @@ describe('languageLine', () => {
     expect(languageLine('da', 'required')).toBe('Danish — required')
     expect(languageLine('fr', 'advantage')).toBe('French — an advantage')
     expect(languageLine('hu')).toBe('Hungarian')
+  })
+})
+
+describe('scoreText', () => {
+  it('says a score as a whole percentage, and nothing without one', () => {
+    expect(scoreText(0.88)).toBe('88%')
+    expect(scoreText(0.675)).toBe('68%')
+    expect(scoreText(1)).toBe('100%')
+    expect(scoreText(0)).toBe('0%')
+    expect(scoreText(null)).toBe('')
   })
 })

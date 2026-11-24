@@ -395,6 +395,31 @@ def test_no_answer_count_counts_silent_applied_and_interview_jobs_only():
     assert no_answer_count(_ledger(), later) == 0
 
 
+def test_stalled_is_the_stages_days_once_its_last_event_is_older_than_them():
+    from datetime import timedelta
+
+    from door.core.jobs.tracker import NO_ANSWER_DAYS, STALLED_DAYS, stalled
+
+    tracker = _ledger(["prepared"], ["applied"], ["applied", "interview:screening"])
+    for job_id, at, days in (("job-0", _at(1), STALLED_DAYS["prepared"]), ("job-1", _at(1), NO_ANSWER_DAYS),
+                             ("job-2", _at(2), STALLED_DAYS["interview"])):
+        assert stalled(tracker, job_id, at + timedelta(days=days)) is None, job_id
+        assert stalled(tracker, job_id, at + timedelta(days=days + 1)) == days, job_id
+    assert STALLED_DAYS["applied"] == NO_ANSWER_DAYS
+
+
+def test_stalled_never_flags_an_offer_an_ended_job_or_an_unknown_one():
+    from datetime import timedelta
+
+    from door.core.jobs.tracker import stalled
+
+    tracker = _ledger(["applied", "offer"], ["applied", "rejected"], ["applied", "ghosted"], ["prepared", "discarded"], ["unapplied"])
+    much_later = _at(1) + timedelta(days=400)
+    for n in range(5):
+        assert stalled(tracker, f"job-{n}", much_later) is None, n
+    assert stalled(tracker, "job-missing", much_later) is None
+
+
 def test_the_pass_rate_counts_only_decided_rounds_with_a_one_sigma_binomial_interval():
     from door.core.jobs.tracker import pass_rate
 

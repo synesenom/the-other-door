@@ -194,10 +194,8 @@ export interface Match {
   updated_at?: string | null
   /** The interview rounds so far, each passed, still pending, or how it ended. */
   rounds?: { stage: string; result: string }[]
-  /** An applied or interviewing job with no change for more than `no_answer_days` days (the tracker's rule, #89). */
-  no_answer?: boolean
-  /** The tracker's `NO_ANSWER_DAYS`, sent with every row so the app does not repeat it. */
-  no_answer_days?: number
+  /** A prepared, applied or interviewing job quiet for longer than its stage's days: those days (`tracker.stalled`), else null. */
+  stalled_days?: number | null
 }
 
 export interface MatchesResult {
@@ -304,6 +302,12 @@ export interface SetStatusResult {
   warning?: string
 }
 
+/** `import_posting` when the ad's title or company was neither given nor found in it: nothing stored; ask for `missing`, send again with `found`. */
+export interface ImportMissing {
+  missing: ('title' | 'company')[]
+  found: { title?: string; company?: string; location?: string }
+}
+
 export interface ImportResult {
   job_id: string
   path?: string
@@ -318,7 +322,7 @@ export const STATUSES = [
   { value: 'unapplied', word: 'Not yet applied' },
   { value: 'prepared', word: 'Prepared' },
   { value: 'applied', word: 'Applied' },
-  { value: 'interview', word: 'Interview' },
+  { value: 'interview', word: 'Had an interview' },
   { value: 'ghosted', word: 'Ghosted' },
   { value: 'rejected', word: 'Rejected' },
   { value: 'offer', word: 'Offer' },
@@ -326,10 +330,10 @@ export const STATUSES = [
 ] as const
 
 export const INTERVIEW_KINDS = [
-  { value: 'interview:screening', word: 'Screening', meaning: 'A pre-screening or recruiter call' },
-  { value: 'interview:impression', word: 'First impression', meaning: 'The first non-technical interview' },
-  { value: 'interview:assessment', word: 'Assessment', meaning: 'A personality or cognitive test' },
-  { value: 'interview:technical', word: 'Technical', meaning: 'A technical interview, case or take-home' },
+  { value: 'interview:screening', word: 'Screening', meaning: 'You had a pre-screening or recruiter call' },
+  { value: 'interview:impression', word: 'First impression', meaning: 'You had the first non-technical interview' },
+  { value: 'interview:assessment', word: 'Assessment', meaning: 'You took a personality or cognitive test' },
+  { value: 'interview:technical', word: 'Technical', meaning: 'You did a technical interview, case or take-home' },
 ] as const
 
 /** Calls one tool; a failed call throws an ApiError carrying the server's own words. */
@@ -430,7 +434,8 @@ export function statusWord(status: string): string | null {
 }
 
 export const placeLine = (company: string, location?: string) => (location ? `${company} · ${location}` : company)
-export const scoreText = (score: number | null | undefined) => (typeof score === 'number' ? score.toFixed(2) : '')
+/** A score (0–1) as people read one: "88%". */
+export const scoreText = (score: number | null | undefined) => (typeof score === 'number' ? `${Math.round(score * 100)}%` : '')
 
 /** "Danish — required": the ad's language in English, and what it asks of you. */
 export function languageLine(code: string, requirement?: string | null): string {

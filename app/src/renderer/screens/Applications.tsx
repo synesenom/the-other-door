@@ -4,7 +4,8 @@ import { call, errorText } from '../api'
 import type { Document, Match, Opening, MatchesResult, SetStatusResult } from '../api'
 import { useNarrow } from '../useNarrow'
 import { ImportDialog } from './ImportDialog'
-import { boardColumns, cardNote, silence } from './board'
+import { boardColumns, cardNote, stalledText } from './board'
+import { WarningMark } from './CheckMark'
 import { ReadingPane } from './ReadingPane'
 import type { PaneView } from './ReadingPane'
 import { statusNotice } from './statusNotice'
@@ -16,36 +17,35 @@ export function groupApplications(rows: Match[]): { heading: string; rows: Match
     .filter((g) => g.rows.length > 0)
 }
 
-/** The dots in words, for a screen reader: "2 rounds passed, one under way: ". */
-function roundsText(dots: ('passed' | 'pending')[]): string {
-  const passed = dots.filter((d) => d === 'passed').length
-  const words = [passed ? `${passed} ${passed === 1 ? 'round' : 'rounds'} passed` : '', dots.includes('pending') ? 'one under way' : ''].filter(Boolean)
-  return `${words.join(', ')}: `
-}
-
-/** One card: title, company, and when it moved, its interview rounds as dots, or how it ended. */
-function Card({ m, onOpen, onGhost, ghosting }: { m: Match; onOpen: () => void; onGhost: () => void; ghosting: boolean }) {
+/** One card: title, company, a dot per interview round passed or how it ended, and a warning when it has been quiet too long. */
+function Card({ m, onOpen }: { m: Match; onOpen: () => void }) {
   const note = cardNote(m)
+  const stalled = stalledText(m)
   return (
-    <li className="board-card-item">
+    <li>
       <button type="button" className="board-card" onClick={onOpen}>
-        <span className="board-card-title">{m.title_en || m.title}</span>
+        <span className="board-card-head">
+          <span className="board-card-title">{m.title_en || m.title}</span>
+          {stalled && (
+            <span className="board-card-warning" role="img" aria-label={stalled}>
+              <WarningMark />
+              <span className="hint-pop small" aria-hidden="true">
+                {stalled}
+              </span>
+            </span>
+          )}
+        </span>
         <span className="board-card-company small muted">{m.company}</span>
-        {(note.dots.length > 0 || note.text) && (
+        {(note.passed > 0 || note.text) && (
           <span className="board-card-note small muted">
-            {note.dots.map((d, i) => (
-              <span key={i} className={d === 'passed' ? 'round-dot round-passed' : 'round-dot round-next'} aria-hidden="true" />
+            {Array.from({ length: note.passed }, (_, i) => (
+              <span key={i} className="round-dot" aria-hidden="true" />
             ))}
-            {note.dots.length > 0 && <span className="visually-hidden">{roundsText(note.dots)}</span>}
+            {note.passed > 0 && <span className="visually-hidden">{`${note.passed} ${note.passed === 1 ? 'round' : 'rounds'} passed: `}</span>}
             {note.text}
           </span>
         )}
       </button>
-      {silence(m) !== null && (
-        <button type="button" className="secondary board-card-ghost small" onClick={onGhost} disabled={ghosting}>
-          Mark ghosted
-        </button>
-      )}
     </li>
   )
 }
@@ -69,9 +69,6 @@ export function Applications({
   const [view, setView] = useState<PaneView>('posting')
   const [initialDoc, setInitialDoc] = useState<Document | undefined>(undefined)
   const [error, setError] = useState<string | null>(null)
-  // the card being marked ghosted: its button waits for the answer
-  const [ghostingId, setGhostingId] = useState<string | null>(null)
-  const ghosting = useRef<string | null>(null)
   const [tick, setTick] = useState(0)
   const [importing, setImporting] = useState(false)
   const [notice, setNotice] = useState<{ text: string; warning?: string } | null>(null)
@@ -136,24 +133,6 @@ export function Applications({
     setFromBoard(false)
     told(result, title)
   }
-  // No answer for the tracker's days: record it as ghosted, dated today.
-  // One call at a time: a second click before the answer would record ghosted twice.
-  const markGhosted = (m: Match) => {
-    if (ghosting.current) return
-    ghosting.current = m.id
-    setGhostingId(m.id)
-    setError(null)
-    call<SetStatusResult>('set_status', { job_id: m.id, status: 'ghosted' })
-      .then(
-        (result) => told(result, m.title_en || m.title),
-        (e) => setError(errorText(e)),
-      )
-      .finally(() => {
-        ghosting.current = null
-        setGhostingId(null)
-      })
-  }
-
   // Preparing moves the job out of this list: it stays open while its application is on screen.
   const switchView = (next: PaneView) => {
     if (next === 'materials') {
@@ -251,7 +230,7 @@ export function Applications({
                 </div>
                 <ul className="board-cards">
                   {c.rows.map((m) => (
-                    <Card key={m.id} m={m} onOpen={() => open(m)} onGhost={() => markGhosted(m)} ghosting={ghostingId === m.id} />
+                    <Card key={m.id} m={m} onOpen={() => open(m)} />
                   ))}
                 </ul>
               </section>

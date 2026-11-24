@@ -169,7 +169,9 @@ test.describe('Help: Report a problem', () => {
     world.faults({ tools: { doctor: { error: `could not read ${world.home}/profile/config.json for ${world.persona.email}`, once: true } } })
     await openSettings(page)
     const report = region(page, 'Help')
-    await expect(report).toContainText('No CV, profile, job ads or applications; emails and folder names are hidden.')
+    await report.getByRole('button', { name: 'About Save logs' }).hover()
+    await expect(page.getByRole('tooltip')).toContainText('No CV, profile, job ads or applications; emails and folder names are hidden.')
+    await expect(page.getByRole('tooltip')).toBeInViewport() // by its icon, not off at the top of the page
     const target = join(world.scratch, 'door-report-2026-10-26.zip')
     await os.nextSave(target)
     await button(report, 'Save logs…').click()

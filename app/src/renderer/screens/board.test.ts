@@ -1,21 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { boardColumns, cardNote, whenText } from './board'
+import { boardColumns, cardNote, stalledText } from './board'
 import { match } from '../testing'
-
-const NOW = new Date('2026-10-30T12:00:00Z')
-
-describe('whenText', () => {
-  it('today, yesterday, days, weeks, then the date', () => {
-    expect(whenText('2026-10-30T08:00:00Z', NOW)).toBe('today')
-    expect(whenText('2026-10-29T20:00:00Z', NOW)).toBe('yesterday')
-    expect(whenText('2026-10-26T12:00:00Z', NOW)).toBe('4 days ago')
-    expect(whenText('2026-10-22T12:00:00Z', NOW)).toBe('1 week ago')
-    expect(whenText('2026-10-10T12:00:00Z', NOW)).toBe('2 weeks ago')
-    expect(whenText('2026-08-01T12:00:00Z', NOW)).toMatch(/Aug/)
-    expect(whenText(null, NOW)).toBeNull()
-    expect(whenText('soon', NOW)).toBeNull()
-  })
-})
 
 describe('boardColumns', () => {
   it('five columns in order, each with its jobs; Closed from the closed list', () => {
@@ -41,45 +26,37 @@ describe('boardColumns', () => {
 })
 
 describe('cardNote', () => {
-  it('prepared and applied: when it moved', () => {
-    expect(cardNote(match({ status: 'applied', updated_at: '2026-10-26T12:00:00Z' }) as never, NOW)).toEqual({ dots: [], text: '4 days ago' })
+  it('prepared and applied: nothing under the company', () => {
+    expect(cardNote(match({ status: 'applied', updated_at: '2026-10-26T12:00:00Z' }) as never)).toEqual({ passed: 0, text: null })
+    expect(cardNote(match({ status: 'prepared' }) as never)).toEqual({ passed: 0, text: null })
   })
 
-  it('interviewing: a dot per round (passed or next) and the round now', () => {
+  it('interviewing: a dot per round passed and the round now', () => {
     const m = match({ status: 'interview:technical', rounds: [{ stage: 'screening', result: 'passed' }, { stage: 'technical', result: 'pending' }] })
-    expect(cardNote(m as never, NOW)).toEqual({ dots: ['passed', 'pending'], text: 'technical' })
-  })
-
-  it('applied and silent: says no answer, with the days the server sent', () => {
-    const m = match({ status: 'applied', updated_at: '2026-09-01T12:00:00Z', no_answer: true, no_answer_days: 45 })
-    expect(cardNote(m as never, NOW)).toEqual({ dots: [], text: 'No answer in 45 days' })
-    expect(cardNote({ ...m, no_answer_days: 60 } as never, NOW).text).toBe('No answer in 60 days')
-    expect(cardNote({ ...m, no_answer: false } as never, NOW).text).toMatch(/Sep|weeks/)
-    expect(cardNote(match({ status: 'applied', updated_at: '2026-10-26T12:00:00Z' }) as never, NOW).text).toBe('4 days ago')
-  })
-
-  it('interviewing and silent: the dots and the round stay, then the silence', () => {
-    const rounds = [{ stage: 'screening', result: 'passed' }, { stage: 'technical', result: 'pending' }]
-    const m = match({ status: 'interview:technical', rounds, no_answer: true, no_answer_days: 45 })
-    expect(cardNote(m as never, NOW)).toEqual({ dots: ['passed', 'pending'], text: 'technical · no answer in 45 days' })
-    expect(cardNote({ ...m, no_answer: false } as never, NOW).text).toBe('technical')
-  })
-
-  it('offer, closed and prepared ignore the flag', () => {
-    for (const status of ['offer', 'rejected', 'ghosted', 'discarded']) {
-      expect(cardNote(match({ status, no_answer: true, no_answer_days: 45 }) as never, NOW).text).not.toMatch(/answer/i)
-    }
-    expect(cardNote(match({ status: 'prepared', updated_at: '2026-10-26T12:00:00Z', no_answer: true, no_answer_days: 45 }) as never, NOW).text).toBe('4 days ago')
+    expect(cardNote(m as never)).toEqual({ passed: 1, text: 'technical' })
   })
 
   it('offer: the rounds passed, then the word', () => {
     const m = match({ status: 'offer', rounds: [{ stage: 'screening', result: 'passed' }] })
-    expect(cardNote(m as never, NOW)).toEqual({ dots: ['passed'], text: 'offer' })
+    expect(cardNote(m as never)).toEqual({ passed: 1, text: 'offer' })
   })
 
   it('closed: how it ended', () => {
-    expect(cardNote(match({ status: 'rejected' }) as never, NOW).text).toBe('rejected')
-    expect(cardNote(match({ status: 'ghosted' }) as never, NOW).text).toBe('ghosted')
-    expect(cardNote(match({ status: 'discarded' }) as never, NOW).text).toBe('withdrawn')
+    expect(cardNote(match({ status: 'rejected' }) as never).text).toBe('rejected')
+    expect(cardNote(match({ status: 'ghosted' }) as never).text).toBe('ghosted')
+    expect(cardNote(match({ status: 'discarded' }) as never).text).toBe('withdrawn')
+  })
+})
+
+describe('stalledText', () => {
+  it('says what has not happened, in the days the server sent', () => {
+    expect(stalledText(match({ status: 'prepared', stalled_days: 14 }) as never)).toBe('Not sent in 14 days')
+    expect(stalledText(match({ status: 'applied', stalled_days: 45 }) as never)).toBe('No answer in 45 days')
+    expect(stalledText(match({ status: 'interview:technical', stalled_days: 21 }) as never)).toBe('No answer in 21 days')
+  })
+
+  it('nothing when the server says the card is not stalled', () => {
+    expect(stalledText(match({ status: 'applied', stalled_days: null }) as never)).toBeNull()
+    expect(stalledText(match({ status: 'applied' }) as never)).toBeNull()
   })
 })

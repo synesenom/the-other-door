@@ -41,9 +41,9 @@ button{font:inherit;cursor:pointer}
   </article>
 
   <div style="width: 100%; max-width: 680px; display: flex; gap: 12px; flex-wrap: wrap; margin-top: auto; border-top: 1px solid #4A423A; padding-top: 12px">
-    <button type="button" onClick="{{next}}" style="flex: 1 1 160px; height: 52px; border: 0; border-radius: 2px; background: none; color: #B5A890; font-weight: 600">Not for me… <span style="color: #B5A890; font-size: 12px; margin-left: 6px">X</span></button>
-    <button type="button" onClick="{{next}}" style="flex: 1 1 160px; height: 52px; border: 0; border-radius: 2px; background: none; color: #B5A890; font-weight: 600">Later <span style="color: #B5A890; font-size: 12px; margin-left: 6px">Space</span></button>
-    <button type="button" onClick="{{next}}" style="flex: 1 1 160px; height: 52px; border: 0; border-radius: 2px; background: #F1E6CF; color: #1E1A16; font-weight: 600">Prepare <span style="color: #5C5249; font-size: 12px; margin-left: 6px">P</span></button>
+    <button type="button" onClick="{{next}}" style="flex: 1 1 160px; height: 52px; border: 0; border-radius: 0; background: none; color: #B5A890; font-weight: 600">Not for me… <span style="color: #B5A890; font-size: 12px; margin-left: 6px">X</span></button>
+    <button type="button" onClick="{{next}}" style="flex: 1 1 160px; height: 52px; border: 0; border-radius: 0; background: none; color: #B5A890; font-weight: 600">Later <span style="color: #B5A890; font-size: 12px; margin-left: 6px">Space</span></button>
+    <button type="button" onClick="{{next}}" style="flex: 1 1 160px; height: 52px; border: 0; border-radius: 0; background: #F1E6CF; color: #1E1A16; font-weight: 600">Prepare <span style="color: #5C5249; font-size: 12px; margin-left: 6px">P</span></button>
   </div>
 </div>
 </x-dc>
@@ -52,12 +52,12 @@ class Component extends DCLogic {
   constructor(props) { super(props); this.state = { i: 0 }; }
   renderVals() {
     const jobs = [
-      { title: 'Senior Data Scientist', company: 'Hooli Labs', place: 'Copenhagen', score: '0.86', why: 'Your forecasting work and Python depth line up with the core of the role. They want dbt, which your CV does not mention yet.' },
-      { title: 'Machine Learning Engineer', company: 'Contoso Pay', place: 'Copenhagen', score: '0.81', why: 'Strong on modelling and production Python. The ad leans on MLOps tooling you have used only briefly.' },
-      { title: 'Analytics Lead', company: 'Initech Insurance', place: 'Aarhus', score: '0.77', why: 'Leadership of a small analytics team matches your last role. Aarhus is outside your preferred area.' }
+      { title: 'Senior Data Scientist', company: 'Hooli Labs', place: 'Copenhagen', score: '86%', why: 'Your forecasting work and Python depth line up with the core of the role. They want dbt, which your CV does not mention yet.' },
+      { title: 'Machine Learning Engineer', company: 'Contoso Pay', place: 'Copenhagen', score: '81%', why: 'Strong on modelling and production Python. The ad leans on MLOps tooling you have used only briefly.' },
+      { title: 'Analytics Lead', company: 'Initech Insurance', place: 'Aarhus', score: '77%', why: 'Leadership of a small analytics team matches your last role. Aarhus is outside your preferred area.' }
     ];
     const i = this.state.i % jobs.length;
-    const ticks = Array.from({ length: 12 }, (_, k) => 'flex: 1; height: 3px; border-radius: 2px; background: ' + (k < i + 1 ? '#6F8FEF' : '#3A332C') + ';');
+    const ticks = Array.from({ length: 12 }, (_, k) => 'flex: 1; height: 3px; border-radius: 0; background: ' + (k < i + 1 ? '#6F8FEF' : '#3A332C') + ';');
     return { job: jobs[i], pos: String(i + 1), total: '12', ticks, next: () => this.setState({ i: this.state.i + 1 }) };
   }
 }

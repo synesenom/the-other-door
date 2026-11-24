@@ -384,6 +384,35 @@ def test_list_rows_say_when_an_application_had_no_answer_for_45_days(cli_env):
     assert all(row["no_answer_days"] == tracker_mod.NO_ANSWER_DAYS for row in rows.values())
 
 
+def test_list_rows_say_how_many_days_a_stalled_card_has_been_quiet(cli_env):
+    from datetime import datetime, timedelta, timezone
+
+    from door.commands import matches as matches_cmd
+    from door.core.jobs import tracker as tracker_mod
+
+    now = datetime.now(tz=timezone.utc)
+    old, recent = now - timedelta(days=60), now - timedelta(days=3)
+    cases = {
+        "job-p": [("prepared", old)], "job-a": [("applied", old)], "job-i": [("applied", old), ("interview:technical", old)],
+        "job-r": [("applied", recent)], "job-o": [("applied", old), ("offer", old)], "job-x": [("applied", old), ("rejected", old)],
+    }
+    app_tracker = tracker_mod.ApplicationTracker(cli_env.jobs_dir / "applications.json")
+    for job_id, events in cases.items():
+        write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", job_id, score=0.9, title=job_id)
+        for status, at in events:
+            app_tracker.set_status(job_id, status, now=at)
+    app_tracker.save()
+
+    rows = {}
+    for kwargs in ({"ongoing": True}, {"closed": True}):
+        rows.update({m["id"]: m for m in matches_cmd._list_core(jobs_dir=cli_env.jobs_dir, profile_dir=cli_env.profile_dir, **kwargs)["matches"]})
+    days = {job_id: row["stalled_days"] for job_id, row in rows.items()}
+    assert days == {
+        "job-p": tracker_mod.STALLED_DAYS["prepared"], "job-a": tracker_mod.NO_ANSWER_DAYS,
+        "job-i": tracker_mod.STALLED_DAYS["interview"], "job-r": None, "job-o": None, "job-x": None,
+    }
+
+
 def test_list_ongoing_marks_an_application_with_no_answer(cli_env):
     from datetime import datetime, timedelta, timezone
 
@@ -493,7 +522,7 @@ def test_weak_is_the_three_best_below_the_bar_when_nothing_cleared_it(cli_env):
     assert [m["id"] for m in result["weak"]["matches"]] == ["job-0", "job-1", "job-2"]
     assert set(result["weak"]["matches"][0]) == {
         "id", "score", "title", "title_en", "company", "location", "work_permit", "status", "is_new", "updated_at", "rounds",
-        "no_answer", "no_answer_days"}
+        "no_answer", "no_answer_days", "stalled_days"}
 
 
 def test_weak_has_fewer_than_three_when_fewer_were_scored(cli_env):

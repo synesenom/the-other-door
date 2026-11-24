@@ -35,6 +35,8 @@ export interface Scene {
   play?: boolean
   /** The role targets changed and the search terms could not be made again: a line under the sidebar's menu opens What to look for. */
   searchTermsStale?: boolean
+  /** Hours since the last run ended (default 2: fresh); null for none ever. */
+  lastRunHoursAgo?: number | null
   /** The discovery sources never chosen, in place of the fixtures' (`show_profile`). */
   discoveryUnchosen?: { key: string; label: string }[]
   /** Google Drive as the scene starts it (default off): Connect and Disconnect, and the sync on opening, change it
@@ -50,6 +52,8 @@ export interface Scene {
   fails?: Record<string, string>
   /** An installed build with an update downloaded: Settings' Help shows the version and "Restart to update". */
   updateReady?: boolean
+  /** "Add a job": the pasted ad names no title or company Claude can read, so the two are asked (`import_posting`'s `missing`). */
+  importMissing?: boolean
   /** Buttons the preview presses, in order, once the screen has loaded (`pressInOrder`): a state only an action reaches. */
   press?: string[]
 }
@@ -163,7 +167,9 @@ export const SCENES: readonly Scene[] = [
   { id: 'guide', group: 'Visual guide', title: 'Buttons, fields, marks, type and colours', guide: true },
   { id: 'splash', group: 'Start', title: 'Splash', hold: 'show_profile' },
   { id: 'matches', group: 'Matches', title: 'Matches' },
-  { id: 'matches-add-job-failed', group: 'Matches', title: 'Add a job, an import that failed (type a link, Import: the error box)', fails: { import_posting: 'That page needs a sign-in. Paste the ad text instead.' }, press: ['Add a job…'] },
+  { id: 'matches-add-job-failed', group: 'Matches', title: 'Add a job, an import that failed (type a link, Import: the error box)', fails: { import_posting: 'A run is in progress: try again once it is done.' }, press: ['Add a job…'] },
+  { id: 'matches-add-job-unreadable', group: 'Matches', title: 'Add a job, a page that cannot be read (type a link, Import: it turns to Paste text, saying why)', fails: { import_posting: 'could not fetch https://example.com/job/1: 403 Client Error: Forbidden' }, press: ['Add a job…'] },
+  { id: 'matches-add-job-missing', group: 'Matches', title: 'Add a job, an ad whose title and company cannot be found (paste any text, Import: only those two are asked)', importMissing: true, press: ['Add a job…', 'Paste text'] },
   { id: 'matches-none-reached', group: 'Matches', title: 'Matches, 40 scored and none at the setting', noneReached: true },
   { id: 'matches-weak', group: 'Matches', title: 'Matches, only weak ones', weak: 'keywords' },
   { id: 'matches-weak-sources', group: 'Matches', title: 'Matches, only weak ones, a source off', weak: 'sources' },
@@ -174,18 +180,15 @@ export const SCENES: readonly Scene[] = [
   { id: 'sent', group: 'Applications', title: 'What you sent', open: { screen: 'materials', jobId: 'jobindex.demo-7', inPlay: true } },
   { id: 'profile', group: 'Profile', title: 'Profile form', start: { destination: 'Profile' } },
   { id: 'profile-detail-refused', group: 'Profile', title: 'A detail the server refused (edit Name: the reason under its field)', start: { destination: 'Profile' }, fails: { init_profile: 'profile/config.json: name — name must not be empty' } },
+  { id: 'sidebar-run-stale', group: 'Sidebar', title: 'No run in 4 days: a warning beside Find new jobs', start: { destination: 'Matches' }, lastRunHoursAgo: 4 * 24 + 3 },
+  { id: 'sidebar-run-never', group: 'Sidebar', title: 'Not run yet: a warning beside Find new jobs', start: { destination: 'Matches' }, lastRunHoursAgo: null },
   { id: 'profile-search-stale', group: 'Profile', title: 'The search terms could not follow new role targets (a line under the sidebar menu)', start: { destination: 'Matches' }, searchTermsStale: true },
-  { id: 'profile-cv', group: 'Profile', title: 'CV', start: { destination: 'Profile', cv: true } },
-  { id: 'profile-cv-forget-failed', group: 'Profile', title: 'CV, a page that could not be forgotten (under Sources)', start: { destination: 'Profile', cv: true }, fails: { init_profile: 'Your pages could not be saved. Try again.' }, press: ['Forget https://janedoe.example/portfolio'] },
   { id: 'profile-cv-gaps', group: 'Profile', title: 'CV with gaps: "to fill in" pills in the preview', start: { destination: 'Profile', cv: true }, cvGaps: true },
   { id: 'profile-cv-text', group: 'Profile', title: 'CV, Preview off: the text, "Written in Markdown"', start: { destination: 'Profile', cv: true }, press: ['Preview'] },
   { id: 'profile-cv-file', group: 'Profile', title: 'CV, a new CV file: what it adds, proposed', start: { destination: 'Profile', cv: true }, press: ['Replace CV file…'] },
   { id: 'profile-cv-file-failed', group: 'Profile', title: 'CV, a new CV file that could not be read (in the dialog)', start: { destination: 'Profile', cv: true }, fails: { enrich: 'Your CV file could not be read. Try again.' }, press: ['Replace CV file…'] },
-  { id: 'profile-cv-style', group: 'Profile', title: 'CV style: a colour and a font pair, a sample of the CV beside them', start: { destination: 'Profile', cvStyle: true } },
   { id: 'profile-cv-style-chosen', group: 'Profile', title: 'CV style, Teal and Editorial chosen', start: { destination: 'Profile', cvStyle: true }, press: ['Teal', 'Editorial'] },
   { id: 'profile-cv-style-failed', group: 'Profile', title: 'CV style, a CV that could not be read (one line under the sample)', start: { destination: 'Profile', cvStyle: true }, fails: { cv_style_sample: 'cv_unreadable' } },
-  { id: 'profile-stories', group: 'Profile', title: 'Stories', start: { destination: 'Profile', stories: true } },
-  { id: 'profile-stories-unread', group: 'Profile', title: 'Stories, a story bank that could not be read (the error box)', start: { destination: 'Profile', stories: true }, fails: { list_stories: 'Your story bank could not be read. Try again later.' } },
   { id: 'profile-stories-failed', group: 'Profile', title: 'Stories, a story that could not be saved (the error box)', start: { destination: 'Profile', stories: true }, fails: { save_story: 'Your story could not be saved. Try again.' }, press: ['Edit…', 'Save'] },
   { id: 'settings', group: 'Settings', title: 'Settings', start: { destination: 'Settings' } },
   { id: 'settings-update', group: 'Settings', title: 'Settings, an update ready', updateReady: true, start: { destination: 'Settings' } },

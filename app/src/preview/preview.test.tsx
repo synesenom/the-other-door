@@ -85,7 +85,7 @@ describe('the visual guide', () => {
     const count = (sel: string) => document.querySelectorAll(sel).length
     const counts = { primary: [2, 1], secondary: [3, 1], quiet: [1, 1] }
     for (const [kind, [enabled, disabled]] of Object.entries(counts)) {
-      expect(count(`button.${kind}:not(.sidebar-problem):not(:disabled)`)).toBe(enabled)
+      expect(count(`button.${kind}:not(.sidebar-problem, .sidebar-find *):not(:disabled)`)).toBe(enabled)
       expect(count(`button.${kind}:disabled`)).toBe(disabled)
     }
   })
@@ -146,20 +146,15 @@ describe('scenes', () => {
     await waitFor(() => expect(screen.getByRole('button', { name })).toHaveAttribute('aria-current', 'page'))
   })
 
-  it('applications shows a card with no answer and its Mark ghosted', async () => {
+  it('applications shows a card quiet too long with the warning mark', async () => {
     mount('applications')
-    expect(await screen.findByRole('button', { name: /^Accounting Manager/ })).toHaveTextContent('No answer in 45 days')
-    expect(screen.getByRole('button', { name: 'Mark ghosted' })).toBeInTheDocument()
+    const card = await screen.findByRole('button', { name: /^Accounting Manager/ })
+    expect(within(card).getByRole('img', { name: 'No answer in 45 days' })).toBeInTheDocument()
   })
 
-  it('profile-cv-style shows the pickers and a sample of the CV', async () => {
-    mount('profile-cv-style')
-    expect(await screen.findByRole('img', { name: /sample of your CV/ })).toBeInTheDocument()
-    expect(screen.getByRole('radio', { name: 'Teal' })).toBeInTheDocument()
-  })
-
-  it('profile-cv-style-chosen has the pressed colour and fonts checked', async () => {
+  it('profile-cv-style-chosen has a sample of the CV and the pressed colour and fonts checked', async () => {
     mount('profile-cv-style-chosen')
+    expect(await screen.findByRole('img', { name: /sample of your CV/ })).toBeInTheDocument()
     await pressInOrder(sceneById('profile-cv-style-chosen')!.press!)
     await waitFor(() => expect(screen.getByRole('radio', { name: 'Teal' })).toBeChecked())
     expect(screen.getByRole('radio', { name: 'Editorial' })).toBeChecked()
@@ -170,8 +165,8 @@ describe('scenes', () => {
     expect(await screen.findByText(/Check your Master CV/)).toBeInTheDocument()
   })
 
-  it('profile-stories lists the stories', async () => {
-    mount('profile-stories')
+  it('profile lists the stories', async () => {
+    mount('profile')
     expect(await screen.findByRole('listitem', { name: 'Rebuilt the cash forecast at Acme Foods' })).toBeInTheDocument()
     // the details save themselves: no Save bar, before or after an edit
     expect(screen.queryByRole('button', { name: 'Save' })).toBeNull()
@@ -252,14 +247,14 @@ describe('scenes', () => {
 
   it('finding-summary-none says the run in a line and offers the next steps', async () => {
     mount('finding-summary-none')
-    expect(await screen.findByText('46 jobs found, 40 close enough to score, none scored 0.65 or better')).toBeInTheDocument()
+    expect(await screen.findByText('46 jobs found, 40 close enough to score, none scored 65% or better')).toBeInTheDocument()
     expect(screen.getByText('Match fit: Balanced')).toBeInTheDocument()
     for (const name of ['View matches', 'Show broader matches']) expect(screen.getByRole('button', { name })).toBeInTheDocument()
   })
 
   it('matches-none-reached names the setting the empty list waits on', async () => {
     mount('matches-none-reached')
-    expect(await screen.findByText('Nothing has scored 0.65 or better yet.')).toBeInTheDocument()
+    expect(await screen.findByText('Nothing has scored 65% or better yet.')).toBeInTheDocument()
     expect(screen.getByText('Match fit: Balanced')).toBeInTheDocument()
   })
 
@@ -279,27 +274,11 @@ describe('scenes', () => {
     await waitFor(() => expect(screen.getByLabelText('Step 1 of 3')).toHaveAttribute('aria-current', 'step'))
   })
 
-  it('profile-cv-forget-failed says a page that could not be forgotten under the Pages field', async () => {
-    mount('profile-cv-forget-failed')
-    await pressInOrder(sceneById('profile-cv-forget-failed')!.press!)
-    const alert = await screen.findByRole('alert')
-    expect(alert).toHaveTextContent('Your pages could not be saved. Try again.')
-    expect(alert).toHaveClass('field-error')
-    expect(screen.getByRole('button', { name: 'Forget https://janedoe.example/portfolio' })).toBeInTheDocument()
-  })
-
   it('profile-stories-failed says a save that failed in the error box', async () => {
     mount('profile-stories-failed')
     await pressInOrder(sceneById('profile-stories-failed')!.press!)
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('Your story could not be saved. Try again.')
-    expect(alert).toHaveClass('error')
-  })
-
-  it('profile-stories-unread says a bank that could not be read in the error box', async () => {
-    mount('profile-stories-unread')
-    const alert = await screen.findByRole('alert')
-    expect(alert).toHaveTextContent('Your story bank could not be read. Try again later.')
     expect(alert).toHaveClass('error')
   })
 
@@ -318,8 +297,29 @@ describe('scenes', () => {
     await userEvent.type(await screen.findByLabelText('Link'), 'https://example.com/job/1')
     await userEvent.click(screen.getByRole('button', { name: 'Import' }))
     const alert = await screen.findByRole('alert')
-    expect(alert).toHaveTextContent('That page needs a sign-in. Paste the ad text instead.')
+    expect(alert).toHaveTextContent('A run is in progress: try again once it is done.')
     expect(alert).toHaveClass('error')
+  })
+
+  it('matches-add-job-unreadable turns a link whose page cannot be read to Paste text, saying why', async () => {
+    mount('matches-add-job-unreadable')
+    await pressInOrder(sceneById('matches-add-job-unreadable')!.press!)
+    await userEvent.type(await screen.findByLabelText('Link'), 'https://example.com/job/1')
+    await userEvent.click(screen.getByRole('button', { name: 'Import' }))
+    expect(await screen.findByText("That page could not be read: it may need a sign-in. Paste the ad's text here.")).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Paste text' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('matches-add-job-missing asks only for the title and company the ad did not give', async () => {
+    mount('matches-add-job-missing')
+    await pressInOrder(sceneById('matches-add-job-missing')!.press!)
+    await userEvent.type(await screen.findByLabelText('Ad text'), 'We need someone for our finance team.')
+    await userEvent.click(screen.getByRole('button', { name: 'Import' }))
+    expect(await screen.findByText('The title and company could not be found in the ad. Fill them in.')).toBeInTheDocument()
+    await userEvent.type(screen.getByLabelText('Title'), 'Controller')
+    await userEvent.type(screen.getByLabelText('Company'), 'Acme')
+    await userEvent.click(screen.getByRole('button', { name: 'Import' }))
+    expect(await screen.findByRole('dialog', { name: 'Imported' })).toBeInTheDocument()
   })
 
 })

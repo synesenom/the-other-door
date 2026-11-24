@@ -55,7 +55,8 @@ def _list_core(
     Returns:
         ``{"min_score", "last_reviewed_at", "scored", "matches": [{"id",
         "score", "title", "title_en", "company", "location", "work_permit",
-        "status", "is_new", "updated_at", "rounds", "no_answer", "no_answer_days"}, ...]}``, sorted by score descending;
+        "status", "is_new", "updated_at", "rounds", "no_answer", "no_answer_days",
+        "stalled_days"}, ...]}``, sorted by score descending;
         ``weak`` is None, or, in the default view only (no status, ongoing, closed, new_only or limit) until any posting
         on disk has scored at least the config's ``min_score``, ``{"matches": [rows like the above, the best 3 untracked
         fresh postings below the bar], "hint": "sources" | "keywords", "sources": [{"key", "label"}]}``: ``sources``
@@ -63,7 +64,9 @@ def _list_core(
         ``scored`` is how many postings on disk the model scored (score above 0), whatever the filters, status or limit;
         ``updated_at`` is when the current status happened (None when untracked), ``rounds`` the
         interview rounds as ``[{"stage", "result"}]`` (`ApplicationTracker.interview_rounds`); ``no_answer`` is whether an applied or interviewing job has been
-        silent for more than ``no_answer_days`` days (`tracker.NO_ANSWER_DAYS`, #89); ``title_en`` is the
+        silent for more than ``no_answer_days`` days (`tracker.NO_ANSWER_DAYS`, #89); ``stalled_days`` is its
+        stage's quiet days once a prepared, applied or interviewing job has had no change for longer
+        (`tracker.stalled`), else None; ``title_en`` is the
         English translation of a non-English title, else ``None``; ``work_permit`` is what the ad says
         about a visa or work permit (``no_sponsorship``, ``permit_required``,
         ``sponsorship_offered``, ``not_mentioned``) or ``None`` when unscored; ``status`` is the ledger status
@@ -137,6 +140,7 @@ def _match_row(posting: dict, app_tracker, reviewed_at, seen) -> dict:
         "rounds": [{"stage": r["stage"], "result": r["result"]} for r in app_tracker.interview_rounds(job_id)],
         "no_answer": _tracker_mod.no_answer(app_tracker, job_id),
         "no_answer_days": _tracker_mod.NO_ANSWER_DAYS,
+        "stalled_days": _tracker_mod.stalled(app_tracker, job_id),
     }
 
 

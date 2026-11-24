@@ -242,7 +242,7 @@ describe('Finding, the summary card', () => {
     expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('2 new matches')
     expect(screen.getByText('Finance Controller')).toBeInTheDocument()
     expect(screen.getByText(/Tyrell Maritime/)).toBeInTheDocument()
-    expect(screen.getByText('0.86')).toBeInTheDocument()
+    expect(screen.getByText('86%')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'View matches' }))
     expect(h.onViewMatches).toHaveBeenCalledTimes(1)
   })
@@ -307,8 +307,8 @@ describe('Finding, the summary card of a run with no new matches', () => {
 
   it('says the run in one line, counting only the sites that worked', () => {
     open(none())
-    expect(screen.getByText('917 jobs found, 40 close enough to score, none scored 0.65 or better')).toBeInTheDocument()
-    expect(screen.getByText('Match fit: Balanced').closest('p')).toBe(screen.getByText('917 jobs found, 40 close enough to score, none scored 0.65 or better').closest('p'))
+    expect(screen.getByText('917 jobs found, 40 close enough to score, none scored 65% or better')).toBeInTheDocument()
+    expect(screen.getByText('Match fit: Balanced').closest('p')).toBe(screen.getByText('917 jobs found, 40 close enough to score, none scored 65% or better').closest('p'))
   })
 
   it('offers two actions: View matches, and Show broader matches', async () => {
