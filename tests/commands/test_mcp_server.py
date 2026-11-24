@@ -180,6 +180,43 @@ def test_init_profile_returns_the_disclaimer_of_a_source_turned_on(tmp_path, mon
     assert result["disclaimers"] == [{"key": "linkedin_discovery", "text": discovery_sources.info("linkedin")["disclaimer"]}]
 
 
+@pytest.mark.parametrize("key, value", [
+    ("cv_content", "/root/.ssh/id_rsa"),
+    ("cv_template", "../../etc/x.html"),
+    ("cover_letter_template", "/etc/x.html"),
+    ("photo", "/tmp/elsewhere/x.jpg"),
+])
+def test_init_profile_refuses_a_new_path_outside_the_profile_folder_and_writes_nothing(tmp_path, monkeypatch, key, value):
+    monkeypatch.setattr(workspace, "HOME", tmp_path)
+    monkeypatch.setattr(workspace, "PROFILE_DIR", tmp_path / "profile")
+    result = server.init_profile(other={key: value})
+    assert key in str(result["error"])
+    assert not (tmp_path / "profile").exists()  # a refused first call leaves no folder
+
+    server.init_profile(name="Ada")
+    before = (tmp_path / "profile" / "config.json").read_text()
+    assert key in str(server.init_profile(other={key: value})["error"])
+    assert (tmp_path / "profile" / "config.json").read_text() == before
+
+
+def test_init_profile_saves_over_a_config_with_an_old_path_outside_the_profile_folder(tmp_path, monkeypatch):
+    import json
+
+    monkeypatch.setattr(workspace, "HOME", tmp_path)
+    monkeypatch.setattr(workspace, "PROFILE_DIR", tmp_path / "profile")
+    server.init_profile(name="Ada")
+    path = tmp_path / "profile" / "config.json"
+    config = json.loads(path.read_text())
+    config["cv_content"] = "/Users/x/.config/door/drive.json"
+    path.write_text(json.dumps(config))
+
+    result = server.init_profile(min_score=0.7)
+
+    assert result["dropped"] == ["cv_content"]
+    saved = json.loads(path.read_text())
+    assert saved["min_score"] == 0.7 and saved["cv_content"] != "/Users/x/.config/door/drive.json"
+
+
 def test_init_profile_tool_description_lists_the_supported_languages():
     """The model picks `languages` from the description, so it names every language with a file."""
     tool = next(t for t in _list_tools().tools if t.name == "init_profile")

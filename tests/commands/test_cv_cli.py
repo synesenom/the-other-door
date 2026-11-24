@@ -76,6 +76,29 @@ def test_a_docx_whose_document_expands_past_the_cap_is_refused(tmp_path):
         cv_cmd._extract_text(path)
 
 
+def test_a_docx_whose_header_understates_its_size_is_refused_without_unpacking_it(tmp_path, monkeypatch):
+    import struct
+
+    path = tmp_path / "lying.docx"
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("word/document.xml", b"<w:document " + _NS.encode() + b">" + b" " * 200_000 + b"</w:document>")
+    raw = bytearray(path.read_bytes())
+    raw[22:26] = struct.pack("<I", 10)  # the local header's size
+    central = raw.find(b"PK\x01\x02")
+    raw[central + 24:central + 28] = struct.pack("<I", 10)  # the central directory's size
+    path.write_bytes(bytes(raw))
+    monkeypatch.setattr(cv_cmd, "_DOCX_PART_MAX", 1000)
+    with pytest.raises(ValueError, match="DOCX"):
+        cv_cmd._extract_text(path)
+
+
+def test_a_broken_docx_is_refused_with_a_message(tmp_path):
+    path = tmp_path / "broken.docx"
+    path.write_bytes(b"PK\x03\x04 not really a zip")
+    with pytest.raises(ValueError, match="not a readable DOCX"):
+        cv_cmd._extract_text(path)
+
+
 def test_a_pdf_past_the_page_cap_is_refused(tmp_path):
     path = tmp_path / "long.pdf"
     make_pdf(path, ["Jane Doe"] * 31)

@@ -320,7 +320,7 @@ Outcome by what claude does:
 - **Import** → `door:call` `import_data` with the token (`PATH_ARGS`' `picked` rule, store `archiveFiles`). Main runs `take(token)`; an unknown or used token gives **"Choose the archive again."** (renderer-unreachable normally). Then `import_data {archive: realpath}` (180 s). — ✓ Import replaces the data and keeps what was here in backups/; "Choose the archive again.": not tested (unreachable from the window)
 - Success: — ✓ Import replaces the data and keeps what was here in backups/
   - **`Imported <files> files.`**, plus ` What was here is kept in <backup_dir>.` when `backup_dir` is set (an absolute path: `<home>/backups/<YYYYMMDD-HHMMSS>[-n]`). — ✓ Import replaces the data and keeps what was here in backups/
-  - `warnings` → `list "Worth checking"`, one item per string, e.g. `cv_template points to /x/y, which doesn't exist on this computer; update profile/config.json`, or `<home>/profile/config.json is not valid JSON; run \`doctor\``. — not tested: the world's own export has no foreign paths to warn about
+  - `warnings` → `list "Worth checking"`, one item per string, e.g. the upgrade message of an older export. — not tested: the world's own export has nothing to warn about
   - Then `onImported` → `onDataChanged`: show_profile, doctor, summary refresh, and remounted Matches. — ✓ Import replaces the data and keeps what was here in backups/
   - On disk: the old `profile/` and `jobs/*` (minus lock files) moved to `backups/<ts>/`, the new data swapped in. — ✓ Import replaces the data and keeps what was here in backups/
 - Python errors (alert): — ✓ Import… of something that is not an export is refused; nothing changes

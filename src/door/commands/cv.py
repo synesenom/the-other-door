@@ -69,10 +69,13 @@ _DOCX_PART_MAX = 20 * 1024 * 1024  # a real CV's document.xml is well under 1 MB
 
 
 def _docx_part(zf: zipfile.ZipFile, name: str) -> bytes:
-    """A part of the DOCX, refused when it would unpack past `_DOCX_PART_MAX` (a small file can expand to gigabytes)."""
-    if zf.getinfo(name).file_size > _DOCX_PART_MAX:
+    """A part of the DOCX, read up to `_DOCX_PART_MAX` bytes and refused beyond (a small file can expand to gigabytes,
+    whatever its headers claim)."""
+    with zf.open(name) as part:
+        data = part.read(_DOCX_PART_MAX + 1)
+    if len(data) > _DOCX_PART_MAX:
         raise ValueError(f"{name} in the DOCX is too large to be a CV (over {_DOCX_PART_MAX // 1024 // 1024} MB unpacked)")
-    return zf.read(name)
+    return data
 
 
 def _docx_text(path: Path) -> str:
@@ -80,9 +83,12 @@ def _docx_text(path: Path) -> str:
     private-use, control or pictographic characters, or one set in an icon or symbol font (`pdf_draft.icon_font`, as a PDF's) (its own
     font, else its character style's, else its paragraph style's or the default one's, each style through the
     ones it is based on)."""
-    with zipfile.ZipFile(path) as zf:
-        root = ElementTree.fromstring(_docx_part(zf, "word/document.xml"))
-        styles = ElementTree.fromstring(_docx_part(zf, "word/styles.xml") if "word/styles.xml" in zf.namelist() else "<styles/>")
+    try:
+        with zipfile.ZipFile(path) as zf:
+            root = ElementTree.fromstring(_docx_part(zf, "word/document.xml"))
+            styles = ElementTree.fromstring(_docx_part(zf, "word/styles.xml") if "word/styles.xml" in zf.namelist() else "<styles/>")
+    except (zipfile.BadZipFile, KeyError) as exc:
+        raise ValueError(f"{path.name} is not a readable DOCX ({exc})") from None
     based = {s.get(f"{_W}styleId"): (_font(s), _val(s, f"{_W}basedOn")) for s in styles.iter(f"{_W}style")}
     default = next((s.get(f"{_W}styleId") for s in styles.iter(f"{_W}style")
                     if s.get(f"{_W}type") == "paragraph" and s.get(f"{_W}default") in ("1", "true")), None)

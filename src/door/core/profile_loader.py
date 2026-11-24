@@ -157,20 +157,18 @@ class Profile(BaseModel):
             raise ValueError("min_score must be between 0.0 and 1.0")
         return v
 
-    @model_validator(mode="after")
-    def _resolve_paths(self, info: ValidationInfo) -> "Profile":
+    @field_validator("cv_template", "cv_content", "cover_letter_template", "photo")
+    @classmethod
+    def _resolve_path(cls, v: Path | None, info: ValidationInfo) -> Path | None:
+        if v is None:
+            return None
         folder = Path((info.context or {}).get("profile_dir") or workspace.PROFILE_DIR).resolve()
-        for field in ("cv_template", "cv_content", "cover_letter_template", "photo"):
-            p: Path | None = getattr(self, field)
-            if p is None:
-                continue
-            resolved = (p if p.is_absolute() else workspace.HOME / p).resolve()
-            # An imported archive or a Drive pull writes config.json: a path out of profile/ would hand the
-            # tailor any file of the computer.
-            if not resolved.is_relative_to(folder):
-                raise ValueError(f"{field} must be a file inside the profile folder ({folder}), not {p}")
-            object.__setattr__(self, field, resolved)
-        return self
+        resolved = (v if v.is_absolute() else workspace.HOME / v).resolve()
+        # An imported archive or a Drive pull writes config.json: a path out of profile/ would hand the
+        # tailor any file of the computer. A field error, so its key is named and `init` can drop an old one.
+        if not resolved.is_relative_to(folder):
+            raise ValueError(f"{info.field_name} must be a file inside the profile folder ({folder}), not {v}")
+        return resolved
 
     @model_validator(mode="after")
     def _paths_exist(self, info: ValidationInfo) -> "Profile":

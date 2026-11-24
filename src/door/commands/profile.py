@@ -852,13 +852,11 @@ def _init_core(fields: dict, profile_dir: Path | None = None, example_dir: Path 
         example_dir = workspace.PROFILE_EXAMPLE_DIR
 
     fresh = not (profile_dir / "config.json").exists()
-    migrations.ensure_folder(profile_dir, "profile")
-    if fresh and migrations.read_version(profile_dir) is None:
-        migrations.write_version(profile_dir, migrations.current("profile"))  # no config: not v0.1.0's profile
-    copied = _copy_missing_example_files(example_dir, profile_dir)
     base = _load_base_config(profile_dir, example_dir)
     dropped = sorted(_invalid_keys(base, profile_dir) - fields.keys())
-    base = {key: value for key, value in base.items() if key not in dropped}
+    example = json.loads((example_dir / "config.json").read_text(encoding="utf-8"))
+    # a dropped required key (`cv_content`) falls back to the example's value, so it is not left missing
+    base = {key: value for key, value in base.items() if key not in dropped} | {k: example[k] for k in dropped if k in Profile.model_fields and Profile.model_fields[k].is_required() and k in example}
     merged = {**base, **fields}
     # `exclude` is merged key by key, so setting only `companies` keeps
     # the existing `keywords`.
@@ -870,6 +868,10 @@ def _init_core(fields: dict, profile_dir: Path | None = None, example_dir: Path 
     except ValidationError as exc:
         raise ConfigError(format_validation_error(exc, "profile/config.json")) from None
 
+    migrations.ensure_folder(profile_dir, "profile")  # nothing is written before the config validates
+    if fresh and migrations.read_version(profile_dir) is None:
+        migrations.write_version(profile_dir, migrations.current("profile"))  # no config: not v0.1.0's profile
+    copied = _copy_missing_example_files(example_dir, profile_dir)
     config_path = profile_dir / "config.json"
     config_path.parent.mkdir(parents=True, exist_ok=True)
     utils.write_json_atomic(config_path, merged)
