@@ -22,7 +22,9 @@ Usage::
 """
 
 import contextlib
+import ipaddress
 import random
+import socket
 import ssl
 import threading
 import time
@@ -34,6 +36,10 @@ import requests
 import truststore
 from requests.adapters import HTTPAdapter
 from requests.exceptions import RequestException
+from urllib3.connection import HTTPConnection, HTTPSConnection
+from urllib3.connectionpool import HTTPConnectionPool, HTTPSConnectionPool
+from urllib3.exceptions import NewConnectionError
+from urllib3.util import connection as _urllib3_connection
 
 from door.scrapers import robots
 
@@ -98,21 +104,113 @@ def _wait(seconds: float) -> None:
     time.sleep(seconds)
 
 
-class SystemTrustAdapter(HTTPAdapter):
-    """An adapter that verifies HTTPS against the operating system's trust store (`truststore`) instead of
-    certifi's bundle: for a site whose root certificate certifi does not carry yet. Verification stays on."""
+class NotPublicAddress(RequestException):
+    """The host is, or resolves to, an address on this computer or a private network (#548): never connected to."""
 
-    @staticmethod
-    def _context() -> ssl.SSLContext:
-        return truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+
+class BodyTooLarge(RequestException):
+    """A response body passed `MAX_BODY_BYTES` once decoded."""
+
+
+# The sitemap protocol's uncompressed maximum: no page, feed or sitemap this fetcher reads is larger.
+MAX_BODY_BYTES = 50 * 1024 * 1024
+
+
+# The 96-bit prefixes whose last 32 bits are an IPv4 address: NAT64, IPv4-translated (SIIT), IPv4-compatible.
+_IPV4_CARRYING_PREFIXES = (
+    bytes.fromhex("0064ff9b" + "00" * 8), bytes.fromhex("00" * 8 + "ffff0000"), bytes(12),
+)
+
+
+def _is_public(ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
+    """Whether *ip* is on the public internet. An IPv6 address that carries an IPv4 one (IPv4-mapped,
+    6to4, Teredo, NAT64 `64:ff9b::/96`, IPv4-translated `::ffff:0:a.b.c.d`, `::a.b.c.d`) is judged by the IPv4 address inside: `is_global`
+    alone calls `64:ff9b::a00:1`, `::127.0.0.1` and `2002:7f00:1::` public. NAT64 is unwrapped, not
+    refused: on a DNS64 network every IPv4-only site arrives there."""
+    if isinstance(ip, ipaddress.IPv6Address):
+        if ip.ipv4_mapped is not None:
+            return _is_public(ip.ipv4_mapped)
+        if ip.sixtofour is not None:
+            return _is_public(ip.sixtofour)
+        if ip.teredo is not None:
+            return all(_is_public(part) for part in ip.teredo)
+        packed = ip.packed
+        if packed[:12] in _IPV4_CARRYING_PREFIXES:
+            return _is_public(ipaddress.IPv4Address(packed[12:]))
+    return ip.is_global
+
+
+class _Refused(NewConnectionError):
+    """Inside urllib3: `_PublicAdapter.send` turns it into `NotPublicAddress`."""
+
+    def __init__(self, conn, host: str) -> None:
+        super().__init__(conn, host)
+        self.refused_host = host
+
+
+class _PublicConnectionMixin:
+    """Connects only to an address `_is_public` accepts, the one it resolved and checked, while TLS
+    still verifies the hostname (urllib3 takes that from the connection's host, not from the socket)."""
+
+    def _new_conn(self):
+        try:
+            infos = socket.getaddrinfo(self._dns_host, self.port, type=socket.SOCK_STREAM)
+        except OSError as e:
+            raise NewConnectionError(self, f"Failed to resolve {self.host}: {e}") from e
+        addresses = [info[4][0].split("%")[0] for info in infos]
+        if not addresses or not all(_is_public(ipaddress.ip_address(a)) for a in addresses):
+            raise _Refused(self, self.host)
+        last: OSError | None = None
+        for address in addresses:
+            try:
+                return _urllib3_connection.create_connection(
+                    (address, self.port), self.timeout, source_address=self.source_address,
+                    socket_options=self.socket_options,
+                )
+            except OSError as e:
+                last = e
+        raise NewConnectionError(self, f"Failed to establish a new connection: {last}") from last
+
+
+class _PublicHTTPConnection(_PublicConnectionMixin, HTTPConnection):
+    pass
+
+
+class _PublicHTTPSConnection(_PublicConnectionMixin, HTTPSConnection):
+    pass
+
+
+class _PublicHTTPPool(HTTPConnectionPool):
+    ConnectionCls = _PublicHTTPConnection
+
+
+class _PublicHTTPSPool(HTTPSConnectionPool):
+    ConnectionCls = _PublicHTTPSConnection
+
+
+class _PublicAdapter(HTTPAdapter):
+    """Its pools connect only to public addresses (#548). With `system_trust`, HTTPS is verified against the
+    operating system's trust store (`truststore`) instead of certifi's bundle: for a site whose root
+    certificate certifi does not carry yet. Verification stays on."""
+
+    def __init__(self, *, system_trust: bool = False) -> None:
+        self.system_trust = system_trust
+        super().__init__()
 
     def init_poolmanager(self, *args: Any, **kwargs: Any) -> None:
-        kwargs["ssl_context"] = self._context()
+        if self.system_trust:
+            kwargs["ssl_context"] = truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         super().init_poolmanager(*args, **kwargs)
+        self.poolmanager.pool_classes_by_scheme = {"http": _PublicHTTPPool, "https": _PublicHTTPSPool}
 
-    def proxy_manager_for(self, *args: Any, **kwargs: Any):
-        kwargs["ssl_context"] = self._context()
-        return super().proxy_manager_for(*args, **kwargs)
+    def send(self, request, **kwargs):
+        try:
+            return super().send(request, **kwargs)
+        except requests.exceptions.ConnectionError as e:
+            reason = getattr(e.args[0] if e.args else None, "reason", None)
+            if isinstance(reason, _Refused):
+                raise NotPublicAddress(f"{reason.refused_host} is not a public internet address; it is not fetched") from None
+            raise
 
 
 class RobotsBlocked(Exception):
@@ -203,9 +301,13 @@ class PoliteSession:
         with self._guard:
             if host not in self._host_sessions:
                 session = requests.Session()
+                # No system proxy and no .netrc: a proxy resolves the name itself, so the public-only
+                # check could not bind to the address it connects to.
+                session.trust_env = False
                 session.headers.update(self._session.headers)
-                if self.system_trust:
-                    session.mount("https://", SystemTrustAdapter())
+                adapter = _PublicAdapter(system_trust=self.system_trust)
+                session.mount("http://", adapter)
+                session.mount("https://", adapter)
                 self._host_sessions[host] = session
             return self._host_sessions[host]
 
@@ -397,9 +499,13 @@ class PoliteSession:
             return resp
         try:
             chunks = []
+            size = 0
             # read1 returns what has arrived: a read of N bytes would wait for all N, trickle or not.
             while chunk := resp.raw.read1(65536, decode_content=True):
                 chunks.append(chunk)
+                size += len(chunk)
+                if size > MAX_BODY_BYTES:
+                    raise BodyTooLarge(f"{url} is larger than {MAX_BODY_BYTES // (1024 * 1024)} MB")
                 if time.monotonic() > deadline:
                     if budgeted:
                         current.hit = True

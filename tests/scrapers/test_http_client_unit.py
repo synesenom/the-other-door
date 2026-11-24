@@ -666,7 +666,13 @@ import requests.adapters as _adapters  # noqa: E402
 _REAL_SEND = _adapters.HTTPAdapter.send
 
 
-def test_a_server_trickling_bytes_hits_the_total_deadline(trickle_server, real_network):
+@pytest.fixture
+def loopback_public(monkeypatch):
+    """The slow-server tests talk to a real 127.0.0.1 server: let that one address through the public-only check."""
+    monkeypatch.setattr(http_client, "_is_public", lambda ip: str(ip) == "127.0.0.1")
+
+
+def test_a_server_trickling_bytes_hits_the_total_deadline(trickle_server, real_network, loopback_public):
     import time
 
     session = PoliteSession(min_delay=0, max_delay=0, timeout=5, total_timeout=1, max_retries=0, obey_robots=False)
@@ -676,7 +682,7 @@ def test_a_server_trickling_bytes_hits_the_total_deadline(trickle_server, real_n
     assert time.monotonic() - start < 3
 
 
-def test_a_trickling_robots_txt_is_cut_at_the_threads_budget(trickle_server, real_network):
+def test_a_trickling_robots_txt_is_cut_at_the_threads_budget(trickle_server, real_network, loopback_public):
     import time
 
     session = PoliteSession(min_delay=0, max_delay=0, timeout=5, max_retries=0, obey_robots=False)
@@ -697,19 +703,152 @@ def test_system_trust_mounts_the_truststore_adapter():
     """With system_trust, a host's session verifies through truststore; by default it does not."""
     session = PoliteSession(system_trust=True)
     adapter = session._session_for("example.com").get_adapter("https://example.com/")
-    assert isinstance(adapter, http_client.SystemTrustAdapter)
+    assert adapter.system_trust
 
 
 def test_default_session_keeps_the_stock_adapter():
     session = PoliteSession()
     adapter = session._session_for("example.com").get_adapter("https://example.com/")
-    assert not isinstance(adapter, http_client.SystemTrustAdapter)
+    assert not adapter.system_trust
 
 
 def test_system_trust_adapter_builds_a_verifying_truststore_context():
     import ssl
 
-    ctx = http_client.SystemTrustAdapter()._context()
+    ctx = http_client._PublicAdapter(system_trust=True).poolmanager.connection_pool_kw["ssl_context"]
     assert ctx.verify_mode == ssl.CERT_REQUIRED
     assert ctx.check_hostname is True
     assert type(ctx).__module__.startswith("truststore")
+
+
+# ---------------------------------------------------------------------------
+# Only the public internet, and no unbounded body (#548)
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def hit_counter():
+    """A real local server that counts its requests; `/redirect` answers 302 to `Location` (set on the fixture)."""
+    import http.server
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            if self.path != "/robots.txt":  # the crawl delay asks for it
+                server.hits += 1
+            if self.path == "/redirect":
+                self.send_response(302)
+                self.send_header("Location", server.target)
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+                return
+            self.send_response(200)
+            self.send_header("Content-Length", "2")
+            self.end_headers()
+            self.wfile.write(b"ok")
+
+        def log_message(self, *args):
+            pass
+
+    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    server.hits = 0
+    server.target = ""
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    server.base = f"http://127.0.0.1:{server.server_address[1]}"
+    yield server
+    server.shutdown()
+    server.server_close()
+
+
+def _session() -> PoliteSession:
+    return PoliteSession(min_delay=0, max_delay=0, timeout=5, max_retries=0, obey_robots=False)
+
+
+def test_a_redirect_to_a_private_address_is_refused_before_connecting(hit_counter, real_network, monkeypatch):
+    monkeypatch.setattr(http_client, "_is_public", lambda ip: str(ip) == "127.0.0.1")
+    hit_counter.target = "http://127.0.0.2/secret"
+    with pytest.raises(http_client.NotPublicAddress) as err:
+        _session().get(f"{hit_counter.base}/redirect")
+    assert "127.0.0.2" in str(err.value)
+    assert hit_counter.hits == 1
+
+
+def test_a_public_address_check_is_not_bypassed_by_a_system_proxy(hit_counter, real_network, loopback_public, monkeypatch):
+    # The proxy would resolve the name itself, so the check could not bind: the system proxy is not read.
+    monkeypatch.setenv("HTTP_PROXY", hit_counter.base)
+    monkeypatch.setenv("http_proxy", hit_counter.base)
+    with pytest.raises(requests.exceptions.RequestException):
+        _session().get("http://door-test.invalid/")
+    assert hit_counter.hits == 0
+
+
+def test_a_local_server_is_not_reached_directly(hit_counter, real_network):
+    with pytest.raises(requests.exceptions.RequestException):
+        _session().get(f"{hit_counter.base}/")
+    assert hit_counter.hits == 0
+
+
+@pytest.mark.parametrize("host", [
+    "169.254.169.254", "127.0.0.1:8099", "10.0.0.5", "localhost", "[64:ff9b::a00:1]", "[::127.0.0.1]",
+    "[2002:7f00:1::]", "[::ffff:127.0.0.1]", "[::1]",
+])
+def test_public_only_refuses_private_hosts_naming_the_host(host, real_network):
+    with pytest.raises(http_client.NotPublicAddress) as err:
+        _session().get(f"http://{host}/latest/meta-data/")
+    assert host.split(":")[0].strip("[]") in str(err.value) or host.strip("[]") in str(err.value)
+
+
+def test_public_only_refuses_a_name_with_one_private_address(real_network, monkeypatch):
+    import socket
+
+    def mixed(host, port, *a, **k):
+        return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", port)),
+                (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("10.0.0.5", port))]
+
+    monkeypatch.setattr(http_client.socket, "getaddrinfo", mixed)
+    with pytest.raises(http_client.NotPublicAddress) as err:
+        _session().get("http://mixed.example/")
+    assert "mixed.example" in str(err.value)
+    assert "10.0.0.5" not in str(err.value)
+
+
+def test_system_trust_sessions_are_public_only_too(real_network):
+    session = PoliteSession(min_delay=0, max_delay=0, max_retries=0, obey_robots=False, system_trust=True)
+    with pytest.raises(http_client.NotPublicAddress):
+        session.get("https://127.0.0.1/")
+
+
+@pytest.mark.parametrize("address, public", [
+    ("93.184.216.34", True), ("2606:2800:220:1:248:1893:25c8:1946", True),
+    ("127.0.0.1", False), ("10.0.0.5", False), ("169.254.169.254", False), ("::1", False),
+])
+def test_is_public_plain_addresses(address, public):
+    import ipaddress
+
+    assert http_client._is_public(ipaddress.ip_address(address)) is public
+
+
+@pytest.mark.parametrize("address, public", [
+    ("64:ff9b::a00:1", False), ("64:ff9b::5db8:d822", True), ("::127.0.0.1", False), ("::5db8:d822", True),
+    ("2002:7f00:1::", False), ("2002:5db8:d822::1", True), ("::ffff:10.0.0.5", False), ("::ffff:93.184.216.34", True),
+    ("2001:0:4136:e378:8000:63bf:f5ff:fffa", False), ("::ffff:0:7f00:1", False), ("::ffff:0:a00:5", False),
+    ("::ffff:0:5db8:d822", True),
+])
+def test_is_public_unwraps_embedded_ipv4(address, public):
+    import ipaddress
+
+    assert http_client._is_public(ipaddress.ip_address(address)) is public
+
+
+@responses.activate
+def test_a_body_over_50_mb_raises():
+    responses.add(responses.GET, _JOB_URL, body=b"x" * (60 * 1024 * 1024))
+    with pytest.raises(http_client.BodyTooLarge):
+        PoliteSession(min_delay=0, max_delay=0, obey_robots=False).get(_JOB_URL, check_robots=False)
+
+
+@responses.activate
+def test_a_body_under_the_cap_is_read():
+    responses.add(responses.GET, _JOB_URL, body=b"x" * (1024 * 1024))
+    resp = PoliteSession(min_delay=0, max_delay=0, obey_robots=False).get(_JOB_URL, check_robots=False)
+    assert len(resp.content) == 1024 * 1024
