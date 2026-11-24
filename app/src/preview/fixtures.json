@@ -1697,8 +1697,7 @@
     },
     "pngs": {
      "cv": [
-      "/demo/jobs/output/greenhouse.demo-8/sent/cv_page_1.png",
-      "/demo/jobs/output/greenhouse.demo-8/sent/cv_page_2.png"
+      "/demo/jobs/output/greenhouse.demo-8/sent/cv_page_1.png"
      ],
      "cover_letter": [
       "/demo/jobs/output/greenhouse.demo-8/sent/cover_letter_page_1.png"
@@ -1840,8 +1839,7 @@
     },
     "pngs": {
      "cv": [
-      "/demo/jobs/output/jobindex.demo-7/sent/cv_page_1.png",
-      "/demo/jobs/output/jobindex.demo-7/sent/cv_page_2.png"
+      "/demo/jobs/output/jobindex.demo-7/sent/cv_page_1.png"
      ],
      "cover_letter": [
       "/demo/jobs/output/jobindex.demo-7/sent/cover_letter_page_1.png"
@@ -1918,8 +1916,7 @@
     },
     "pngs": {
      "cv": [
-      "/demo/jobs/output/successfactors.demo-6/cv_page_1.png",
-      "/demo/jobs/output/successfactors.demo-6/cv_page_2.png"
+      "/demo/jobs/output/successfactors.demo-6/cv_page_1.png"
      ],
      "cover_letter": [
       "/demo/jobs/output/successfactors.demo-6/cover_letter_page_1.png"

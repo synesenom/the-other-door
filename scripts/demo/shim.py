@@ -10,12 +10,15 @@ reach outside are replaced:
   `collect` reads those feeds from a fake Greenhouse module,
 - scoring hands back each ad's canned score instead of calling `claude -p`,
 - tailoring writes a ready-made CV and cover letter (real PDFs, made with pypdfium2)
-  instead of running the tailor agent.
+  instead of running the tailor agent,
+- every other model call (`claude_cli.ask`) gets a stand-in answer: the CV is read by the app
+  test world's plain reader, the fact check finds nothing; any other call fails loudly.
 
 `DOOR_DEMO_DIR` is the sandbox: its `profile/` and `jobs/` replace the repo's, so a
 recording never shows (or touches) your own data.
 """
 
+import importlib.util
 import os
 import sys
 import time
@@ -31,7 +34,7 @@ from door.commands import _common as common  # noqa: E402
 from door.commands import companies as companies_cmd  # noqa: E402
 from door.commands import prepare as prepare_cmd  # noqa: E402
 from door.commands import salary as salary_cmd  # noqa: E402
-from door.core import lock, sites, workspace  # noqa: E402
+from door.core import claude_cli, lock, sites, workspace  # noqa: E402
 from door.core.employers import discovery_sources  # noqa: E402
 from door.core.models import JobPosting, make_job_id  # noqa: E402
 from door.matching import scorer  # noqa: E402
@@ -203,6 +206,28 @@ def _fake_run_tailor(job_id: str, posting_path: Path, timeout_s=None) -> bool:
     return True
 
 
+_REPO = Path(__file__).resolve().parents[2]
+# The example CV's headings, as the app's test world names their kinds.
+_SECTION_KINDS = {"Profile": "summary", "Work Experience": "experience", "Education": "education",
+                  "Skills": "skills", "Certifications": "certifications", "Languages": "languages"}
+
+
+def _world_cv_reader():
+    spec = importlib.util.spec_from_file_location("world_cv_read", _REPO / "app" / "test" / "world" / "cv_read.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _fake_ask(prompt_name, user_message, *, feature, **kwargs):
+    if feature == "cv_read":
+        md = user_message.split("<<<\n", 1)[1].rsplit("\n>>>", 1)[0]
+        return _world_cv_reader().read(md, {"kinds": _SECTION_KINDS, "languages": []})
+    if feature == "facts":
+        return {"findings": []}
+    raise RuntimeError(f"the demo has no stand-in for the model call {feature!r}")
+
+
 def install(sandbox: Path) -> None:
     workspace.PROFILE_DIR = sandbox / "profile"
     workspace.JOBS_DIR = sandbox / "jobs"
@@ -222,6 +247,7 @@ def install(sandbox: Path) -> None:
     companies_cmd._session = lambda: None
     companies_cmd._classify = _fake_classify
     scorer.score_postings = _fake_score_postings
+    claude_cli.ask = _fake_ask
     prepare_cmd._run_tailor = _fake_run_tailor
     prepare_cmd._HEARTBEAT_INTERVAL_S = 2.0
     # no web search for a salary: none found, so prepare says nothing about it

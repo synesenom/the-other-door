@@ -8,7 +8,6 @@ import type { ActionArgs, ActionName, ActionResult, Envelope, Events } from '../
 import type { LoginState } from '../main/claude-login'
 import fixtures from './fixtures.json'
 import cvPage1 from '../../test/fixtures/prepared/cv_page_1.png'
-import cvPage2 from '../../test/fixtures/prepared/cv_page_2.png'
 import letterPage1 from '../../test/fixtures/prepared/cover_letter_page_1.png'
 import { unknownAction } from '../renderer/unknown-action'
 import { SAMPLE_RUN, type DataState, type Scene } from './scenes'
@@ -48,7 +47,7 @@ function listFor(args: Record<string, unknown>): List {
 
 /** The page images: the demo's (`test/fixtures/prepared/`, the example CV laid out as the templates do, rendered
  * at prepare's 150 DPI), picked by the file name the fixture asks for. */
-const PAGES: Record<string, string> = { cv_page_1: cvPage1, cv_page_2: cvPage2, cover_letter_page_1: letterPage1 }
+const PAGES: Record<string, string> = { cv_page_1: cvPage1, cover_letter_page_1: letterPage1 }
 const pageUrl = (_jobId: string, pngPath: string): string => {
   const name = pngPath.split('/').pop()!.replace(/\.png$/, '')
   return PAGES[name] ?? (name.startsWith('letter') ? letterPage1 : cvPage1)

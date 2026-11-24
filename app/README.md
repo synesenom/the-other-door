@@ -53,7 +53,7 @@ added: a new need is a start of one of them (like the sandbox's `:empty`), not a
 Use staging to try a feature for real from a fresh start; use the sandbox to look at every screen in every state, or to
 try the first launch, without waiting on job boards. In both, the server's `DOOR_HOME` and the config folders that hold
 the Drive connection point inside the folder, the main process refuses the Drive tools (Settings says Drive is not
-available, the wizard does not offer it), and the sidebar and the window title say Staging or Sandbox. `HOME` stays
+available, the wizard does not offer it), and the window title says staging or sandbox (the sidebar too, in staging only: the sandbox's screens look as a user sees them). `HOME` stays
 yours, so `claude` is signed in and runs on your plan. Both refuse a folder that is or holds the checkout's real data.
 Delete the folder when you are done. A packaged app is always production.
 
