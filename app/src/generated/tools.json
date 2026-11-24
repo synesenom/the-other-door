@@ -1547,7 +1547,7 @@
   },
   {
     "name": "setup",
-    "description": "Install missing prerequisites (Chromium, the `claude` CLI).\n\n    Call it first WITHOUT `yes`: nothing runs, and ``plan`` lists the exact\n    command(s) per tool. Show them to the user, then call again with\n    ``yes=True`` and ``install`` = the tools they approved. Nothing here\n    needs sudo; a step that fails can be run in a terminal, or via `./scripts/setup.sh`.\n    The profile is not created here: collect the fields and call\n    `init_profile`. Same logic as `./door doctor --fix`.\n\n    Args:\n        install: Tools to install: \"chromium\", \"claude\". Omit\n            for every tool `doctor` reports missing.\n        yes: The user approved the plan — run it.\n        probe: Probe each configured site live (as `doctor` with\n            ``probe=True``) so ``fixes`` can offer a drifted scraper.\n            Off by default — the installs need no network.\n        fix_scrapers: Sites whose drifted scraper to repair\n            (``doctor`` with ``probe=True`` shows them as ``scraper: <site>``\n            with status ``drift``; the plan's ``fixes`` lists the offers). Only with\n            ``yes``, and only for sites the user approved: each runs the\n            headless scraper-fixer on a new branch, gates it on the offline\n            tests plus a fresh probe, then pushes and opens a PR. Refused\n            while a run is in progress or the working tree is dirty.\n\n    Returns:\n        ``{\"outcome\": \"needs_confirmation\" | \"ok\" | \"incomplete\", \"platform\",\n        \"plan\", \"results\", \"doctor\", \"todo\", \"fixes\"}``. ``fixes`` holds the\n        offers (``[{\"site\", \"check\"}]``) until fixes run, then one outcome\n        per site: ``pr`` (with ``url``), ``local_branch`` (with ``branch``\n        and the ``commands`` to finish by hand), ``gate_failed``,\n        ``fixer_failed`` or ``refused``.\n    ",
+    "description": "Install missing prerequisites (Chromium, the `claude` CLI).\n\n    Call it first WITHOUT `yes`: nothing runs, and ``plan`` lists the exact\n    command(s) per tool. Show them to the user, then call again with\n    ``yes=True`` and ``install`` = the tools they approved. Nothing here\n    needs sudo; a step that fails can be run in a terminal, or via `./scripts/setup.sh`.\n    The profile is not created here: collect the fields and call\n    `init_profile`. Same logic as `./door doctor --fix`.\n\n    Args:\n        install: Tools to install: \"chromium\", \"claude\". Omit\n            for every tool `doctor` reports missing.\n        yes: The user approved the plan — run it.\n\n    Returns:\n        ``{\"outcome\": \"needs_confirmation\" | \"ok\" | \"incomplete\", \"platform\",\n        \"plan\", \"results\", \"doctor\", \"todo\"}``.\n    ",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -1569,26 +1569,6 @@
         "yes": {
           "default": false,
           "title": "Yes",
-          "type": "boolean"
-        },
-        "fix_scrapers": {
-          "anyOf": [
-            {
-              "items": {
-                "type": "string"
-              },
-              "type": "array"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Fix Scrapers"
-        },
-        "probe": {
-          "default": false,
-          "title": "Probe",
           "type": "boolean"
         }
       },

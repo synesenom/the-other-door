@@ -15,7 +15,7 @@ not charged per call). `record()` appends one line per call
 to `jobs/usage.jsonl` (`LOG_NAME`): when, what for (a key of `FEATURES`), how many postings
 it scored, that weight, and the windows' readings (`u5`/`r5`/`u7`/`r7`/`status`). It is
 called by `claude_cli.run()` (so by `claude_cli.ask()`) and by `matching/scorer.py`,
-`matching/language.py` and `core/scraper_fix.py`, which run `claude` themselves.
+and `matching/language.py`, which run `claude` themselves.
 
 The log is append-only and this computer's: one short line per write under a process lock,
 outside the ledger lock (an `ask` holds none), and left out of `data export` and Drive sync.
@@ -58,7 +58,6 @@ FEATURES = {
     "salary": "other",
     "import_posting": "other",
     "ask": "other",
-    "scraper_fix": "other",
 }
 
 # What each feature is called where a user reads the cost (`cost`); a test checks every feature has one.
@@ -81,7 +80,6 @@ FEATURE_LABELS = {
     "salary": "Salary estimates",
     "import_posting": "Adding a job",
     "ask": "Questions about your jobs",
-    "scraper_fix": "Fixing a scraper",
 }
 
 # Before this computer has history, a find is sized as scoring this many postings and a

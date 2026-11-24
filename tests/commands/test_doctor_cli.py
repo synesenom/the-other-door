@@ -106,11 +106,11 @@ def test_doctor_prints_drift_checks_and_still_exits_0(env, monkeypatch):
     report = _fake_checks(True)
     report["checks"].append({
         "name": "scraper: jobindex", "status": "drift", "required": False,
-        "detail": "no results block", "fix": "choose `fix scraper` in `setup`", "fixable": True,
+        "detail": "no results block", "fix": "open an issue",
     })
     report["checks"].append({
         "name": "scraper: thehub", "status": "warn", "required": False,
-        "detail": "a login wall", "fix": "try later", "fixable": False,
+        "detail": "a login wall", "fix": "try later",
     })
     report["checks"].append({"name": "scraper: jobnet", "status": "ok", "required": False, "detail": "12 postings", "fix": None})
     monkeypatch.setattr(doctor, "run_checks", lambda *a, **k: report)
@@ -122,7 +122,7 @@ def test_doctor_prints_drift_checks_and_still_exits_0(env, monkeypatch):
     assert "✗ jobindex" in probes and "no results block" in probes  # drift: the scraper no longer fits
     assert "⚠ thehub" in probes and "a login wall" in probes       # a wall or an unreachable site
     assert "✓ jobnet" in probes
-    assert "fix: choose `fix scraper` in `setup`" in probes
+    assert "fix: open an issue" in probes
     assert "scraper: jobindex" not in out[:out.index("Live probes")]
 
 

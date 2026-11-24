@@ -84,7 +84,7 @@ def test_the_reviser_rules_are_the_system_prompt_and_the_user_message_has_only_t
     assert "Rules:" in rules and "kind-summary" in rules and "untrusted" in rules
 
 
-MESSAGES = ["scraper-fixer-request", "tailor-request", "tailor-retry"]
+MESSAGES = ["tailor-request", "tailor-retry"]
 
 
 @pytest.mark.parametrize("name", MESSAGES)
