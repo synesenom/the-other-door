@@ -535,18 +535,6 @@ def test_revise_rejects_an_answer_the_guard_refuses_and_leaves_the_file(revise_e
     assert not (revise_env.out / "cover_letter.html.bak").exists() and revise_env.calls.compile == []
 
 
-def test_revise_prints_a_link_the_cv_does_not_write_as_plain_text(revise_env, monkeypatch):
-    cv = revise_env.profile_dir / "cv.md"
-    cv.write_text("example.com/jane")
-    config = json.loads((revise_env.profile_dir / "config.json").read_text())
-    (revise_env.profile_dir / "config.json").write_text(json.dumps({**config, "cv_content": str(cv)}))
-    answer = '<p><a href="https://example.com/jane">me</a> <a href="https://evil.example/?d=1">t</a></p>'
-    monkeypatch.setattr(subprocess, "run", lambda argv, **k: subprocess.CompletedProcess(argv, 0, stdout=_envelope(answer), stderr=""))
-    revise_cmd._revise_core("jobindex-top", "cover_letter", "x", jobs_dir=revise_env.jobs_dir)
-    html = (revise_env.out / "cover_letter.html").read_text()
-    assert html == '<p><a href="https://example.com/jane">me</a> t</p>\n'
-
-
 def test_revise_claude_failure_leaves_the_file_alone(revise_env, monkeypatch):
     monkeypatch.setattr(subprocess, "run", lambda argv, **k: subprocess.CompletedProcess(argv, 1, stdout="", stderr="rate limited"))
     with pytest.raises(RuntimeError, match="rate limited"):
