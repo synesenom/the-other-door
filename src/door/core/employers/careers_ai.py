@@ -10,6 +10,7 @@ from urllib.parse import urlparse
 
 from door.core import claude_cli
 
+MAX_ASKS = 30  # employers asked a run; the rest stay queued for a later run
 MAX_PARALLEL = 4  # `claude -p` calls in flight at once (each takes 30 to 60 s)
 _SCHEMA = {"type": "object", "properties": {"careers_url": {"type": ["string", "null"]}},
            "required": ["careers_url"], "additionalProperties": False}

@@ -76,10 +76,11 @@ def scrape_and_pass(profile_dir: Path, jobs_dir: Path, sites, **kwargs) -> dict:
     return result
 
 
-def stub_match_result(jobs_dir: Path, *, scored=1, failed=None, above_threshold=0) -> dict:
+def stub_match_result(jobs_dir: Path, *, scored=1, failed=None, above_threshold=0, waiting=0) -> dict:
     return {
         "candidates_dir": str(jobs_dir / "postings" / "2026-07-01"),
-        "unscored_before": scored,
+        "unscored_before": scored + waiting,
+        "waiting": waiting,
         "scored": scored,
         "failed": failed if failed is not None else [],
         "above_threshold": above_threshold,

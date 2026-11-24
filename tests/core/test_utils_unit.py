@@ -234,3 +234,13 @@ def test_atomic_target_failure_leaves_target_and_no_temp(tmp_path):
             raise RuntimeError("boom")
     assert target.read_bytes() == b"old"
     assert [p.name for p in target.parent.iterdir()] == ["out.bin"]
+
+
+def test_fair_share_takes_each_group_in_turn_best_first():
+    from door.core.utils import fair_share
+
+    items = [("a", 3), ("a", 9), ("a", 5), ("b", 1), ("c", 2), ("c", 7)]
+    chosen, rest = fair_share(items, 4, key=lambda i: i[0], rank=lambda i: -i[1])
+    assert chosen == [("a", 9), ("c", 7), ("b", 1), ("a", 5)]
+    assert sorted(rest) == [("a", 3), ("c", 2)]
+    assert fair_share(items, 99, key=lambda i: i[0], rank=lambda i: -i[1])[1] == []

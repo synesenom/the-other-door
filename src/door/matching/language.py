@@ -38,6 +38,8 @@ from door.matching import scorer
 BATCH_SIZE = 50
 _TIMEOUT_S = 300
 
+MAX_TITLE_EN = 200  # a translated title is one line of at most this many characters
+
 TITLES_SCHEMA: dict = {
     "type": "object",
     "properties": {
@@ -72,8 +74,9 @@ def parse_output(stdout: str) -> dict[str, str]:
         if not isinstance(item, dict):
             raise ValueError("each title must be an object")
         job_id, title_en = item.get("id"), item.get("title_en")
-        if isinstance(job_id, str) and isinstance(title_en, str) and title_en.strip():
-            titles[job_id] = title_en.strip()
+        line = title_en.strip().splitlines()[0].strip()[:MAX_TITLE_EN] if isinstance(title_en, str) and title_en.strip() else ""
+        if isinstance(job_id, str) and line:
+            titles[job_id] = line
     return titles
 
 
