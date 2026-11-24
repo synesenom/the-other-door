@@ -8,78 +8,78 @@ Each list is checked on its own: a site's test reads that site, the matcher's sc
 
 ## Boards
 
-Last checked: 2026-11-23.
+Last checked: 2026-11-24.
 
 | Name | Status | Checked | Note |
 |------|--------|---------|------|
-| jobindex | ✅ | 2026-11-23 |  |
-| thehub | ✅ | 2026-11-23 |  |
-| euraxess | ❌ | 2026-11-23 | changed: page2 |
-| globalnyt | ✅ | 2026-11-23 |  |
-| jobbank | ⛔ | 2026-11-23 | not reached 1 run in a row; last ❌ 2026-11-19 |
-| reed | ✅ | 2026-11-23 |  |
-| jobs_ac_uk | ❌ | 2026-11-23 | changed: details, listing, page2, zero_hits |
-| nhs_jobs | ✅ | 2026-11-23 |  |
-| jobmaskinen | ✅ | 2026-11-23 |  |
-| arbetsformedlingen | ✅ | 2026-11-23 |  |
-| francetravail | ❌ | 2026-11-23 | changed: page2 |
-| choisirleservicepublic | ✅ | 2026-11-23 |  |
-| kozigallas | ⛔ | 2026-11-23 | not reached 1 run in a row; last ✅ 2026-11-19 |
-| workable | ✅ | 2026-11-23 |  |
-| reliefweb | ⛔ | 2026-11-23 | not reached 1 run in a row; last ✅ 2026-11-19 |
+| jobindex | ✅ | 2026-11-24 |  |
+| thehub | ✅ | 2026-11-24 |  |
+| euraxess | ✅ | 2026-11-24 |  |
+| globalnyt | ✅ | 2026-11-24 |  |
+| jobbank | ✅ | 2026-11-24 |  |
+| reed | ✅ | 2026-11-24 |  |
+| jobs_ac_uk | ❌ | 2026-11-24 | changed: details, listing, page2, zero_hits |
+| nhs_jobs | ✅ | 2026-11-24 |  |
+| jobmaskinen | ✅ | 2026-11-24 |  |
+| arbetsformedlingen | ✅ | 2026-11-24 |  |
+| francetravail | ✅ | 2026-11-24 |  |
+| choisirleservicepublic | ✅ | 2026-11-24 |  |
+| kozigallas | ✅ | 2026-11-24 |  |
+| workable | ✅ | 2026-11-24 |  |
+| reliefweb | ✅ | 2026-11-24 |  |
 
 ## Employer feeds
 
-Last checked: 2026-11-23.
+Last checked: 2026-11-24.
 
 | Name | Status | Checked | Note |
 |------|--------|---------|------|
-| hr_manager | ✅ | 2026-11-23 |  |
-| greenhouse | ✅ | 2026-11-23 |  |
-| lever | ✅ | 2026-11-23 |  |
-| ashby | ✅ | 2026-11-23 |  |
-| recruitee | ✅ | 2026-11-23 |  |
-| emply | ✅ | 2026-11-23 |  |
-| varbi | ✅ | 2026-11-23 |  |
-| visma_recruit | ✅ | 2026-11-23 |  |
-| talentsoft | ✅ | 2026-11-23 |  |
-| digitalrecruiters | ✅ | 2026-11-23 |  |
-| eploy | ✅ | 2026-11-23 |  |
-| pinpoint | ✅ | 2026-11-23 |  |
-| oracle_hcm | ✅ | 2026-11-23 |  |
-| dayforce | ✅ | 2026-11-23 |  |
-| reachmee | ✅ | 2026-11-23 |  |
-| signatur | ✅ | 2026-11-23 |  |
-| recman | ✅ | 2026-11-23 |  |
-| beetween | ✅ | 2026-11-23 |  |
-| smartrecruiters | ✅ | 2026-11-23 |  |
-| career_sites | ✅ | 2026-11-23 |  |
-| teamtailor | ✅ | 2026-11-23 |  |
-| jobylon | ✅ | 2026-11-23 |  |
-| personio | ✅ | 2026-11-23 |  |
-| taleez | ✅ | 2026-11-23 |  |
-| flatchr | ✅ | 2026-11-23 |  |
-| jobtrain | ✅ | 2026-11-23 |  |
-| networx | ✅ | 2026-11-23 |  |
-| successfactors | ✅ | 2026-11-23 |  |
-| hr_on | ✅ | 2026-11-23 |  |
-| icims | ✅ | 2026-11-23 |  |
-| phenom | ✅ | 2026-11-23 |  |
-| ponty | ✅ | 2026-11-23 |  |
-| welcometothejungle | ✅ | 2026-11-23 |  |
-| jobaffinity | ✅ | 2026-11-23 |  |
+| hr_manager | ✅ | 2026-11-24 |  |
+| greenhouse | ✅ | 2026-11-24 |  |
+| lever | ✅ | 2026-11-24 |  |
+| ashby | ✅ | 2026-11-24 |  |
+| recruitee | ✅ | 2026-11-24 |  |
+| emply | ❌ | 2026-11-24 | changed: listing, page2 |
+| varbi | ✅ | 2026-11-24 |  |
+| visma_recruit | ✅ | 2026-11-24 |  |
+| talentsoft | ✅ | 2026-11-24 |  |
+| digitalrecruiters | ✅ | 2026-11-24 |  |
+| eploy | ✅ | 2026-11-24 |  |
+| pinpoint | ✅ | 2026-11-24 |  |
+| oracle_hcm | ✅ | 2026-11-24 |  |
+| dayforce | ✅ | 2026-11-24 |  |
+| reachmee | ✅ | 2026-11-24 |  |
+| signatur | ✅ | 2026-11-24 |  |
+| recman | ✅ | 2026-11-24 |  |
+| beetween | ✅ | 2026-11-24 |  |
+| smartrecruiters | ✅ | 2026-11-24 |  |
+| career_sites | ✅ | 2026-11-24 |  |
+| teamtailor | ✅ | 2026-11-24 |  |
+| jobylon | ✅ | 2026-11-24 |  |
+| personio | ✅ | 2026-11-24 |  |
+| taleez | ✅ | 2026-11-24 |  |
+| flatchr | ✅ | 2026-11-24 |  |
+| jobtrain | ✅ | 2026-11-24 |  |
+| networx | ✅ | 2026-11-24 |  |
+| successfactors | ✅ | 2026-11-24 |  |
+| hr_on | ✅ | 2026-11-24 |  |
+| icims | ✅ | 2026-11-24 |  |
+| phenom | ✅ | 2026-11-24 |  |
+| ponty | ✅ | 2026-11-24 |  |
+| welcometothejungle | ✅ | 2026-11-24 |  |
+| jobaffinity | ✅ | 2026-11-24 |  |
 
 ## Employer discovery
 
-Last checked: 2026-11-23.
+Last checked: 2026-11-24.
 
 | Name | Status | Checked | Note |
 |------|--------|---------|------|
-| linkedin | ❌ | 2026-11-19 | changed: employers |
-| profession | ⛔ | 2026-11-19 | not reached 2 runs in a row |
-| hellowork | ✅ | 2026-11-19 |  |
-| jobbsafari | ✅ | 2026-11-19 |  |
-| wikidata | ✅ | 2026-11-23 |  |
+| linkedin | ⛔ | 2026-11-24 | not reached 1 run in a row; last ❌ 2026-11-19 |
+| profession | ✅ | 2026-11-24 |  |
+| hellowork | ✅ | 2026-11-24 |  |
+| jobbsafari | ✅ | 2026-11-24 |  |
+| wikidata | ✅ | 2026-11-24 |  |
 
 ## Matcher
 
