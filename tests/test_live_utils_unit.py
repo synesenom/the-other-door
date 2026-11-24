@@ -17,6 +17,9 @@ from live_utils import NOT_REACHED, assert_field_contract, not_reached, not_reac
     "('Connection aborted.', ConnectionResetError(54, 'Connection reset by peer'))",
     "reed: pushback (HTTP 429); stopped for this run",
     "503 Server Error: Service Unavailable for url: https://x",
+    "500 Server Error: Internal Server Error for url: https://x",   # the whole site down, the home page too
+    "502 Server Error: Bad Gateway for url: https://x",
+    "504 Server Error: Gateway Timeout for url: https://x",
     "empty answer (HTTP 202) twice, not the feed",
 ])
 def test_a_refusal_or_an_unreachable_host_is_not_reached(message):
@@ -241,6 +244,19 @@ def test_a_shared_about_us_or_one_job_in_several_places_is_not_boilerplate():
     assert_field_contract("greenhouse", [_ad(i, description=common + f"Role {i}: what you will do.") for i in range(10)], mode="collect")
     same_job = [dict(_ad(i, description=common), title="Account Director") for i in range(10)]
     assert_field_contract("pinpoint", same_job, mode="collect")
+    # the same job in several towns, each title naming its town (DanChurchAid's Emply feed, 2026-11)
+    towns = {"Raqqa - Ayn Issa, Syria": "Ayn Issa", "Latakia - Rabia, Syria": "Rabia", "Aleppo - Manbij, Syria": "Manbij"}
+    placed = [dict(_ad(i, description=common), title=f"PSS Facilitator, {t}", location=town) for i, (t, town) in enumerate(towns.items())]
+    assert_field_contract("emply", placed + _ads(7)[3:], mode="collect")
+    # a different job in each town is still a different title: the same text under them is boilerplate
+    jobs = ["Driver", "Accountant", "Nurse"]
+    shared = [dict(_ad(i, description=common), title=f"{j}, {t}", location=town) for i, (j, (t, town)) in enumerate(zip(jobs, towns.items()))]
+    with pytest.raises(AssertionError, match="boilerplate"):
+        assert_field_contract("emply", shared + _ads(7)[3:], mode="collect")
+    # nor are three teams after a separator that names no place of theirs
+    teams = [dict(_ad(i, description=common), title=f"Software Engineer - {t}", location="Copenhagen") for i, t in enumerate(["Backend", "Frontend", "Data"])]
+    with pytest.raises(AssertionError, match="boilerplate"):
+        assert_field_contract("emply", teams + _ads(7)[3:], mode="collect")
 
 
 def test_an_invalid_posting_fails_the_model():
@@ -280,13 +296,18 @@ def test_a_discovery_refusal_is_not_reached():
     assert str(skipped.value).startswith(f"{NOT_REACHED} hellowork: a consent page")
 
 
+def test_a_discovery_source_stopped_by_a_server_error_is_not_reached():
+    with pytest.raises(pytest.skip.Exception, match="not reached: profession: HTTP 502"):
+        assert_discovery("profession", _result(employers=[], stopped="HTTP 502"), ["stopped for this run: HTTP 502"])
+
+
 def test_a_discovery_answer_with_employers_passes():
     assert_discovery("hellowork", _result(), [], link_prefix="https://acme.example/")
 
 
 @pytest.mark.parametrize("result, message", [
     (_result(employers=[]), "no employers"),
-    (_result(outcome="error", stopped="HTTP 500"), "HTTP 500"),
+    (_result(outcome="error", stopped="HTTP 404"), "HTTP 404"),   # a 5xx is not reached; a page gone is a change
     (_result(employers=[{"company": "", "titles": ["x"], "links": []}]), "name"),
     (_result(employers=[{"company": "Acme", "titles": [], "links": []}]), "title"),
     (_result(employers=[{"company": "Acme", "titles": ["x"], "links": ["javascript:void(0)"]}]), "link"),
@@ -453,6 +474,16 @@ def test_a_mode_past_its_requests_fails_naming_the_site_and_the_mode():
     with pytest.raises(AssertionError, match=r"^reed \[listing\]: 3 requests"):
         with probe_sized("reed", "listing"):
             for _ in range(REQUESTS["listing"] + 1):
+                requests.get("https://x.example/jobs")
+
+
+@responses.activate
+def test_a_mode_past_its_requests_because_the_site_kept_failing_is_not_reached():
+    """A scraper retries a server error: those retries are the site being down, not a scraper reading too much."""
+    responses.add(responses.GET, "https://x.example/jobs", status=500)
+    with pytest.raises(pytest.skip.Exception, match=r"not reached: reed: .*500"):
+        with probe_sized("reed", "listing"):
+            for _ in range(REQUESTS["listing"] + 2):
                 requests.get("https://x.example/jobs")
 
 

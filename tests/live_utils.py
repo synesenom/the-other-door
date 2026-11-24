@@ -4,7 +4,7 @@ A live test ends one of three ways, which `scripts/smoke_report.py` reads from t
 
 - **pass**: the site answered and its format still parses;
 - **changed**: the test failed, the site answered but no longer as the scraper reads it (the failure issue);
-- **not reached**: the site refused the request or could not be reached (a 401, 403, 429 or 503, a timeout, a
+- **not reached**: the site refused the request or could not be reached (a 401, 403, 429 or a 5xx, a timeout, a
   connection error): `not_reached_if_refused` skips the test with a message starting `NOT_REACHED`, here and
   in CI alike. Some sites refuse GitHub's runners, so a local run reaches them; the status page counts how
   many runs in a row a site was not reached.
@@ -22,7 +22,7 @@ NOT_REACHED = "not reached:"
 
 # How a scraper's recorded error says the site refused or was unreachable (requests' and the scrapers' wording).
 _REFUSAL = re.compile(
-    r"\b(?:401|403|429|503)\b|Too Many Requests|Forbidden|Unauthorized|Service Unavailable|pushback"
+    r"\b(?:401|403|429|5\d\d)\b|Too Many Requests|Forbidden|Unauthorized|pushback"
     r"|empty answer \(HTTP 202\)|timed out|Timeout\b|Max retries exceeded|NameResolution|Connection (?:aborted|refused|reset)",
     re.IGNORECASE,
 )
@@ -175,10 +175,21 @@ def failing_description(postings: list[dict], minimum: int = _DESCRIPTION_MIN) -
     return [p for p in postings if len(_text(p.get("description"))) < minimum]
 
 
+def _title_without_place(posting: dict) -> str:
+    """The job the posting's title names: when the part after its first separator ("," " - " " – " " | " "(") names
+    the posting's own location, the title up to it. "PSS Facilitator, Latakia - Rabia, Syria" in Rabia is
+    "pss facilitator"; "Software Engineer - Backend" in Copenhagen stays whole."""
+    title = _text(posting.get("title"))
+    head, *tail = re.split(r",|\s[-–|]\s|\(", title, maxsplit=1)
+    place = set(_squash(_text(posting.get("location"))).split())
+    return _squash(head if tail and place & set(_squash(tail[0]).split()) else title)
+
+
 def failing_boilerplate(postings: list[dict]) -> list[dict]:
     """Postings whose description is not the ad: a wall page, a copy of the title or company (or a fallback built
     from them), or the same whole text under several different titles. An employer's ads may all open with the same
-    "about us", and one job posted in several places may repeat its text under the same title: neither is boilerplate."""
+    "about us", and one job posted in several places may repeat its text under the same title, or under titles that
+    differ only by the place they name after a separator (the posting's own location): neither is boilerplate."""
     bad = []
     texts: dict[str, list[dict]] = {}
     for p in postings:
@@ -194,7 +205,7 @@ def failing_boilerplate(postings: list[dict]) -> list[dict]:
             continue
         texts.setdefault(flat, []).append(p)
     for group in texts.values():
-        if len({_squash(_text(p.get("title"))) for p in group}) >= 3:
+        if len({_title_without_place(p) for p in group}) >= 3:
             bad.extend(group)
     return bad
 
@@ -290,11 +301,11 @@ def assert_discovery(source: str, result: dict, errors: list, *, link_prefix: st
     """One paced search of a discovery source (`run(config, budget=1, ...)`) still yields employers.
 
     A refusal (a 403 or 429, a redirect to a login page, a wall page where the results should be: the source's
-    ``pushback``) is not reached; any other stop, no employers, or an employer without a name or a title, or
+    ``pushback``) or a server error (stopped on ``HTTP 5xx``) is not reached; any other stop, no employers, or an employer without a name or a title, or
     with a link that is not one, is a change (mode ``employers``).
     """
     detail = f"{result.get('stopped')}; errors: {errors[:3]}"
-    if result.get("pushback") or result.get("outcome") == "refused":
+    if result.get("pushback") or result.get("outcome") == "refused" or refused([result.get("stopped") or ""]):
         not_reached(source, str(result.get("stopped") or errors[:3]))
     assert not result.get("stopped"), fail(source, "employers", f"the search stopped: {detail}")
     assert result.get("employers"), fail(source, "employers", f"no employers on a page of results: {detail}")
@@ -382,12 +393,17 @@ def probe_sized(site: str, mode: str, most: int | None = None):
     import requests
 
     made: list[str] = []
+    failed: list[str] = []   # the counted requests the server answered with an error of its own (a 5xx)
     real = requests.Session.request
 
     def request(self, method, url, *args, **kwargs):
-        if not str(url).split("?", 1)[0].endswith("/robots.txt"):
+        counted = not str(url).split("?", 1)[0].endswith("/robots.txt")
+        if counted:
             made.append(str(url))
-        return real(self, method, url, *args, **kwargs)
+        resp = real(self, method, url, *args, **kwargs)
+        if counted and resp.status_code >= 500:
+            failed.append(f"{resp.status_code} Server Error for url: {url}")
+        return resp
 
     with mock.patch.object(requests.Session, "request", request):
         try:
@@ -396,6 +412,9 @@ def probe_sized(site: str, mode: str, most: int | None = None):
             not_reached_if_refused(site, [str(exc)])
             raise AssertionError(fail(site, mode, f"request failed: {exc}")) from exc
     ceiling = REQUESTS[mode] if most is None else most
+    if len(made) > ceiling and len(failed) == len(made):
+        # every request was a server error: the extra ones are the scraper's retries of a site that is down
+        not_reached(site, "; ".join(failed[:3]))
     assert len(made) <= ceiling, fail(site, mode, f"{len(made)} requests, more than {ceiling}: {made[:6]}")
 
 
