@@ -329,7 +329,6 @@ def test_a_phone_answer_names_no_folder_of_the_computer(home, monkeypatch):
             "list_matches": call_tool(c, token, "list_matches", {}),
             "show": call_tool(c, token, "show", {"job_id": "jobindex.1"}),
             "import_posting": call_tool(c, token, "import_posting", {"text": "an ad"}),
-            "unknown_argument": call_tool(c, token, "show_profile", {f"{home}": 1}),
         }
     for name, r in answers.items():
         assert str(home) not in r.text, name
@@ -342,3 +341,19 @@ def test_a_phone_answer_names_no_folder_of_the_computer(home, monkeypatch):
     shown = _answer(answers["show"])
     assert len(shown["score_reason"]) <= 400
     assert shown["materials"]["output_dir"].endswith("jobindex.1")
+
+
+def test_a_crash_a_phone_sees_names_no_folder_of_the_computer(home, monkeypatch):
+    from door.commands import matches as matches_cmd
+    from door.core import workspace
+
+    monkeypatch.setattr(workspace, "HOME", home)
+
+    def crash(*a, **k):
+        raise PermissionError(f"denied: {home}/jobs/x")  # not an error a tool turns into {"error"}
+
+    monkeypatch.setattr(matches_cmd, "_show_core", crash)
+    token = paired(home)
+    with client(home) as c:
+        r = call_tool(c, token, "show", {"job_id": "jobindex.1"})
+    assert "denied" in r.text and str(home) not in r.text

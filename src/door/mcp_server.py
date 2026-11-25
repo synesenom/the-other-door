@@ -126,23 +126,9 @@ def _for_phone(text: str) -> str:
 
 
 def _answer_for_phone(tool: str, result: CallToolResult) -> CallToolResult:
-    """A tool's answer as a phone may read it (`serve_policy.answer`): each JSON text block filtered, any other text masked."""
-    blocks = []
-    for block in result.content or ():
-        text = getattr(block, "text", None)
-        if text is None:
-            blocks.append(block)
-            continue
-        try:
-            text = json.dumps(serve_policy.answer(tool, json.loads(text)), indent=2)
-        except ValueError:
-            text = serve_policy.mask(text)
-        blocks.append(TextContent(type="text", text=text))
-    structured = result.structured_content
-    return CallToolResult(
-        content=blocks, is_error=result.is_error,
-        structured_content=serve_policy.answer(tool, structured) if structured else structured,
-    )
+    """A tool's answer as a phone may read it (`serve_policy.answer`): its one JSON text block, filtered."""
+    blocks = [TextContent(type="text", text=json.dumps(serve_policy.answer(tool, json.loads(b.text)), indent=2)) for b in result.content]
+    return CallToolResult(content=blocks, is_error=result.is_error)
 
 
 def _log_answer(tool: str, answer: dict | None) -> None:
@@ -188,22 +174,18 @@ class _DoorMCP(MCPServer):
     async def call_tool(self, name, arguments, context=None):
         why = serve_policy.refusal(name, arguments) if _runs["phone"] else None
         if why is not None:  # a phone's call outside its tools, arguments or daily ceiling; not logged: a flood would fill the log
-            return CallToolResult(content=[TextContent(type="text", text=json.dumps({"error": serve_policy.mask(why)}, indent=2))])
+            return CallToolResult(content=[TextContent(type="text", text=json.dumps({"error": why}, indent=2))])
         refusal = _data_refusal(name)
         if refusal is not None and migrations.status()["state"] == "busy":
             await asyncio.to_thread(migrations.upgrade_all)  # a run held the lock at start: try again
             refusal = _data_refusal(name)
         if refusal is not None:  # logged once, by the upgrade, not at every call
-            return CallToolResult(content=[TextContent(type="text", text=json.dumps({"error": _for_phone(refusal)}, indent=2))])
+            return CallToolResult(content=[TextContent(type="text", text=json.dumps({"error": refusal}, indent=2))])
+        self._refuse_unknown_arguments(name, arguments)  # the caller fixes it from the refusal: not a failure to log
         try:
-            self._refuse_unknown_arguments(name, arguments)  # the caller fixes it from the refusal: not a failure to log
             async with self._one_at_a_time(name):
                 result = await super().call_tool(name, arguments, context)
         except Exception as exc:
-            if isinstance(exc, ToolError) and not isinstance(exc, UnexpectedToolError):
-                if _runs["phone"]:
-                    raise ToolError(serve_policy.mask(str(exc))) from None
-                raise
             problem_log.crash(f"tool {name}", exc.__cause__ or exc)  # MCPServer wraps it
             if isinstance(exc, UnexpectedToolError):
                 # The client gets the reason (as in mcp 1.x); a plain ToolError is logged by MCPServer as one
