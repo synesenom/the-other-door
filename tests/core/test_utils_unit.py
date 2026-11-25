@@ -244,3 +244,11 @@ def test_fair_share_takes_each_group_in_turn_best_first():
     assert chosen == [("a", 9), ("c", 7), ("b", 1), ("a", 5)]
     assert sorted(rest) == [("a", 3), ("c", 2)]
     assert fair_share(items, 99, key=lambda i: i[0], rank=lambda i: -i[1])[1] == []
+
+
+def test_folder_masker_replaces_the_longest_folder_first_in_every_spelling(tmp_path):
+    from door.core import utils
+
+    inner = tmp_path / "data"
+    mask = utils.folder_masker({tmp_path: "~", inner: "<data folder>"})
+    assert mask(f"{inner}/jobs and {tmp_path}/other and {inner.resolve()}/x") == "<data folder>/jobs and ~/other and <data folder>/x"

@@ -27,6 +27,27 @@ def bubble_text(text: str) -> str:
     return text if len(text.split()) <= BUBBLE_WORDS else ""
 
 
+def folder_spellings(folder) -> set[str]:
+    """The ways a folder may be written: as given, resolved, and on macOS with or without `/private`."""
+    found = {str(folder), str(Path(folder).expanduser().resolve())}
+    found |= {s.removeprefix("/private") for s in found if s.startswith("/private/")}
+    return {s for s in found if len(s) > 1}
+
+
+def folder_masker(places: dict):
+    """A function that replaces each folder of `places` ({folder: word}) in a text by its word, in every spelling,
+    the longest first (the data folder is often inside home)."""
+    found = sorted(((spelling, word) for folder, word in places.items() for spelling in folder_spellings(folder)),
+                   key=lambda p: len(p[0]), reverse=True)
+
+    def mask(text: str) -> str:
+        for spelling, word in found:
+            text = text.replace(spelling, word)
+        return text
+
+    return mask
+
+
 def _sweep_stale_parts(dest: Path, prefix: str) -> None:
     """Remove the `prefix` staging folders a killed staged write left in `dest`, never one still in use, and never
     another tool's (cloudflared's `dest` is the shared ~/.local/bin)."""
