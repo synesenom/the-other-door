@@ -15,6 +15,7 @@ that address out for a while. Answers carry `Cache-Control: no-store` and no ser
 
 from __future__ import annotations
 
+import re
 import json
 import threading
 import time
@@ -122,6 +123,10 @@ def manifest(name: str) -> dict:
     }
 
 
+# The files a phone may read: a job's CV and letter as PDF and page images, prepared or sent.
+_PAGE_FILE = re.compile(r"jobs/output/[^/]+/(sent/)?(cv|cover_letter)(\.pdf|_page_\d+\.png)")
+
+
 def build_app(*, home: Path, web_dir: Path | None, name: str):
     """The Starlette app for one data folder: MCPServer's streamable-HTTP app plus The other door's routes and guard."""
     home = Path(home).resolve()
@@ -154,6 +159,8 @@ def build_app(*, home: Path, web_dir: Path | None, name: str):
 
     async def files(request: Request) -> Response:
         rel = request.path_params["path"]
+        if not _PAGE_FILE.fullmatch(rel):  # the rendered pages only: never the facts, the HTML, a photo or the ledgers
+            return Response("Not found", status_code=404)
         target = (home / rel).resolve()
         if not target.is_relative_to(output) or not target.is_file():
             return Response("Not found", status_code=404)

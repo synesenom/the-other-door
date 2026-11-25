@@ -120,6 +120,31 @@ def _answer_of(result: CallToolResult) -> dict | None:
     return None
 
 
+def _for_phone(text: str) -> str:
+    """`text` as a phone may read it: no folder of this computer. Others get it as it is."""
+    return serve_policy.mask(text) if _runs["phone"] else text
+
+
+def _answer_for_phone(tool: str, result: CallToolResult) -> CallToolResult:
+    """A tool's answer as a phone may read it (`serve_policy.answer`): each JSON text block filtered, any other text masked."""
+    blocks = []
+    for block in result.content or ():
+        text = getattr(block, "text", None)
+        if text is None:
+            blocks.append(block)
+            continue
+        try:
+            text = json.dumps(serve_policy.answer(tool, json.loads(text)), indent=2)
+        except ValueError:
+            text = serve_policy.mask(text)
+        blocks.append(TextContent(type="text", text=text))
+    structured = result.structured_content
+    return CallToolResult(
+        content=blocks, is_error=result.is_error,
+        structured_content=serve_policy.answer(tool, structured) if structured else structured,
+    )
+
+
 def _log_answer(tool: str, answer: dict | None) -> None:
     """A tool's ``{"error"}`` and the warnings it returned, to the problem log (never its arguments)."""
     if not answer or tool in _UNLOGGED_ANSWERS:
@@ -163,26 +188,30 @@ class _DoorMCP(MCPServer):
     async def call_tool(self, name, arguments, context=None):
         why = serve_policy.refusal(name, arguments) if _runs["phone"] else None
         if why is not None:  # a phone's call outside its tools, arguments or daily ceiling; not logged: a flood would fill the log
-            return CallToolResult(content=[TextContent(type="text", text=json.dumps({"error": why}, indent=2))])
+            return CallToolResult(content=[TextContent(type="text", text=json.dumps({"error": serve_policy.mask(why)}, indent=2))])
         refusal = _data_refusal(name)
         if refusal is not None and migrations.status()["state"] == "busy":
             await asyncio.to_thread(migrations.upgrade_all)  # a run held the lock at start: try again
             refusal = _data_refusal(name)
         if refusal is not None:  # logged once, by the upgrade, not at every call
-            return CallToolResult(content=[TextContent(type="text", text=json.dumps({"error": refusal}, indent=2))])
-        self._refuse_unknown_arguments(name, arguments)  # the caller fixes it from the refusal: not a failure to log
+            return CallToolResult(content=[TextContent(type="text", text=json.dumps({"error": _for_phone(refusal)}, indent=2))])
         try:
+            self._refuse_unknown_arguments(name, arguments)  # the caller fixes it from the refusal: not a failure to log
             async with self._one_at_a_time(name):
                 result = await super().call_tool(name, arguments, context)
         except Exception as exc:
+            if isinstance(exc, ToolError) and not isinstance(exc, UnexpectedToolError):
+                if _runs["phone"]:
+                    raise ToolError(serve_policy.mask(str(exc))) from None
+                raise
             problem_log.crash(f"tool {name}", exc.__cause__ or exc)  # MCPServer wraps it
             if isinstance(exc, UnexpectedToolError):
                 # The client gets the reason (as in mcp 1.x); a plain ToolError is logged by MCPServer as one
                 # line, not as a traceback on stderr (the problem log has the crash).
-                raise ToolError(f"Error executing tool {name}: {exc.__cause__}") from exc.__cause__
+                raise ToolError(_for_phone(f"Error executing tool {name}: {exc.__cause__}")) from exc.__cause__
             raise
         _log_answer(name, _answer_of(result))
-        return result
+        return _answer_for_phone(name, result) if _runs["phone"] else result
 
     def _one_at_a_time(self, name):
         """mcp 2.x runs a sync tool in a thread; 1.x ran them on the loop, one after another. The writing tools take

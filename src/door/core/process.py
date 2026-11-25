@@ -11,7 +11,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from door.core import utils, workspace
+from door.core import path_scope, utils, workspace
 
 
 def spawn_detached(argv: list[str], *, log: Path, env: dict | None = None):
@@ -25,7 +25,9 @@ def spawn_detached(argv: list[str], *, log: Path, env: dict | None = None):
 
 def door_env(home: Path) -> dict:
     """The environment of a `python -m door` started for the data folder `home`, on this checkout's source."""
-    return {**os.environ, "DOOR_HOME": str(home), "PYTHONPATH": str(workspace.REPO_ROOT / "src")}
+    env = {**os.environ, "DOOR_HOME": str(home), "PYTHONPATH": str(workspace.REPO_ROOT / "src")}
+    env.pop(path_scope.ENV, None)  # the app trusts its own file dialogs; a phone has none, and must name no path
+    return env
 
 
 def is_alive(pid: int) -> bool:

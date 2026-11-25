@@ -313,7 +313,7 @@ def test_a_phone_answer_names_no_folder_of_the_computer(home, monkeypatch):
     monkeypatch.setattr(workspace, "PROFILE_DIR", home / "profile")
     monkeypatch.setattr(workspace, "JOBS_DIR", home / "jobs")
     (home / "profile" / "config.json").write_text(json.dumps({
-        "role_targets": ["data scientist"], "location": "Copenhagen", "name": "Ada", "email": "ada@example.com",
+        "role_targets": ["data scientist"], "location": "Copenhagen", "remote": "hybrid", "name": "Ada", "email": "ada@example.com",
         "enrich_sources": ["https://example.com/ada"], "claude_config_dir": str(home / "claude"),
     }))
     monkeypatch.setattr(drive, "read_state", lambda: {"refresh_token": "t", "account": "ada@gmail.com"})
