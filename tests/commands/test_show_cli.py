@@ -762,19 +762,6 @@ def test_jobs_show_prints_a_bullet_for_a_list_item(cli_env):
     assert "• Python" in result_text(result)
 
 
-def test_show_core_leaves_out_a_reason_and_a_basis_too_long_for_an_info_bubble(cli_env, monkeypatch):
-    from door.commands import matches, salary as salary_cmd
-
-    long = "The title matches and the CV shows years of the required work, " * 4
-    _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "jobindex.1", score_reason="suspicious ad: " + long)
-    _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "jobindex.2", score_reason="Title and IFRS work match")
-    monkeypatch.setattr(salary_cmd, "cached", lambda job_id, jobs_dir: {"low": 1, "high": 2, "basis": long})
-
-    long_one = matches._show_core("jobindex.1", jobs_dir=cli_env.jobs_dir)
-    assert long_one["score_reason"] == "" and long_one["salary"]["basis"] == ""
-    assert matches._show_core("jobindex.2", jobs_dir=cli_env.jobs_dir)["score_reason"] == "Title and IFRS work match"
-
-
 def test_show_cli_says_unscored_only_without_a_score(cli_env):
     _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "jobindex.1", score=0.8, score_reason="")
     _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "jobindex.2", score=None, score_reason=None)

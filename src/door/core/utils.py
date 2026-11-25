@@ -17,7 +17,7 @@ STALE_PART_SECONDS = 3600
 
 
 # A model's summary read in an info bubble (a match's reason, a salary's why): its prompt asks for at most 20 words;
-# one past this, the model's whole working rather than a summary, is not shown. Applied where it is shown (`show`).
+# one past this, the model's whole working rather than a summary, is not shown. Applied to the model's own words where its answer is read (`scorer.apply_result`, `salary.parse`), before the code adds a prefix.
 BUBBLE_WORDS = 25
 
 

@@ -331,11 +331,8 @@ def _show_core(job_id: str, *, open: bool = False, jobs_dir: Path | None = None)
         _open_files([materials["pdfs"][name] for name in _MATERIALS])
 
     estimate = salary_cmd.cached(job_id, jobs_dir)
-    if estimate:
-        estimate = {**estimate, "basis": utils.bubble_text(str(estimate.get("basis") or ""))}
     return {
         **posting,
-        "score_reason": utils.bubble_text(posting.get("score_reason") or ""),  # read in the score's info bubble
         "source_name": sites.source_name(posting.get("source")),
         "status": app_tracker.get_status(job_id) or "unapplied",
         "history": app_tracker.timeline(job_id),
