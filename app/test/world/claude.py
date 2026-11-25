@@ -48,7 +48,9 @@ def arg(name: str) -> str | None:
 
 # What each kind of answer costs at API prices (`total_cost_usd`, #67): fixed, round figures, so
 # `status_summary`'s `cost` and Analytics' Claude usage read the same in every run.
-COST_USD = {"cv_read": 0.01, "score": 0.02, "translate": 0.01, "read_ad": 0.01, "market": 0.01, "tailor": 0.40, "revise": 0.05, "facts": 0.01}
+COST_USD = {"cv_read": 0.01, "score": 0.02, "translate": 0.01, "read_ad": 0.01, "market": 0.01, "tailor": 0.40, "revise": 0.05, "facts": 0.01,
+            # an ad's layout costs a fraction of a cent: nothing at the round figures the journeys read
+            "layout": 0.0}
 OTHER_COST_USD = 0.03
 
 
@@ -113,6 +115,7 @@ KINDS = [
     ("revise", "You revise the body of an HTML CV or cover letter"),
     ("facts", "You check a tailored CV and cover letter"),
     ("market", "You group skill names"),
+    ("layout", "You mark up the layout of a job ad"),
     ("ask", "You answer one question about the user's job search"),
     ("careers", "You find the official careers page"),
 ]
@@ -168,6 +171,8 @@ elif kind == "translate":
 elif kind == "read_ad":
     found = next((a for a in W.get("read_ads", []) if a["title"] in STDIN), None)
     envelope(said.get("answer") or found or {"title": "", "company": "", "location": ""})
+elif kind == "layout":
+    envelope({"headings": [], "bullets": []})  # the ad stays plain text
 elif kind == "market":
     names = json.loads(STDIN).get("names", [])
     envelope({"groups": [{"variant": n, "canonical": n, "skill": True} for n in names]})

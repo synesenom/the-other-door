@@ -134,9 +134,12 @@ def test_show_lists_matching_and_missing_skills(cli_env):
 
 
 def test_show_sets_description_headings_apart(cli_env):
+    from door.matching import ad_layout
+
+    desc = "We are hiring.\nAbout the role\nYou will build models."
     _write_show_posting(
-        cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc",
-        description="We are hiring.\nAbout the role\nYou will build models.",
+        cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc", description=desc,
+        layout={"headings": [2], "bullets": [], "sha256": ad_layout.description_hash(desc)},
     )
 
     result = CliRunner().invoke(cli, ["jobs", "show", "job-abc"])
@@ -742,3 +745,43 @@ def test_the_card_says_the_page_limit_once_on_the_cv_row_not_under_read_by_an_at
     text = _rendered({**base, "readability": [pages, missing]})
     assert "Kubernetes" in text and "over the limit" not in text
 
+
+
+def test_show_returns_the_description_as_blocks_by_its_layout(cli_env):
+    from door.matching import ad_layout
+
+    desc = "About the role\nWe build things.\n- Python"
+    layout = {"headings": [1], "bullets": [3], "sha256": ad_layout.description_hash(desc)}
+    _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-lay", description=desc, layout=layout)
+
+    from door.commands import matches as matches_cmd
+
+    shown = matches_cmd._show_core("job-lay", jobs_dir=cli_env.jobs_dir)
+    assert shown["description_blocks"] == [
+        {"kind": "heading", "text": "About the role"},
+        {"kind": "paragraph", "text": "We build things."},
+        {"kind": "bullet", "text": "Python"},
+    ]
+
+
+def test_jobs_show_without_a_layout_treats_a_short_line_as_a_paragraph(cli_env):
+    _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc",
+                        description="We are hiring.\nAbout the role\nYou will build models.")
+
+    result = CliRunner().invoke(cli, ["jobs", "show", "job-abc"])
+
+    lines = [line.strip() for line in result_text(result).splitlines()]
+    assert lines[lines.index("About the role") - 1] == "We are hiring."
+
+
+def test_jobs_show_prints_a_bullet_for_a_list_item(cli_env):
+    from door.matching import ad_layout
+
+    desc = "Our list\n- Python"
+    layout = {"headings": [1], "bullets": [2], "sha256": ad_layout.description_hash(desc)}
+    _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-lay", description=desc, layout=layout)
+
+    result = CliRunner().invoke(cli, ["jobs", "show", "job-lay"])
+
+    assert result.exit_code == 0, result_text(result)
+    assert "• Python" in result_text(result)

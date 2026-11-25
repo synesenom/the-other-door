@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import { ErrorBox } from './AppName'
 import { call, errorText, languageLine, placeLine, scoreText } from '../api'
 import type { PrepareResult, Posting as PostingData, SetStatusResult } from '../api'
@@ -236,7 +237,7 @@ export function Posting({ jobId, onChanged, onOpenMaterials }: Props) {
       {posting.language && <p className="body">{languageLine(posting.language, posting.language_requirement)}</p>}
       {posting.description && (
         <section>
-          <p className="body description">{posting.description}</p>
+          <Description posting={posting} />
         </section>
       )}
       {narrow && (
@@ -295,4 +296,39 @@ export function Posting({ jobId, onChanged, onOpenMaterials }: Props) {
       )}
     </article>
   )
+}
+
+/** The ad's text: a heading, a list for each run of bullets and a paragraph for the rest (`description_blocks`); the plain text when `show` sent none. */
+function Description({ posting }: { posting: PostingData }) {
+  const blocks = posting.description_blocks
+  if (!blocks?.length) return <p className="body description">{posting.description}</p>
+  const out: ReactNode[] = []
+  for (let i = 0; i < blocks.length; i++) {
+    const block = blocks[i]
+    if (block.kind === 'bullet') {
+      const items: string[] = []
+      for (; i < blocks.length && blocks[i].kind === 'bullet'; i++) items.push(blocks[i].text)
+      i--
+      out.push(
+        <ul key={i} className="body description-list">
+          {items.map((text, n) => (
+            <li key={n}>{text}</li>
+          ))}
+        </ul>,
+      )
+    } else if (block.kind === 'heading') {
+      out.push(
+        <h3 key={i} className="body description-heading">
+          {block.text}
+        </h3>,
+      )
+    } else {
+      out.push(
+        <p key={i} className="body">
+          {block.text}
+        </p>,
+      )
+    }
+  }
+  return <div className="description">{out}</div>
 }

@@ -42,6 +42,33 @@ describe('Posting', () => {
     expect(screen.getByText('You will analyse data.')).toBeInTheDocument()
   })
 
+  it('lays the ad out in headings, lists and paragraphs when it has blocks', async () => {
+    mockDoor({
+      show: {
+        ...full,
+        description_blocks: [
+          { kind: 'heading', text: 'About the role' },
+          { kind: 'paragraph', text: 'You will analyse data.' },
+          { kind: 'bullet', text: 'SQL' },
+          { kind: 'bullet', text: 'Python' },
+          { kind: 'paragraph', text: 'Apply today.' },
+        ],
+      },
+    })
+    const { container } = render(<Posting jobId="jobindex.1" onChanged={() => {}} />)
+    expect(await screen.findByRole('heading', { name: 'About the role' })).toBeInTheDocument()
+    const list = container.querySelector('.description-list') as HTMLElement
+    expect(within(list).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['SQL', 'Python'])
+    expect(screen.getByText('You will analyse data.').tagName).toBe('P')
+    expect(screen.getByText('Apply today.').tagName).toBe('P')
+  })
+
+  it('falls back to the plain description without blocks', async () => {
+    mockDoor({ show: full })
+    render(<Posting jobId="jobindex.1" onChanged={() => {}} />)
+    expect(await screen.findByText('You will analyse data.')).toBeInTheDocument()
+  })
+
   it('shows the saved salary estimate, and never asks for one', async () => {
     const { call } = mockDoor({ show: { ...full, salary: { low: 55000, high: 70000, currency: 'DKK', period: 'month', gross: true, position: 'within', basis: '', sources: [{ title: 'Stats', url: 'https://example.com/stats' }], ad_salary: null, as_of: '2026-11-07T10:00:00+00:00' } } })
     render(<Posting jobId="jobindex.1" onChanged={() => {}} />)

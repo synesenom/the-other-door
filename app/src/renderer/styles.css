@@ -140,6 +140,10 @@ strong, b { font-weight: 600; }
 .go::after { content: " →" / ""; }
 
 .description { white-space: pre-wrap; }
+/* A laid-out ad (`description_blocks`): headings, lists and paragraphs one space apart. */
+div.description { white-space: normal; display: grid; gap: var(--space-3); }
+.description-heading { margin: var(--space-3) 0 0; font-weight: 600; }
+.description-list { margin: 0; padding-left: 1.25em; display: grid; gap: var(--space-1); }
 /* One box for a note and an error; an error starts with the failed mark (the ✕ of a board that failed) in the danger colour,
    drawn here so every error has it, whatever element it is (a line, a list of them). */
 .notice, .error { color: var(--color-ink); background: var(--color-page); border: 0; border-radius: var(--radius-m); padding: var(--space-2) var(--space-3); margin: var(--space-2) 0; }
