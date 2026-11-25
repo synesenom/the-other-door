@@ -390,7 +390,7 @@ to Not yet applied stays in Matches.
   it cannot (a page behind a sign-in, one built only with JavaScript, or one that names no title and
   company), the dialog turns to Paste text and says why; the link is kept with the ad.
 - **Paste text**: the ad's text alone. *The other door* reads its title, company and location the same way; only when
-  the title or company cannot be found does the dialog ask for that one, by name.
+  the title or company cannot be found in the ad does the dialog ask for that one, by name.
 
 The ad is scored on the spot, which takes a little while (a spinner says so; **Cancel** leaves). The result shows its score and the
 reason; **Open** shows the posting even if it scored below your minimum. Without a profile

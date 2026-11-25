@@ -66,7 +66,8 @@ _READ_SCHEMA = {
 
 def _read_ad(text: str) -> dict:
     """The ad's ``title``, ``company`` and ``location`` as Haiku reads them from
-    its ``text`` (one `claude -p` call); what it could not tell is left out, and a
+    its ``text`` (one `claude -p` call); what it could not tell, or what the ad does
+    not contain word for word (ignoring case and spacing), is left out, and a
     failed call tells nothing (the caller asks the user for what is missing)."""
     from door.core import claude_cli
 
@@ -76,7 +77,8 @@ def _read_ad(text: str) -> dict:
     except claude_cli.ClaudeError:
         return {}
     read = {k: " ".join(str(answer.get(k) or "").split()) for k in ("title", "company", "location")}
-    return {k: v for k, v in read.items() if v}
+    ad = " ".join(text.split()).lower()  # only what the ad says: a field the ad does not contain is not kept
+    return {k: v for k, v in read.items() if v and v.lower() in ad}
 
 
 def _step(message: str, outcome: str | None = None) -> None:
