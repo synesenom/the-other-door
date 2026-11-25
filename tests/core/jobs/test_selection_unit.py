@@ -10,10 +10,12 @@ from pathlib import Path
 import pytest
 
 from door.core.jobs.selection import (
+    AmbiguousJobRef,
     find_posting,
     find_posting_path,
     ledger_breakdown,
     pipeline_summary,
+    resolve_job_ref,
     select_matches,
 )
 
@@ -442,16 +444,6 @@ def test_find_posting_ignores_output_directory(tmp_path):
     assert result is None
 
 
-def test_find_posting_tie_break_returns_first_in_sorted_walk_order(tmp_path):
-    jobs_dir = tmp_path / "jobs"
-    _write_posting(jobs_dir, "2026-07-02", "jobindex", "dup-job", title="Later Copy")
-    _write_posting(jobs_dir, "2026-07-01", "jobindex", "dup-job", title="Earlier Copy")
-
-    result = find_posting(jobs_dir, "dup-job")
-
-    assert result["title"] == "Earlier Copy"
-
-
 # --------------------------------------------------------------------------- #
 # find_posting_path (issue #72)
 # --------------------------------------------------------------------------- #
@@ -606,3 +598,29 @@ def test_pipeline_summary_and_select_matches_take_postings_already_read(tmp_path
     assert (summary["total"], summary["unapplied"]) == (2, 1)
     assert [m["id"] for m in matches] == ["job-new"]
     assert walks == []
+
+
+def test_a_posting_stored_on_two_days_is_read_and_written_from_its_newest_copy(tmp_path):
+    # collected again a month later: the list shows today's scored copy, so opening it must too
+    jobs_dir = tmp_path / "jobs"
+    _write_posting(jobs_dir, "2026-06-01", "career_sites", "job-twice", score=0.0, score_reason="prescreen: 0.49 below cutoff")
+    newest = _write_posting(jobs_dir, "2026-07-01", "career_sites", "job-twice", score=0.7)
+
+    assert find_posting(jobs_dir, "job-twice")["score"] == 0.7
+    assert find_posting_path(jobs_dir, "job-twice") == newest
+
+
+def test_a_posting_stored_on_two_days_is_listed_once_by_its_newest_copy(tmp_path):
+    # the list, the counts and the words naming a job read the copy the job opens on, whichever scored higher
+    jobs_dir = tmp_path / "jobs"
+    _write_posting(jobs_dir, "2026-06-01", "career_sites", "job-twice", score=0.7, title="Old Title")
+    _write_posting(jobs_dir, "2026-07-01", "career_sites", "job-twice", score=0.6, title="New Title")
+    _write_posting(jobs_dir, "2026-07-01", "career_sites", "job-other", score=0.65, title="Title Too")
+    tracker = _FakeTracker({})
+
+    assert [(m["id"], m["score"]) for m in select_matches(jobs_dir, tracker, min_score=0.5)] == [
+        ("job-other", 0.65), ("job-twice", 0.6)]
+    assert pipeline_summary(jobs_dir, tracker, 0.5)["total"] == 2
+    with pytest.raises(AmbiguousJobRef) as found:
+        resolve_job_ref("title", jobs_dir)
+    assert [c["title"] for c in found.value.candidates] == ["Title Too", "New Title"]

@@ -38,15 +38,22 @@ def iter_postings(jobs_dir: Path) -> Iterator[tuple[Path, dict]]:
     """Every readable posting as ``(path, posting)``, in sorted date/site/file order.
 
     Walks ``jobs/postings/<YYYY-MM-DD>/<site>/*.json`` under `date_dirs`; malformed
-    or unreadable JSON files are skipped.
+    or unreadable JSON files are skipped. A posting stored on several days (collected
+    again later) is its newest copy only, so every list, count and lookup reads the same one.
     """
-    for date_dir in date_dirs(jobs_dir):
+    newest_first: list[tuple[Path, dict]] = []
+    seen: set = set()
+    for date_dir in reversed(date_dirs(jobs_dir)):
         for json_path in sorted(date_dir.glob("*/*.json")):
             try:
                 data = json.loads(json_path.read_text(encoding="utf-8"))
             except (json.JSONDecodeError, OSError):
                 continue
-            yield json_path, data
+            job_id = data.get("id") if isinstance(data, dict) else None
+            if job_id is None or job_id not in seen:
+                seen.add(job_id)
+                newest_first.append((json_path, data))
+    yield from sorted(newest_first, key=lambda found: found[0].parts[-3:])  # back to date/site/file order
 
 
 def read_postings(jobs_dir: Path) -> list[dict]:
@@ -120,9 +127,8 @@ def find_posting(jobs_dir: Path, job_id: str) -> dict | None:
     Walks ``jobs/postings/<YYYY-MM-DD>/<site>/*.json`` the same way ``select_matches``
     does — only date-named top-level directories are scanned, so
     ``jobs/output/`` and similar are never scanned. Malformed JSON files are
-    skipped tolerantly. If the same ``job_id`` appears in more than one
-    posting file, the first one encountered in sorted walk order (earliest
-    date directory first) wins.
+    skipped tolerantly. A posting stored on several days is its newest
+    copy (`iter_postings`).
 
     Parameters
     ----------
@@ -343,12 +349,10 @@ def resolve_job_ref(ref: str, jobs_dir: Path) -> str:
     ref_words = _words(text)
     in_play: list[dict] = []
     others: list[dict] = []
-    seen: set[str] = set()
     for _path, posting in iter_postings(jobs_dir):
         job_id = str(posting.get("id") or "")
-        if not job_id or job_id in seen or not _names(ref_words, posting):
+        if not job_id or not _names(ref_words, posting):
             continue
-        seen.add(job_id)
         status = statuses.get(job_id)
         if status in _IN_PLAY:
             in_play.append(posting)
