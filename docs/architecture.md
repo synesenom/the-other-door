@@ -321,12 +321,16 @@ A paired phone gets only `serve_policy.PHONE_TOOLS`: finding, preparing and the 
 (`PHONE_TOOLS` maps a tool to their names; a string is capped, 30000 characters for an ad's `text`, 2000 for
 `notes` and `url`, 300 otherwise) and `prepare`, `import_posting` and `find_jobs` within a daily ceiling
 (`PHONE_DAILY`, 10, 30 and 6 in a rolling 24 hours, in memory). `mcp_server.serve_phone()` turns this on and
+<<<<<<< HEAD
 `_DoorMCP.call_tool` asks `serve_policy.refusal` first, so it holds for every call; a request body is capped at 1 MB. Every answer and error goes back through
 `serve_policy.answer` / `mask` (#546): `show_profile` keeps only `PHONE_PROFILE_KEYS` of the config, the CV text and
 the errors (no `path`, `options`, templates or enrich sources), `status_summary`'s Drive account is null, a
 `score_reason` is cut to 400 characters and the data folder, checkout and home folder are removed from every string
 (the file names stay). `/files` serves only `jobs/output/<id>/[sent/](cv|cover_letter).pdf` and `..._page_N.png`;
 `process.door_env` drops `DOOR_PATHS_FROM_DIALOGS`, so the phone server never trusts a path as a dialog's.
+=======
+`_DoorMCP.call_tool` asks `serve_policy.refusal` first, so it holds for every call; a request body is capped at 1 MB.
+>>>>>>> origin/main
 No `revise`, no `mark_reviewed`. Nothing that sets up or
 changes the profile, the CV or the employers, no `ask`, `doctor`, `setup`, Drive, export or import;
 never a local path or a home-network address; and `compile` refuses any body that `render/html_guard.py`

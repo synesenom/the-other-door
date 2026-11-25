@@ -676,9 +676,13 @@ folder that has no profile yet says to set it up there first.
 
 **What a paired phone can do.** It is not a Claude Code session on your machine: the server answers only
 the tools the phone app uses, never a file path on the machine (an ad comes as a link or text), never an
+<<<<<<< HEAD
 address on the machine or your home network, and no question to Claude. What it answers holds no folder of
 your machine, no Google account and none of the settings that stay on the computer, and it serves only the
 rendered CV and letter (PDF and page images), nothing else of a job's folder. It cannot revise a CV or letter
+=======
+address on the machine or your home network, and no question to Claude. It cannot revise a CV or letter
+>>>>>>> origin/main
 (do that on the computer), it sends only the arguments the app sends, and a day allows 10 prepares, 30 imported
 ads and 6 runs to find jobs (a rolling 24 hours; try again tomorrow, or do it on the computer). Every
 prepared or revised CV and letter is refused before compiling if it would read or write another file.

@@ -3,18 +3,27 @@ machine: it gets the tools the phone app uses, with the arguments the app sends 
 file path, no prompt to Claude (`ask`), no free-text `revise`, and a daily ceiling on the tools that cost.
 
 `refusal(tool, args)` says why a call is refused, or None. `mcp_server._DoorMCP.call_tool` asks it first for
+<<<<<<< HEAD
 every call when the server runs for a phone (`mcp_server.serve_phone`), and passes every answer and error through
 `answer` / `mask` (#546): the phone gets no folder of this computer, no Drive account, no computer-only setting.
+=======
+every call when the server runs for a phone (`mcp_server.serve_phone`).
+>>>>>>> origin/main
 """
 
 from __future__ import annotations
 
+<<<<<<< HEAD
 import os
 import threading
 import time
 from pathlib import Path
 
 from door.core import utils, workspace
+=======
+import threading
+import time
+>>>>>>> origin/main
 
 # The tools the phone app calls (app/src/renderer through app/src/web/bridge.ts), each with the argument
 # names the app sends. Setting up, the profile, the CV, the employers, revising and "I'm done" are done on
@@ -33,6 +42,7 @@ PHONE_TOOLS: dict[str, frozenset[str]] = {
     "import_posting": frozenset({"text", "url", "title", "company", "location", "force"}),
 }
 
+<<<<<<< HEAD
 # The profile settings the phone shows (name, email, the search) and the ones the page it prints reads; every other
 # key (paths, the Claude folder, the Drive and discovery choices, the employer lists) stays on the computer.
 PHONE_PROFILE_KEYS = frozenset({
@@ -41,6 +51,8 @@ PHONE_PROFILE_KEYS = frozenset({
 })
 _REASON_MAX = 400
 
+=======
+>>>>>>> origin/main
 # The longest string a phone may send: a pasted ad (as `commands/add._READ_MAX_CHARS`), a note, a link, any other.
 _CAPS = {"text": 30000, "notes": 2000, "url": 2000}
 _OTHER_CAP = 300
