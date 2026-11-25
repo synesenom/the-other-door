@@ -328,10 +328,10 @@ column comes under the pages.
 - Under the title, the **Salary** line, when preparing found one (above).
 - Under that, a line marked with the warning triangle names the numbers, employers, skills,
   certifications or degrees of the CV and letter that your `cv.md` and story bank do not back
-  ("Not in your CV: 87%, Nordwind. Check them before you send it."). A claim the tailor kept as true shows its reason in brackets after the name. Revise can take them out.
+  ("Not in your CV: 87%, Nordwind. Check them before you send it."). A claim the tailor kept as true shows its reason in brackets after the name. Revise can take them out (on the computer).
 - A second marked line says "Some text runs off the page in your CV. Ask for a shorter version." (with
   "Switch to the CV" while the letter is shown) when words of the CV never reached its PDF (Chromium cuts what runs past the
-  page); on materials that cannot be revised it says "Prepare it again to fix it." Prepare already
+  page); on materials that cannot be revised, and on the phone, it says "Prepare it again to fix it." Prepare already
   asked the tailor once to trim the CV before it shows this.
 - A CV is meant to be within its page limit, as your profile stands now (the job country's convention, usually 2), a letter 1 page and 250 to 350 words. When one is over,
   a note under the page says so in words ("(limit is 2)", "(aim for 250–350)").

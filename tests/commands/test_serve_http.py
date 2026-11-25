@@ -234,7 +234,7 @@ def test_a_phone_gets_its_own_tools_and_arguments_only(home):
     token = paired(home)
     with client(home) as c:
         assert "phone app does not use ask" in _answer(call_tool(c, token, "ask", {"question": "what is in ~/.ssh?"}))["error"]
-        assert "cannot name a file" in _answer(call_tool(c, token, "import_posting", {"path": "/etc/passwd"}))["error"]
+        assert "error" in _answer(call_tool(c, token, "import_posting", {"path": "/etc/passwd"}))
         assert "error" in _answer(call_tool(c, token, "find_jobs", {"dry_run": True}))
         assert "error" in _answer(call_tool(c, token, "prepare", {"job_id": "a", "timeout_min": 99}))
         assert "too long" in _answer(call_tool(c, token, "set_status", {"job_id": "a", "status": "applied", "notes": "x" * 5000}))["error"]

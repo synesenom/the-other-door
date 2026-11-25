@@ -73,8 +73,8 @@ def test_arguments_that_are_not_an_object_are_refused_not_raised():
     assert policy.refusal("show", [1])
 
 
-def test_the_path_refusal_says_so():
-    assert "file" in policy.refusal("import_posting", {"path": "/Users/ada/.ssh/id_ed25519"})
+def test_a_phone_cannot_name_a_path():
+    assert policy.refusal("import_posting", {"path": "/Users/ada/.ssh/id_ed25519"})
 
 
 @pytest.mark.parametrize("tool, args, limit", [

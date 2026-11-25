@@ -57,8 +57,6 @@ def refusal(tool: str, args) -> str | None:
         args = {}
     if not isinstance(args, dict):
         return f"{tool} takes its arguments by name"
-    if args.get("path") and tool == "import_posting":
-        return "a phone cannot name a file on the computer running The other door; share or paste the ad instead"
     extra = sorted(str(k) for k in args if k not in allowed)
     if extra:
         return f"the phone app does not send {', '.join(extra)} to {tool}; do this on the computer running The other door"
