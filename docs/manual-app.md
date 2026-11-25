@@ -667,7 +667,7 @@ On the phone: scan the QR code (or open the address and type the code), then in 
 **Install app** (iPhone: Safari's Share → **Add to Home Screen**). The app opens on your matches.
 
 The phone is for what you do on the road: find new jobs (the run goes on while the phone is locked),
-read postings, import an ad, prepare and revise an application, and keep Applications up to date. It
+read postings, import an ad, prepare an application, and keep Applications up to date. It
 has three tabs, Matches, Applications and Settings (only the look and where your data is).
 Everything else is done on the computer running *The other door*: first-time setup, your profile and
 CV (Profile is not on the phone), signing in to
@@ -676,7 +676,9 @@ folder that has no profile yet says to set it up there first.
 
 **What a paired phone can do.** It is not a Claude Code session on your machine: the server answers only
 the tools the phone app uses, never a file path on the machine (an ad comes as a link or text), never an
-address on the machine or your home network, and no question to Claude. Every
+address on the machine or your home network, and no question to Claude. It cannot revise a CV or letter
+(do that on the computer), it sends only the arguments the app sends, and a day allows 10 prepares, 30 imported
+ads and 6 runs to find jobs (a rolling 24 hours; try again tomorrow, or do it on the computer). Every
 prepared or revised CV and letter is refused before compiling if it would read or write another file.
 With a Cloudflare quick tunnel, Cloudflare's servers see the traffic decrypted on its way through;
 Tailscale keeps it encrypted to your machine.

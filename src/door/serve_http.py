@@ -27,7 +27,6 @@ from starlette.responses import FileResponse, HTMLResponse, JSONResponse, Respon
 from starlette.routing import Route
 
 from door import mcp_server as server
-from door import serve_policy
 from door.core import workspace
 from door.core.phone import pairing
 
@@ -95,35 +94,6 @@ def _cookie(scope: dict, name: str) -> str:
     return ""
 
 
-async def _read_body(receive) -> bytes | None:
-    """The whole request body, or None when it is larger than MAX_BODY."""
-    chunks, size = [], 0
-    while True:
-        message = await receive()
-        if message["type"] != "http.request":
-            break
-        chunk = message.get("body", b"")
-        size += len(chunk)
-        if size > MAX_BODY:
-            return None
-        chunks.append(chunk)
-        if not message.get("more_body"):
-            break
-    return b"".join(chunks)
-
-
-def _refused(message: dict) -> dict | None:
-    """A JSON-RPC answer for a `tools/call` the phone may not make (serve_policy), or None."""
-    if not isinstance(message, dict) or message.get("method") != "tools/call":
-        return None
-    params = message.get("params") or {}
-    why = serve_policy.refusal(str(params.get("name", "")), params.get("arguments") or {})
-    if why is None:
-        return None
-    text = json.dumps({"error": why})
-    return {"jsonrpc": "2.0", "id": message.get("id"), "result": {"content": [{"type": "text", "text": text}], "isError": False}}
-
-
 def _theme() -> dict:
     """The manifest's colours: the design tokens' ground (the logo's parchment)."""
     try:
@@ -161,10 +131,11 @@ def build_app(*, home: Path, web_dir: Path | None, name: str):
 
     # Stateless JSON answers: a phone that slept or changed networks just calls again. The host check
     # against DNS rebinding is off: a tunnel's hostname is not known here, and every call needs a token.
-    server.enable_background_runs()  # a phone sleeps and a tunnel cuts long requests: runs return at once
+    server.serve_phone()  # a phone sleeps and a tunnel cuts long requests: runs return at once; calls held to serve_policy
     app = server.mcp.streamable_http_app(
         stateless_http=True,
         json_response=True,
+        max_request_body_size=MAX_BODY,
         transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=False),
     )
 
@@ -247,29 +218,6 @@ def build_app(*, home: Path, web_dir: Path | None, name: str):
             if now - seen.get(device, datetime.min.replace(tzinfo=UTC)) > _TOUCH_EVERY:
                 seen[device] = now
                 pairing.touch(home, device, now=now)
-        if path == "/mcp" and scope.get("method") == "POST":
-            # A phone is not a Claude Code session: only its own tools, no paths.
-            body = await _read_body(receive)
-            if body is None:
-                return await JSONResponse({"error": "That request is too large."}, status_code=413)(scope, receive, send_secured)
-            try:
-                parsed = json.loads(body or b"null")
-            except ValueError:
-                parsed = None
-            messages = parsed if isinstance(parsed, list) else [parsed]
-            answers = [a for a in (_refused(m) for m in messages) if a is not None]
-            if answers:
-                return await JSONResponse(answers if isinstance(parsed, list) else answers[0])(scope, receive, send_secured)
-            sent = False
-
-            async def replay():
-                nonlocal sent
-                if sent:
-                    return await receive()
-                sent = True
-                return {"type": "http.request", "body": body, "more_body": False}
-
-            return await inner(scope, replay, send_secured)
         return await inner(scope, receive, send_secured)
 
     app.middleware_stack = guard

@@ -273,7 +273,7 @@ export function Materials({ jobId, onBack, backLabel = '← Posting', onPosting,
         <div className={busy ? 'pages dimmed' : 'pages'} data-testid="pages" aria-busy={busy}>
           {figureFor(doc)}
         </div>
-        {!sent && (
+        {!sent && !remote && (
           <aside className="materials-aside">
             {m.revisable ? (
               <section className="revise">
