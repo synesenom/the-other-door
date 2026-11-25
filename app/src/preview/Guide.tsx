@@ -134,7 +134,7 @@ export function Guide() {
                   <path d="M12 11v5.5M12 7.5v.01" />
                 </svg>
               </button>
-              <span className="hint-pop small below" aria-hidden="true">Opens below the icon when above it would be cut off.</span>
+              <span className="hint-pop small below" style={{ left: 0, right: 'auto' }} aria-hidden="true">Opens below the icon when above it would be cut off.</span>
             </span>
           </Row>
           <Row label="back (BackButton)">
