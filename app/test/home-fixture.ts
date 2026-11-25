@@ -49,6 +49,7 @@ function preparePrepared(home: string, jobId: string, row: unknown): void {
 
 /** Words of each onboarding call's system prompt, and the file its answer is in. */
 const ANSWERED = [
+  ["You read a job seeker's public pages", 'pages.json'],
   ["You draft a job seeker's CV", 'draft.json'],
   ["You read a job seeker's CV", 'cv_read.json'],
   ['You suggest the job titles', 'titles.json'],
@@ -78,6 +79,7 @@ export function answerOnboarding(scratch: string, draft: string, languages: { la
   mkdirSync(dir, { recursive: true })
   const envelope = (answer: unknown) => JSON.stringify({ result: JSON.stringify(answer) })
   writeFileSync(join(dir, 'draft.json'), envelope({ cv_markdown: draft, provenance: [{ source: 'https://ada.dev', contributed: 'two projects' }], todos: ['phone number'] }))
+  writeFileSync(join(dir, 'pages.json'), envelope({ pages: [{ url: 'https://ada.dev', text: 'Ada Lovelace, data scientist.' }], unreachable: [] }))
   writeFileSync(join(dir, 'cv_read.json'), envelope(plainReading(draft, languages)))
   writeFileSync(join(dir, 'titles.json'), envelope({ titles: [{ title: 'Data Scientist', reason: 'your latest title', recommended: true }, { title: 'Quant', reason: 'your maths', recommended: false }] }))
   writeFileSync(join(dir, 'keywords.json'), envelope({ keywords: ['data scientist', 'ml engineer'], topic_terms: ['data'] }))

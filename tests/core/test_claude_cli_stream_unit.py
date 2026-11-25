@@ -169,10 +169,28 @@ def test_run_records_the_limits(monkeypatch):
 def test_ask_reads_the_prompt_model_and_tools_from_the_agent_file_unless_told_otherwise(monkeypatch):
     calls = []
     monkeypatch.setattr(claude_cli.subprocess, "run", _fake_run(calls, _stream(_result(result="x"))))
-    claude_cli.ask("cv-drafter", "q", feature="draft_cv", fields={"webfetch_rules": "FETCH ALL"})
+    claude_cli.ask("cv-drafter", "q", feature="draft_cv")
     argv = calls[0]
-    assert argv[argv.index("--model") + 1] == "sonnet" and argv[argv.index("--allowedTools") + 1] == "WebFetch"
-    assert "FETCH ALL" in argv[argv.index("--system-prompt") + 1]
+    assert argv[argv.index("--model") + 1] == "sonnet" and "--allowedTools" not in argv and argv[argv.index("--tools") + 1] == ""
+    assert argv[argv.index("--system-prompt") + 1] == claude_cli.prompt("cv-drafter")
     claude_cli.ask("cv-drafter", "q", feature="draft_cv", model="haiku", allowed_tools=())
     argv = calls[1]
     assert argv[argv.index("--model") + 1] == "haiku" and argv[argv.index("--tools") + 1] == ""
+
+
+@pytest.mark.parametrize("agent", ["careers-finder", "salary", "skill-gaps"])
+def test_a_call_with_web_search_has_only_that_built_in_tool(monkeypatch, agent):
+    calls = []
+    monkeypatch.setattr(claude_cli.subprocess, "run", _fake_run(calls, _stream(_result(result="x"))))
+    claude_cli.ask(agent, "q", feature="careers_lookup")
+    argv = calls[0]
+    assert "--restricted" in argv and argv[argv.index("--tools") + 1] == "WebSearch"
+
+
+def test_the_tools_are_the_built_in_names_of_the_allowed_tools(monkeypatch):
+    calls = []
+    monkeypatch.setattr(claude_cli.subprocess, "run", _fake_run(calls, _stream(_result(result="x"))))
+    claude_cli.ask("cv-enricher", "q", feature="enrich", allowed_tools=("WebSearch", "mcp__x__y"))
+    argv = calls[0]
+    assert "--restricted" in argv and argv[argv.index("--tools") + 1] == "WebSearch"
+    assert argv[argv.index("--allowedTools") + 1] == "WebSearch,mcp__x__y"

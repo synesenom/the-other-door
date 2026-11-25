@@ -50,10 +50,18 @@ def env(tmp_path, monkeypatch):
     return types.SimpleNamespace(profile_dir=profile_dir, tmp=tmp_path, draft_path=profile_dir / "cv.draft.md")
 
 
-def _answer(monkeypatch, answer=ANSWER, calls=None):
+def _answer(monkeypatch, answer=ANSWER, calls=None, reads=None):
+    """The drafter's answer; a page reader's call (it has the fetch server) is answered with a text per address,
+    and goes to `reads` while the drafter's goes to `calls`."""
     def fake_run(args, *, input=None, timeout_s=None, profile_dir=None, **_):
+        call = {"args": args, "input": input, "profile_dir": profile_dir}
+        if "--mcp-config" in args:
+            if reads is not None:
+                reads.append(call)
+            urls = [line for line in input.splitlines()[1:] if line]
+            return json.dumps({"result": json.dumps({"pages": [{"url": u, "text": f"Text of {u}"} for u in urls], "unreachable": []})})
         if calls is not None:
-            calls.append({"args": args, "input": input, "profile_dir": profile_dir})
+            calls.append(call)
         return json.dumps({"result": json.dumps(answer)})
     monkeypatch.setattr(claude_cli, "run", fake_run)
 
@@ -220,8 +228,8 @@ def test_extract_text_of_a_docx_reads_a_style_based_on_itself(tmp_path):
 
 
 def test_core_drafts_from_files_and_urls(env, monkeypatch):
-    calls = []
-    _answer(monkeypatch, calls=calls)
+    calls, reads = [], []
+    _answer(monkeypatch, calls=calls, reads=reads)
     sources = [str(env.tmp / "old-cv.pdf"), str(env.tmp / "old-cv.docx"), "https://github.com/jane", str(env.tmp / "notes.md")]
     result = cv_cmd._draft_cv_core(sources, profile_dir=env.profile_dir)
 
@@ -235,17 +243,27 @@ def test_core_drafts_from_files_and_urls(env, monkeypatch):
 
     call = calls[0]
     args = call["args"]
-    assert args[args.index("--system-prompt") + 1] == claude_cli.prompt("cv-drafter", webfetch_rules=common._WEBFETCH_RULES)
+    assert args[args.index("--system-prompt") + 1] == claude_cli.prompt("cv-drafter")
     assert json.loads(args[args.index("--json-schema") + 1]) == cv_cmd._SCHEMA
-    assert args[args.index("--allowedTools") + 1] == "WebFetch"
+    assert args[args.index("--tools") + 1] == "" and "--allowedTools" not in args and "--mcp-config" not in args  # the drafter has no network
     assert args[args.index("--model") + 1] == claude_cli.model_of("cv-drafter")
-    for needle in ("Lead Data Scientist at Acme", "Senior Data Scientist at Big Bank", "PhD Copenhagen 2015", "https://github.com/jane"):
+    for needle in ("Lead Data Scientist at Acme", "Senior Data Scientist at Big Bank", "PhD Copenhagen 2015", "PAGE https://github.com/jane:\n<<<\nText of https://github.com/jane\n>>>"):
         assert needle in call["input"], needle
+    [read] = reads  # the reader gets the address alone: no file text, no profile field
+    assert read["input"] == "Read these pages:\nhttps://github.com/jane\n"
+    assert "--tools" in read["args"] and read["args"][read["args"].index("--allowedTools") + 1] == "mcp__pages__fetch_page"
     assert "## Work Experience" in call["input"]  # the example CV's structure is the template
     assert "Jane Doe" in call["input"] and "Data Scientist" in call["input"]  # the profile's own fields
     assert call["profile_dir"] == env.profile_dir
-    for word in ("backbone", "subpages", "api.github.com", "never invent", "TODO"):
-        assert word in claude_cli.prompt("cv-drafter", webfetch_rules=common._WEBFETCH_RULES), word
+    for word in ("backbone", "never invent", "TODO"):
+        assert word in claude_cli.prompt("cv-drafter"), word
+
+
+def test_a_draft_from_files_alone_reads_no_page(env, monkeypatch):
+    calls, reads = [], []
+    _answer(monkeypatch, calls=calls, reads=reads)
+    cv_cmd._draft_cv_core([str(env.tmp / "notes.md")], profile_dir=env.profile_dir)
+    assert reads == [] and len(calls) == 1
 
 
 def test_core_returns_the_draft_text(env, monkeypatch):
@@ -334,7 +352,7 @@ def test_extract_text_reads_a_text_cv_in_the_encodings_windows_saves(tmp_path, d
 def test_the_draft_rules_allow_a_location_as_the_last_part_of_an_entry_heading():
     from door.commands import cv as cv_cmd
 
-    assert "### Role | Company — dates | Location" in claude_cli.prompt("cv-drafter", webfetch_rules=common._WEBFETCH_RULES)
+    assert "### Role | Company — dates | Location" in claude_cli.prompt("cv-drafter")
 
 
 FIXTURES = REPO_ROOT / "tests" / "commands" / "fixtures"
@@ -400,8 +418,8 @@ BT /F1 11 Tf 50 660 Td (Data engineer building pipelines in Copenhagen since 201
 def test_the_draft_rules_keep_the_cvs_own_section_headings_and_groups():
     from door.commands import cv as cv_cmd
 
-    assert "word for word" in claude_cli.prompt("cv-drafter", webfetch_rules=common._WEBFETCH_RULES) and "never renamed" in claude_cli.prompt("cv-drafter", webfetch_rules=common._WEBFETCH_RULES)
-    assert "`### Title` line of its own" in claude_cli.prompt("cv-drafter", webfetch_rules=common._WEBFETCH_RULES)
+    assert "word for word" in claude_cli.prompt("cv-drafter") and "never renamed" in claude_cli.prompt("cv-drafter")
+    assert "`### Title` line of its own" in claude_cli.prompt("cv-drafter")
 
 
 @pytest.mark.parametrize("title", ["Technical & Programming Skills", "Kompetencer og værktøjer", "My toolbox"])
@@ -419,8 +437,8 @@ def test_draft_keeps_a_todo_under_a_title_the_model_did_not_name_a_skills_one(en
 
 
 def test_draft_asks_for_its_skills_headings_and_no_kind_markers():
-    assert "skills_headings" in cv_cmd._SCHEMA["required"] and "skills_headings" in claude_cli.prompt("cv-drafter", webfetch_rules=common._WEBFETCH_RULES)
-    assert "<!-- kind:" not in claude_cli.prompt("cv-drafter", webfetch_rules=common._WEBFETCH_RULES)
+    assert "skills_headings" in cv_cmd._SCHEMA["required"] and "skills_headings" in claude_cli.prompt("cv-drafter")
+    assert "<!-- kind:" not in claude_cli.prompt("cv-drafter")
 
 
 def test_a_todo_goes_with_the_todo_line_it_was_about(env, monkeypatch):

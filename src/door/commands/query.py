@@ -145,7 +145,7 @@ def query(since, until, site, company, status, min_score, max_score, language, h
     console.print(head)
     for label, key in (("By site", "by_site"), ("By status", "by_status"), ("By month", "by_month")):
         if r[key]:
-            console.print(f"{label}: " + ", ".join(f"{k} {v}" for k, v in r[key].items()))
+            console.print(common.literal(f"{label}: " + ", ".join(f"{k} {v}" for k, v in r[key].items())))
     for row in r["rows"]:
         score = f"{row['score']:.2f}" if isinstance(row["score"], (int, float)) else "  — "
-        console.print(f"  {score}  {row['title']} · {row['company']}  ({row['status']})")
+        console.print(common.literal(f"  {score}  {row['title']} · {row['company']}  ({row['status']})"))

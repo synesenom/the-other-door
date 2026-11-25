@@ -53,6 +53,12 @@ def _is_url(value: str) -> bool:
     return re.match(r"https?://", value, re.IGNORECASE) is not None
 
 
+def web_address(value: str) -> str:
+    """A page the user typed, with `https://` when it has no scheme (`github.com/jane`)."""
+    value = value.strip()
+    return value if re.match(r"[a-z][a-z0-9+.-]*://", value, re.IGNORECASE) else f"https://{value}"
+
+
 # The sha256 of each earlier profile.example/cv.md that a user may still hold a copy of (#189). Add the hash of the
 # old file whenever the example changes (tests/commands/test_example_cv_guard_cli.py pins the current one and fails when it changes).
 _PAST_EXAMPLE_CV_SHA256 = frozenset({
@@ -109,19 +115,6 @@ def _write_with_backup(path: Path, text: str) -> Path | None:
         utils.write_atomic(backup, path.read_bytes())
     utils.write_atomic(path, text)
     return backup
-
-
-# How a `claude -p` call with WebFetch should read a candidate's public pages;
-# shared by the prompts that take URLs (`init`'s CV step, `enrich`).
-_WEBFETCH_RULES = (
-    "Fetch every URL you are given with WebFetch. A personal site's home page is often "
-    "navigation only, so follow its own subpages (research, publications, projects, open "
-    "source, about); a page that renders with JavaScript loads its content from a data "
-    "file (.json, .bib) named in its source, so fetch that. Read a GitHub user through "
-    "https://api.github.com/users/<name>/repos?per_page=100 and name only non-fork repos "
-    "with stars or a description, with what each one does. Never fetch a LinkedIn or "
-    "Indeed URL: skip it and say so."
-)
 
 
 def _resolve_job_ref(ref: str, jobs_dir: Path | None = None) -> str:
@@ -480,6 +473,22 @@ def _console(max_width: int = _SHOW_MAX_WIDTH):
 
     width = min(shutil.get_terminal_size((80, 24)).columns, max_width)
     return Console(force_terminal=_stdout_is_tty(), highlight=False, width=width)
+
+
+_CONTROL_RE = re.compile(r"[\x00-\x08\x0b-\x1f\x7f-\x9f]")
+
+
+def plain(text) -> str:
+    """Text that came from an ad, a page or the model, safe to print: control characters (a terminal escape
+    that retitles the window, a bell) dropped, newlines and tabs kept."""
+    return _CONTROL_RE.sub("", str(text if text is not None else ""))
+
+
+def literal(text):
+    """`plain(text)` as a rich `Text`, so what looks like markup ("[link=...]") prints as itself."""
+    from rich.text import Text
+
+    return Text(plain(text))
 
 
 def _score_style(score: float | None) -> str:

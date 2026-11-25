@@ -1,8 +1,9 @@
 """`enrich`: propose additions to profile/cv.md from public URLs and newer CV
 files, then add the ones the user picks.
 
-Two phases, one call each: *propose* (one `claude -p` call that fetches the
-URLs, reads the CV files' text given to it, and returns bullets evidenced there, saved to
+Two phases, one call each: *propose* (the pages read by a call that sees none of the CV
+(`core/page_reader`), then one `claude -p` call with no tools that is given the CV, the CV files' text and
+the pages' text and returns bullets evidenced there, saved to
 `profile/.enrich_proposals.json`, nothing written to the CV) and *apply*
 (insert the chosen proposals under their `##` sections, keeping a `.bak`).
 `/expand` in a conversation and `enrich` in a shell make the same two calls.
@@ -21,7 +22,7 @@ from door.commands import _common as common
 from door.commands import _prompts
 from door.commands import cv as cv_cmd
 from door.core import profile_loader
-from door.core import claude_cli, cv_sections, utils, workspace
+from door.core import claude_cli, cv_sections, page_reader, utils, workspace
 
 _PROPOSALS_FILE = ".enrich_proposals.json"
 
@@ -37,9 +38,8 @@ _SCHEMA = {
                 "required": ["section", "text", "source"],
             },
         },
-        "unreachable": {"type": "array", "items": {"type": "string"}},
     },
-    "required": ["proposals", "unreachable"],
+    "required": ["proposals"],
 }
 
 _BULLET_RE = re.compile(r"^\s*[-*]\s+")
@@ -116,27 +116,32 @@ def _propose(urls, files, *, config, cv_path, profile_dir, model, timeout_s) -> 
         urls = list(config.get("enrich_sources") or [])
     if not urls and not files:
         raise ValueError("no URLs to read: pass some, or list them under enrich_sources in profile/config.json")
+    urls = [common.web_address(u) for u in urls if str(u).strip()]  # the reader and the result name the same addresses
     if not cv_path.is_file():
         raise FileNotFoundError(f"{cv_path} not found (profile/cv.md): set up the profile first")
     cv_text = cv_path.read_text(encoding="utf-8")
-    # a CV file is read here, like draft_cv's; its text goes in the prompt, as a page's would be fetched
+    # a CV file is read here, like draft_cv's; its text goes in the prompt
     read = [f"CV file {Path(f).name}:\n<<<\n{cv_cmd._extract_text(Path(f))}\n>>>\n\n" for f in files]
+    # the pages are read first by a call that sees none of this (#549); the call below has the CV and no tools
+    pages = page_reader.read(urls, model=model, profile_dir=profile_dir)
 
     prompt = (
         f"Role targets: {', '.join(config.get('role_targets') or [])}\n\n"
         f"Current CV (profile/cv.md):\n<<<\n{cv_text}\n>>>\n\n"
         + "".join(read)
-        + ("Read these pages:\n" + "\n".join(urls) + "\n" if urls else "")
+        + page_reader.render(pages["pages"])
     )
-    answer = claude_cli.ask(
-        "cv-enricher", prompt, model=model, fields={"webfetch_rules": common._WEBFETCH_RULES}, feature="enrich", schema=_SCHEMA,
-        allowed_tools=None if urls else (), timeout_s=timeout_s, profile_dir=profile_dir,
-    )
-    if not isinstance(answer.get("proposals"), list):
-        raise claude_cli.ClaudeError("claude's answer has no `proposals` list")
-    proposals = _clean_proposals(answer["proposals"], cv_text)
-    unreachable = [str(u) for u in answer.get("unreachable") or [] if u]
-    result = {"outcome": "proposed" if proposals else "nothing_new", "urls": urls, "files": files, "proposals": proposals, "unreachable": unreachable}
+    if read or pages["pages"]:
+        answer = claude_cli.ask("cv-enricher", prompt, model=model, feature="enrich", schema=_SCHEMA, timeout_s=timeout_s, profile_dir=profile_dir)
+        if not isinstance(answer.get("proposals"), list):
+            raise claude_cli.ClaudeError("claude's answer has no `proposals` list")
+        proposals = _clean_proposals(answer["proposals"], cv_text)
+    else:  # no page could be read and no file was given: nothing to propose from
+        proposals = []
+    result = {
+        "outcome": "proposed" if proposals else "nothing_new", "urls": urls, "files": files, "proposals": proposals,
+        "unreachable": pages["unreachable"],
+    }
     proposals_path = profile_dir / _PROPOSALS_FILE
     if proposals:
         utils.write_atomic(
@@ -230,14 +235,14 @@ def _numbers(text: str) -> list[int]:
 
 def _echo_proposals(result: dict) -> None:
     for url in result["unreachable"]:
-        click.echo(f"Could not fetch {url} — skipping.")
+        click.echo(f"Could not fetch {common.plain(url)} — skipping.")
     if not result["proposals"]:
         return
     click.echo(f"Found {len(result['proposals'])} potential addition(s):")
     for p in result["proposals"]:
-        click.echo(f"  {p['n']}. [{p['section']}] {p['text']}")
+        click.echo(common.plain(f"  {p['n']}. [{p['section']}] {p['text']}"))
         if p["source"]:
-            click.echo(f"     Source: {p['source']}")
+            click.echo(common.plain(f"     Source: {p['source']}"))
 
 
 def _echo_applied(result: dict) -> None:
@@ -247,7 +252,7 @@ def _echo_applied(result: dict) -> None:
         + "."
     )
     for a in result["added"]:
-        click.echo(f"  [{a['section']}] {a['text']}")
+        click.echo(common.plain(f"  [{a['section']}] {a['text']}"))
     click.echo("Review the changes before your next run.")
 
 
@@ -265,7 +270,7 @@ def enrich(urls: tuple[str, ...], apply: list[int] | None, all_: bool, files: tu
     (--file; with neither, the profile's enrich_sources), then add the ones
     you pick.
 
-    One `claude -p` call reads the pages; nothing is written until you choose.
+    The pages are read by one `claude -p` call that sees none of your CV, the proposals made by another with no network; nothing is written until you choose.
     On a terminal it asks which proposals to add; elsewhere it prints them
     and `enrich --apply 1,3` (or `--all`) adds them.
     """

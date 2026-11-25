@@ -277,12 +277,12 @@ def _render_top_matches(console, top: list[dict], total: int, min_score: float) 
     table.add_column("Score", no_wrap=True)
     table.add_column("Posting", ratio=1)
     for entry in top:
-        headline = Text(entry.get("title") or "", style="bold", no_wrap=True, overflow="ellipsis")
+        headline = Text(common.plain(entry.get("title")), style="bold", no_wrap=True, overflow="ellipsis")
         if entry.get("title_en"):
-            headline.append(f" ({entry['title_en']})", style="italic")
-        headline.append(f" · {entry.get('company') or ''}", style="cyan")
+            headline.append(f" ({common.plain(entry['title_en'])})", style="italic")
+        headline.append(f" · {common.plain(entry.get('company'))}", style="cyan")
         if entry.get("location"):
-            headline.append(f" · {entry['location']}", style="dim")
+            headline.append(f" · {common.plain(entry['location'])}", style="dim")
         table.add_row(common._score_text(entry.get("score")), headline)
     console.print(Padding(table, (0, 1)))
 
@@ -333,11 +333,11 @@ def _echo_follow_results(block: dict) -> None:
     verb = "would record" if block["dry_run"] else "recorded"
     for row in block["results"]:
         if row["error"]:
-            click.echo(f"{click.style('!', fg='yellow')} {row['company']}: failed - {row['error']}")
+            click.echo(f"{click.style('!', fg='yellow')} {common.plain(row['company'])}: failed - {common.plain(row['error'])}")
         elif row["status"] == "followed":
-            click.echo(f"{_MARKS['followed']} {row['company']}: {row['platform']}:{row['entry']} ({verb})")
+            click.echo(f"{_MARKS['followed']} {common.plain(row['company'])}: {row['platform']}:{row['entry']} ({verb})")
         else:
-            click.echo(f"{_MARKS[row['status']]} {row['company']}: {row['status']} - {row['reason']} ({verb})")
+            click.echo(f"{_MARKS[row['status']]} {common.plain(row['company'])}: {row['status']} - {common.plain(row['reason'])} ({verb})")
 
 
 def _echo_site_problems(record: dict, *, plain: bool = False) -> None:

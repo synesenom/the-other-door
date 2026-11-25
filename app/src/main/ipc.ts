@@ -80,7 +80,7 @@ const TOOL_TIMEOUTS: Record<string, number> = {
   prepare: 180_000,
   revise: 480_000,
   find_jobs: 900_000,
-  draft_cv: 960_000,
+  draft_cv: 1_260_000,
   // a data move: one archive packed or unpacked.
   export_data: 180_000,
   import_data: 180_000,
@@ -94,8 +94,8 @@ const TOOL_TIMEOUTS: Record<string, number> = {
   sync_data: 120_000,
   // phone_start starts door serve and a tunnel, or downloads cloudflared first (issue 444)
   phone_start: 300_000,
-  // The CV's two long claude calls, a minute over their own limits (600 s and 900 s), no progress.
-  enrich: 660_000,
+  // The CV's two long claude calls, a minute over their own limits (the pages' 300 s, then 600 s and 900 s), no progress.
+  enrich: 960_000,
   // market counts in seconds, but new skill names take one Haiku call.
   market: 180_000,
   // ask: one Haiku call with the read tools (180 s on the server).

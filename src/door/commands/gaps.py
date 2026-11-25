@@ -16,7 +16,7 @@ from door.commands import _common as common
 from door.commands import _progress
 from door.commands import matches as matches_cmd
 from door.core import profile_loader
-from door.core import claude_cli, utils, workspace
+from door.core import claude_cli, cv_read, utils, workspace
 from door.core import progress as progress_mod
 from door.matching import integrity
 
@@ -87,7 +87,7 @@ def _skill_gaps_core(
 ) -> dict:
     """Write `upskill/report-<today>.md` for `targets` (role names), `jobs` (postings:
     words from the company and title, or ids) and/or the `top` N matches, with one
-    `claude -p` call that may use WebSearch. Never prints: the call is reported to ``progress``
+    `claude -p` call that may use WebSearch and is given the CV without name and contact details. Never prints: the call is reported to ``progress``
     (stage ``"gaps"``) as it starts and, with an ``outcome``, as it ends.
 
     Returns:
@@ -95,6 +95,7 @@ def _skill_gaps_core(
 
     Raises:
         FileNotFoundError, ConfigError: no or invalid profile/config.json; no CV.
+        cv_read.CvReadError: the CV could not be read (it is then not sent).
         ValueError: no target, or a job reference that matches no job or several
             (`AmbiguousJobRef`).
         claude_cli.ClaudeError: the `claude -p` call failed or returned nothing.
@@ -110,9 +111,11 @@ def _skill_gaps_core(
     resolved = _resolve_targets(targets or [], top, jobs_dir=jobs_dir, profile_dir=profile_dir, jobs=jobs)
 
     today = _today()
+    # the call has WebSearch, so it gets the CV without name and contact details; a CV that cannot be read is never sent as it is
+    cv = cv_read.anonymous(cv_path.read_text(encoding="utf-8"), config, common._cv_reading(config, profile_dir))
     prompt = (
         f"Date: {today}\n\n"
-        f"CV (profile/cv.md):\n<<<\n{cv_path.read_text(encoding='utf-8')}\n>>>\n\n"
+        f"CV (contact details removed):\n<<<\n{cv}\n>>>\n\n"
         "Targets:\n\n" + "\n\n".join(_target_text(t) for t in resolved) + "\n"
     )
     model = model or claude_cli.model_of("skill-gaps")

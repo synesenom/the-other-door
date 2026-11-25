@@ -103,6 +103,7 @@ KINDS = [
     ("score", "job-matching scorer"),
     ("translate", "You translate job titles into English"),
     ("read_ad", "You read a job ad."),
+    ("page_reading", "You read a job seeker's public pages"),
     ("enrich", "You enrich a job seeker's CV"),
     ("draft", "You draft a job seeker's CV"),
     ("stories", "You draft CARL stories"),
@@ -213,6 +214,11 @@ elif kind == "cv_read":
         sys.stderr.write(read.stderr)
         sys.exit(1)
     envelope(said.get("answer") or json.loads(read.stdout))
+elif kind == "page_reading":
+    # the reader is given only addresses: each comes back as a page, unless the world says otherwise
+    urls = [line for line in STDIN.splitlines()[1:] if line.strip()]
+    envelope(said.get("answer") or W.get("answers", {}).get(kind)
+             or {"pages": [{"url": u, "text": f"The page at {u}."} for u in urls], "unreachable": []})
 else:
     answer = said.get("answer") or W.get("answers", {}).get(kind)
     if answer is None:

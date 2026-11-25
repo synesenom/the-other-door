@@ -1,7 +1,7 @@
 """`enrich`: propose additions to profile/cv.md from public URLs, then apply the
 ones the user picks — the core behind `/expand`, usable from a shell.
 
-Offline: `claude_cli.run` is replaced; nothing is fetched.
+Offline: `claude_cli.run` is replaced; nothing is fetched. A page is read by one call and written about by another (#549).
 """
 
 import json
@@ -52,11 +52,20 @@ def env(tmp_path, monkeypatch):
     return types.SimpleNamespace(profile_dir=profile_dir, cv_path=cv_path, proposals_path=profile_dir / ".enrich_proposals.json")
 
 
-def _answer(monkeypatch, proposals=PROPOSALS, unreachable=(), calls=None):
+def _answer(monkeypatch, proposals=PROPOSALS, unreachable=(), calls=None, reads=None, pages=None):
+    """The reader's answer (a text per address given, but the unreachable ones) and the enricher's proposals;
+    `calls` collects the enricher's calls, `reads` the reader's."""
     def fake_run(args, *, input=None, timeout_s=None, profile_dir=None, **_):
+        call = {"args": args, "input": input, "profile_dir": profile_dir}
+        if "--mcp-config" in args:
+            if reads is not None:
+                reads.append(call)
+            urls = [line for line in input.splitlines()[1:] if line]
+            got = pages if pages is not None else [{"url": u, "text": f"Text of {u}"} for u in urls if u not in unreachable]
+            return json.dumps({"result": json.dumps({"pages": got, "unreachable": list(unreachable)})})
         if calls is not None:
-            calls.append({"args": args, "input": input, "profile_dir": profile_dir})
-        return json.dumps({"result": json.dumps({"proposals": proposals, "unreachable": list(unreachable)})})
+            calls.append(call)
+        return json.dumps({"result": json.dumps({"proposals": proposals})})
     monkeypatch.setattr(claude_cli, "run", fake_run)
 
 
@@ -64,9 +73,9 @@ def _answer(monkeypatch, proposals=PROPOSALS, unreachable=(), calls=None):
 # propose
 # --------------------------------------------------------------------------- #
 
-def test_propose_asks_claude_with_webfetch_the_cv_and_the_urls(env, monkeypatch):
-    calls = []
-    _answer(monkeypatch, calls=calls, unreachable=["https://down.example"])
+def test_the_pages_are_read_by_a_call_that_sees_no_cv_and_written_about_by_one_with_no_tools(env, monkeypatch):
+    calls, reads = [], []
+    _answer(monkeypatch, calls=calls, reads=reads, unreachable=["https://down.example"])
     result = enrich_cmd._enrich_core(["https://github.com/jane", "https://down.example"], profile_dir=env.profile_dir)
 
     assert result["outcome"] == "proposed"
@@ -78,21 +87,48 @@ def test_propose_asks_claude_with_webfetch_the_cv_and_the_urls(env, monkeypatch)
     assert json.loads(env.proposals_path.read_text())["proposals"] == result["proposals"]
     assert env.cv_path.read_text() == CV  # nothing written yet
 
-    args = calls[0]["args"]
-    assert args[args.index("--allowedTools") + 1] == "WebFetch"
-    assert args[args.index("--system-prompt") + 1] == claude_cli.prompt("cv-enricher", webfetch_rules=common._WEBFETCH_RULES)
-    assert "never fabricate" in claude_cli.prompt("cv-enricher", webfetch_rules=common._WEBFETCH_RULES).lower() or "never invent" in claude_cli.prompt("cv-enricher", webfetch_rules=common._WEBFETCH_RULES).lower()
+    [read] = reads  # the reader: only the addresses, nothing of the profile
+    assert read["input"] == "Read these pages:\nhttps://github.com/jane\nhttps://down.example\n"
+    assert "Data Scientist" not in read["input"] and "churn model" not in read["input"]
+
+    [call] = calls  # the writer: the CV and the text of the pages, no tool
+    args = call["args"]
+    assert args[args.index("--tools") + 1] == "" and "--allowedTools" not in args and "--mcp-config" not in args
+    assert args[args.index("--system-prompt") + 1] == claude_cli.prompt("cv-enricher")
+    assert "never invent" in claude_cli.prompt("cv-enricher").lower() or "never fabricate" in claude_cli.prompt("cv-enricher").lower()
     assert json.loads(args[args.index("--json-schema") + 1]) == enrich_cmd._SCHEMA
     assert args[args.index("--model") + 1] == claude_cli.model_of("cv-enricher")
-    assert "Built a churn model" in calls[0]["input"]
-    assert "Data Scientist" in calls[0]["input"]
-    assert "https://github.com/jane\nhttps://down.example" in calls[0]["input"]
-    assert calls[0]["profile_dir"] == env.profile_dir
+    sent = call["input"]
+    assert "Built a churn model" in sent and "Data Scientist" in sent
+    assert "PAGE https://github.com/jane:\n<<<\nText of https://github.com/jane\n>>>" in sent
+    assert "down.example" not in sent  # a page that could not be read is not in the writer's text
+    assert call["profile_dir"] == env.profile_dir
+
+
+def test_a_page_given_without_a_scheme_is_read_over_https(env, monkeypatch):
+    calls, reads = [], []
+    _answer(monkeypatch, calls=calls, reads=reads)
+    result = enrich_cmd._enrich_core(["github.com/jane"], profile_dir=env.profile_dir)
+    assert reads[0]["input"] == "Read these pages:\nhttps://github.com/jane\n" and result["urls"] == ["https://github.com/jane"]
+
+
+def test_no_page_read_and_no_file_asks_the_writer_nothing(env, monkeypatch):
+    calls = []
+    _answer(monkeypatch, calls=calls, pages=[], unreachable=["https://jane.example"])
+    result = enrich_cmd._enrich_core(["https://jane.example"], profile_dir=env.profile_dir)
+    assert calls == [] and result["outcome"] == "nothing_new" and result["unreachable"] == ["https://jane.example"]
+
+
+def test_cli_says_which_pages_could_not_be_fetched(env, monkeypatch):
+    _answer(monkeypatch, unreachable=["https://jane.example/down"])
+    result = CliRunner().invoke(cli, ["cv", "enrich", "https://jane.example"])
+    assert result.exit_code == 0, result_text(result)
+    assert "Could not fetch https://jane.example/down" in result_text(result)
 
 
 def test_propose_from_a_cv_file_reads_its_text_and_fetches_nothing(env, monkeypatch, tmp_path):
-    calls = []
-    _answer(monkeypatch, calls=calls)
+    calls, reads = [], []
+    _answer(monkeypatch, calls=calls, reads=reads)
     new_cv = tmp_path / "new-cv.md"
     new_cv.write_text("# Jane Doe\n\n## Talks\n\n- Spoke at PyData Copenhagen 2025\n")
     result = enrich_cmd._enrich_core(files=[str(new_cv)], profile_dir=env.profile_dir)
@@ -103,23 +139,22 @@ def test_propose_from_a_cv_file_reads_its_text_and_fetches_nothing(env, monkeypa
     sent = calls[0]["input"]
     assert "Spoke at PyData Copenhagen 2025" in sent and "Built a churn model" in sent
     assert "https://github.com/jane" not in sent  # the remembered pages are not read with a file
-    assert "--allowedTools" not in calls[0]["args"]  # nothing to fetch
+    assert reads == []  # no address: no reader call
     # the rules say what a CV file is and what its proposals' source is
     rules = calls[0]["args"][calls[0]["args"].index("--system-prompt") + 1]
     assert "CV file" in rules and "file name" in rules
     assert "CV file new-cv.md:" in sent
 
 
-def test_propose_from_pages_and_a_cv_file_fetches_the_pages_and_reads_the_file(env, monkeypatch, tmp_path):
-    calls = []
-    _answer(monkeypatch, calls=calls)
+def test_propose_from_pages_and_a_cv_file_reads_the_pages_apart_from_the_file(env, monkeypatch, tmp_path):
+    calls, reads = [], []
+    _answer(monkeypatch, calls=calls, reads=reads)
     new_cv = tmp_path / "new-cv.md"
     new_cv.write_text("# Jane\n")
     result = enrich_cmd._enrich_core(["https://jane.example"], files=[str(new_cv)], profile_dir=env.profile_dir)
     assert result["urls"] == ["https://jane.example"] and result["files"] == [str(new_cv)]
-    args = calls[0]["args"]
-    assert args[args.index("--allowedTools") + 1] == "WebFetch"
-    assert "CV file new-cv.md:" in calls[0]["input"] and "https://jane.example" in calls[0]["input"]
+    assert "CV file new-cv.md:" in calls[0]["input"] and "PAGE https://jane.example:" in calls[0]["input"]
+    assert "new-cv" not in reads[0]["input"] and "# Jane" not in reads[0]["input"]  # the reader never sees the file
 
 
 def test_files_with_apply_is_an_error(env, monkeypatch, tmp_path):
@@ -218,7 +253,9 @@ def test_reading_the_pages_again_after_adding_proposes_none_of_it_again(env, mon
 
 
 def test_propose_rejects_an_answer_without_proposals(env, monkeypatch):
-    monkeypatch.setattr(claude_cli, "run", lambda *a, **k: json.dumps({"result": "{}"}))
+    _answer(monkeypatch)
+    real = claude_cli.run
+    monkeypatch.setattr(claude_cli, "run", lambda args, **k: real(args, **k) if "--mcp-config" in args else json.dumps({"result": "{}"}))
     with pytest.raises(claude_cli.ClaudeError, match="proposals"):
         enrich_cmd._enrich_core(profile_dir=env.profile_dir)
 
@@ -365,7 +402,7 @@ def test_insert_finds_a_section_whose_heading_records_its_kind():
 
 def test_a_new_section_is_written_with_its_title_alone_and_the_rules_ask_for_no_kind_marker():
     assert enrich_cmd._insert("## Profile\n\nHi\n", "Toolbox", "SQL").endswith("\n## Toolbox\n\n- SQL\n")
-    assert "<!-- kind" not in claude_cli.prompt("cv-enricher", webfetch_rules=common._WEBFETCH_RULES)
+    assert "<!-- kind" not in claude_cli.prompt("cv-enricher")
 
 
 def test_clean_keeps_the_title_when_the_model_wrote_a_marker_anyway():

@@ -902,17 +902,17 @@ def _feed_label(feed: dict | None) -> str:
 
 def _company_line(company: dict) -> str:
     """``✓ BEC  hr_manager:bec  manual`` / ``✗ Danske Bank  jobindex  Oracle Cloud HCM: ...``."""
-    parts = [f"{_MARKS[company['status']]} {company['name']}"]
+    parts = [f"{_MARKS[company['status']]} {common.plain(company['name'])}"]
     if company["feed"]:
         parts.append(_feed_label(company["feed"]))
-    parts.append(company["found_via"])
+    parts.append(common.plain(company["found_via"]))
     if company.get("aliases"):
-        parts.append("aka: " + ", ".join(company["aliases"]))
+        parts.append(common.plain("aka: " + ", ".join(company["aliases"])))
     if company["status"] != "followed" and company.get("reason"):
-        parts.append(f"({_REFUSALS[company['refusal']]}) {company['reason']}" if company.get("refusal") else company["reason"])
+        parts.append(common.plain(f"({_REFUSALS[company['refusal']]}) {company['reason']}" if company.get("refusal") else company["reason"]))
     problem = company.get("collect_problem")
     if problem:
-        parts.append(f"{problem['outcome']}: {problem['reason']}")
+        parts.append(common.plain(f"{problem['outcome']}: {problem['reason']}"))
     return "  ".join(parts)
 
 
@@ -967,12 +967,12 @@ def add_company(inputs: tuple[str, ...], dry_run: bool, probe: bool):
     for item in result["results"]:
         mark = _MARKS[item["status"]]
         if item["status"] == "followed":
-            click.echo(f"{mark} {item['name']}: {item['platform']}:{item['entry']}")
-            click.echo(f"  {item['evidence']}")
+            click.echo(f"{mark} {common.plain(item['name'])}: {item['platform']}:{item['entry']}")
+            click.echo(common.plain(f"  {item['evidence']}"))
         else:
             kind = f" ({_REFUSALS[item['refusal']]})" if item.get("refusal") else ""
-            click.echo(f"{mark} {item['name']}: {item['status']}{kind}")
-            click.echo(f"  {item['reason']}")
+            click.echo(f"{mark} {common.plain(item['name'])}: {item['status']}{kind}")
+            click.echo(common.plain(f"  {item['reason']}"))
     if dry_run and result["results"]:
         click.echo(f"{verb} nothing (--dry-run).")
 
@@ -986,7 +986,7 @@ def remove_company(names: tuple[str, ...]):
     except store.CompaniesError as exc:
         _fail(exc)
     for item in result["removed"]:
-        click.echo(f"Removed {item['name']}.")
+        click.echo(common.plain(f"Removed {item['name']}."))
     for name in result["not_found"]:
         click.echo(f"{name}: not on the list.", err=True)
     if result["not_found"] and not result["removed"]:
@@ -1026,23 +1026,23 @@ def why_company(name: str):
         _fail(exc)
     company = result["company"]
     click.echo(_company_line(company))
-    click.echo(f"  status:       {company['status']}")
+    click.echo(common.plain(f"  status:       {company['status']}"))
     if company.get("aliases"):
-        click.echo(f"  aliases:      {', '.join(company['aliases'])}")
-    click.echo(f"  feed:         {_feed_label(company['feed']) or 'none'}")
+        click.echo(common.plain(f"  aliases:      {', '.join(company['aliases'])}"))
+    click.echo(common.plain(f"  feed:         {_feed_label(company['feed']) or 'none'}"))
     if company.get("refusal"):
-        click.echo(f"  refusal:      {_REFUSALS[company['refusal']]}")
+        click.echo(common.plain(f"  refusal:      {_REFUSALS[company['refusal']]}"))
     if company.get("reason"):
-        click.echo(f"  reason:       {company['reason']}")
+        click.echo(common.plain(f"  reason:       {company['reason']}"))
     if company.get("evidence"):
-        click.echo(f"  evidence:     {company['evidence']}")
-    click.echo(f"  found via:    {company['found_via']}")
+        click.echo(common.plain(f"  evidence:     {company['evidence']}"))
+    click.echo(common.plain(f"  found via:    {company['found_via']}"))
     click.echo(f"  first seen:   {company.get('first_seen') or 'unknown'}")
     click.echo(f"  last checked: {company.get('last_checked') or 'unknown'}")
     click.echo(f"  last relevant: {company.get('last_relevant') or 'never'}")
     if company.get("collect_problem"):
         problem = company["collect_problem"]
-        click.echo(f"  collect:      {problem['outcome']} on {problem['at']}: {problem['reason']}")
+        click.echo(common.plain(f"  collect:      {problem['outcome']} on {problem['at']}: {problem['reason']}"))
     if company["status"] == "dormant":
         click.echo("  dormant: not collected until a fitting job is seen again (search or discover follows it "
                    "again) or `companies add` follows it again.")
