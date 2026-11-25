@@ -12,6 +12,7 @@ dashboard, ``apply``).
 from __future__ import annotations
 
 import json
+import os
 import re
 import unicodedata
 from collections.abc import Collection, Iterable, Iterator
@@ -34,6 +35,26 @@ def date_dirs(jobs_dir: Path) -> list[Path]:
     return [d for d in sorted(root.iterdir()) if d.is_dir() and workspace.DAY_RE.fullmatch(d.name)]
 
 
+_cache: dict[str, tuple[int, int, Path, dict]] = {}
+
+
+def _read(entry: os.DirEntry) -> tuple[Path, dict] | None:
+    """The posting a directory entry names, parsed again only when its size or modification time changed:
+    a long-running server (the app's, the phone's) lists the same thousands of postings on every screen.
+    A shallow copy, so a caller setting a key leaves the cached one as it was; None when unreadable."""
+    try:
+        stat = entry.stat()
+        cached = _cache.get(entry.path)
+        if cached is None or cached[:2] != (stat.st_mtime_ns, stat.st_size):
+            path = Path(entry.path)
+            cached = (stat.st_mtime_ns, stat.st_size, path, json.loads(path.read_text(encoding="utf-8")))
+            _cache[entry.path] = cached
+    except (json.JSONDecodeError, OSError):
+        return None
+    data = cached[3]
+    return cached[2], dict(data) if isinstance(data, dict) else data
+
+
 def iter_postings(jobs_dir: Path) -> Iterator[tuple[Path, dict]]:
     """Every readable posting as ``(path, posting)``, in sorted date/site/file order.
 
@@ -41,19 +62,25 @@ def iter_postings(jobs_dir: Path) -> Iterator[tuple[Path, dict]]:
     or unreadable JSON files are skipped. A posting stored on several days (collected
     again later) is its newest copy only, so every list, count and lookup reads the same one.
     """
-    newest_first: list[tuple[Path, dict]] = []
+    newest_first: list[tuple[str, Path, dict]] = []
     seen: set = set()
     for date_dir in reversed(date_dirs(jobs_dir)):
-        for json_path in sorted(date_dir.glob("*/*.json")):
-            try:
-                data = json.loads(json_path.read_text(encoding="utf-8"))
-            except (json.JSONDecodeError, OSError):
+        files = sorted(((f"{date_dir.name}/{site.name}/{entry.name}", entry)
+                        for site in os.scandir(date_dir) if site.is_dir()
+                        for entry in os.scandir(site.path) if entry.name.endswith(".json")),
+                       key=lambda named: named[0])
+        for order, entry in files:
+            found = _read(entry)
+            if found is None:
                 continue
+            json_path, data = found
             job_id = data.get("id") if isinstance(data, dict) else None
             if job_id is None or job_id not in seen:
                 seen.add(job_id)
-                newest_first.append((json_path, data))
-    yield from sorted(newest_first, key=lambda found: found[0].parts[-3:])  # back to date/site/file order
+                newest_first.append((order, json_path, data))
+    newest_first.sort(key=lambda found: found[0])  # back to date/site/file order
+    for _, json_path, data in newest_first:
+        yield json_path, data
 
 
 def read_postings(jobs_dir: Path) -> list[dict]:

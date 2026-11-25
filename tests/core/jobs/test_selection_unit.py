@@ -624,3 +624,25 @@ def test_a_posting_stored_on_two_days_is_listed_once_by_its_newest_copy(tmp_path
     with pytest.raises(AmbiguousJobRef) as found:
         resolve_job_ref("title", jobs_dir)
     assert [c["title"] for c in found.value.candidates] == ["Title Too", "New Title"]
+
+
+def test_a_server_reads_each_unchanged_posting_once_and_a_changed_one_again(tmp_path, monkeypatch):
+    # a long-running server (the app's, the phone's) lists the same thousands of postings on every screen
+    import os
+
+    from door.core.jobs import selection
+
+    jobs_dir = tmp_path / "jobs"
+    path = _write_posting(jobs_dir, "2026-07-01", "jobindex", "job-a", score=0.7)
+    monkeypatch.setattr(selection, "_cache", {})
+    parsed = []
+    real = selection.json.loads
+    monkeypatch.setattr(selection.json, "loads", lambda text, *a, **k: parsed.append(1) or real(text, *a, **k))
+
+    assert find_posting(jobs_dir, "job-a")["score"] == 0.7
+    assert find_posting(jobs_dir, "job-a")["score"] == 0.7
+    assert len(parsed) == 1
+
+    path.write_text(path.read_text().replace("0.7", "0.8"))
+    os.utime(path, ns=(path.stat().st_atime_ns, path.stat().st_mtime_ns + 1_000_000))
+    assert find_posting(jobs_dir, "job-a")["score"] == 0.8
