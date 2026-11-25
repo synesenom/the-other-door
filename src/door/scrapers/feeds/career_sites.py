@@ -201,11 +201,7 @@ def _company(job: dict, host: str) -> str:
 
 
 def _description(job: dict) -> str:
-    raw = _html.unescape(_html.unescape(str(job.get("description") or "")))
-    text = re.sub(r"(?i)<br\s*/?>|</(p|li|h\d|div)>", "\n", raw)
-    text = _html.unescape(re.sub(r"<[^>]+>", " ", text)).replace("\xa0", " ")
-    lines = (re.sub(r"[ \t\r\f\v]+", " ", line).strip() for line in text.split("\n"))
-    return "\n".join(line for line in lines if line)
+    return sdk.strip_html(_html.unescape(str(job.get("description") or "")), encoded=True)
 
 
 def _is_challenge(html: str, headers) -> bool:

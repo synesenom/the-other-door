@@ -37,3 +37,9 @@ def test_detect_url():
 def test_an_ashby_name_probe_is_the_job_board_api():
     (probe,) = ashby.name_probes("acme")
     assert (probe.url, probe.key) == ("https://api.ashbyhq.com/posting-api/job-board/acme", "jobs")
+
+
+def test_an_html_only_description_leaves_out_its_style_and_script():
+    job = {"descriptionHtml": "<style>.swapimg {display: none;}</style><script>var x=1;</script><p>Data Scientist</p><p>Copenhagen</p>"}
+
+    assert ashby._description(job) == "Data Scientist\nCopenhagen"

@@ -16,9 +16,7 @@ Terms: https://www.ashbyhq.com/resources/terms — the API is documented for
 building your own job board. robots.txt answers 401 (allowed).
 """
 
-import html as _html
 import json
-import re
 from datetime import datetime, timezone
 from urllib.parse import urlparse
 
@@ -26,7 +24,7 @@ from door.scrapers.sdk import (
     JobPosting, PoliteSession, probe_session, ProbeResult, make_job_id, parse_iso_date, run_probe,
     scrape_feeds, followed_name,
 )
-from door.scrapers.sdk import keep_local, list_at
+from door.scrapers.sdk import keep_local, list_at, strip_html
 from door.scrapers.sdk import Detection, Probe, first, parts
 
 # The platform's own domains: a host on one is a customer's, never the employer's name (#436).
@@ -61,7 +59,7 @@ def _description(job: dict) -> str:
     plain = (job.get("descriptionPlain") or "").strip()
     if plain:
         return plain
-    return re.sub(r"\s+", " ", _html.unescape(re.sub(r"<[^>]+>", " ", job.get("descriptionHtml") or ""))).strip()
+    return strip_html(job.get("descriptionHtml"))
 
 
 def _to_posting(job: dict, board: str, scraped_at: datetime, name: str = "") -> dict:

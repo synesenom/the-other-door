@@ -209,7 +209,7 @@ def parse_detail(html: str) -> dict | None:
     org = schema.get("hiringOrganization")
     description = _description(content) if content is not None else ""
     return {
-        "description": description or _clean(schema.get("description") or ""),
+        "description": description or sdk.strip_html(schema.get("description")),
         "location": location,
         "posted_at": _date(schema.get("datePosted")),
         "organization": _clean(org.get("name", "")) if isinstance(org, dict) else "",
@@ -341,7 +341,7 @@ def parse_settings(data) -> dict | None:
     org = schema.get("hiringOrganization")
     return {
         "title": _clean(assignment["Title"]),
-        "description": "\n".join(lines) or _clean(schema.get("description") or ""),
+        "description": "\n".join(lines) or sdk.strip_html(schema.get("description")),
         "location": _clean(header.get("Municipality") or "") or _address(place.get("address") if isinstance(place, dict) else place),
         "posted_at": _date(schema.get("datePosted")),
         "organization": _clean(org.get("name", "")) if isinstance(org, dict) else "",
