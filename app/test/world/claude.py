@@ -48,7 +48,9 @@ def arg(name: str) -> str | None:
 
 # What each kind of answer costs at API prices (`total_cost_usd`, #67): fixed, round figures, so
 # `status_summary`'s `cost` and Analytics' Claude usage read the same in every run.
-COST_USD = {"cv_read": 0.01, "score": 0.02, "translate": 0.01, "read_ad": 0.01, "market": 0.01, "tailor": 0.40, "revise": 0.05, "facts": 0.01}
+COST_USD = {"cv_read": 0.01, "score": 0.02, "translate": 0.01, "read_ad": 0.01, "market": 0.01, "tailor": 0.40, "revise": 0.05, "facts": 0.01,
+            # an ad's layout costs a fraction of a cent: nothing at the round figures the journeys read
+            "layout": 0.0}
 OTHER_COST_USD = 0.03
 
 
