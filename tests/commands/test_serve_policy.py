@@ -2,6 +2,7 @@
 a daily ceiling; no prompt to Claude, no revise."""
 
 import asyncio
+import json
 
 import pytest
 
@@ -93,3 +94,50 @@ def test_a_refused_call_is_not_counted(clock):
         assert policy.refusal("prepare", {"job_id": "a", "timeout_min": 1})
     for _ in range(10):
         assert policy.refusal("prepare", {"job_id": "a"}) is None
+
+
+def test_mask_hides_the_folders_of_the_computer_keeping_the_file_names(tmp_path, monkeypatch):
+    from pathlib import Path
+
+    from door.core import workspace
+
+    data = tmp_path / "data"
+    monkeypatch.setattr(workspace, "HOME", data)
+    monkeypatch.setenv("DOOR_HOME", str(tmp_path / "other"))
+    text = f"{data}/jobs/output/a.1/cv.pdf and {tmp_path}/other/x and {Path.home()}/notes and {workspace.REPO_ROOT}/src"
+    masked = policy.mask(text)
+    for folder in (str(data), str(tmp_path / "other"), str(Path.home()), str(workspace.REPO_ROOT)):
+        assert folder not in masked
+    assert "cv.pdf" in masked and "/jobs/output/a.1/" in masked
+
+
+def test_a_profile_answer_keeps_what_the_phone_reads_and_drops_the_rest(tmp_path, monkeypatch):
+    from door.core import workspace
+
+    monkeypatch.setattr(workspace, "HOME", tmp_path)
+    answer = policy.answer("show_profile", {
+        "path": str(tmp_path / "profile"), "options": {"cities": [1]}, "templates": {"cv": {}}, "enrich_sources": ["u"],
+        "config": {"email": "a@b.c", "min_score": 0.5, "cv_content": str(tmp_path / "x"), "claude_config_dir": "/c"},
+        "errors": [], "cv": {"path": str(tmp_path / "cv.md"), "text": "cv", "exists": True},
+        "story_bank": {}, "photo": {}, "discovery_unchosen": ["linkedin"],
+    })
+    assert set(answer) == {"config", "errors", "cv", "discovery_unchosen"}
+    assert answer["config"] == {"email": "a@b.c", "min_score": 0.5}
+    assert answer["cv"] == {"text": "cv", "exists": True}
+    assert policy.answer("show_profile", {"config": None, "errors": ["x"], "cv": {}, "discovery_unchosen": []})["config"] is None
+
+
+def test_the_drive_account_and_a_long_reason_are_not_sent():
+    summary = policy.answer("status_summary", {"drive": {"connected": True, "account": "a@b.c"}, "n": 1})
+    assert summary["drive"] == {"connected": True, "account": None} and summary["n"] == 1
+    assert policy.answer("status_summary", {"drive": None})["drive"] is None
+    shown = policy.answer("show", {"score_reason": "y" * 900, "rows": [{"score_reason": "z" * 900}]})
+    assert len(shown["score_reason"]) == 400 and len(shown["rows"][0]["score_reason"]) == 400
+
+
+def test_paths_are_masked_in_every_string_however_deep(tmp_path, monkeypatch):
+    from door.core import workspace
+
+    monkeypatch.setattr(workspace, "HOME", tmp_path)
+    shown = policy.answer("show", {"materials": {"pdfs": {"cv": f"{tmp_path}/jobs/output/a/cv.pdf"}, "list": [f"{tmp_path}/x"]}, "n": 3})
+    assert str(tmp_path) not in json.dumps(shown) and shown["n"] == 3
