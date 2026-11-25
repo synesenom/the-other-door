@@ -12,12 +12,12 @@ DESC = "About the role\nWe build forecasts.\nYou bring\n- Python\n- SQL\n\nApply
 
 def test_verified_keeps_only_integers_in_range_and_drops_a_line_named_twice():
     answer = {"headings": [1, 3, 99, 0, "2", 1.5, True, 4], "bullets": [4, 5, 5, -1]}
-    assert ad_layout.verified(answer, 6) == {"headings": [1, 3], "bullets": [5]}
+    assert ad_layout.verified(answer, 6) == {"headings": [1, 3], "bullets": [5], "joins": []}
 
 
 @pytest.mark.parametrize("answer", [None, [], {"headings": "1"}, {}])
 def test_verified_survives_a_malformed_answer(answer):
-    assert ad_layout.verified(answer, 5) == {"headings": [], "bullets": []}
+    assert ad_layout.verified(answer, 5) == {"headings": [], "bullets": [], "joins": []}
 
 
 def test_the_ad_becomes_markdown_with_its_own_words():
@@ -67,3 +67,14 @@ def test_a_failed_call_leaves_the_posting_as_it_was(tmp_path, monkeypatch):
     before = path.read_text()
     assert ad_layout.lay_out(path) is False
     assert path.read_text() == before  # the raw text: the next run asks again
+
+
+def test_a_line_that_continues_the_one_before_is_joined_to_it():
+    # a list item's label and its text, split onto two lines by the page the ad was read from
+    desc = "What you'll do\nLine-manage and grow the team\n: Drive 1:1s and recruitment.\nOwn the architecture\n— lead the vision."
+    md = ad_layout.markdown(desc, {"headings": [1], "bullets": [2, 3, 4], "joins": [3, 5]})
+    assert md == "## What you'll do\n\n- Line-manage and grow the team: Drive 1:1s and recruitment.\n- Own the architecture — lead the vision."
+
+
+def test_verified_keeps_joins_after_the_first_line_only():
+    assert ad_layout.verified({"headings": [], "bullets": [], "joins": [1, 2, 9, "3"]}, 5)["joins"] == [2]

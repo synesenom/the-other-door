@@ -21,8 +21,9 @@ _SCHEMA = {
     "properties": {
         "headings": {"type": "array", "items": {"type": "integer"}},
         "bullets": {"type": "array", "items": {"type": "integer"}},
+        "joins": {"type": "array", "items": {"type": "integer"}},
     },
-    "required": ["headings", "bullets"],
+    "required": ["headings", "bullets", "joins"],
 }
 _MAX_CHARS = 30000
 _MARKER = re.compile(r"^\s*(?:[-*•–·]|\d+[.)])\s+")
@@ -34,24 +35,34 @@ def lines(description: str) -> list[str]:
 
 
 def verified(answer, count: int) -> dict:
-    """``{"headings", "bullets"}`` from a model's answer: sorted integers in 1..count, once each, a line
-    named in both lists in neither."""
+    """``{"headings", "bullets", "joins"}`` from a model's answer: sorted integers in 1..count, once each, a
+    line named as both heading and bullet in neither, a join never the first line."""
     def ints(key: str) -> set[int]:
         raw = answer.get(key) if isinstance(answer, dict) else None
         return {n for n in raw if type(n) is int and 1 <= n <= count} if isinstance(raw, list) else set()
 
     headings, bullets = ints("headings"), ints("bullets")
     both = headings & bullets
-    return {"headings": sorted(headings - both), "bullets": sorted(bullets - both)}
+    return {"headings": sorted(headings - both), "bullets": sorted(bullets - both),
+            "joins": sorted(n for n in ints("joins") if n > 1)}
 
 
 def markdown(description: str, layout: dict) -> str:
-    """The description as Markdown: the lines `layout` names as headings and bullets marked, one blank
+    """The description as Markdown: a line `layout` names in ``joins`` put back at the end of the line before
+    (the page split it, a list item's label from its text), then the headings and bullets marked, one blank
     line between blocks and none inside a list. The words are the description's."""
     headings, bullets = set(layout.get("headings") or []), set(layout.get("bullets") or [])
+    joins = set(layout.get("joins") or [])
+    rows: list[tuple[int, str]] = []
+    for number, text in enumerate(lines(description), 1):
+        if number in joins and rows:
+            first, before = rows[-1]
+            rows[-1] = (first, before + ("" if text[:1] in ":;,.)" else " ") + text)
+        else:
+            rows.append((number, text))
     out: list[str] = []
     previous = ""
-    for number, text in enumerate(lines(description), 1):
+    for number, text in rows:
         kind = "heading" if number in headings else "bullet" if number in bullets else "paragraph"
         line = f"## {text}" if kind == "heading" else f"- {_MARKER.sub('', text) or text}" if kind == "bullet" else text
         if out and not (kind == previous == "bullet"):
