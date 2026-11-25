@@ -13,6 +13,7 @@ import hashlib
 import json
 import re
 import sys
+from urllib.parse import urlsplit
 from pathlib import Path
 
 import click
@@ -129,15 +130,22 @@ def _propose(urls, files, *, config, cv_path, profile_dir, model, timeout_s) -> 
         + "".join(read)
         + ("Read these pages:\n" + "\n".join(urls) + "\n" if urls else "")
     )
+    rules = common.webfetch_rules(urls)
     answer = claude_cli.ask(
         "cv-enricher", prompt, model=model, fields={"webfetch_rules": common._WEBFETCH_RULES}, feature="enrich", schema=_SCHEMA,
-        allowed_tools=common.webfetch_rules(urls), timeout_s=timeout_s, profile_dir=profile_dir,
+        allowed_tools=rules, timeout_s=timeout_s, profile_dir=profile_dir,
     )
     if not isinstance(answer.get("proposals"), list):
         raise claude_cli.ClaudeError("claude's answer has no `proposals` list")
     proposals = _clean_proposals(answer["proposals"], cv_text)
+    # a page the call was pointed to on a host with no rule was never fetched: the user can give it
+    hosts = {rule.removeprefix("WebFetch(domain:").removesuffix(")") for rule in rules}
     unreachable = [str(u) for u in answer.get("unreachable") or [] if u]
-    result = {"outcome": "proposed" if proposals else "nothing_new", "urls": urls, "files": files, "proposals": proposals, "unreachable": unreachable}
+    not_given = [u for u in unreachable if (urlsplit(u).hostname or "").lower() not in hosts]
+    result = {
+        "outcome": "proposed" if proposals else "nothing_new", "urls": urls, "files": files, "proposals": proposals,
+        "unreachable": unreachable, "not_given": not_given,
+    }
     proposals_path = profile_dir / _PROPOSALS_FILE
     if proposals:
         utils.write_atomic(
@@ -194,7 +202,7 @@ def _enrich_core(
 
     Returns:
         Propose: ``{"outcome": "proposed" | "nothing_new", "urls", "files", "proposals":
-        [{"n", "section", "text", "source"}], "unreachable", "proposals_path"?}``.
+        [{"n", "section", "text", "source"}], "unreachable", "not_given" (those of them on a host the user gave no page of, never fetched), "proposals_path"?}``.
         Apply: ``{"outcome": "applied", "added", "cv_path", "backup"}``.
 
     Raises:
@@ -231,7 +239,10 @@ def _numbers(text: str) -> list[int]:
 
 def _echo_proposals(result: dict) -> None:
     for url in result["unreachable"]:
-        click.echo(f"Could not fetch {common.plain(url)} — skipping.")
+        if url in result["not_given"]:
+            click.echo(f"Not read: {common.plain(url)} is not one of the pages you gave; give it too to have it read.")
+        else:
+            click.echo(f"Could not fetch {common.plain(url)} — skipping.")
     if not result["proposals"]:
         return
     click.echo(f"Found {len(result['proposals'])} potential addition(s):")

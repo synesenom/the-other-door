@@ -1106,7 +1106,7 @@ def enrich(
 
     Returns:
         Propose: ``{"outcome": "proposed" | "nothing_new", "urls", "files",
-        "proposals": [{"n", "section", "text", "source"}], "unreachable"}``.
+        "proposals": [{"n", "section", "text", "source"}], "unreachable", "not_given"}``.
         Apply: ``{"outcome": "applied", "added", "cv_path", "backup"}``.
     """
     for path in files or []:

@@ -429,3 +429,13 @@ def test_a_new_section_is_written_with_its_title_alone_and_the_rules_ask_for_no_
 def test_clean_keeps_the_title_when_the_model_wrote_a_marker_anyway():
     [p] = enrich_cmd._clean_proposals([{"section": "Toolbox <!-- kind: skills -->", "text": "SQL", "source": "x"}], "")
     assert p["section"] == "Toolbox" and "kind" not in p
+
+
+def test_a_linked_page_on_another_host_is_said_to_need_giving(env, monkeypatch):
+    # The call reads only the hosts the user gave; a page it was pointed to elsewhere is skipped, and the line says how to have it read.
+    _answer(monkeypatch, unreachable=["https://api.github.com/users/jane/repos?per_page=100", "https://jane.example/down"])
+    result = CliRunner().invoke(cli, ["cv", "enrich", "https://jane.example"])
+    out = result_text(result)
+    assert result.exit_code == 0, out
+    assert "Not read: https://api.github.com/users/jane/repos?per_page=100 is not one of the pages you gave; give it too to have it read." in out
+    assert "Could not fetch https://jane.example/down" in out
