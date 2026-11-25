@@ -41,12 +41,8 @@ def _fetch_ad(url: str) -> tuple[str, str]:
     Raises:
         ValueError: the page could not be fetched, or has no text.
     """
-    from urllib.parse import urlparse
-
     from door.scrapers.http_client import PoliteSession
 
-    if urlparse(url).scheme.lower() not in ("http", "https"):
-        raise ValueError(f"could not fetch {url}: only http and https links can be imported")
     try:
         response = PoliteSession(min_delay=0, max_delay=0, max_retries=1).get(url)
         response.raise_for_status()

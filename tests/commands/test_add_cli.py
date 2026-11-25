@@ -24,9 +24,10 @@ from door.commands import prepare as prepare_cmd
 from door.core import workspace
 import door.mcp_server as server
 from door.core.models import JobPosting
-_REAL_SEND = requests.adapters.HTTPAdapter.send
 from profile_utils import write_config
 from cli_utils import result_text
+
+_REAL_SEND = requests.adapters.HTTPAdapter.send
 
 AD = """Lead Data Scientist — Acme
 
@@ -151,26 +152,29 @@ def test_a_location_not_in_the_ad_is_dropped_and_nothing_is_asked(env, monkeypat
     assert data["title"] == "lead DATA scientist" and not data["location"]
 
 
+@responses.activate
 def test_a_real_saved_ad_imports_with_all_three_fields(env, monkeypatch):
-    ad = ("Senior Backend Engineer\n\nTrustpilot is hiring in Copenhagen, Denmark.\n"
-          "You will build services in Python and Go. " * 3)
+    from paths import TESTS_DIR
+
+    monkeypatch.setattr("door.scrapers.http_client.time.sleep", lambda s: None)
+    page = (TESTS_DIR / "scrapers/feeds/fixtures/career_sites/listing/pfa_ad.html").read_text(encoding="utf-8")
+    responses.add(responses.GET, _AD_URL, body=page, content_type="text/html; charset=utf-8")
     monkeypatch.setattr(claude_cli, "ask", _haiku_reads(
-        {"title": "Senior Backend Engineer", "company": "Trustpilot", "location": "Copenhagen, Denmark"}))
-    result = add_cmd._add_core(None, text=ad, jobs_dir=env.jobs_dir)
+        {"title": "Leder af AI Platform", "company": "PFA", "location": "København"}))
+    result = add_cmd._add_core(None, url=_AD_URL, jobs_dir=env.jobs_dir)
     data = json.loads(open(result["path"]).read())
-    assert (data["title"], data["company"], data["location"]) == (
-        "Senior Backend Engineer", "Trustpilot", "Copenhagen, Denmark")
+    assert (data["title"], data["company"], data["location"]) == ("Leder af AI Platform", "PFA", "København")
 
 
 @pytest.mark.parametrize("url", ["file:///etc/passwd", "ftp://example.com/ad"])
 def test_a_url_that_is_not_http_is_refused(env, url):
-    with pytest.raises(ValueError, match="http"):
+    with pytest.raises(ValueError, match="could not fetch"):
         add_cmd._add_core(None, url=url, title="T", company="C", jobs_dir=env.jobs_dir)
 
 
 @pytest.fixture
 def local_server():
-    """A real local server that records its paths; `/redirect` answers 302 to `/secret` on another loopback address."""
+    """A real local server that records its paths; `/redirect` answers 302 to its own `/secret`."""
     import http.server
     import threading
 
@@ -179,7 +183,8 @@ def local_server():
             srv.paths.append(self.path)
             if self.path == "/redirect":
                 self.send_response(302)
-                self.send_header("Location", f"http://127.0.0.2:{srv.server_port}/secret")
+                srv.public = False  # the first hop is over: from here on loopback is what it is
+                self.send_header("Location", f"http://127.0.0.1:{srv.server_port}/secret")
                 self.send_header("Content-Length", "0")
             else:
                 self.send_response(200)
@@ -193,6 +198,7 @@ def local_server():
 
     srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
     srv.paths = []
+    srv.public = False
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     yield srv
     srv.shutdown()
@@ -215,7 +221,8 @@ def test_import_posting_refuses_a_local_server(env, local_server, real_network):
 def test_import_posting_refuses_a_public_url_that_redirects_to_a_local_one(env, local_server, real_network, monkeypatch):
     from door.scrapers import http_client
 
-    monkeypatch.setattr(http_client, "_is_public", lambda ip: str(ip) == "127.0.0.1")  # the first hop stands for a public host
+    local_server.public = True  # the first hop stands for a public host; the server flips it when it redirects
+    monkeypatch.setattr(http_client, "_is_public", lambda ip: local_server.public and str(ip) == "127.0.0.1")
     result = server.import_posting(url=f"http://127.0.0.1:{local_server.server_port}/redirect", title="T", company="C")
     assert "error" in result
     assert "/secret" not in local_server.paths

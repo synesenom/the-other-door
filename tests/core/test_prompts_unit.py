@@ -16,7 +16,7 @@ from paths import REPO_ROOT
 # `reviser` is the one deliberate text change: the rules moved from the user message into the system prompt.
 # name -> (model in the frontmatter, sha256 of the text sent)
 PROMPTS = {
-    "posting-reader": ("haiku", "cd4aa55578ca16f0e551b341a754ecf550fb53b6f1b6a3535e1307472279a65d"),
+    "posting-reader": ("haiku", "50c790348a8b82849987701253f90a0d18b99ae73731b1980362e8a979b4231b"),
     "ask": ("haiku", "380bb96a9a677ee3e27b32ff7b1615324e5ccaaed57b3b0f3ba5f3e29cc87fb5"),
     "cv-drafter": ("sonnet", "f06c6f1dc3886c4cdd78fa0f4691d84f45e55e9965e9aca4f53b9345743c9640"),
     "cv-enricher": ("sonnet", "4a63e2564df682b453451e5b4ec24460a32c5dfa0054fde4b31373f621cec0eb"),
