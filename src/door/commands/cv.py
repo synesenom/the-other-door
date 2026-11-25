@@ -2,8 +2,8 @@
 into a `profile/cv.md` draft.
 
 Local files are read here (pypdfium2 for PDF, the document XML for DOCX); one
-`claude -p` call reads the URLs with WebFetch and writes the Markdown in the
-structure of profile.example/cv.md. `/onboard`'s CV step (the `draft_cv` tool)
+`claude -p` call that sees none of the files reads the URLs (`core/page_reader`), and a second with no
+network writes the Markdown in the structure of profile.example/cv.md. `/onboard`'s CV step (the `draft_cv` tool)
 and `init`'s CV step in a shell make the same call; the draft is shown before anything replaces
 profile/cv.md.
 """
@@ -18,7 +18,7 @@ import click
 
 from door import i18n
 from door.commands import _common as common
-from door.core import claude_cli, cv_read, cv_sections, migrations, profile_loader, utils, workspace
+from door.core import claude_cli, cv_read, cv_sections, migrations, page_reader, profile_loader, utils, workspace
 from door.render import pdf_draft
 
 _DRAFT_NAME = "cv.draft.md"
@@ -241,18 +241,18 @@ def _draft_cv_core(
             described.append({"source": source, "kind": "file", "chars": len(text)})
             parts.append(f"Source file {source}:\n<<<\n{text}\n>>>")
 
+    # the pages are read first by a call that sees none of the files (#549); the call below has them and no tools
+    pages = page_reader.read(urls, model=model, timeout_s=timeout_s, profile_dir=profile_dir)
+
     template = workspace.PROFILE_EXAMPLE_DIR / "cv.md"
     header = {k: config.get(k) for k in ("name", "email", "location", "role_targets") if config.get(k)}
     prompt = (
         f"Template (profile.example/cv.md):\n<<<\n{template.read_text(encoding='utf-8')}\n>>>\n\n"
         + (f"Profile fields: {json.dumps(header)}\n\n" if header else "")
         + "\n\n".join(parts)
-        + ("\n\nPages to read:\n" + "\n".join(urls) + "\n" if urls else "\n")
+        + "\n\n" + page_reader.render(pages["pages"])
     )
-    answer = claude_cli.ask(
-        "cv-drafter", prompt, model=model, fields={"webfetch_rules": common._WEBFETCH_RULES}, feature="draft_cv", schema=_SCHEMA,
-        allowed_tools=common.webfetch_rules(urls), timeout_s=timeout_s, profile_dir=profile_dir,
-    )
+    answer = claude_cli.ask("cv-drafter", prompt, model=model, feature="draft_cv", schema=_SCHEMA, timeout_s=timeout_s, profile_dir=profile_dir)
     markdown = answer.get("cv_markdown")
     if not isinstance(markdown, str) or not markdown.strip():
         raise claude_cli.ClaudeError("claude's answer has no `cv_markdown`")

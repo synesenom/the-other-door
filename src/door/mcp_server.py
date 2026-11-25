@@ -1088,9 +1088,9 @@ def enrich(
     """Propose additions to profile/cv.md from public URLs and CV files, then add the chosen ones.
 
     Two calls: first with `urls` (or none, for the profile's
-    `enrich_sources`) — one `claude -p` call reads the pages with WebFetch
-    and returns numbered `proposals` (section, text, source), evidenced on
-    the pages and not already in the CV; nothing is written. Show them,
+    `enrich_sources`) — one `claude -p` call that sees none of the CV reads the
+    pages, a second with no network returns numbered `proposals` (section, text,
+    source), evidenced on the pages and not already in the CV; nothing is written. Show them,
     ask which to add, then call again with `apply=[n, ...]` or `all=True`,
     which inserts them under their `##` sections (a `.bak` keeps the
     previous CV). Identical to `./door cv enrich`.
@@ -1106,7 +1106,7 @@ def enrich(
 
     Returns:
         Propose: ``{"outcome": "proposed" | "nothing_new", "urls", "files",
-        "proposals": [{"n", "section", "text", "source"}], "unreachable", "not_given"}``.
+        "proposals": [{"n", "section", "text", "source"}], "unreachable"}``.
         Apply: ``{"outcome": "applied", "added", "cv_path", "backup"}``.
     """
     for path in files or []:
@@ -1346,7 +1346,8 @@ def draft_cv(sources: list[str], write: bool = False, model: str | None = None) 
     `/onboard`'s CV step: give it file paths (their most recent CV as PDF,
     DOCX or Markdown; a LinkedIn "Save to PDF" export) and URLs (a personal
     site or portfolio). The files are read here, the URLs by one
-    `claude -p` call with WebFetch, which writes the CV in
+    `claude -p` call that sees none of the files, then a second call with no
+    network writes the CV in
     profile.example/cv.md's structure — the newest CV is the backbone, the
     other sources only add, nothing is invented (missing facts are TODOs).
     Works before profile/config.json exists. Writes `profile/cv.draft.md`:

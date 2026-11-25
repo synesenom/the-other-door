@@ -8,7 +8,6 @@ import re
 import shutil
 import sys
 from pathlib import Path
-from urllib.parse import urljoin, urlsplit
 
 import click
 
@@ -116,90 +115,6 @@ def _write_with_backup(path: Path, text: str) -> Path | None:
         utils.write_atomic(backup, path.read_bytes())
     utils.write_atomic(path, text)
     return backup
-
-
-# How a `claude -p` call with WebFetch should read a candidate's public pages;
-# shared by the prompts that take URLs (`init`'s CV step, `enrich`).
-_WEBFETCH_RULES = (
-    "Fetch every URL you are given with WebFetch. A personal site's home page is often "
-    "navigation only, so follow its own subpages (research, publications, projects, open "
-    "source, about); a page that renders with JavaScript loads its content from a data "
-    "file (.json, .bib) named in its source, so fetch that. Read a GitHub user through "
-    "https://api.github.com/users/<name>/repos?per_page=100 and name only non-fork repos "
-    "with stars or a description, with what each one does. Read an ORCID iD through https://pub.orcid.org/v3.0/<id>/works. Never fetch a LinkedIn or "
-    "Indeed URL: skip it and say so."
-)
-
-
-# Pages the model is never given a fetch rule for (the prompt tells it so, so the user is told it was skipped).
-_NO_FETCH_NAMES = ("linkedin", "indeed")   # the name label of the host, any subdomain or country: not the host itself, which only discovery names
-
-
-def _is_no_fetch(host: str) -> bool:
-    return any(label in _NO_FETCH_NAMES for label in host.split("."))
-
-
-def _twin(host: str) -> str:
-    return host[4:] if host.startswith("www.") else "www." + host
-
-
-# Profile sites a personal page may link to, each with the host its public data is read through (the prompt says how).
-_PROFILE_HOSTS = {"github.com": ("github.com", "api.github.com"), "orcid.org": ("orcid.org", "pub.orcid.org")}
-
-
-def _read_page(url: str) -> tuple[str | None, list[str]]:
-    """The host the page at *url* ends on after its redirects, and its absolute links (one public, size-capped
-    fetch), or ``(None, [])`` when it cannot be read."""
-    import requests
-    from bs4 import BeautifulSoup
-
-    from door.scrapers.http_client import PoliteSession, RobotsBlocked
-
-    try:
-        resp = PoliteSession(min_delay=0.3, max_delay=0.6, timeout=15, max_retries=0).get(url)
-        resp.raise_for_status()
-    except (requests.RequestException, RobotsBlocked):
-        return None, []
-    soup = BeautifulSoup(resp.text, "html.parser")
-    return (urlsplit(resp.url).hostname or "").lower() or None, [urljoin(resp.url, a["href"]) for a in soup.find_all("a", href=True)]
-
-
-def _linked_hosts(url: str, links: list[str], site: str) -> list[str]:
-    """The hosts of *links* (the page at *url*'s) that may be read beside it: GitHub and ORCID with their data hosts
-    (`_PROFILE_HOSTS`), and, when *url* is a home page (the user's own site, not a profile on a shared one), the
-    subdomains of *site* (its host without `www.`). Found here, by code."""
-    home = urlsplit(url).path in ("", "/")
-    hosts: list[str] = []
-    for link in links:
-        host = (urlsplit(link).hostname or "").lower()
-        if host.removeprefix("www.") in _PROFILE_HOSTS:
-            hosts += _PROFILE_HOSTS[host.removeprefix("www.")]
-        elif home and host.endswith("." + site):
-            hosts.append(host)
-    return hosts
-
-
-# A host a rule may name: plain DNS labels (a page's link could carry a comma, a space or an escape into the rule list).
-_PLAIN_HOST = re.compile(r"[a-z0-9-]+(\.[a-z0-9-]+)+")
-
-
-def webfetch_rules(urls: list[str]) -> tuple[str, ...]:
-    """`WebFetch(domain:<host>)` for each page the user gave, built here and never by the model: the host, its
-    www/apex twin and the host its address redirects to, read with its links in one fetch (a rule matches one host, no subdomains), with the data
-    host of GitHub or ORCID (`_PROFILE_HOSTS`: `api.github.com`, `pub.orcid.org`, which the prompt reads them
-    through); then what the given page links to (`_linked_hosts`). Only plain host names; none for LinkedIn and Indeed."""
-    hosts: list[str] = []
-    for url in urls:
-        given = (urlsplit(url).hostname or "").lower()
-        if not given or _is_no_fetch(given):
-            continue
-        landed, links = _read_page(url)
-        for host in (given, landed):
-            if host and not _is_no_fetch(host):
-                hosts += [host, _twin(host), *_PROFILE_HOSTS.get(host.removeprefix("www."), ())]
-        if given.removeprefix("www.") not in _PROFILE_HOSTS:
-            hosts += [h for h in _linked_hosts(url, links, given.removeprefix("www.")) if not _is_no_fetch(h)]
-    return tuple(f"WebFetch(domain:{h})" for h in dict.fromkeys(hosts) if _PLAIN_HOST.fullmatch(h))
 
 
 def _resolve_job_ref(ref: str, jobs_dir: Path | None = None) -> str:

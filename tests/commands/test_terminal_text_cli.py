@@ -54,7 +54,7 @@ def test_model_and_employer_text_printed_by_other_commands_has_no_control_charac
     from door.commands import enrich as enrich_cmd
 
     evil = "Acme \x1b]0;pwn\x07 Ltd"
-    enrich_cmd._echo_proposals({"unreachable": [evil, evil + "x"], "not_given": [evil + "x"], "proposals": [{"n": 1, "section": evil, "text": evil, "source": evil}]})
+    enrich_cmd._echo_proposals({"unreachable": [evil, evil + "x"], "proposals": [{"n": 1, "section": evil, "text": evil, "source": evil}]})
     enrich_cmd._echo_applied({"added": [{"section": evil, "text": evil}], "cv_path": "cv.md", "backup": None})
     line = companies_cmd._company_line({"status": "unresolved", "name": evil, "feed": None, "found_via": evil, "aliases": [evil], "reason": "x"})
     assert "Acme ]0;pwn Ltd" in line

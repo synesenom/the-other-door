@@ -30,7 +30,7 @@ import threading
 import time
 import urllib.parse
 from email.utils import parsedate_to_datetime
-from typing import Any
+from typing import Any, Callable
 
 import requests
 import truststore
@@ -410,6 +410,7 @@ class PoliteSession:
         *,
         check_robots: bool = True,
         headers: dict[str, str] | None = None,
+        before_redirect: Callable[[str], None] | None = None,
         **kwargs: Any,
     ) -> requests.Response:
         """Fetch *url* paced, with backoff, following redirects by hand.
@@ -423,6 +424,8 @@ class PoliteSession:
             target (it blocks only when the session obeys robots.txt).
         headers:
             Per-call header overrides merged on top of the session defaults.
+        before_redirect:
+            Called with each redirect target before it is requested; it raises to refuse it.
         **kwargs:
             Forwarded verbatim to ``requests.Session.get``.
 
@@ -444,6 +447,8 @@ class PoliteSession:
                 resp.raise_for_status()
                 return resp
             url = urllib.parse.urljoin(resp.url, resp.headers["Location"])
+            if before_redirect:
+                before_redirect(url)
         raise requests.exceptions.TooManyRedirects(f"more than {_MAX_REDIRECTS} redirects: {url}")
 
     def redirect_target(self, url: str) -> str | None:

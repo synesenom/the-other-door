@@ -18,8 +18,9 @@ from paths import REPO_ROOT
 PROMPTS = {
     "posting-reader": ("haiku", "cd4aa55578ca16f0e551b341a754ecf550fb53b6f1b6a3535e1307472279a65d"),
     "ask": ("haiku", "380bb96a9a677ee3e27b32ff7b1615324e5ccaaed57b3b0f3ba5f3e29cc87fb5"),
-    "cv-drafter": ("sonnet", "7df7e77d65d2a317ff2bca6b81c5b45ad20cd5a94a7733bb64394c22ea5f1aa4"),
-    "cv-enricher": ("sonnet", "41d5f828379b2c11af6d6d0116cbcf5e476fb943f619e911a08e2c8c7d4e9fef"),
+    "cv-drafter": ("sonnet", "f06c6f1dc3886c4cdd78fa0f4691d84f45e55e9965e9aca4f53b9345743c9640"),
+    "cv-enricher": ("sonnet", "4a63e2564df682b453451e5b4ec24460a32c5dfa0054fde4b31373f621cec0eb"),
+    "page-reader": ("sonnet", "2c4d773ae8106566aabfc72f8e6a7f5b09a1ec5f5ff32d8e3d9598877546bd52"),
     "skill-gaps": ("sonnet", "1f46f1a229ba3db39ca73c2b2cdc990945ff177d7b5dcc65b56a5b45ab470036"),
     "keywords": ("haiku", "6b9c81f3e5d8791f6750aca0c4207840daba6280df0b3d0d1a0519e2395f3513"),
     "skill-grouper": ("haiku", "f3492df541d158d0b13e3071464e7879bcdbabb30aca2a536bd304daa63d5e96"),
@@ -33,7 +34,7 @@ PROMPTS = {
     "title-translator": ("haiku", "7366039f9e7e68574fc0b240b86d9c456983ac93d83c46e729c571e286a79d61"),
     "fact-checker": ("haiku", "b59c8019c78432960dc58b23ebf15a133cd9db6c301c2d7b6c861697ba570f76"),
 }
-_FIELDS = {"cv-drafter": {"webfetch_rules": common._WEBFETCH_RULES}, "cv-enricher": {"webfetch_rules": common._WEBFETCH_RULES}}
+_FIELDS = {}
 
 
 @pytest.mark.parametrize("name", PROMPTS)
@@ -50,8 +51,6 @@ def test_the_model_is_the_files(name):
 def test_a_field_is_filled_where_the_file_names_it_and_other_braces_stay():
     text = (claude_cli.PROMPTS_DIR / "skill-grouper.md").read_text(encoding="utf-8")
     assert "{variant, canonical, skill}" in claude_cli.prompt("skill-grouper")
-    assert "{webfetch_rules}" in (claude_cli.PROMPTS_DIR / "cv-drafter.md").read_text(encoding="utf-8")
-    assert "{webfetch_rules}" not in claude_cli.prompt("cv-drafter", webfetch_rules="X")
     assert text.startswith("---\nname: skill-grouper\n")
 
 

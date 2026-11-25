@@ -1,25 +1,21 @@
 """`enrich`: propose additions to profile/cv.md from public URLs, then apply the
 ones the user picks — the core behind `/expand`, usable from a shell.
 
-Offline: `claude_cli.run` is replaced; nothing is fetched.
+Offline: `claude_cli.run` is replaced; nothing is fetched. A page is read by one call and written about by another (#549).
 """
 
 import json
 import types
 
 import pytest
-import responses
 from click.testing import CliRunner
 
 from door.cli import cli
 from door.commands import enrich as enrich_cmd
 from door.commands import _common as common
 from door.core import claude_cli, workspace
-from door.scrapers import http_client
 from cli_utils import result_text
 from profile_utils import write_config
-
-_READ_PAGE = common._read_page
 
 CV = """# Jane Doe
 
@@ -53,15 +49,23 @@ def env(tmp_path, monkeypatch):
     config["cv_content"] = str(cv_path)
     (profile_dir / "config.json").write_text(json.dumps(config))
     monkeypatch.setattr(workspace, "PROFILE_DIR", profile_dir)
-    monkeypatch.setattr(common, "_read_page", lambda url: (None, []))
     return types.SimpleNamespace(profile_dir=profile_dir, cv_path=cv_path, proposals_path=profile_dir / ".enrich_proposals.json")
 
 
-def _answer(monkeypatch, proposals=PROPOSALS, unreachable=(), calls=None):
+def _answer(monkeypatch, proposals=PROPOSALS, unreachable=(), calls=None, reads=None, pages=None):
+    """The reader's answer (a text per address given, but the unreachable ones) and the enricher's proposals;
+    `calls` collects the enricher's calls, `reads` the reader's."""
     def fake_run(args, *, input=None, timeout_s=None, profile_dir=None, **_):
+        call = {"args": args, "input": input, "profile_dir": profile_dir}
+        if "--mcp-config" in args:
+            if reads is not None:
+                reads.append(call)
+            urls = [line for line in input.splitlines()[1:] if line]
+            got = pages if pages is not None else [{"url": u, "text": f"Text of {u}"} for u in urls if u not in unreachable]
+            return json.dumps({"result": json.dumps({"pages": got, "unreachable": list(unreachable)})})
         if calls is not None:
-            calls.append({"args": args, "input": input, "profile_dir": profile_dir})
-        return json.dumps({"result": json.dumps({"proposals": proposals, "unreachable": list(unreachable)})})
+            calls.append(call)
+        return json.dumps({"result": json.dumps({"proposals": proposals})})
     monkeypatch.setattr(claude_cli, "run", fake_run)
 
 
@@ -69,9 +73,9 @@ def _answer(monkeypatch, proposals=PROPOSALS, unreachable=(), calls=None):
 # propose
 # --------------------------------------------------------------------------- #
 
-def test_propose_asks_claude_with_webfetch_the_cv_and_the_urls(env, monkeypatch):
-    calls = []
-    _answer(monkeypatch, calls=calls, unreachable=["https://down.example"])
+def test_the_pages_are_read_by_a_call_that_sees_no_cv_and_written_about_by_one_with_no_tools(env, monkeypatch):
+    calls, reads = [], []
+    _answer(monkeypatch, calls=calls, reads=reads, unreachable=["https://down.example"])
     result = enrich_cmd._enrich_core(["https://github.com/jane", "https://down.example"], profile_dir=env.profile_dir)
 
     assert result["outcome"] == "proposed"
@@ -83,79 +87,48 @@ def test_propose_asks_claude_with_webfetch_the_cv_and_the_urls(env, monkeypatch)
     assert json.loads(env.proposals_path.read_text())["proposals"] == result["proposals"]
     assert env.cv_path.read_text() == CV  # nothing written yet
 
-    args = calls[0]["args"]
-    assert args[args.index("--allowedTools") + 1].split(",") == [
-        "WebFetch(domain:github.com)", "WebFetch(domain:www.github.com)", "WebFetch(domain:api.github.com)",
-        "WebFetch(domain:down.example)", "WebFetch(domain:www.down.example)"]
-    assert args[args.index("--system-prompt") + 1] == claude_cli.prompt("cv-enricher", webfetch_rules=common._WEBFETCH_RULES)
-    assert "never fabricate" in claude_cli.prompt("cv-enricher", webfetch_rules=common._WEBFETCH_RULES).lower() or "never invent" in claude_cli.prompt("cv-enricher", webfetch_rules=common._WEBFETCH_RULES).lower()
+    [read] = reads  # the reader: only the addresses, nothing of the profile
+    assert read["input"] == "Read these pages:\nhttps://github.com/jane\nhttps://down.example\n"
+    assert "Data Scientist" not in read["input"] and "churn model" not in read["input"]
+
+    [call] = calls  # the writer: the CV and the text of the pages, no tool
+    args = call["args"]
+    assert args[args.index("--tools") + 1] == "" and "--allowedTools" not in args and "--mcp-config" not in args
+    assert args[args.index("--system-prompt") + 1] == claude_cli.prompt("cv-enricher")
+    assert "never invent" in claude_cli.prompt("cv-enricher").lower() or "never fabricate" in claude_cli.prompt("cv-enricher").lower()
     assert json.loads(args[args.index("--json-schema") + 1]) == enrich_cmd._SCHEMA
     assert args[args.index("--model") + 1] == claude_cli.model_of("cv-enricher")
-    assert "Built a churn model" in calls[0]["input"]
-    assert "Data Scientist" in calls[0]["input"]
-    assert "https://github.com/jane\nhttps://down.example" in calls[0]["input"]
-    assert calls[0]["profile_dir"] == env.profile_dir
+    sent = call["input"]
+    assert "Built a churn model" in sent and "Data Scientist" in sent
+    assert "PAGE https://github.com/jane:\n<<<\nText of https://github.com/jane\n>>>" in sent
+    assert "down.example" not in sent  # a page that could not be read is not in the writer's text
+    assert call["profile_dir"] == env.profile_dir
 
 
-def _rules(call):
-    args = call["args"]
-    return args[args.index("--allowedTools") + 1].split(",") if "--allowedTools" in args else []
-
-
-def test_enrich_with_a_url_allows_webfetch_on_that_host_only(env, monkeypatch):
-    calls = []
-    _answer(monkeypatch, calls=calls)
-    monkeypatch.setattr(common, "_read_page", lambda url: ("jane.pages.example", []))
-    enrich_cmd._enrich_core(["https://jane.example/"], profile_dir=env.profile_dir)
-    args = calls[0]["args"]
-    assert "--restricted" in args and args[args.index("--tools") + 1] == "WebFetch"
-    assert _rules(calls[0]) == ["WebFetch(domain:jane.example)", "WebFetch(domain:www.jane.example)",
-                                "WebFetch(domain:jane.pages.example)", "WebFetch(domain:www.jane.pages.example)"]
-
-
-def test_a_linkedin_or_indeed_page_gets_no_webfetch_rule(env, monkeypatch):
-    calls = []
-    _answer(monkeypatch, calls=calls)
-    enrich_cmd._enrich_core(["https://www.linkedin.com/in/jane", "https://dk.indeed.com/x", "https://jane.example"], profile_dir=env.profile_dir)
-    assert _rules(calls[0]) == ["WebFetch(domain:jane.example)", "WebFetch(domain:www.jane.example)"]
-    calls.clear()
-    enrich_cmd._enrich_core(["https://linkedin.com/in/jane"], profile_dir=env.profile_dir)
-    assert _rules(calls[0]) == [] and calls[0]["args"][calls[0]["args"].index("--tools") + 1] == ""
-    assert "Never fetch a LinkedIn or Indeed URL" in calls[0]["args"][calls[0]["args"].index("--system-prompt") + 1]
-
-
-def test_a_page_given_without_a_scheme_is_fetched_over_https(env, monkeypatch):
-    calls = []
-    _answer(monkeypatch, calls=calls)
+def test_a_page_given_without_a_scheme_is_read_over_https(env, monkeypatch):
+    calls, reads = [], []
+    _answer(monkeypatch, calls=calls, reads=reads)
     result = enrich_cmd._enrich_core(["github.com/jane"], profile_dir=env.profile_dir)
-    assert _rules(calls[0]) == ["WebFetch(domain:github.com)", "WebFetch(domain:www.github.com)", "WebFetch(domain:api.github.com)"]
-    assert "https://github.com/jane" in calls[0]["input"] and result["urls"] == ["https://github.com/jane"]
+    assert reads[0]["input"] == "Read these pages:\nhttps://github.com/jane\n" and result["urls"] == ["https://github.com/jane"]
 
 
-def test_a_page_that_redirects_to_linkedin_gets_no_rule_for_it(env, monkeypatch):
+def test_no_page_read_and_no_file_asks_the_writer_nothing(env, monkeypatch):
     calls = []
-    _answer(monkeypatch, calls=calls)
-    monkeypatch.setattr(common, "_read_page", lambda url: ("www." + "linked" + "in.com", []))
-    enrich_cmd._enrich_core(["https://jane.example"], profile_dir=env.profile_dir)
-    assert _rules(calls[0]) == ["WebFetch(domain:jane.example)", "WebFetch(domain:www.jane.example)"]
+    _answer(monkeypatch, calls=calls, pages=[], unreachable=["https://jane.example"])
+    result = enrich_cmd._enrich_core(["https://jane.example"], profile_dir=env.profile_dir)
+    assert calls == [] and result["outcome"] == "nothing_new" and result["unreachable"] == ["https://jane.example"]
 
 
-def test_a_redirect_that_cannot_be_read_leaves_only_the_given_hosts(env, monkeypatch):
-    calls = []
-    _answer(monkeypatch, calls=calls)
-
-
-    def refuse(self, url, **kwargs):
-        raise http_client.RobotsBlocked(url)
-    monkeypatch.setattr(http_client.PoliteSession, "get", refuse)
-    monkeypatch.setattr(common, "_read_page", _READ_PAGE)  # the real reading, not env's stub
-    enrich_cmd._enrich_core(["https://jane.example"], profile_dir=env.profile_dir)
-    assert _rules(calls[0]) == ["WebFetch(domain:jane.example)", "WebFetch(domain:www.jane.example)"]
+def test_cli_says_which_pages_could_not_be_fetched(env, monkeypatch):
+    _answer(monkeypatch, unreachable=["https://jane.example/down"])
+    result = CliRunner().invoke(cli, ["cv", "enrich", "https://jane.example"])
+    assert result.exit_code == 0, result_text(result)
+    assert "Could not fetch https://jane.example/down" in result_text(result)
 
 
 def test_propose_from_a_cv_file_reads_its_text_and_fetches_nothing(env, monkeypatch, tmp_path):
-    calls = []
-    _answer(monkeypatch, calls=calls)
+    calls, reads = [], []
+    _answer(monkeypatch, calls=calls, reads=reads)
     new_cv = tmp_path / "new-cv.md"
     new_cv.write_text("# Jane Doe\n\n## Talks\n\n- Spoke at PyData Copenhagen 2025\n")
     result = enrich_cmd._enrich_core(files=[str(new_cv)], profile_dir=env.profile_dir)
@@ -166,23 +139,22 @@ def test_propose_from_a_cv_file_reads_its_text_and_fetches_nothing(env, monkeypa
     sent = calls[0]["input"]
     assert "Spoke at PyData Copenhagen 2025" in sent and "Built a churn model" in sent
     assert "https://github.com/jane" not in sent  # the remembered pages are not read with a file
-    assert "--allowedTools" not in calls[0]["args"] and calls[0]["args"][calls[0]["args"].index("--tools") + 1] == ""  # nothing to fetch
+    assert reads == []  # no address: no reader call
     # the rules say what a CV file is and what its proposals' source is
     rules = calls[0]["args"][calls[0]["args"].index("--system-prompt") + 1]
     assert "CV file" in rules and "file name" in rules
     assert "CV file new-cv.md:" in sent
 
 
-def test_propose_from_pages_and_a_cv_file_fetches_the_pages_and_reads_the_file(env, monkeypatch, tmp_path):
-    calls = []
-    _answer(monkeypatch, calls=calls)
+def test_propose_from_pages_and_a_cv_file_reads_the_pages_apart_from_the_file(env, monkeypatch, tmp_path):
+    calls, reads = [], []
+    _answer(monkeypatch, calls=calls, reads=reads)
     new_cv = tmp_path / "new-cv.md"
     new_cv.write_text("# Jane\n")
     result = enrich_cmd._enrich_core(["https://jane.example"], files=[str(new_cv)], profile_dir=env.profile_dir)
     assert result["urls"] == ["https://jane.example"] and result["files"] == [str(new_cv)]
-    args = calls[0]["args"]
-    assert args[args.index("--allowedTools") + 1] == "WebFetch(domain:jane.example),WebFetch(domain:www.jane.example)"
-    assert "CV file new-cv.md:" in calls[0]["input"] and "https://jane.example" in calls[0]["input"]
+    assert "CV file new-cv.md:" in calls[0]["input"] and "PAGE https://jane.example:" in calls[0]["input"]
+    assert "new-cv" not in reads[0]["input"] and "# Jane" not in reads[0]["input"]  # the reader never sees the file
 
 
 def test_files_with_apply_is_an_error(env, monkeypatch, tmp_path):
@@ -281,7 +253,9 @@ def test_reading_the_pages_again_after_adding_proposes_none_of_it_again(env, mon
 
 
 def test_propose_rejects_an_answer_without_proposals(env, monkeypatch):
-    monkeypatch.setattr(claude_cli, "run", lambda *a, **k: json.dumps({"result": "{}"}))
+    _answer(monkeypatch)
+    real = claude_cli.run
+    monkeypatch.setattr(claude_cli, "run", lambda args, **k: real(args, **k) if "--mcp-config" in args else json.dumps({"result": "{}"}))
     with pytest.raises(claude_cli.ClaudeError, match="proposals"):
         enrich_cmd._enrich_core(profile_dir=env.profile_dir)
 
@@ -428,80 +402,9 @@ def test_insert_finds_a_section_whose_heading_records_its_kind():
 
 def test_a_new_section_is_written_with_its_title_alone_and_the_rules_ask_for_no_kind_marker():
     assert enrich_cmd._insert("## Profile\n\nHi\n", "Toolbox", "SQL").endswith("\n## Toolbox\n\n- SQL\n")
-    assert "<!-- kind" not in claude_cli.prompt("cv-enricher", webfetch_rules=common._WEBFETCH_RULES)
+    assert "<!-- kind" not in claude_cli.prompt("cv-enricher")
 
 
 def test_clean_keeps_the_title_when_the_model_wrote_a_marker_anyway():
     [p] = enrich_cmd._clean_proposals([{"section": "Toolbox <!-- kind: skills -->", "text": "SQL", "source": "x"}], "")
     assert p["section"] == "Toolbox" and "kind" not in p
-
-
-def test_a_linked_page_on_another_host_is_said_to_need_giving(env, monkeypatch):
-    # The call reads only the hosts the user gave; a page it was pointed to elsewhere is skipped, and the line says how to have it read.
-    _answer(monkeypatch, unreachable=["https://api.github.com/users/jane/repos?per_page=100", "https://jane.example/down"])
-    result = CliRunner().invoke(cli, ["cv", "enrich", "https://jane.example"])
-    out = result_text(result)
-    assert result.exit_code == 0, out
-    assert "Not read: https://api.github.com/users/jane/repos?per_page=100 is not one of the pages you gave; give it too to have it read." in out
-    assert "Could not fetch https://jane.example/down" in out
-
-
-def test_a_personal_site_may_be_walked_to_its_subdomains_and_the_profiles_it_links(env, monkeypatch):
-    # Code reads the links of the given page, before the model sees anything: its own subdomains and GitHub or ORCID
-    # get a rule; any other site it links to, or a host that only ends like it, does not.
-    calls = []
-    _answer(monkeypatch, calls=calls)
-    links = ["https://blog.jane.example/posts", "https://www.blog.jane.example/", "/research", "https://www.github.com/jane",
-             "https://orcid.org/0000-0002-1825-0097", "https://linkedin.jane.example/", "https://evil.example/x",
-             "https://jane.example.evil.example/", "https://notjane.example/"]
-    monkeypatch.setattr(common, "_read_page", lambda url: (None, links))
-    enrich_cmd._enrich_core(["https://jane.example"], profile_dir=env.profile_dir)
-    assert _rules(calls[0]) == [
-        "WebFetch(domain:jane.example)", "WebFetch(domain:www.jane.example)", "WebFetch(domain:blog.jane.example)",
-        "WebFetch(domain:www.blog.jane.example)", "WebFetch(domain:github.com)", "WebFetch(domain:api.github.com)",
-        "WebFetch(domain:orcid.org)", "WebFetch(domain:pub.orcid.org)",
-    ]
-
-
-def test_a_link_whose_host_is_not_a_plain_name_gets_no_rule(env, monkeypatch):
-    # The page writes these hosts; one with a comma or other text in it would break the rule list the call is given.
-    calls = []
-    _answer(monkeypatch, calls=calls)
-    links = ["https://x),webfetch,websearch,(.jane.example/", "https://a b.jane.example/", "https://attacker.com%23.jane.example/",
-             "https://evil.com\uff0e.jane.example/"]
-    monkeypatch.setattr(common, "_read_page", lambda url: (None, links))
-    enrich_cmd._enrich_core(["https://jane.example"], profile_dir=env.profile_dir)
-    assert _rules(calls[0]) == ["WebFetch(domain:jane.example)", "WebFetch(domain:www.jane.example)"]
-
-
-def test_a_page_deeper_than_a_home_page_gets_no_subdomains(env, monkeypatch):
-    # A profile on a shared site (medium.com/@jane) is not the user's own site: its subdomains are other people's.
-    calls = []
-    _answer(monkeypatch, calls=calls)
-    monkeypatch.setattr(common, "_read_page", lambda url: (None, ["https://attacker.medium.com/", "https://github.com/jane"]))
-    enrich_cmd._enrich_core(["https://medium.com/@jane"], profile_dir=env.profile_dir)
-    assert _rules(calls[0]) == ["WebFetch(domain:medium.com)", "WebFetch(domain:www.medium.com)",
-                                "WebFetch(domain:github.com)", "WebFetch(domain:api.github.com)"]
-
-
-def test_a_given_profile_site_gets_its_data_host_and_is_not_walked(env, monkeypatch):
-    calls = []
-    _answer(monkeypatch, calls=calls)
-    monkeypatch.setattr(common, "_read_page", lambda url: (None, ["https://evil.example/", "https://sub.orcid.org/"]))
-    enrich_cmd._enrich_core(["https://orcid.org/0000-0002-1825-0097"], profile_dir=env.profile_dir)
-    assert _rules(calls[0]) == ["WebFetch(domain:orcid.org)", "WebFetch(domain:www.orcid.org)", "WebFetch(domain:pub.orcid.org)"]
-
-
-@responses.activate
-def test_a_page_is_read_for_where_it_lands_and_its_links(monkeypatch):
-    monkeypatch.setattr("door.scrapers.http_client.time.sleep", lambda *a, **k: None)
-    responses.add(responses.GET, "https://jane.example/", status=301, headers={"Location": "https://jane.pages.example/"})
-    responses.add(responses.GET, "https://jane.pages.example/", body='<a href="/cv">CV</a> <a href="https://github.com/jane">gh</a> <a>none</a>')
-    assert common._read_page("https://jane.example/") == ("jane.pages.example", ["https://jane.pages.example/cv", "https://github.com/jane"])
-
-
-@responses.activate
-def test_a_page_whose_links_cannot_be_read_has_none(monkeypatch):
-    monkeypatch.setattr("door.scrapers.http_client.time.sleep", lambda *a, **k: None)
-    responses.add(responses.GET, "https://jane.example/", status=500)
-    assert common._read_page("https://jane.example/") == (None, [])
