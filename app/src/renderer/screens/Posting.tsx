@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
 import { ErrorBox } from './AppName'
 import { call, errorText, languageLine, placeLine, scoreText } from '../api'
 import type { PrepareResult, Posting as PostingData, SetStatusResult } from '../api'
@@ -298,37 +297,26 @@ export function Posting({ jobId, onChanged, onOpenMaterials }: Props) {
   )
 }
 
-/** The ad's text: a heading, a list for each run of bullets and a paragraph for the rest (`description_blocks`); the plain text when `show` sent none. */
+/** The ad's text: a set-out one (`formatted`) with its `## ` headings and `- ` list items, every word shown as
+ * written (the ad is a stranger's: no link, emphasis or numbering is read from it); any other as it came. */
 function Description({ posting }: { posting: PostingData }) {
-  const blocks = posting.description_blocks
-  if (!blocks?.length) return <p className="body description">{posting.description}</p>
-  const out: ReactNode[] = []
-  for (let i = 0; i < blocks.length; i++) {
-    const block = blocks[i]
-    if (block.kind === 'bullet') {
-      const items: string[] = []
-      for (; i < blocks.length && blocks[i].kind === 'bullet'; i++) items.push(blocks[i].text)
-      i--
-      out.push(
-        <ul key={i} className="body description-list">
-          {items.map((text, n) => (
-            <li key={n}>{text}</li>
-          ))}
-        </ul>,
-      )
-    } else if (block.kind === 'heading') {
-      out.push(
-        <h3 key={i} className="body description-heading">
-          {block.text}
-        </h3>,
-      )
-    } else {
-      out.push(
-        <p key={i} className="body">
-          {block.text}
-        </p>,
-      )
-    }
-  }
-  return <div className="description">{out}</div>
+  if (!posting.formatted) return <p className="body description">{posting.description}</p>
+  const blocks = (posting.description ?? '').split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean)
+  return (
+    <div className="markdown body">
+      {blocks.map((block, i) => {
+        if (block.startsWith('## ')) return <h3 key={i} className="md-heading">{block.slice(3)}</h3>
+        const lines = block.split('\n')
+        if (lines.every((line) => line.startsWith('- ')))
+          return (
+            <ul key={i}>
+              {lines.map((line, n) => (
+                <li key={n}>{line.slice(2)}</li>
+              ))}
+            </ul>
+          )
+        return <p key={i}>{block}</p>
+      })}
+    </div>
+  )
 }

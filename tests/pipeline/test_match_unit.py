@@ -289,8 +289,6 @@ def _layout_run(env, fakes, monkeypatch, scores, statuses=None):
 
 
 def test_a_run_lays_out_at_most_the_cap_best_scored_first(env, fakes, monkeypatch, progress_events):
-    from door.commands import match as match_cmd
-
     monkeypatch.setattr(match_step, "MAX_LAID_OUT_PER_RUN", 2)
     laid = _layout_run(env, fakes, monkeypatch, {"job-a": 0.7, "job-b": 0.9, "job-c": 0.8})
 
@@ -302,21 +300,18 @@ def test_a_run_lays_out_at_most_the_cap_best_scored_first(env, fakes, monkeypatc
 
 
 def test_a_match_already_laid_out_is_not_counted_against_the_cap(env, fakes, monkeypatch):
-    from door.commands import match as match_cmd
-    from door.matching import ad_layout
-
     monkeypatch.setattr(match_step, "MAX_LAID_OUT_PER_RUN", 1)
     laid = _layout_run(env, fakes, monkeypatch, {"job-a": 0.9, "job-b": 0.8})
     path = next(env.jobs_dir.glob("postings/*/*/job-a.json"))
     data = json.loads(path.read_text())
-    path.write_text(json.dumps({**data, "layout": {"headings": [], "bullets": [], "sha256": ad_layout.description_hash("d")}}))
+    path.write_text(json.dumps({**data, "formatted": True}))
 
     run(env)
 
     assert laid == ["job-b"]
 
 
-def test_jobs_still_in_play_get_a_layout_and_closed_ones_do_not(env, fakes, monkeypatch):
+def test_jobs_still_in_play_are_written_as_markdown_and_closed_ones_are_not(env, fakes, monkeypatch):
     laid = _layout_run(
         env, fakes, monkeypatch,
         {"job-new": 0.9, "job-prep": 0.9, "job-app": 0.9, "job-int": 0.9, "job-no": 0.9, "job-rej": 0.9},
@@ -327,3 +322,21 @@ def test_jobs_still_in_play_get_a_layout_and_closed_ones_do_not(env, fakes, monk
     run(env)
 
     assert sorted(laid) == ["job-app", "job-int", "job-new", "job-prep"]
+
+
+def test_an_old_application_below_min_score_is_written_as_markdown_too(env, fakes, monkeypatch):
+    laid = _layout_run(env, fakes, monkeypatch, {"job-old": 0.3}, {"job-old": "applied"})
+    path = next(env.jobs_dir.glob("postings/*/*/job-old.json"))
+    path.write_text(json.dumps({**json.loads(path.read_text()), "posted_at": "2020-01-01T00:00:00"}))
+
+    run(env)
+
+    assert laid == ["job-old"]
+
+
+def test_an_application_with_no_score_is_written_as_markdown_too(env, fakes, monkeypatch):
+    laid = _layout_run(env, fakes, monkeypatch, {"job-zero": 0.0}, {"job-zero": "prepared"})
+
+    run(env)
+
+    assert laid == ["job-zero"]

@@ -172,7 +172,7 @@ elif kind == "read_ad":
     found = next((a for a in W.get("read_ads", []) if a["title"] in STDIN), None)
     envelope(said.get("answer") or found or {"title": "", "company": "", "location": ""})
 elif kind == "layout":
-    envelope({"headings": [], "bullets": []})  # the ad stays plain text
+    envelope({"markdown": STDIN})  # the ad back as it came: its words, no markup
 elif kind == "market":
     names = json.loads(STDIN).get("names", [])
     envelope({"groups": [{"variant": n, "canonical": n, "skill": True} for n in names]})
