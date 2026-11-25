@@ -311,8 +311,7 @@ def test_a_match_already_laid_out_is_not_counted_against_the_cap(env, fakes, mon
     assert laid == ["job-b"]
 
 
-def test_only_matches_not_yet_prepared_are_written_as_markdown(env, fakes, monkeypatch):
-    # a prepared job's ad stays as its materials and their fact check read it
+def test_jobs_still_in_play_are_written_as_markdown_and_closed_ones_are_not(env, fakes, monkeypatch):
     laid = _layout_run(
         env, fakes, monkeypatch,
         {"job-new": 0.9, "job-prep": 0.9, "job-app": 0.9, "job-int": 0.9, "job-no": 0.9, "job-rej": 0.9},
@@ -322,4 +321,4 @@ def test_only_matches_not_yet_prepared_are_written_as_markdown(env, fakes, monke
 
     run(env)
 
-    assert laid == ["job-new"]
+    assert sorted(laid) == ["job-app", "job-int", "job-new", "job-prep"]
