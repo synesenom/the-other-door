@@ -261,7 +261,7 @@ def report(
     _progress.report(message, done, total, site=site, stage=stage, outcome=outcome)
 
 
-_COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
+_HIDDEN = re.compile(r"<!--.*?-->|<(style|script)\b[^>]*>.*?</\1\s*>", re.DOTALL | re.IGNORECASE)  # never the ad's text
 _BLOCK_BREAK = re.compile(r"(?i)<br\s*/?>|<li[^>]*>|</(p|li|h\d|div|ul|ol|tr)>")
 _TAG = re.compile(r"<[^>]+>")
 _INVISIBLE = re.compile("[​-‏⁠﻿]")
@@ -312,10 +312,10 @@ def job_postings(html: str | None) -> list[dict]:
 
 def strip_html(raw: str | None, *, encoded: bool = False) -> str:
     """Plain text from an ad's HTML: one line per block, entities, comments and invisible
-    characters gone, blank lines dropped. ``encoded`` for markup that is itself entity-encoded
+    characters, styles and scripts gone, blank lines dropped. ``encoded`` for markup that is itself entity-encoded
     (``&lt;p&gt;``), as Greenhouse, Teamtailor and SuccessFactors send it. Pure."""
     text = _html.unescape(raw or "") if encoded else raw or ""
-    text = _BLOCK_BREAK.sub("\n", _COMMENT.sub("", text))
+    text = _BLOCK_BREAK.sub("\n", _HIDDEN.sub("", text))
     text = _INVISIBLE.sub("", _html.unescape(_TAG.sub(" ", text))).replace("\xa0", " ")
     lines = (_SPACES.sub(" ", line).strip() for line in text.split("\n"))
     return "\n".join(line for line in lines if line)
