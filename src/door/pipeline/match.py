@@ -24,7 +24,8 @@ from door.core import progress as progress_mod
 from door.core.employers import companies as store
 from door.core.jobs import tracker as tracker_mod
 from door.core import workspace
-from door.core.jobs.selection import find_posting_path, select_matches
+from door.core.jobs import selection
+from door.core.jobs.selection import select_matches
 from door.matching import ad_layout
 
 
@@ -100,17 +101,23 @@ def _skipped_block(jobs_dir: Path, config: dict, threshold: float, started: floa
     }
 
 
+MAX_LAID_OUT_PER_RUN = 30  # ads laid out (`matching/ad_layout`) a run, best-scored first; the rest wait for the next run
+
+
 def _lay_out(jobs_dir: Path, profile_dir: Path, app_tracker, threshold: float, max_age: int) -> None:
     """A good match still in play is shown with its headings and lists: lay out, best-scored first, up to
     `MAX_LAID_OUT_PER_RUN` of those with no layout for their description (the rest wait for the next run).
     A failed call leaves the raw text."""
-    in_play = ("unapplied", "prepared", "applied", *tracker_mod.INTERVIEW_STATUSES)
-    todo = [m for m in common._drop_stale(select_matches(jobs_dir, app_tracker, threshold, status=in_play), max_age)
-            if ad_layout.needs_layout(m)][:match_cmd.MAX_LAID_OUT_PER_RUN]
+    found = list(selection.iter_postings(jobs_dir))  # one walk of the store: the matches and where each is
+    paths = {str(p.get("id")): path for path, p in found}
+    in_play = ("unapplied", *tracker_mod.ONGOING_STATUSES)
+    todo = [m for m in common._drop_stale(select_matches(jobs_dir, app_tracker, threshold, status=in_play,
+                                                         postings=[p for _, p in found]), max_age)
+            if ad_layout.needs_layout(m)][:MAX_LAID_OUT_PER_RUN]
     if todo:
         progress_mod.report("laying out the best ads", 0, len(todo), stage="match")
     for done, m in enumerate(todo, 1):
-        path = find_posting_path(jobs_dir, str(m.get("id")))
+        path = paths.get(str(m.get("id")))
         if path is not None:
             ad_layout.lay_out(path, profile_dir=profile_dir)
         progress_mod.report("laying out the best ads", done, len(todo), stage="match")

@@ -291,7 +291,7 @@ def _layout_run(env, fakes, monkeypatch, scores, statuses=None):
 def test_a_run_lays_out_at_most_the_cap_best_scored_first(env, fakes, monkeypatch, progress_events):
     from door.commands import match as match_cmd
 
-    monkeypatch.setattr(match_cmd, "MAX_LAID_OUT_PER_RUN", 2)
+    monkeypatch.setattr(match_step, "MAX_LAID_OUT_PER_RUN", 2)
     laid = _layout_run(env, fakes, monkeypatch, {"job-a": 0.7, "job-b": 0.9, "job-c": 0.8})
 
     run(env)
@@ -305,7 +305,7 @@ def test_a_match_already_laid_out_is_not_counted_against_the_cap(env, fakes, mon
     from door.commands import match as match_cmd
     from door.matching import ad_layout
 
-    monkeypatch.setattr(match_cmd, "MAX_LAID_OUT_PER_RUN", 1)
+    monkeypatch.setattr(match_step, "MAX_LAID_OUT_PER_RUN", 1)
     laid = _layout_run(env, fakes, monkeypatch, {"job-a": 0.9, "job-b": 0.8})
     path = next(env.jobs_dir.glob("postings/*/*/job-a.json"))
     data = json.loads(path.read_text())
