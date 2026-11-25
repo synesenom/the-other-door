@@ -17,7 +17,7 @@ from door.core import progress as progress_mod
 from door.core import workspace
 from door.core.profile_loader import ConfigError
 from door.core.utils import _validate_job_id
-from door.matching import integrity, language
+from door.matching import ad_layout, integrity, language
 from door.core import utils
 
 _ONE_SOURCE = "give the ad as a file, text or a URL (exactly one of them)"
@@ -66,7 +66,8 @@ _READ_SCHEMA = {
 
 def _read_ad(text: str) -> dict:
     """The ad's ``title``, ``company`` and ``location`` as Haiku reads them from
-    its ``text`` (one `claude -p` call); what it could not tell is left out, and a
+    its ``text`` (one `claude -p` call); what it could not tell, or what the ad does
+    not contain word for word (ignoring case and spacing), is left out, and a
     failed call tells nothing (the caller asks the user for what is missing)."""
     from door.core import claude_cli
 
@@ -76,7 +77,8 @@ def _read_ad(text: str) -> dict:
     except claude_cli.ClaudeError:
         return {}
     read = {k: " ".join(str(answer.get(k) or "").split()) for k in ("title", "company", "location")}
-    return {k: v for k, v in read.items() if v}
+    ad = " ".join(text.split()).lower()  # only what the ad says: a field the ad does not contain is not kept
+    return {k: v for k, v in read.items() if v and v.lower() in ad}
 
 
 def _step(message: str, outcome: str | None = None) -> None:
@@ -239,6 +241,8 @@ def _add_core(
         error = str(exc)
     scored = json.loads(target.read_text(encoding="utf-8"))
     result.update(score=scored.get("score"), score_reason=scored.get("score_reason"))
+    if (scored.get("score") or 0) >= config.get("min_score", common._DEFAULT_MIN_SCORE):
+        ad_layout.lay_out(target, profile_dir=profile_dir)
     if error:
         result["score_error"] = f"{error}; the next `find` scores it"
         _step("scoring failed", "failed")

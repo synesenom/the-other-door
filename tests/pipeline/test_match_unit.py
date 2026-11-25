@@ -257,3 +257,86 @@ def test_the_cv_is_read_once_at_the_start_of_the_step_for_every_day_folder(env, 
     monkeypatch.setattr(cv_read, "_ask", lambda md: asked.append(md) or cv_read_utils.plain(md))
     run(env)
     assert len(asked) == 1
+
+
+def test_a_match_gets_a_layout_and_a_posting_below_min_score_does_not(env, fakes, monkeypatch):
+    from door.matching import ad_layout
+
+    write_list_posting(env.jobs_dir, date.today().isoformat(), "jobindex", "job-top")
+    write_list_posting(env.jobs_dir, date.today().isoformat(), "jobindex", "job-low")
+    fakes.scores = {"job-top": 0.95, "job-low": 0.2}
+    laid = []
+    monkeypatch.setattr(ad_layout, "lay_out", lambda path, **kw: laid.append(path.stem) or True)
+
+    run(env)
+
+    assert laid == ["job-top"]
+
+
+def _layout_run(env, fakes, monkeypatch, scores, statuses=None):
+    from door.core.jobs import tracker as tracker_mod
+    from door.matching import ad_layout
+
+    for job_id in scores:
+        write_list_posting(env.jobs_dir, date.today().isoformat(), "jobindex", job_id, score=scores[job_id])
+    tracker = tracker_mod.ApplicationTracker(env.jobs_dir / "applications.json")
+    for job_id, status in (statuses or {}).items():
+        tracker.set_status(job_id, status)
+    tracker.save()
+    laid = []
+    monkeypatch.setattr(ad_layout, "lay_out", lambda path, **kw: laid.append(path.stem) or True)
+    return laid
+
+
+def test_a_run_lays_out_at_most_the_cap_best_scored_first(env, fakes, monkeypatch, progress_events):
+    monkeypatch.setattr(match_step, "MAX_LAID_OUT_PER_RUN", 2)
+    laid = _layout_run(env, fakes, monkeypatch, {"job-a": 0.7, "job-b": 0.9, "job-c": 0.8})
+
+    run(env)
+
+    assert laid == ["job-b", "job-c"]
+    events = [(e.message, e.done, e.total) for e in progress_events if e.stage == "match" and "laying" in e.message]
+    assert events[-1][1:] == (2, 2)
+
+
+def test_a_match_already_laid_out_is_not_counted_against_the_cap(env, fakes, monkeypatch):
+    monkeypatch.setattr(match_step, "MAX_LAID_OUT_PER_RUN", 1)
+    laid = _layout_run(env, fakes, monkeypatch, {"job-a": 0.9, "job-b": 0.8})
+    path = next(env.jobs_dir.glob("postings/*/*/job-a.json"))
+    data = json.loads(path.read_text())
+    path.write_text(json.dumps({**data, "formatted": True}))
+
+    run(env)
+
+    assert laid == ["job-b"]
+
+
+def test_jobs_still_in_play_are_written_as_markdown_and_closed_ones_are_not(env, fakes, monkeypatch):
+    laid = _layout_run(
+        env, fakes, monkeypatch,
+        {"job-new": 0.9, "job-prep": 0.9, "job-app": 0.9, "job-int": 0.9, "job-no": 0.9, "job-rej": 0.9},
+        {"job-prep": "prepared", "job-app": "applied", "job-int": "interview:screening",
+         "job-no": "discarded", "job-rej": "rejected"},
+    )
+
+    run(env)
+
+    assert sorted(laid) == ["job-app", "job-int", "job-new", "job-prep"]
+
+
+def test_an_old_application_below_min_score_is_written_as_markdown_too(env, fakes, monkeypatch):
+    laid = _layout_run(env, fakes, monkeypatch, {"job-old": 0.3}, {"job-old": "applied"})
+    path = next(env.jobs_dir.glob("postings/*/*/job-old.json"))
+    path.write_text(json.dumps({**json.loads(path.read_text()), "posted_at": "2020-01-01T00:00:00"}))
+
+    run(env)
+
+    assert laid == ["job-old"]
+
+
+def test_an_application_with_no_score_is_written_as_markdown_too(env, fakes, monkeypatch):
+    laid = _layout_run(env, fakes, monkeypatch, {"job-zero": 0.0}, {"job-zero": "prepared"})
+
+    run(env)
+
+    assert laid == ["job-zero"]

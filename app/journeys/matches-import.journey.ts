@@ -94,7 +94,7 @@ test.describe('importing', () => {
 
   test('a pasted ad is read for its title, company and place, scored and shown', async ({ page, world }) => {
     const ad = world.ads['solvang-energi-forecasting-lead']
-    const text = `${ad.title}\n\n${ad.description}`
+    const text = `${ad.title}\n\n${ad.company} · ${ad.location}\n\n${ad.description}`
     await openAdd(page)
     await addDialog(page).getByRole('button', { name: 'Paste text' }).click()
     await field(page, 'Ad text').fill(text)

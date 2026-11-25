@@ -12,6 +12,7 @@ dashboard, ``apply``).
 from __future__ import annotations
 
 import json
+import os
 import re
 import unicodedata
 from collections.abc import Collection, Iterable, Iterator
@@ -34,19 +35,56 @@ def date_dirs(jobs_dir: Path) -> list[Path]:
     return [d for d in sorted(root.iterdir()) if d.is_dir() and workspace.DAY_RE.fullmatch(d.name)]
 
 
+_cache: dict[str, tuple[int, int, dict]] = {}
+
+
+def _read(entry: os.DirEntry) -> dict | None:
+    """The posting a directory entry names, parsed again only when its size or modification time changed:
+    a long-running server (the app's, the phone's) lists the same thousands of postings on every screen.
+    A shallow copy, so a caller setting a key leaves the cached one as it was; None when unreadable."""
+    try:
+        stat = entry.stat()
+        stamp = (stat.st_mtime_ns, stat.st_size)
+        cached = _cache.get(entry.path)
+        if cached is None or cached[:2] != stamp:
+            cached = (*stamp, json.loads(Path(entry.path).read_text(encoding="utf-8")))
+            _cache[entry.path] = cached
+    except (ValueError, OSError):  # bad JSON, or bytes that are not text
+        return None
+    data = cached[2]
+    return dict(data) if isinstance(data, dict) else data
+
+
 def iter_postings(jobs_dir: Path) -> Iterator[tuple[Path, dict]]:
     """Every readable posting as ``(path, posting)``, in sorted date/site/file order.
 
     Walks ``jobs/postings/<YYYY-MM-DD>/<site>/*.json`` under `date_dirs`; malformed
-    or unreadable JSON files are skipped.
+    or unreadable JSON files are skipped. A posting stored on several days (collected
+    again later) is its newest copy only, so every list, count and lookup reads the same one.
     """
-    for date_dir in date_dirs(jobs_dir):
-        for json_path in sorted(date_dir.glob("*/*.json")):
-            try:
-                data = json.loads(json_path.read_text(encoding="utf-8"))
-            except (json.JSONDecodeError, OSError):
+    days: list[list[tuple[Path, dict]]] = []
+    seen: set = set()
+    walked: set[str] = set()
+    for date_dir in reversed(date_dirs(jobs_dir)):  # newest first, so the first copy of an id is kept
+        day: list[tuple[Path, dict]] = []
+        entries = sorted((entry for site in os.scandir(date_dir) if site.is_dir()
+                          for entry in os.scandir(site.path) if entry.name.endswith(".json")),
+                         key=lambda entry: entry.path)
+        for entry in entries:
+            walked.add(entry.path)
+            data = _read(entry)
+            if data is None:
                 continue
-            yield json_path, data
+            job_id = data.get("id") if isinstance(data, dict) else None
+            if job_id is None or job_id not in seen:
+                seen.add(job_id)
+                day.append((Path(entry.path), data))
+        days.append(day)
+    root = str(workspace.postings_dir(jobs_dir))
+    for gone in [path for path in _cache if path.startswith(root) and path not in walked]:
+        del _cache[gone]  # a posting deleted or moved since the last walk
+    for day in reversed(days):  # back to oldest first
+        yield from day
 
 
 def read_postings(jobs_dir: Path) -> list[dict]:
@@ -120,9 +158,8 @@ def find_posting(jobs_dir: Path, job_id: str) -> dict | None:
     Walks ``jobs/postings/<YYYY-MM-DD>/<site>/*.json`` the same way ``select_matches``
     does — only date-named top-level directories are scanned, so
     ``jobs/output/`` and similar are never scanned. Malformed JSON files are
-    skipped tolerantly. If the same ``job_id`` appears in more than one
-    posting file, the first one encountered in sorted walk order (earliest
-    date directory first) wins.
+    skipped tolerantly. A posting stored on several days is its newest
+    copy (`iter_postings`).
 
     Parameters
     ----------
@@ -343,12 +380,10 @@ def resolve_job_ref(ref: str, jobs_dir: Path) -> str:
     ref_words = _words(text)
     in_play: list[dict] = []
     others: list[dict] = []
-    seen: set[str] = set()
     for _path, posting in iter_postings(jobs_dir):
         job_id = str(posting.get("id") or "")
-        if not job_id or job_id in seen or not _names(ref_words, posting):
+        if not job_id or not _names(ref_words, posting):
             continue
-        seen.add(job_id)
         status = statuses.get(job_id)
         if status in _IN_PLAY:
             in_play.append(posting)

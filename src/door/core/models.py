@@ -36,6 +36,7 @@ class JobPosting(BaseModel):
     apply_type: Literal["easy_apply", "external", "unknown"] | None = None
     apply_url: str | None = None
     employer: str | None = None  # the companies.json entry this posting belongs to, when known
+    formatted: bool = False  # the description is written as Markdown (headings, lists), see matching/ad_layout.py
     integrity: dict | None = None  # {"verdict": "clean"|"suspicious", "findings": [{kind, excerpt}]}, see matching/integrity.py
 
 

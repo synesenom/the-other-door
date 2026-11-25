@@ -271,3 +271,14 @@ def _stdio_runs():
     yield
     mcp_server._runs_reset()
     serve_policy.reset()
+
+
+@pytest.fixture(autouse=True)
+def _no_ad_layout_model(request, monkeypatch):
+    """A good match's layout (`matching/ad_layout.lay_out`) is one Haiku call: in a test it does nothing unless
+    the test replaces `ad_layout.lay_out` itself (the layout's own tests ask it with `claude_cli.ask` faked)."""
+    from door.matching import ad_layout
+
+    if request.module.__name__.endswith("test_ad_layout_unit"):
+        return
+    monkeypatch.setattr(ad_layout, "lay_out", lambda *a, **k: False)

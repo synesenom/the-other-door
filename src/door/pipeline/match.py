@@ -20,10 +20,13 @@ from door.commands import _common as common
 from door.commands import match as match_cmd
 from door.commands import scrape as scrape_cmd
 from door.core import cv_read, lock, profile_loader
+from door.core import progress as progress_mod
 from door.core.employers import companies as store
 from door.core.jobs import tracker as tracker_mod
 from door.core import workspace
+from door.core.jobs import selection
 from door.core.jobs.selection import select_matches
+from door.matching import ad_layout
 
 
 def _summary(block: dict) -> str:
@@ -98,6 +101,29 @@ def _skipped_block(jobs_dir: Path, config: dict, threshold: float, started: floa
     }
 
 
+MAX_LAID_OUT_PER_RUN = 30  # ads laid out (`matching/ad_layout`) a run, best-scored first; the rest wait for the next run
+
+
+def _lay_out(jobs_dir: Path, profile_dir: Path, app_tracker, threshold: float, max_age: int) -> None:
+    """A good match and every application still in play (whatever its score or age) is written as Markdown, best-scored first, up to `MAX_LAID_OUT_PER_RUN`
+    a run (the rest wait for the next run); prepared materials keep their own copy of the ad. A failed call
+    leaves the raw text."""
+    found = list(selection.iter_postings(jobs_dir))  # one walk of the store: the matches and where each is
+    paths = {str(p.get("id")): path for path, p in found}
+    postings = [p for _, p in found]
+    matches = common._drop_stale(select_matches(jobs_dir, app_tracker, threshold, postings=postings), max_age)
+    applications = [p for p in postings if app_tracker.get_status(str(p.get("id"))) in tracker_mod.ONGOING_STATUSES]
+    todo = [m for m in sorted(matches + applications, key=lambda m: -(m.get("score") or 0.0))
+            if ad_layout.needs_layout(m)][:MAX_LAID_OUT_PER_RUN]
+    if todo:
+        progress_mod.report("laying out the best ads", 0, len(todo), stage="match")
+    for done, m in enumerate(todo, 1):
+        path = paths.get(str(m.get("id")))
+        if path is not None:
+            ad_layout.lay_out(path, profile_dir=profile_dir)
+        progress_mod.report("laying out the best ads", done, len(todo), stage="match")
+
+
 @lock.locked("match")
 def _match_step_core(
     *, jobs_dir: Path | None = None, profile_dir: Path | None = None, progress=None,
@@ -136,11 +162,10 @@ def _match_step_core(
         scored = match_cmd._match_core(jobs_dir=jobs_dir, profile_dir=profile_dir)
 
         app_tracker = tracker_mod.ApplicationTracker(jobs_dir / "applications.json")
-        matches = common._drop_stale(
-            select_matches(jobs_dir, app_tracker, threshold),
-            config.get("max_age_days", common._DEFAULT_MAX_AGE_DAYS),
-        )
+        max_age = config.get("max_age_days", common._DEFAULT_MAX_AGE_DAYS)
+        matches = common._drop_stale(select_matches(jobs_dir, app_tracker, threshold), max_age)
         _stamp_relevant(matches, profile_dir)
+        _lay_out(jobs_dir, profile_dir, app_tracker, threshold, max_age)
         new = [m for m in matches if m.get("id") in unscored]
         block = {
             **scored, "step": "match", "passes": passes, "min_score": threshold,

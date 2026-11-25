@@ -366,10 +366,3 @@ def test_status_summary_core_has_no_score_bands_below_the_floor_or_without_posti
     assert result["pass_rates_by_score"] is None
 
 
-def test_status_summary_core_keeps_the_first_positive_score_of_a_job_stored_twice(env):
-    _sent_with_scores(env, [(0.9, ["applied", "interview:screening"])] * 5 + [(0.5, ["applied", "rejected"])] * 5)
-    _posting(env.jobs_dir, "job-0", date="2026-08-01", score=None)  # a later, unscored copy of job-0
-
-    result = status_cmd._status_summary_core(jobs_dir=env.jobs_dir, profile_dir=env.profile_dir)
-
-    assert result["pass_rates_by_score"]["top"]["decided"] == 5

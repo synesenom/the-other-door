@@ -330,3 +330,11 @@ def test_list_at_returns_the_list_or_names_the_missing_one():
     for bad in (None, [], {}, {"jobs": "x"}):
         with pytest.raises(ValueError, match="no `jobs` list in X's answer"):
             list_at(bad, "jobs", "X")
+
+
+def test_strip_html_drops_the_style_and_script_an_ad_carries():
+    # Systematic's SuccessFactors ads open with a <style> block for their banner image: none of it is the ad's text
+    raw = ("&lt;style&gt;@media screen and (max-width: 699px) {\n.swapimg {display: none;}\n}&lt;/style&gt;"
+           "&lt;SCRIPT type=\"text/javascript\"&gt;var x = 1;&lt;/SCRIPT&gt;&lt;p&gt;Data Scientist, NSI&lt;/p&gt;")
+
+    assert strip_html(raw, encoded=True) == "Data Scientist, NSI"
