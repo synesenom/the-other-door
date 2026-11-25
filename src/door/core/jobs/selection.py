@@ -35,24 +35,24 @@ def date_dirs(jobs_dir: Path) -> list[Path]:
     return [d for d in sorted(root.iterdir()) if d.is_dir() and workspace.DAY_RE.fullmatch(d.name)]
 
 
-_cache: dict[str, tuple[int, int, Path, dict]] = {}
+_cache: dict[str, tuple[int, int, dict]] = {}
 
 
-def _read(entry: os.DirEntry) -> tuple[Path, dict] | None:
+def _read(entry: os.DirEntry) -> dict | None:
     """The posting a directory entry names, parsed again only when its size or modification time changed:
     a long-running server (the app's, the phone's) lists the same thousands of postings on every screen.
     A shallow copy, so a caller setting a key leaves the cached one as it was; None when unreadable."""
     try:
         stat = entry.stat()
+        stamp = (stat.st_mtime_ns, stat.st_size)
         cached = _cache.get(entry.path)
-        if cached is None or cached[:2] != (stat.st_mtime_ns, stat.st_size):
-            path = Path(entry.path)
-            cached = (stat.st_mtime_ns, stat.st_size, path, json.loads(path.read_text(encoding="utf-8")))
+        if cached is None or cached[:2] != stamp:
+            cached = (*stamp, json.loads(Path(entry.path).read_text(encoding="utf-8")))
             _cache[entry.path] = cached
     except (json.JSONDecodeError, OSError):
         return None
-    data = cached[3]
-    return cached[2], dict(data) if isinstance(data, dict) else data
+    data = cached[2]
+    return dict(data) if isinstance(data, dict) else data
 
 
 def iter_postings(jobs_dir: Path) -> Iterator[tuple[Path, dict]]:
@@ -62,25 +62,24 @@ def iter_postings(jobs_dir: Path) -> Iterator[tuple[Path, dict]]:
     or unreadable JSON files are skipped. A posting stored on several days (collected
     again later) is its newest copy only, so every list, count and lookup reads the same one.
     """
-    newest_first: list[tuple[str, Path, dict]] = []
+    days: list[list[tuple[Path, dict]]] = []
     seen: set = set()
-    for date_dir in reversed(date_dirs(jobs_dir)):
-        files = sorted(((f"{date_dir.name}/{site.name}/{entry.name}", entry)
-                        for site in os.scandir(date_dir) if site.is_dir()
-                        for entry in os.scandir(site.path) if entry.name.endswith(".json")),
-                       key=lambda named: named[0])
-        for order, entry in files:
-            found = _read(entry)
-            if found is None:
+    for date_dir in reversed(date_dirs(jobs_dir)):  # newest first, so the first copy of an id is kept
+        day: list[tuple[Path, dict]] = []
+        entries = sorted((entry for site in os.scandir(date_dir) if site.is_dir()
+                          for entry in os.scandir(site.path) if entry.name.endswith(".json")),
+                         key=lambda entry: entry.path)
+        for entry in entries:
+            data = _read(entry)
+            if data is None:
                 continue
-            json_path, data = found
             job_id = data.get("id") if isinstance(data, dict) else None
             if job_id is None or job_id not in seen:
                 seen.add(job_id)
-                newest_first.append((order, json_path, data))
-    newest_first.sort(key=lambda found: found[0])  # back to date/site/file order
-    for _, json_path, data in newest_first:
-        yield json_path, data
+                day.append((Path(entry.path), data))
+        days.append(day)
+    for day in reversed(days):  # back to oldest first
+        yield from day
 
 
 def read_postings(jobs_dir: Path) -> list[dict]:
