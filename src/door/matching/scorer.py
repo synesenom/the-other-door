@@ -70,7 +70,7 @@ from pathlib import Path
 from typing import Callable
 
 from door import i18n
-from door.core import claude_cli, usage
+from door.core import claude_cli, usage, utils
 from door.core.downloads import installers
 
 _MATCHER_AGENT_PATH = claude_cli.PROMPTS_DIR / "matcher.md"
@@ -430,7 +430,8 @@ def apply_result(posting: dict, result: dict, *, needs_work_permit: bool = False
 
     updated = dict(posting)
     updated["score"] = result["score"]
-    updated["score_reason"] = result["score_reason"]
+    reason = utils.bubble_text(result["score_reason"])  # the model's words, read in the score's info bubble
+    updated["score_reason"] = reason
     updated["matching_skills"] = result.get("matching_skills", [])
     updated["missing_skills"] = result.get("missing_skills", [])
     if "language_requirement" in result:
@@ -440,7 +441,7 @@ def apply_result(posting: dict, result: dict, *, needs_work_permit: bool = False
     if needs_work_permit and result.get("work_permit") in _BLOCKING_WORK_PERMIT:
         updated["score"] = 0.0
         updated["score_reason"] = (
-            f"work permit: {_BLOCKING_WORK_PERMIT[result['work_permit']]}; {result['score_reason']}"
+            f"work permit: {_BLOCKING_WORK_PERMIT[result['work_permit']]}; {reason}"
         )
     if (posting.get("integrity") or {}).get("verdict") == "suspicious":
         # the user sees what was removed in `show`; the reason (model output) never repeats it

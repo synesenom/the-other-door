@@ -220,7 +220,7 @@ These only reach the window as IPC. They can be faked with `app.evaluate(({Brows
       - materials exist → **btn "See the application"**, or **"See what you sent"** when `materials.sent` → view materials. — ✓ a prepared card opens its application on the CV, with a way to the posting and back to the board; ✓ What you sent: the copy kept when it went out, read only, and saved from there
       - else status in [unapplied, prepared] → **btn "Prepare application"** → startPrepare(false). — ✓ Prepare application on a new match tailors, compiles and opens Ready to send
       - else none. — unit: `app/src/renderer/screens/Applications.test.tsx`
-    - **Open**: **btn "Apply on <host>"** when `apply_url` is http(s), differs from `url`, and parses (`www.` is stripped from the host). Otherwise **btn "Open in browser"** when `url` exists. Absent with neither, or with only a non-http apply_url and no url. Disabled while preparing. Click → `open-external` action with the url in the OS browser; a refused non-http URL is silent. — ✓ a separate application page: "Apply on <host>" opens it in the browser; unit: `app/src/renderer/screens/Posting.test.tsx`; disabled while preparing: Prepare area
+    - **Open**: **btn "Apply"** when `apply_url` is http(s), differs from `url`, and parses. Otherwise **btn "Open in browser"** when `url` exists. Absent with neither, or with only a non-http apply_url and no url. Disabled while preparing. Click → `open-external` action with the url in the OS browser; a refused non-http URL is silent. — ✓ a separate application page: "Apply" opens it in the browser; unit: `app/src/renderer/screens/Posting.test.tsx`; disabled while preparing: Prepare area
     - **btn "Status"**: disabled while preparing → StatusDialog (full). — ✓ while Prepare runs: the progress line, the elapsed time, locked actions and no Find new jobs; ✓ opens on the current status, with every status to choose from
     - **btn "Prepare again"** (quiet): materials exist, status in [unapplied, prepared], not running → confirm dialog. — ✓ Prepare again asks first; Cancel and Escape leave the application as it is; ✓ What you sent: … (absent for a sent job)
     - **btn "Not for me"** (quiet): only when there are **no materials**. Disabled while preparing → StatusDialog preset discarded. — ✓ a prepared card opens its application on the CV, with a way to the posting and back to the board (absent with materials); ✓ while Prepare runs: … (disabled); unit: `app/src/renderer/screens/StatusDialog.test.tsx`; unit: `app/src/renderer/screens/Posting.test.tsx`
@@ -372,7 +372,6 @@ Reached through:
 
 ### Board view
 - **h1 "Applications"**. Subtitle "N in play", with " · K in interviews" when K>0. Only when the ongoing list is non-empty. — ✓ the board: five columns, a job in each, counts and how many are in play; ✓ a rejection ends the last round and moves the card to Closed ("3 in play")
-- **btn "Add a job"** → ImportDialog. Its "Open" pushes the imported job and refreshes. — not tested here: §7 (ImportDialog) is another area
 - Notice lines, as in Matches (`status` and a plain warning `p`). — ✓ an interview round moves an applied card to Interviewing; ✓ Not yet applied takes a job off the board and back to Matches
 - **status "Loading…"**; **alert** with the error. — ✓ a board that cannot load shows the error, and loads on the next visit (Loading…: not tested, transient)
 - Empty (ongoing and closed both empty): "Nothing in play yet. Mark a match Prepared or Applied and it shows here." — unit: `app/src/renderer/screens/Applications.test.tsx`
@@ -409,7 +408,7 @@ Reached through:
 
 ---
 
-## 7. ImportDialog: "Add a job" (from Matches and Applications)
+## 7. ImportDialog: "Add a job" (from Matches)
 
 ### Calls
 - `import_posting`:

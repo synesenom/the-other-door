@@ -10,6 +10,22 @@ describe('Hint', () => {
   const icon = () => screen.getByRole('button', { name: 'About this' })
   const show = () => render(<Hint label="About this">The words.</Hint>)
 
+  it('opens its words below the icon when above them they would be cut off at the top', async () => {
+    // a phone's tap on the icon near the top of the page: the words go where they can be read
+    const rect = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      const top = this.getAttribute('role') === 'tooltip' ? -40 : 0
+      return { top, bottom: top + 60, left: 0, right: 200, width: 200, height: 60, x: 0, y: top, toJSON: () => ({}) } as DOMRect
+    })
+    show()
+    await userEvent.click(icon())
+    expect(screen.getByRole('tooltip')).toHaveClass('below')
+    rect.mockRestore()
+  })
+  it('opens its words above the icon when there is room', async () => {
+    show()
+    await userEvent.click(icon())
+    expect(screen.getByRole('tooltip')).not.toHaveClass('below')
+  })
   it('keeps its words out of the way until asked', () => {
     show()
     expect(screen.queryByRole('tooltip')).toBeNull()

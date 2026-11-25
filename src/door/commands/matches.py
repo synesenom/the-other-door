@@ -15,7 +15,7 @@ from door.commands import _prompts
 from door.commands import compile as compile_cmd
 from door.commands import salary as salary_cmd
 from door.commands import status as status_cmd
-from door.core import profile_loader, sites, workspace
+from door.core import profile_loader, sites, utils, workspace
 from door.tailoring import facts as facts_mod
 from door.render import html_doc, readability
 
@@ -330,13 +330,14 @@ def _show_core(job_id: str, *, open: bool = False, jobs_dir: Path | None = None)
             raise FileNotFoundError(f"no prepared materials for {job_id!r} in {output_dir} — prepare it first")
         _open_files([materials["pdfs"][name] for name in _MATERIALS])
 
+    estimate = salary_cmd.cached(job_id, jobs_dir)
     return {
         **posting,
         "source_name": sites.source_name(posting.get("source")),
         "status": app_tracker.get_status(job_id) or "unapplied",
         "history": app_tracker.timeline(job_id),
         "materials": materials,
-        "salary": salary_cmd.cached(job_id, jobs_dir),
+        "salary": estimate,
         "no_answer": _tracker_mod.no_answer(app_tracker, job_id),
         "no_answer_days": _tracker_mod.NO_ANSWER_DAYS,
     }
@@ -580,7 +581,9 @@ def _render_posting_detail(posting: dict, status: str, console=None, *, descript
     console.print(grid)
 
     common._section(console, "Why this score")
-    console.print(Padding(Text(common.plain(posting.get("score_reason") or "(unscored)"), style="italic"), (0, 2)))
+    reason = posting.get("score_reason") or ("(unscored)" if posting.get("score") is None else "")
+    if reason:
+        console.print(Padding(Text(common.plain(reason), style="italic"), (0, 2)))
 
     findings = (posting.get("integrity") or {}).get("findings") or []
     if (posting.get("integrity") or {}).get("verdict") == "suspicious" and findings:

@@ -16,6 +16,17 @@ from pathlib import Path
 STALE_PART_SECONDS = 3600
 
 
+# A model's summary read in an info bubble (a match's reason, a salary's why): its prompt asks for at most 20 words;
+# one past this, the model's whole working rather than a summary, is not shown. Applied to the model's own words where its answer is read (`scorer.apply_result`, `salary.parse`), before the code adds a prefix.
+BUBBLE_WORDS = 25
+
+
+def bubble_text(text: str) -> str:
+    """``text`` stripped, or "" when it is longer than `BUBBLE_WORDS` words."""
+    text = (text or "").strip()
+    return text if len(text.split()) <= BUBBLE_WORDS else ""
+
+
 def folder_spellings(folder) -> set[str]:
     """The ways a folder may be written: as given, resolved, and on macOS with or without `/private`."""
     found = {str(folder), str(Path(folder).expanduser().resolve())}

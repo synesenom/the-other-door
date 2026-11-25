@@ -21,17 +21,17 @@ test.describe('what the posting shows', () => {
     // Mette speaks Danish: the language is named, nothing asked of her
     await expect(article(page).getByText('Danish', { exact: true })).toBeVisible()
     await expect(article(page).getByText(ad.description.slice(0, 60))).toBeVisible()
-    await expect(actions(page)).toHaveText(['Prepare application', 'Apply on job.fjordpension.example', 'Status…', 'Not for me…'])
+    await expect(actions(page)).toHaveText(['Prepare application', 'Apply', 'Status…', 'Not for me…'])
     expect(world.toolCalls('show').map((c) => c.args?.job_id)).toContain(world.jobId('fjordpension-senior-ds'))
   })
 })
 
 test.describe('opening the ad', () => {
-  test('a separate application page: "Apply on <host>" opens it in the browser', async ({ page, world, os }) => {
+  test('a separate application page: "Apply" opens it in the browser', async ({ page, world, os }) => {
     await matchesLoaded(page)
     await openRow(page, world, 'baltic-power-lead-ds')
     await expect(page.getByRole('button', { name: 'Open in browser' })).toHaveCount(0)
-    await page.getByRole('button', { name: 'Apply on careers.balticpower.example' }).click()
+    await page.getByRole('button', { name: 'Apply', exact: true }).click()
     await expect.poll(async () => (await os.opened()).external).toEqual([world.ads['baltic-power-lead-ds'].applyUrl])
   })
 })

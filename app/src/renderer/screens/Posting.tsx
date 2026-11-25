@@ -43,14 +43,14 @@ function metaLine(p: PostingData): string {
   return parts.join(' · ')
 }
 
-/** The host of a separate application page (http or https, not the ad itself), or null. */
-function applyHostOf(applyUrl: string | null | undefined, adUrl: string | undefined): string | null {
-  if (!applyUrl || applyUrl === adUrl) return null
+/** Whether the ad links to a separate application page (http or https, not the ad itself). */
+function hasApplyPage(applyUrl: string | null | undefined, adUrl: string | undefined): applyUrl is string {
+  if (!applyUrl || applyUrl === adUrl) return false
   try {
     const u = new URL(applyUrl)
-    return u.protocol === 'https:' || u.protocol === 'http:' ? u.hostname.replace(/^www\./, '') : null
+    return u.protocol === 'https:' || u.protocol === 'http:'
   } catch {
-    return null
+    return false
   }
 }
 
@@ -150,10 +150,10 @@ export function Posting({ jobId, onChanged, onOpenMaterials }: Props) {
   const score = scoreText(posting.score)
   // The ad's text is here already: the link worth opening is the employer's application page, when the
   // board's ad points to one; else the ad where it was found.
-  const applyHost = applyHostOf(posting.apply_url, posting.url)
-  const target = applyHost ? (posting.apply_url as string) : posting.url
+  const applyPage = hasApplyPage(posting.apply_url, posting.url)
+  const target = applyPage ? (posting.apply_url as string) : posting.url
   const open = target ? () => void window.door.invoke('open-external', target) : null
-  const openLabel = applyHost ? `Apply on ${applyHost}` : 'Open in browser'
+  const openLabel = applyPage ? 'Apply' : 'Open in browser'
   const locked = Boolean(running)
   const hasMaterials = Boolean(posting.materials)
   const preparable = CAN_PREPARE.includes(posting.status)
@@ -174,7 +174,7 @@ export function Posting({ jobId, onChanged, onOpenMaterials }: Props) {
       </button>
     ) : null
   const openIsPrimary = narrow && !primary && !running
-  const openClass = openIsPrimary ? 'primary' : 'secondary go'
+  const openClass = openIsPrimary ? 'primary go' : 'secondary go' // it leaves the app: the arrow either way
   const matching = posting.matching_skills ?? []
   const missing = posting.missing_skills ?? []
   return (

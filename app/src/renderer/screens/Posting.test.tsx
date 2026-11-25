@@ -147,15 +147,9 @@ describe('Posting', () => {
     const { actions } = mockDoor({ show: { ...full, apply_url: 'https://careers.acme.dk/jobs/42/apply' } })
     const openExternal = actions['open-external']
     render(<Posting jobId="jobindex.1" onChanged={() => {}} />)
-    await userEvent.click(await screen.findByRole('button', { name: 'Apply on careers.acme.dk' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Apply' }))
     expect(openExternal).toHaveBeenCalledWith('https://careers.acme.dk/jobs/42/apply')
     expect(screen.queryByRole('button', { name: 'Open in browser' })).toBeNull()
-  })
-
-  it('names the application host without its www.', async () => {
-    mockDoor({ show: { ...full, apply_url: 'https://www.acme.dk/apply/42' } })
-    render(<Posting jobId="jobindex.1" onChanged={() => {}} />)
-    expect(await screen.findByRole('button', { name: 'Apply on acme.dk' })).toBeInTheDocument()
   })
 
   it('says Loading until the posting is read', async () => {

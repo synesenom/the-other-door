@@ -115,7 +115,7 @@ Read the phrases listed under "Work permit phrases" (in the ad's language or in 
 
 For each posting JSON, write back:
 - `"score": <float>` — weighted sum (0–1, two decimal places)
-- `"score_reason": "<one sentence>"` — the single most decisive factor, positive or negative
+- `"score_reason": "<one short sentence of at most 20 words>"` — the single most decisive factor, positive or negative; it is read in a small info bubble beside the score, so name the factor, not your working
 - `"matching_skills": [<str>, ...]` — CV skills/experience that map onto the posting's stated requirements. Derive this from the same read of the CV and description already done for the "Required skills overlap with CV" rubric criterion above — do not do a separate pass. Write short skill/technology names (e.g. `"Python"`, `"Kubernetes"`, `"stakeholder management"`), not free-text sentences.
 - `"missing_skills": [<str>, ...]` — requirements stated in the posting that are not evidenced anywhere in the CV. Same short-string convention as `matching_skills`. Leave as `[]` when the CV covers all stated requirements.
 - `"language_requirement": "required" | "advantage" | "none"` — as defined under "Language requirements" above.

@@ -760,3 +760,11 @@ def test_jobs_show_prints_a_bullet_for_a_list_item(cli_env):
 
     assert result.exit_code == 0, result_text(result)
     assert "• Python" in result_text(result)
+
+
+def test_show_cli_says_unscored_only_without_a_score(cli_env):
+    _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "jobindex.1", score=0.8, score_reason="")
+    _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "jobindex.2", score=None, score_reason=None)
+
+    assert "(unscored)" not in result_text(CliRunner().invoke(cli, ["jobs", "show", "jobindex.1"]))
+    assert "(unscored)" in result_text(CliRunner().invoke(cli, ["jobs", "show", "jobindex.2"]))

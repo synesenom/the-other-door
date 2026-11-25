@@ -141,7 +141,7 @@ describe('Settings', () => {
   it('on the phone: only Appearance and where the data is; no connections, no doctor', () => {
     const { onRecheck, call } = show('production', true)
     expect(screen.getByRole('region', { name: 'Appearance' })).toBeInTheDocument()
-    expect(screen.getByRole('region', { name: 'This computer' })).toHaveTextContent('/Users/ada/door-data')
+    expect(screen.getByRole('region', { name: 'This computer' })).toHaveTextContent('Your profile and jobs are on the computer running')
     expect(screen.queryByRole('region', { name: 'Connections' })).toBeNull()
     expect(onRecheck).not.toHaveBeenCalled()
     expect(call).not.toHaveBeenCalled()

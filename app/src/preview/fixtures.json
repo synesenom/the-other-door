@@ -1644,6 +1644,7 @@
    "source_name": "Greenhouse",
    "status": "unapplied",
    "history": [],
+   "salary": {"low": 62000, "high": 74000, "currency": "DKK", "period": "month", "gross": true, "position": "within", "basis": "Eight years against the six the ad asks for, in Copenhagen", "sources": [{"title": "Salary guide - Finance Manager", "url": "https://example.org/salaries/finance-manager"}, {"title": "Salary guide - Controller", "url": "https://example.org/salaries/controller"}, {"title": "Pay in Danish finance", "url": "https://stats.example.com/pay-finance"}], "ad_salary": null, "as_of": "2026-11-20"},
    "materials": null
   },
   "greenhouse.demo-8": {

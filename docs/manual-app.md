@@ -287,7 +287,7 @@ what it asks of you, the salary to expect once the job is prepared (below), and 
   you have already applied to, it is the only prepare button left.
 - **Prepare again…** (a text button, next to it, only before you apply) tailors them anew; it asks
   first, because it replaces the CV and letter and any revisions.
-- **Apply on <the employer's site>** opens the employer's application page when the board's ad links to one (most LinkedIn and some Jobindex ads); otherwise **Open in browser** opens the ad where it was found.
+- **Apply** opens the employer's application page when the board's ad links to one (most LinkedIn and some Jobindex ads); otherwise **Open in browser** opens the ad where it was found.
 - **Status…** changes where the job stands (below).
 - **Not for me…** is the quick way to drop a job: it asks why, the job leaves the list, and the next match opens in its place. Once an application is prepared it is under **Status…** instead.
 
@@ -311,7 +311,7 @@ Prepared.
 
 Preparing also estimates the salary to expect, by itself: there is nothing to press. The posting and
 Ready to send then show a **Salary** line ("55,000–70,000 DKK a month, gross"), the pages it was
-read from as links under it, the ad's own figure when it states one, and, behind the info icon, where
+read from as links under it (each named by its site, once, the page's title on hover), the ad's own figure when it states one, and, behind the info icon, where
 your experience puts you and why. It is an estimate from public pages, not advice. It is one quick web
 search on your Claude plan, done once per job and again only when the saved one is more than 90 days
 old at the next prepare; it is skipped while the plan is close to its limit. When the search finds no
@@ -384,7 +384,7 @@ to Not yet applied stays in Matches.
 
 ## Add a job
 
-**Add a job…** (in Matches and in Applications) brings in a posting you found yourself.
+**Add a job…** (in Matches) brings in a posting you found yourself.
 
 - **Link**: paste the address. *The other door* reads the page and finds the title and company. When
   it cannot (a page behind a sign-in, one built only with JavaScript, or one that names no title and
@@ -410,7 +410,7 @@ interview round with no news in 21 days; open it and choose Ghosted under Status
 the jobs in play and in interviews. Clicking a card opens its posting across the whole window,
 where you change its status; "← Applications" goes back. A card in Prepared opens Ready to send
 instead, with "See the posting" under the title for its status and Prepare again.
-**Add a job…** imports an ad. When nothing is in play, the screen says so. On a narrow window
+When nothing is in play, the screen says so. On a narrow window
 the board scrolls sideways in its own box.
 
 ## Notifications
@@ -668,7 +668,7 @@ On the phone: scan the QR code (or open the address and type the code), then in 
 
 The phone is for what you do on the road: find new jobs (the run goes on while the phone is locked),
 read postings, import an ad, prepare an application, and keep Applications up to date. It
-has three tabs, Matches, Applications and Settings (only the look and where your data is).
+has three tabs, Matches, Applications and Settings (only the look, and a line saying your data is on the computer, with no folder).
 Everything else is done on the computer running *The other door*: first-time setup, your profile and
 CV (Profile is not on the phone), signing in to
 Claude, connecting Google Drive and moving your data. A data

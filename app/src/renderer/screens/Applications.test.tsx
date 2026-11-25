@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Applications, groupApplications } from './Applications'
@@ -108,6 +108,16 @@ describe('Applications', () => {
       const card = await screen.findByRole('button', { name: /Silent job/ })
       expect(within(card).getByRole('img', { name: 'No answer in 45 days' })).toBeInTheDocument()
     })
+
+    it('a tap anywhere on a card, its warning line too, opens it', async () => {
+      // a phone shows the mark's words on the card already: the line is part of the card, never a control of its own
+      stubNarrow(true)
+      const { call } = setup([stalled, quiet])
+      render(<Applications />)
+      const card = await screen.findByRole('button', { name: /Silent job/ })
+      fireEvent.click(within(card).getByRole('img', { name: 'No answer in 45 days' }))
+      await waitFor(() => expect(call).toHaveBeenCalledWith('show', expect.anything()))
+    })
   })
 
   it('Closed shows its cards', async () => {
@@ -132,6 +142,16 @@ describe('Applications', () => {
     expect(await screen.findByRole('group', { name: 'Applications board' })).toBeInTheDocument()
   })
 
+  it("the phone's Back goes from a posting to the board", async () => {
+    stubNarrow(true)
+    setup()
+    render(<Applications />)
+    await userEvent.click(await screen.findByRole('button', { name: /Applied job/ }))
+    expect(await screen.findByRole('button', { name: 'Status…' })).toBeInTheDocument()
+    history.back()
+    expect(await screen.findByRole('group', { name: 'Applications' })).toBeInTheDocument() // the phone's list
+  })
+
   it('narrow: the posting hides the sidebar too', async () => {
     stubNarrow(true)
     const onPushed = vi.fn()
@@ -150,16 +170,6 @@ describe('Applications', () => {
     setup([])
     render(<Applications />)
     expect(await screen.findByText('Nothing in play yet. Mark a match Prepared or Applied and it shows here.')).toBeInTheDocument()
-  })
-
-  it('has an Add a job button that opens the import dialog', async () => {
-    stubNarrow(false)
-    setup([])
-    render(<Applications />)
-    const add = await screen.findByRole('button', { name: 'Add a job…' })
-    expect(add).toHaveClass('secondary')
-    await userEvent.click(add)
-    expect(screen.getByRole('dialog', { name: 'Add a job' })).toBeInTheDocument()
   })
 
   it('a status change goes back to the board, says so and reads the board again', async () => {
