@@ -305,8 +305,8 @@ def ask(
         args += ["--json-schema", json.dumps(schema)]
     args += STREAM_ARGS
     if allowed_tools:
-        # Restricted, with only the built-in tools the rules name: a hostile page or ad read by the call can then
-        # reach nothing else (no shell, no file, no other web address than the rules allow).
+        # Restricted, with only the built-in tools named (a rule such as `WebSearch` names its tool): a hostile page
+        # or ad read by the call can then reach nothing else (no shell, no file).
         builtin = list(dict.fromkeys(t.split("(")[0] for t in allowed_tools))
         args += ["--restricted", "--tools", ",".join(builtin), "--allowedTools", ",".join(allowed_tools)]
     else:

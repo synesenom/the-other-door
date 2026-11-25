@@ -2,11 +2,12 @@
 
 The call that reads a user's public pages (`core/page_reader`) sees no private data, so this is all it can
 do, and its limits are held here, in code, not by the prompt: at most `MAX_PAGES` pages per server process
-(one process per `claude -p` call), only public addresses and a size cap (`PoliteSession`, #548), robots.txt
-obeyed, and LinkedIn and Indeed never fetched (their terms), not even as the target of a redirect.
+(one process per `claude -p` call), only public addresses and a size cap (`PoliteSession`, #548; robots.txt as
+the fetcher's global setting says), and LinkedIn and Indeed never fetched (their terms), not even as the target of a redirect.
 """
 
 import re
+import threading
 from urllib.parse import urljoin, urlsplit
 
 import requests
@@ -19,7 +20,6 @@ from door.scrapers import http_client
 MAX_PAGES = 20
 MAX_CHARS = 40_000   # of one page's text, links apart
 MAX_LINKS = 150
-NO_FETCH_NAMES = ("linkedin", "indeed")   # a label of the host, any subdomain or country
 
 # A data file a script-rendered page names in its source (.json, .bib).
 _DATA_FILE = re.compile(r"""["']([^"'\s<>]+\.(?:json|bib))["']""")
@@ -29,16 +29,11 @@ class Refused(Exception):
     """A page that is not fetched; the message is what the model reads."""
 
 
-def is_no_fetch(host: str) -> bool:
-    """Whether *host* is a site whose terms forbid fetching it (LinkedIn, Indeed)."""
-    return any(label in NO_FETCH_NAMES for label in host.lower().split("."))
-
-
 def _check_target(url: str) -> None:
     parts = urlsplit(url)
     if parts.scheme not in ("http", "https") or not parts.hostname:
         raise Refused(f"{url} is not a web address (http or https)")
-    if is_no_fetch(parts.hostname):
+    if {"linkedin", "indeed"} & set(parts.hostname.lower().split(".")):  # any subdomain or country of them
         raise Refused(f"{parts.hostname} is never fetched (its terms forbid it); skip it")
 
 
@@ -58,26 +53,25 @@ def _html_text(html: str, base: str) -> str:
 class PageFetcher:
     """Fetches pages for one reader call, counting them."""
 
-    def __init__(self, session: http_client.PoliteSession | None = None, max_pages: int = MAX_PAGES) -> None:
+    def __init__(self, session: http_client.PoliteSession | None = None) -> None:
         self.session = session or http_client.PoliteSession(min_delay=0.5, max_delay=1.0, timeout=15, max_retries=1)
-        self.max_pages = max_pages
         self.fetched = 0
+        self._count = threading.Lock()  # tool calls may run on separate threads
 
     def fetch(self, url: str) -> str:
         """The page at *url* as text with its links; `Refused` (with the reason) when it is not fetched."""
         url = url.strip()
         _check_target(url)
-        if self.fetched >= self.max_pages:
-            raise Refused(f"the limit of {self.max_pages} pages is used up; answer with what you have read")
-        self.fetched += 1
+        with self._count:
+            if self.fetched >= MAX_PAGES:
+                raise Refused(f"the limit of {MAX_PAGES} pages is used up; answer with what you have read")
+            self.fetched += 1
         try:
             resp = self.session.get(url, before_redirect=_check_target)
         except Refused:
             raise
         except http_client.NotPublicAddress:
             raise Refused(f"{urlsplit(url).hostname} is not a public internet address; it is not fetched") from None
-        except http_client.RobotsBlocked:
-            raise Refused(f"{url} is closed to automatic readers (robots.txt)") from None
         except requests.RequestException as exc:
             raise Refused(f"could not fetch {url}: {type(exc).__name__}") from None
         kind = resp.headers.get("Content-Type", "").split(";")[0].strip().lower()

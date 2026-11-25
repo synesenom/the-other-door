@@ -9,7 +9,7 @@ Conventions used below:
   1. **Expected core error.** `{"error": str(exc)}` comes back from `_tool_errors` (ValueError, LookupError, FileNotFoundError, ConfigError, CompaniesError, LockHeldError, ClaudeError, DriveError, SyncConflict…). The message is the exception text.
   2. **MCPServer argument validation or an unexpected exception** (e.g. OSError). The result is `isError`, and the text is `Error executing tool <tool>: <pydantic or exception text>`, which can run to several lines.
   3. **Transport errors** (door-server.ts):
-     - `The other door took too long to answer`: the timeout. The default is 60 s. Per-tool limits: keywords 150 s, enrich 660 s, market 180 s.
+     - `The other door took too long to answer`: the timeout. The default is 60 s. Per-tool limits: keywords 150 s, enrich 960 s, market 180 s.
      - `The other door's server stopped; try again`: the child process died.
      - `<tool> returned something that is not JSON`.
      - Main-process refusals: `unknown tool`, `enrich takes web addresses only; files are chosen with the file picker.` (its `urls`), and `enrich cannot take a file path from the window; files are chosen with a file dialog.` (its `files`: a CV file goes by token, the `tokens` of `door:call`)

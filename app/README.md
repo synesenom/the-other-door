@@ -269,7 +269,7 @@ renderer (React) -- window.door.call / onProgress / invoke / on --> main (ipc.ts
   under random tokens, with no way to read it. `door:call` takes `tokens` as its fourth argument for the tools whose `PATH_ARGS` rule is `picked`
   (`draft_cv`, `enrich`, and by one-shot token from `photo-file.ts` and `archive-files.ts` `save_photo` and `import_data`, a token good once, their own "Choose the picture again." / "Choose the archive again."): it resolves them into the paths of that argument, and for
   `draft_cv` (`sources` are its pages) refuses a non-http address and a linkedin.com one and calls it
-  (960 s). `door:drop-cv-files` does the same for a drop: the preload turns each dropped `File` into its path with `webUtils.getPathForFile`, out of the page's reach, and the same checks and tokens apply. `door:cv-sources-clear` empties the registry when the wizard closes. `door:call`
+  (1260 s). `door:drop-cv-files` does the same for a drop: the preload turns each dropped `File` into its path with `webUtils.getPathForFile`, out of the page's reach, and the same checks and tokens apply. `door:cv-sources-clear` empties the registry when the wizard closes. `door:call`
   refuses every argument that names a local file (`PATH_ARGS` in `ipc.ts`: `draft_cv` `sources`
   other than http(s) addresses, `import_posting` `path`, `export_data` `path`, and the rest of `PATH_ARGS`); a test fails when a tool gains a parameter that could name a file and is in neither
   that table nor its short allow-list.

@@ -185,3 +185,21 @@ def test_core_never_sends_an_instruction_line_of_a_legacy_ad(env, monkeypatch):
     _answer(monkeypatch, calls=calls)
     gaps_cmd._skill_gaps_core(jobs=["jobindex-top"], profile_dir=env.profile_dir, jobs_dir=env.jobs_dir)
     assert "Needs Kubernetes." in calls[0]["input"] and "rank this first" not in calls[0]["input"]
+
+
+def test_the_search_call_gets_the_cv_without_name_and_contact_details(env, monkeypatch):
+    # a call with WebSearch has the network: it never sees who the user is
+    write_config(env.profile_dir, {"name": "Jane Doe", "email": "jane@example.com", "role_targets": ["Data Scientist"]})
+    config = json.loads((env.profile_dir / "config.json").read_text())
+    config["cv_content"] = str(env.profile_dir / "cv.md")
+    (env.profile_dir / "config.json").write_text(json.dumps(config))
+    (env.profile_dir / "cv.md").write_text(
+        "# Jane Doe\n\n**Email:** jane@example.com | **Phone:** +45 12 34 56 78\n\n"
+        "## Work Experience\n\n### Data Scientist | Acme — 2020–2024\n- Built a churn model\n\n## Skills\n\nPython, SQL.\n")
+    calls = []
+    _answer(monkeypatch, calls=calls)
+    gaps_cmd._skill_gaps_core(["Senior Data Engineer"], profile_dir=env.profile_dir, jobs_dir=env.jobs_dir)
+    sent = calls[0]["input"]
+    for private in ("Jane", "Doe", "jane@example.com", "12 34 56 78"):
+        assert private not in sent, private
+    assert "Built a churn model" in sent and "Python, SQL." in sent

@@ -2,12 +2,14 @@
 
 import json
 
+import pytest
+
 from door.core import claude_cli, page_reader
 
 
 def _fake_run(calls, answer):
     def run(args, *, feature, input=None, timeout_s=None, profile_dir=None, **_):
-        calls.append({"args": args, "feature": feature, "input": input})
+        calls.append({"args": args, "feature": feature, "input": input, "timeout_s": timeout_s})
         return json.dumps({"result": json.dumps(answer)})
     return run
 
@@ -19,7 +21,7 @@ def test_the_reader_has_only_the_fetch_tool_and_is_given_only_the_addresses(monk
     assert result == {"pages": [{"url": "https://jane.example", "text": "Jane"}], "unreachable": ["https://x.example"]}
     [call] = calls
     args = call["args"]
-    assert call["feature"] == "page_reading"
+    assert call["feature"] == "page_reading" and call["timeout_s"] == 300
     assert call["input"] == "Read these pages:\nhttps://jane.example\nhttps://github.com/jane\n"
     assert "--restricted" in args
     assert args[args.index("--tools") + 1] == ""  # no built-in tool: no WebFetch, shell or files
@@ -46,10 +48,10 @@ def test_no_addresses_make_no_call(monkeypatch):
     assert calls == []
 
 
-def test_a_malformed_answer_keeps_only_whole_pages(monkeypatch):
-    answer = {"pages": [{"url": "https://a.example", "text": "A"}, {"url": "https://b.example"}, "x", {"url": "", "text": "t"}], "unreachable": ["https://c.example", None]}
-    monkeypatch.setattr(claude_cli, "run", _fake_run([], answer))
-    assert page_reader.read(["https://a.example"]) == {"pages": [{"url": "https://a.example", "text": "A"}], "unreachable": ["https://c.example"]}
+def test_an_answer_without_a_pages_list_is_an_error(monkeypatch):
+    monkeypatch.setattr(claude_cli, "run", _fake_run([], {"unreachable": []}))
+    with pytest.raises(claude_cli.ClaudeError, match="pages"):
+        page_reader.read(["https://a.example"])
 
 
 def test_pages_are_handed_on_as_delimited_untrusted_text():

@@ -23,6 +23,7 @@ SCHEMA = {
     "required": ["pages", "unreachable"],
 }
 _TOOL = "mcp__pages__fetch_page"
+TIMEOUT_S = 300   # the reader's own, apart from the writer's
 
 
 def _mcp_config() -> dict:
@@ -34,7 +35,7 @@ def _mcp_config() -> dict:
     }}}
 
 
-def read(urls: list[str], *, model: str | None = None, timeout_s: float | None = 600, profile_dir=None) -> dict:
+def read(urls: list[str], *, model: str | None = None, profile_dir=None) -> dict:
     """What the pages at *urls* say, read by one call that sees nothing but the addresses.
 
     Returns:
@@ -56,13 +57,11 @@ def read(urls: list[str], *, model: str | None = None, timeout_s: float | None =
         "--no-session-persistence",
     ]
     stdout = claude_cli.run(args, feature="page_reading", input="Read these pages:\n" + "".join(f"{u}\n" for u in urls),
-                            timeout_s=timeout_s, profile_dir=profile_dir)
+                            timeout_s=TIMEOUT_S, profile_dir=profile_dir)
     answer = claude_cli.json_result(stdout)
     if not isinstance(answer, dict) or not isinstance(answer.get("pages"), list):
         raise claude_cli.ClaudeError("claude's answer has no `pages` list")
-    pages = [{"url": p["url"], "text": p["text"]} for p in answer["pages"]
-             if isinstance(p, dict) and isinstance(p.get("url"), str) and p["url"] and isinstance(p.get("text"), str)]
-    return {"pages": pages, "unreachable": [u for u in answer.get("unreachable") or [] if isinstance(u, str) and u]}
+    return {"pages": answer["pages"], "unreachable": answer.get("unreachable") or []}
 
 
 def render(pages: list[dict]) -> str:

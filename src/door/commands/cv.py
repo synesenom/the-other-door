@@ -242,7 +242,7 @@ def _draft_cv_core(
             parts.append(f"Source file {source}:\n<<<\n{text}\n>>>")
 
     # the pages are read first by a call that sees none of the files (#549); the call below has them and no tools
-    pages = page_reader.read(urls, model=model, timeout_s=timeout_s, profile_dir=profile_dir)
+    pages = page_reader.read(urls, model=model, profile_dir=profile_dir)
 
     template = workspace.PROFILE_EXAMPLE_DIR / "cv.md"
     header = {k: config.get(k) for k in ("name", "email", "location", "role_targets") if config.get(k)}

@@ -123,7 +123,7 @@ def _propose(urls, files, *, config, cv_path, profile_dir, model, timeout_s) -> 
     # a CV file is read here, like draft_cv's; its text goes in the prompt
     read = [f"CV file {Path(f).name}:\n<<<\n{cv_cmd._extract_text(Path(f))}\n>>>\n\n" for f in files]
     # the pages are read first by a call that sees none of this (#549); the call below has the CV and no tools
-    pages = page_reader.read(urls, model=model, timeout_s=timeout_s, profile_dir=profile_dir)
+    pages = page_reader.read(urls, model=model, profile_dir=profile_dir)
 
     prompt = (
         f"Role targets: {', '.join(config.get('role_targets') or [])}\n\n"

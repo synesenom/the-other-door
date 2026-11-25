@@ -70,25 +70,6 @@ def _experience_lines(description: str) -> list[str]:
     return found[:_MAX_AD_LINES]
 
 
-_SENT_KINDS = ("experience", "education", "skills", "certifications", "languages")  # the rest (a summary, references, contacts) stays home
-
-
-def _anonymous_cv(cv_text: str, profile: dict, reading: dict) -> str:
-    """The CV's sections about the work (`_SENT_KINDS`, by the reading's kinds), without the profile's name, email and
-    phone, nor the name, email and contact details the reading found, each taken out as its literal text, however the CV
-    spaces it."""
-    private = [str(profile.get(k)) for k in ("name", "email", "phone") if profile.get(k)]
-    private += [part for part in str(profile.get("name") or "").split() if len(part) > 1]
-    private += [str(reading.get(k)) for k in ("name", "email") if reading.get(k)]
-    private += [str(c["value"]) for c in reading.get("contacts") or [] if c.get("value")]
-    kept = [line for kind, line in cv_read.lines_by_kind(cv_text, reading) if kind in _SENT_KINDS]
-    text = "\n".join(kept)
-    for value in sorted(set(private), key=len, reverse=True):
-        if value.split():
-            text = re.sub(r"\s+".join(map(re.escape, value.split())), "", text, flags=re.IGNORECASE)
-    return text.strip()[:_MAX_CV_CHARS]
-
-
 def build_input(posting: dict, cv_text: str, profile: dict, reading: dict, *, now_year: int | None = None) -> str:
     """The question's text: the ad (title, company, place, country and currency, the ad's own salary
     and experience lines) and the candidate's experience (years counted from the reading `reading` of the CV, the CV without contact details)."""
@@ -109,7 +90,7 @@ def build_input(posting: dict, cv_text: str, profile: dict, reading: dict, *, no
     out += ["", "# The candidate",
             f"Years of experience counted from the dated roles: {years} years" if years is not None
             else "Years of experience: not countable from the CV"]
-    cv = _anonymous_cv(cv_text, profile, reading)
+    cv = cv_read.anonymous(cv_text, profile, reading)[:_MAX_CV_CHARS]
     if cv:
         out += ["CV (contact details removed):", cv]
     return "\n".join(out)

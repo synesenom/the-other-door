@@ -3,6 +3,7 @@
 import asyncio
 
 import pytest
+import requests
 import requests.adapters
 import responses
 
@@ -112,3 +113,30 @@ def test_the_server_offers_only_fetch_page_and_answers_a_refusal_as_an_error():
     with pytest.raises(Exception) as err:
         asyncio.run(server.call_tool("fetch_page", {"url": "https://www.linkedin.com/in/jane"}))
     assert "never fetched" in str(err.value)
+
+
+def test_two_calls_at_once_cannot_pass_the_limit(monkeypatch):
+    import threading
+    import time
+
+    class Slow:
+        def get(self, url, **kwargs):
+            time.sleep(0.01)  # a window for a count that is read and then written
+            raise requests.ConnectionError("down")
+
+    fetcher = page_fetch.PageFetcher(session=Slow())
+    refused_for_limit = []
+
+    def go():
+        try:
+            fetcher.fetch("https://jane.example/")
+        except page_fetch.Refused as exc:
+            if "limit" in str(exc):
+                refused_for_limit.append(1)
+
+    threads = [threading.Thread(target=go) for _ in range(40)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert fetcher.fetched == 20 and len(refused_for_limit) == 20
