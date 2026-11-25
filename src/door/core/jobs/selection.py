@@ -349,12 +349,10 @@ def resolve_job_ref(ref: str, jobs_dir: Path) -> str:
     ref_words = _words(text)
     in_play: list[dict] = []
     others: list[dict] = []
-    seen: set[str] = set()
     for _path, posting in iter_postings(jobs_dir):
         job_id = str(posting.get("id") or "")
-        if not job_id or job_id in seen or not _names(ref_words, posting):
+        if not job_id or not _names(ref_words, posting):
             continue
-        seen.add(job_id)
         status = statuses.get(job_id)
         if status in _IN_PLAY:
             in_play.append(posting)
