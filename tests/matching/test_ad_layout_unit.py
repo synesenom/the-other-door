@@ -1,4 +1,4 @@
-"""The layout of a well-scored ad: verified line numbers, stored with the description's hash."""
+"""A well-scored ad written once as Markdown from the model's verified line numbers, its words its own."""
 
 import json
 
@@ -20,22 +20,13 @@ def test_verified_survives_a_malformed_answer(answer):
     assert ad_layout.verified(answer, 5) == {"headings": [], "bullets": []}
 
 
-def test_without_a_layout_every_non_empty_line_is_a_paragraph():
-    blocks = ad_layout.blocks(DESC, None)
-    assert [b["kind"] for b in blocks] == ["paragraph"] * 6
-    assert blocks[3]["text"] == "- Python"
+def test_the_ad_becomes_markdown_with_its_own_words():
+    md = ad_layout.markdown(DESC, {"headings": [1, 3], "bullets": [4, 5]})
+    assert md == "## About the role\n\nWe build forecasts.\n\n## You bring\n\n- Python\n- SQL\n\nApply today."
 
 
-def test_a_layout_marks_headings_and_bullets_and_strips_the_marker():
-    layout = {"headings": [1, 3], "bullets": [4, 5], "sha256": ad_layout.description_hash(DESC)}
-    blocks = ad_layout.blocks(DESC, layout)
-    assert [b["kind"] for b in blocks] == ["heading", "paragraph", "heading", "bullet", "bullet", "paragraph"]
-    assert blocks[3]["text"] == "Python"
-
-
-def test_a_layout_of_another_description_is_ignored():
-    layout = {"headings": [1], "bullets": [], "sha256": ad_layout.description_hash("old text")}
-    assert {b["kind"] for b in ad_layout.blocks(DESC, layout)} == {"paragraph"}
+def test_a_line_named_neither_stays_a_paragraph():
+    assert ad_layout.markdown("One\nTwo", {"headings": [], "bullets": []}) == "One\n\nTwo"
 
 
 def _posting(tmp_path, **extra):
@@ -44,7 +35,7 @@ def _posting(tmp_path, **extra):
     return path
 
 
-def test_lay_out_sends_numbered_lines_and_stores_the_verified_layout(tmp_path, monkeypatch):
+def test_lay_out_sends_numbered_lines_and_stores_the_ad_as_markdown(tmp_path, monkeypatch):
     seen = {}
 
     def ask(agent, text, **kw):
@@ -57,21 +48,14 @@ def test_lay_out_sends_numbered_lines_and_stores_the_verified_layout(tmp_path, m
     assert ad_layout.lay_out(path) is True
     assert seen["agent"] == "ad-layout" and seen["feature"] == "ad_layout"
     assert seen["text"].splitlines()[:2] == ["1: About the role", "2: We build forecasts."]
-    stored = json.loads(path.read_text())["layout"]
-    assert stored == {"headings": [1], "bullets": [4, 5], "sha256": ad_layout.description_hash(DESC)}
+    stored = json.loads(path.read_text())
+    assert stored["description"] == "## About the role\n\nWe build forecasts.\n\nYou bring\n\n- Python\n- SQL\n\nApply today."
+    assert stored["formatted"] is True
 
 
-def test_a_posting_with_a_layout_for_its_description_makes_no_call(tmp_path, monkeypatch):
+def test_an_ad_already_written_as_markdown_makes_no_call(tmp_path, monkeypatch):
     monkeypatch.setattr(claude_cli, "ask", lambda *a, **k: pytest.fail("asked"))
-    path = _posting(tmp_path, layout={"headings": [], "bullets": [], "sha256": ad_layout.description_hash(DESC)})
-    assert ad_layout.lay_out(path) is False
-
-
-def test_a_layout_of_an_older_description_is_made_again(tmp_path, monkeypatch):
-    monkeypatch.setattr(claude_cli, "ask", lambda *a, **k: {"headings": [1], "bullets": []})
-    path = _posting(tmp_path, layout={"headings": [2], "bullets": [], "sha256": "stale"})
-    assert ad_layout.lay_out(path) is True
-    assert json.loads(path.read_text())["layout"]["headings"] == [1]
+    assert ad_layout.lay_out(_posting(tmp_path, formatted=True)) is False
 
 
 def test_a_failed_call_leaves_the_posting_as_it_was(tmp_path, monkeypatch):
@@ -82,4 +66,4 @@ def test_a_failed_call_leaves_the_posting_as_it_was(tmp_path, monkeypatch):
     path = _posting(tmp_path)
     before = path.read_text()
     assert ad_layout.lay_out(path) is False
-    assert path.read_text() == before
+    assert path.read_text() == before  # the raw text: the next run asks again

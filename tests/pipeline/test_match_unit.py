@@ -289,8 +289,6 @@ def _layout_run(env, fakes, monkeypatch, scores, statuses=None):
 
 
 def test_a_run_lays_out_at_most_the_cap_best_scored_first(env, fakes, monkeypatch, progress_events):
-    from door.commands import match as match_cmd
-
     monkeypatch.setattr(match_step, "MAX_LAID_OUT_PER_RUN", 2)
     laid = _layout_run(env, fakes, monkeypatch, {"job-a": 0.7, "job-b": 0.9, "job-c": 0.8})
 
@@ -302,21 +300,19 @@ def test_a_run_lays_out_at_most_the_cap_best_scored_first(env, fakes, monkeypatc
 
 
 def test_a_match_already_laid_out_is_not_counted_against_the_cap(env, fakes, monkeypatch):
-    from door.commands import match as match_cmd
-    from door.matching import ad_layout
-
     monkeypatch.setattr(match_step, "MAX_LAID_OUT_PER_RUN", 1)
     laid = _layout_run(env, fakes, monkeypatch, {"job-a": 0.9, "job-b": 0.8})
     path = next(env.jobs_dir.glob("postings/*/*/job-a.json"))
     data = json.loads(path.read_text())
-    path.write_text(json.dumps({**data, "layout": {"headings": [], "bullets": [], "sha256": ad_layout.description_hash("d")}}))
+    path.write_text(json.dumps({**data, "formatted": True}))
 
     run(env)
 
     assert laid == ["job-b"]
 
 
-def test_jobs_still_in_play_get_a_layout_and_closed_ones_do_not(env, fakes, monkeypatch):
+def test_only_matches_not_yet_prepared_are_written_as_markdown(env, fakes, monkeypatch):
+    # a prepared job's ad stays as its materials and their fact check read it
     laid = _layout_run(
         env, fakes, monkeypatch,
         {"job-new": 0.9, "job-prep": 0.9, "job-app": 0.9, "job-int": 0.9, "job-no": 0.9, "job-rej": 0.9},
@@ -326,4 +322,4 @@ def test_jobs_still_in_play_get_a_layout_and_closed_ones_do_not(env, fakes, monk
 
     run(env)
 
-    assert sorted(laid) == ["job-app", "job-int", "job-new", "job-prep"]
+    assert laid == ["job-new"]

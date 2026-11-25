@@ -8,6 +8,7 @@ import { SkillColumn } from './SkillColumn'
 import { Dialog } from './Dialog'
 import { Hint } from './Hint'
 import { SalaryLine } from './SalaryLine'
+import { Markdown } from './Markdown'
 import { Spinner } from './Spinner'
 import { prepareText } from './run-text'
 import { StatusDialog } from './StatusDialog'
@@ -298,37 +299,8 @@ export function Posting({ jobId, onChanged, onOpenMaterials }: Props) {
   )
 }
 
-/** The ad's text: a heading, a list for each run of bullets and a paragraph for the rest (`description_blocks`); the plain text when `show` sent none. */
+/** The ad's text: a good match's as Markdown, its headings and lists set out; any other as it came. */
 function Description({ posting }: { posting: PostingData }) {
-  const blocks = posting.description_blocks
-  if (!blocks?.length) return <p className="body description">{posting.description}</p>
-  const out: ReactNode[] = []
-  for (let i = 0; i < blocks.length; i++) {
-    const block = blocks[i]
-    if (block.kind === 'bullet') {
-      const items: string[] = []
-      for (; i < blocks.length && blocks[i].kind === 'bullet'; i++) items.push(blocks[i].text)
-      i--
-      out.push(
-        <ul key={i} className="body description-list">
-          {items.map((text, n) => (
-            <li key={n}>{text}</li>
-          ))}
-        </ul>,
-      )
-    } else if (block.kind === 'heading') {
-      out.push(
-        <h3 key={i} className="body description-heading">
-          {block.text}
-        </h3>,
-      )
-    } else {
-      out.push(
-        <p key={i} className="body">
-          {block.text}
-        </p>,
-      )
-    }
-  }
-  return <div className="description">{out}</div>
+  if (posting.formatted) return <Markdown text={posting.description ?? ''} className="body" />
+  return <p className="body description">{posting.description}</p>
 }

@@ -1,16 +1,15 @@
-"""The layout of a well-scored ad: which of its lines are headings and which are list items.
+"""A well-scored ad written as Markdown: its headings and lists marked, its words the ad's own.
 
 A scraped description is one line per block of the ad. For a posting that cleared ``min_score`` one
 Haiku call (`ad-layout` prompt, feature ``ad_layout``) reads the numbered lines and names the headings
 and bullets by number; the model writes no text. Code keeps only integers in range and a line in one
-list only, and stores them on the posting as ``layout`` beside the sha256 of the description they were
-made for, so a layout of an older description is ignored. A failed call leaves the raw text; the next
-run tries again, since "no layout for this description" is the only test.
+list only, writes the description back as Markdown (``## `` before a heading, ``- `` before a list
+item, a blank line between blocks) and sets ``formatted`` on the posting, so it is done once. A failed
+call leaves the raw text; the next run tries again.
 """
 
 from __future__ import annotations
 
-import hashlib
 import json
 import re
 from pathlib import Path
@@ -34,10 +33,6 @@ def lines(description: str) -> list[str]:
     return [line.strip() for line in (description or "").splitlines() if line.strip()]
 
 
-def description_hash(description: str) -> str:
-    return hashlib.sha256((description or "").encode("utf-8")).hexdigest()
-
-
 def verified(answer, count: int) -> dict:
     """``{"headings", "bullets"}`` from a model's answer: sorted integers in 1..count, once each, a line
     named in both lists in neither."""
@@ -50,37 +45,29 @@ def verified(answer, count: int) -> dict:
     return {"headings": sorted(headings - both), "bullets": sorted(bullets - both)}
 
 
-def _made_for(description: str, layout) -> bool:
-    """Whether ``layout`` was made for this very description."""
-    return isinstance(layout, dict) and layout.get("sha256") == description_hash(description)
-
-
-def blocks(description: str, layout: dict | None) -> list[dict]:
-    """The description as ``[{"kind": "heading"|"bullet"|"paragraph", "text"}]``, one per non-empty line.
-    Without a layout made for this very description every line is a paragraph."""
-    rows = lines(description)
-    valid = _made_for(description, layout)
-    headings = set(layout.get("headings") or []) if valid else set()
-    bullets = set(layout.get("bullets") or []) if valid else set()
-    out = []
-    for number, text in enumerate(rows, 1):
-        if number in headings:
-            out.append({"kind": "heading", "text": text})
-        elif number in bullets:
-            out.append({"kind": "bullet", "text": _MARKER.sub("", text) or text})
-        else:
-            out.append({"kind": "paragraph", "text": text})
-    return out
+def markdown(description: str, layout: dict) -> str:
+    """The description as Markdown: the lines `layout` names as headings and bullets marked, one blank
+    line between blocks and none inside a list. The words are the description's."""
+    headings, bullets = set(layout.get("headings") or []), set(layout.get("bullets") or [])
+    out: list[str] = []
+    previous = ""
+    for number, text in enumerate(lines(description), 1):
+        kind = "heading" if number in headings else "bullet" if number in bullets else "paragraph"
+        line = f"## {text}" if kind == "heading" else f"- {_MARKER.sub('', text) or text}" if kind == "bullet" else text
+        if out and not (kind == previous == "bullet"):
+            out.append("")
+        out.append(line)
+        previous = kind
+    return "\n".join(out)
 
 
 def needs_layout(posting: dict) -> bool:
-    """Whether the posting has text and no layout made for it."""
-    description = posting.get("description") or ""
-    return bool(lines(description)) and not _made_for(description, posting.get("layout"))
+    """Whether the posting has text not yet written as Markdown."""
+    return bool(lines(posting.get("description") or "")) and not posting.get("formatted")
 
 
 def lay_out(path: Path, *, profile_dir: Path | None = None) -> bool:
-    """Give the posting at ``path`` a layout when it has none for its description; True when it got one.
+    """Write the description of the posting at ``path`` as Markdown when it is not yet; True when it was.
     A failed call changes nothing."""
     posting = json.loads(Path(path).read_text(encoding="utf-8"))
     if not needs_layout(posting):
@@ -95,6 +82,7 @@ def lay_out(path: Path, *, profile_dir: Path | None = None) -> bool:
         return False
     if not isinstance(answer, dict):
         return False
-    posting["layout"] = {**verified(answer, len(rows)), "sha256": description_hash(description)}
+    posting["description"] = markdown(description, verified(answer, len(rows)))
+    posting["formatted"] = True
     utils.write_json_atomic(Path(path), posting)
     return True

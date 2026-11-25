@@ -279,7 +279,7 @@ bar at the bottom.
 
 Choosing a row shows the posting: title (and its English translation), company and place,
 the score (the reason for it behind the info icon beside it: hover or focus it), the skills that fit and the gaps, the ad's language and
-what it asks of you, the salary to expect once the job is prepared (below), and the ad itself, with its headings and lists set out once the job has reached your "Match fit" setting (a plain text flow until then, and whenever Claude could not lay it out; the next run tries again). The buttons:
+what it asks of you, the salary to expect once the job is prepared (below), and the ad itself, with its headings and lists set out once the job has reached your "Match fit" setting, before you prepare it (a plain text flow until then, and whenever Claude could not set it out; the next run tries again). The buttons:
 
 - **Prepare application** (the one dark button while nothing is prepared and the job is not
   yet applied) tailors a CV and a cover letter for this posting (below).
