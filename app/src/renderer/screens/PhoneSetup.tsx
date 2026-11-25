@@ -175,15 +175,7 @@ export function PhoneSetup({ onClose, start = 'how', pollMs = 2000 }: { onClose:
       {step === 'home' && (
         <div className="phone-step">
           <h3 className="display-s">Add The other door to your home screen</h3>
-          <p className="body">Your phone is paired. So that <AppName /> opens like an app:</p>
-          <ul className="phone-home">
-            <li className="body">
-              <strong>Android:</strong> in Chrome, open the menu (⋮) and tap <strong>Install app</strong>.
-            </li>
-            <li className="body">
-              <strong>iPhone:</strong> in Safari, tap Share, then <strong>Add to Home Screen</strong>.
-            </li>
-          </ul>
+          <p className="body">Your phone is paired. Once it opens <AppName />, it offers to install it as an app.</p>
           {!status?.lasting && <p className="small muted">When this computer restarts, set this up again and scan the new code. The address changes with it, so add it again to your home screen and remove the old one.</p>}
           <div className="actions">
             <button type="button" className="primary" onClick={onClose}>

@@ -5,6 +5,7 @@ import { AppName, ErrorBox } from '../renderer/screens/AppName'
 import { App } from '../renderer/App'
 import { Splash } from '../renderer/Splash'
 import { createWebDoor } from './bridge'
+import { InstallLine } from './InstallLine'
 import { Pair, codeFromHash } from './Pair'
 import { sharedFrom, type Shared } from './share'
 import type { TokenStore } from './token-store'
@@ -134,5 +135,10 @@ export function Web({ store, fetch }: { store: TokenStore; fetch: typeof globalT
       </main>
     )
   }
-  return <App />
+  return (
+    <div className="web-app">
+      <InstallLine />
+      <App />
+    </div>
+  )
 }

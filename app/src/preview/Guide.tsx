@@ -7,6 +7,7 @@ import { Switch } from '../renderer/screens/Switch'
 import { ErrorBox } from '../renderer/screens/AppName'
 import { Hint } from '../renderer/screens/Hint'
 import { BackButton } from '../renderer/screens/BackButton'
+import { InstallLineView } from '../web/InstallLine'
 
 const COLOURS = [
   'ground', 'surface', 'page', 'ink', 'ink-muted', 'border',
@@ -184,6 +185,10 @@ export function Guide() {
           </Row>
           <Row label="notice">
             <p className="notice small">Marked as applied.</p>
+          </Row>
+          <Row label="install line">
+            <InstallLineView what="prompt" onInstall={() => undefined} onDismiss={() => undefined} />
+            <InstallLineView what="ios" onInstall={() => undefined} onDismiss={() => undefined} />
           </Row>
           <Row label="error">
             <ErrorBox className="small" text="The other door could not start the run." />

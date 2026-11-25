@@ -7,9 +7,10 @@ const { app, BrowserWindow } = require('electron')
 if (process.env.DOOR_WEB_PROFILE) app.setPath('userData', process.env.DOOR_WEB_PROFILE)
 
 app.whenReady().then(() => {
-  const win = new BrowserWindow({ width: 412, height: 915, webPreferences: { contextIsolation: true, sandbox: true } })
+  const win = new BrowserWindow({ width: Number(process.env.DOOR_WEB_WIDTH) || 412, height: 915, webPreferences: { contextIsolation: true, sandbox: true } })
   win.webContents.setUserAgent(
-    'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36',
+    process.env.DOOR_WEB_UA ||
+      'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36',
   )
   void win.loadURL(process.env.DOOR_WEB_URL || 'about:blank')
 })

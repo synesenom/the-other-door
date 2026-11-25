@@ -69,3 +69,68 @@ test('a wrong code is refused and the pair screen stays', async () => {
     await app.close()
   }
 })
+
+const IPHONE_UA =
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1'
+
+/** A 390 px phone that pairs with a fresh code. */
+async function openPaired(extra: Record<string, string> = {}) {
+  return electron.launch({
+    args: [resolve(__dirname, 'browser.cjs'), ...(process.env.CI ? ['--no-sandbox'] : [])],
+    cwd: APP,
+    env: {
+      ...(process.env as Record<string, string>),
+      DOOR_WEB_PROFILE: phoneProfile(served.fixture),
+      DOOR_WEB_URL: `${served.url}/#pair=${served.newCode()}`,
+      DOOR_WEB_WIDTH: '390',
+      ...extra,
+    },
+  })
+}
+
+type Counted = { prompted?: number }
+
+test('after pairing the browser offers the install: the line shows, the tap prompts (#576)', async () => {
+  test.skip(!served.fixture.hasPython, `no Python at ${served.fixture.python}`)
+  const app = await openPaired()
+  try {
+    const page = await app.firstWindow()
+    await expect(page.getByRole('heading', { name: 'Matches', level: 1 })).toBeVisible({ timeout: 30_000 })
+    await page.evaluate(() => {
+      const w = window as unknown as Counted
+      const e = Object.assign(new Event('beforeinstallprompt', { cancelable: true }), {
+        prompt: async () => void (w.prompted = (w.prompted ?? 0) + 1),
+      })
+      window.dispatchEvent(e)
+    })
+    const install = page.getByRole('button', { name: 'Install the app' })
+    await expect(install).toBeVisible()
+    for (const theme of ['light', 'dark']) {
+      await page.evaluate((t) => document.documentElement.setAttribute('data-theme', t), theme)
+      if (process.env.SHOTS) await page.screenshot({ path: `${process.env.SHOTS}/install-android-${theme}.png` })
+    }
+    await install.click()
+    expect(await page.evaluate(() => (window as unknown as Counted).prompted)).toBe(1)
+    // the browser's event works once: the line is gone after the tap
+    await expect(page.getByRole('region', { name: 'Install the app' })).toHaveCount(0)
+  } finally {
+    await app.close()
+  }
+})
+
+test('an iPhone in Safari is told to tap Share, with no install button (#576)', async () => {
+  test.skip(!served.fixture.hasPython, `no Python at ${served.fixture.python}`)
+  const app = await openPaired({ DOOR_WEB_UA: IPHONE_UA })
+  try {
+    const page = await app.firstWindow()
+    await expect(page.getByRole('heading', { name: 'Matches', level: 1 })).toBeVisible({ timeout: 30_000 })
+    await expect(page.getByText('To install, tap Share, then Add to Home Screen.')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Install the app' })).toHaveCount(0)
+    for (const theme of ['light', 'dark']) {
+      await page.evaluate((t) => document.documentElement.setAttribute('data-theme', t), theme)
+      if (process.env.SHOTS) await page.screenshot({ path: `${process.env.SHOTS}/install-iphone-${theme}.png` })
+    }
+  } finally {
+    await app.close()
+  }
+})

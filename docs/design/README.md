@@ -292,6 +292,10 @@ components; only the layout changes below the sidebar breakpoint (`size.sidebar-
 - **Applications**: the board becomes a grouped list (Offer, Interviewing, Applied,
   Prepared; Closed collapsed at the end), the interview dots right-aligned on each row; a row
   with no answer keeps its note.
+- **Install line**: once paired, one quiet notice strip above the app (the `.install-line` class, in the
+  guide): "Install the app" on Android, "To install, tap Share, then Add to Home Screen." on an iPhone's
+  Safari, and "Not now", both text buttons. It is gone for good after "Not now", once installed and when the
+  app opens from the home screen; the desktop app never shows it.
 - Type steps down one size (headings 19 px);
   body text stays 14–15 px.
 

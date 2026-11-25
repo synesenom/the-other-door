@@ -105,8 +105,7 @@ describe('PhoneSetup', () => {
 
     paired = true // the phone scanned it
     expect(await screen.findByRole('heading', { name: 'Add The other door to your home screen' })).toBeInTheDocument()
-    expect(screen.getByText(/Install app/)).toBeInTheDocument()
-    expect(screen.getByText(/Add to Home Screen/)).toBeInTheDocument()
+    expect(screen.getByText(/it offers to install it as an app/)).toBeInTheDocument()
   })
 
   it('a phone paired before, scanning again under its name, counts as paired once its date changes', async () => {

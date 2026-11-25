@@ -363,9 +363,7 @@ test.describe.skip('Your phone', () => {
 
     phoneScans(world)
     await expect(setup.getByRole('heading', { name: 'Add The other door to your home screen' })).toBeVisible()
-    await expect(setup).toContainText('Your phone is paired.')
-    await expect(setup).toContainText('Android: in Chrome, open the menu (⋮) and tap Install app.')
-    await expect(setup).toContainText('iPhone: in Safari, tap Share, then Add to Home Screen.')
+    await expect(setup).toContainText('Your phone is paired. Once it opens The other door, it offers to install it as an app.')
     await expect(setup).toContainText('When this computer restarts, set this up again and scan the new code.')
     await button(setup, 'Done').click()
     await expect(setup).toHaveCount(0)
