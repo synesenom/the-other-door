@@ -113,6 +113,7 @@ KINDS = [
     ("revise", "You revise the body of an HTML CV or cover letter"),
     ("facts", "You check a tailored CV and cover letter"),
     ("market", "You group skill names"),
+    ("layout", "You mark up the layout of a job ad"),
     ("ask", "You answer one question about the user's job search"),
     ("careers", "You find the official careers page"),
 ]
@@ -168,6 +169,8 @@ elif kind == "translate":
 elif kind == "read_ad":
     found = next((a for a in W.get("read_ads", []) if a["title"] in STDIN), None)
     envelope(said.get("answer") or found or {"title": "", "company": "", "location": ""})
+elif kind == "layout":
+    envelope({"headings": [], "bullets": []})  # the ad stays plain text
 elif kind == "market":
     names = json.loads(STDIN).get("names", [])
     envelope({"groups": [{"variant": n, "canonical": n, "skill": True} for n in names]})

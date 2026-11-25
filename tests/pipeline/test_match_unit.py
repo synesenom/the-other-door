@@ -257,3 +257,17 @@ def test_the_cv_is_read_once_at_the_start_of_the_step_for_every_day_folder(env, 
     monkeypatch.setattr(cv_read, "_ask", lambda md: asked.append(md) or cv_read_utils.plain(md))
     run(env)
     assert len(asked) == 1
+
+
+def test_a_match_gets_a_layout_and_a_posting_below_min_score_does_not(env, fakes, monkeypatch):
+    from door.matching import ad_layout
+
+    write_list_posting(env.jobs_dir, date.today().isoformat(), "jobindex", "job-top")
+    write_list_posting(env.jobs_dir, date.today().isoformat(), "jobindex", "job-low")
+    fakes.scores = {"job-top": 0.95, "job-low": 0.2}
+    laid = []
+    monkeypatch.setattr(ad_layout, "lay_out", lambda path, **kw: laid.append(path.stem) or True)
+
+    run(env)
+
+    assert laid == ["job-top"]

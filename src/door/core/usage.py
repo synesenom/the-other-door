@@ -43,6 +43,7 @@ FEATURES = {
     "match_scoring": "find",
     "title_translation": "find",
     "careers_lookup": "find",
+    "ad_layout": "find",
     "tailoring": "prepare",
     "tailoring_retry": "prepare",  # the one extra tailor run after the ATS read-back; not another application prepared
     "revise": "prepare",
@@ -66,6 +67,7 @@ FEATURE_LABELS = {
     "match_scoring": "Scoring postings",
     "title_translation": "Translating job titles",
     "careers_lookup": "Finding careers pages",
+    "ad_layout": "Laying out good matches",
     "tailoring": "Tailoring the CV and letter",
     "tailoring_retry": "Tailoring again after the ATS check",
     "revise": "Revising materials",

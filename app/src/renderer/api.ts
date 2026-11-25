@@ -260,6 +260,8 @@ export interface Posting {
   /** The employer's own application page, when the board's ad links to one (LinkedIn, Jobindex…). */
   apply_url?: string | null
   description?: string
+  /** The description by kind, from `show`: headings and list items as the layout marked them, else one paragraph per line. */
+  description_blocks?: { kind: 'heading' | 'bullet' | 'paragraph'; text: string }[]
   score?: number | null
   score_reason?: string | null
   posted_at?: string | null

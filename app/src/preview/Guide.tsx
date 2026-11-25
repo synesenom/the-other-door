@@ -259,6 +259,16 @@ export function Guide() {
               <span style={{ width: '62%' }} />
             </div>
           </Row>
+          <Row label="description">
+            <div className="description" style={{ width: '100%', maxWidth: 420 }}>
+              <h3 className="body item-name description-heading">About the role</h3>
+              <p className="body">You take over a close that runs in eight working days.</p>
+              <ul className="body description-list">
+                <li>Own the monthly close</li>
+                <li>Lead the budget cycle</li>
+              </ul>
+            </div>
+          </Row>
           <Row label="usage-stack">
             <div className="usage-stack" aria-hidden="true" style={{ width: '100%', maxWidth: 240 }}>
               <span className="usage-tone-0" style={{ flexGrow: 0.62 }} />

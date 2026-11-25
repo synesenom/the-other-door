@@ -23,7 +23,8 @@ from door.core import cv_read, lock, profile_loader
 from door.core.employers import companies as store
 from door.core.jobs import tracker as tracker_mod
 from door.core import workspace
-from door.core.jobs.selection import select_matches
+from door.core.jobs.selection import find_posting_path, select_matches
+from door.matching import ad_layout
 
 
 def _summary(block: dict) -> str:
@@ -141,6 +142,10 @@ def _match_step_core(
             config.get("max_age_days", common._DEFAULT_MAX_AGE_DAYS),
         )
         _stamp_relevant(matches, profile_dir)
+        for m in matches:  # a good match is shown with its headings and lists; a failed call leaves the raw text
+            path = find_posting_path(jobs_dir, str(m.get("id")))
+            if path is not None:
+                ad_layout.lay_out(path, profile_dir=profile_dir)
         new = [m for m in matches if m.get("id") in unscored]
         block = {
             **scored, "step": "match", "passes": passes, "min_score": threshold,
