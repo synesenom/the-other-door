@@ -19,6 +19,8 @@ from door.scrapers import http_client
 from cli_utils import result_text
 from profile_utils import write_config
 
+_READ_PAGE = common._read_page
+
 CV = """# Jane Doe
 
 ## Profile
@@ -51,8 +53,7 @@ def env(tmp_path, monkeypatch):
     config["cv_content"] = str(cv_path)
     (profile_dir / "config.json").write_text(json.dumps(config))
     monkeypatch.setattr(workspace, "PROFILE_DIR", profile_dir)
-    monkeypatch.setattr(http_client.PoliteSession, "redirect_target", lambda self, url: None)
-    monkeypatch.setattr(common, "_page_links", lambda url: [])
+    monkeypatch.setattr(common, "_read_page", lambda url: (None, []))
     return types.SimpleNamespace(profile_dir=profile_dir, cv_path=cv_path, proposals_path=profile_dir / ".enrich_proposals.json")
 
 
@@ -104,7 +105,7 @@ def _rules(call):
 def test_enrich_with_a_url_allows_webfetch_on_that_host_only(env, monkeypatch):
     calls = []
     _answer(monkeypatch, calls=calls)
-    monkeypatch.setattr(http_client.PoliteSession, "redirect_target", lambda self, url: "https://jane.pages.example/home")
+    monkeypatch.setattr(common, "_read_page", lambda url: ("jane.pages.example", []))
     enrich_cmd._enrich_core(["https://jane.example/"], profile_dir=env.profile_dir)
     args = calls[0]["args"]
     assert "--restricted" in args and args[args.index("--tools") + 1] == "WebFetch"
@@ -134,7 +135,7 @@ def test_a_page_given_without_a_scheme_is_fetched_over_https(env, monkeypatch):
 def test_a_page_that_redirects_to_linkedin_gets_no_rule_for_it(env, monkeypatch):
     calls = []
     _answer(monkeypatch, calls=calls)
-    monkeypatch.setattr(http_client.PoliteSession, "redirect_target", lambda self, url: "https://www." + "linked" + "in.com/in/jane")
+    monkeypatch.setattr(common, "_read_page", lambda url: ("www." + "linked" + "in.com", []))
     enrich_cmd._enrich_core(["https://jane.example"], profile_dir=env.profile_dir)
     assert _rules(calls[0]) == ["WebFetch(domain:jane.example)", "WebFetch(domain:www.jane.example)"]
 
@@ -143,9 +144,11 @@ def test_a_redirect_that_cannot_be_read_leaves_only_the_given_hosts(env, monkeyp
     calls = []
     _answer(monkeypatch, calls=calls)
 
-    def refuse(self, url):
+
+    def refuse(self, url, **kwargs):
         raise http_client.RobotsBlocked(url)
-    monkeypatch.setattr(http_client.PoliteSession, "redirect_target", refuse)
+    monkeypatch.setattr(http_client.PoliteSession, "get", refuse)
+    monkeypatch.setattr(common, "_read_page", _READ_PAGE)  # the real reading, not env's stub
     enrich_cmd._enrich_core(["https://jane.example"], profile_dir=env.profile_dir)
     assert _rules(calls[0]) == ["WebFetch(domain:jane.example)", "WebFetch(domain:www.jane.example)"]
 
@@ -451,7 +454,7 @@ def test_a_personal_site_may_be_walked_to_its_subdomains_and_the_profiles_it_lin
     links = ["https://blog.jane.example/posts", "https://www.blog.jane.example/", "/research", "https://www.github.com/jane",
              "https://orcid.org/0000-0002-1825-0097", "https://linkedin.jane.example/", "https://evil.example/x",
              "https://jane.example.evil.example/", "https://notjane.example/"]
-    monkeypatch.setattr(common, "_page_links", lambda url: links)
+    monkeypatch.setattr(common, "_read_page", lambda url: (None, links))
     enrich_cmd._enrich_core(["https://jane.example"], profile_dir=env.profile_dir)
     assert _rules(calls[0]) == [
         "WebFetch(domain:jane.example)", "WebFetch(domain:www.jane.example)", "WebFetch(domain:blog.jane.example)",
@@ -466,7 +469,7 @@ def test_a_link_whose_host_is_not_a_plain_name_gets_no_rule(env, monkeypatch):
     _answer(monkeypatch, calls=calls)
     links = ["https://x),webfetch,websearch,(.jane.example/", "https://a b.jane.example/", "https://attacker.com%23.jane.example/",
              "https://evil.com\uff0e.jane.example/"]
-    monkeypatch.setattr(common, "_page_links", lambda url: links)
+    monkeypatch.setattr(common, "_read_page", lambda url: (None, links))
     enrich_cmd._enrich_core(["https://jane.example"], profile_dir=env.profile_dir)
     assert _rules(calls[0]) == ["WebFetch(domain:jane.example)", "WebFetch(domain:www.jane.example)"]
 
@@ -475,7 +478,7 @@ def test_a_page_deeper_than_a_home_page_gets_no_subdomains(env, monkeypatch):
     # A profile on a shared site (medium.com/@jane) is not the user's own site: its subdomains are other people's.
     calls = []
     _answer(monkeypatch, calls=calls)
-    monkeypatch.setattr(common, "_page_links", lambda url: ["https://attacker.medium.com/", "https://github.com/jane"])
+    monkeypatch.setattr(common, "_read_page", lambda url: (None, ["https://attacker.medium.com/", "https://github.com/jane"]))
     enrich_cmd._enrich_core(["https://medium.com/@jane"], profile_dir=env.profile_dir)
     assert _rules(calls[0]) == ["WebFetch(domain:medium.com)", "WebFetch(domain:www.medium.com)",
                                 "WebFetch(domain:github.com)", "WebFetch(domain:api.github.com)"]
@@ -484,20 +487,21 @@ def test_a_page_deeper_than_a_home_page_gets_no_subdomains(env, monkeypatch):
 def test_a_given_profile_site_gets_its_data_host_and_is_not_walked(env, monkeypatch):
     calls = []
     _answer(monkeypatch, calls=calls)
-    monkeypatch.setattr(common, "_page_links", lambda url: pytest.fail("a profile site's own page is not read for links"))
+    monkeypatch.setattr(common, "_read_page", lambda url: (None, ["https://evil.example/", "https://sub.orcid.org/"]))
     enrich_cmd._enrich_core(["https://orcid.org/0000-0002-1825-0097"], profile_dir=env.profile_dir)
     assert _rules(calls[0]) == ["WebFetch(domain:orcid.org)", "WebFetch(domain:www.orcid.org)", "WebFetch(domain:pub.orcid.org)"]
 
 
 @responses.activate
-def test_the_links_of_a_page_are_read_from_its_html(monkeypatch):
+def test_a_page_is_read_for_where_it_lands_and_its_links(monkeypatch):
     monkeypatch.setattr("door.scrapers.http_client.time.sleep", lambda *a, **k: None)
-    responses.add(responses.GET, "https://jane.example/", body='<a href="/cv">CV</a> <a href="https://github.com/jane">gh</a> <a>none</a>')
-    assert common._page_links("https://jane.example/") == ["https://jane.example/cv", "https://github.com/jane"]
+    responses.add(responses.GET, "https://jane.example/", status=301, headers={"Location": "https://jane.pages.example/"})
+    responses.add(responses.GET, "https://jane.pages.example/", body='<a href="/cv">CV</a> <a href="https://github.com/jane">gh</a> <a>none</a>')
+    assert common._read_page("https://jane.example/") == ("jane.pages.example", ["https://jane.pages.example/cv", "https://github.com/jane"])
 
 
 @responses.activate
 def test_a_page_whose_links_cannot_be_read_has_none(monkeypatch):
     monkeypatch.setattr("door.scrapers.http_client.time.sleep", lambda *a, **k: None)
     responses.add(responses.GET, "https://jane.example/", status=500)
-    assert common._page_links("https://jane.example/") == []
+    assert common._read_page("https://jane.example/") == (None, [])

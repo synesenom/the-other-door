@@ -143,25 +143,13 @@ def _twin(host: str) -> str:
     return host[4:] if host.startswith("www.") else "www." + host
 
 
-def _redirect_host(url: str) -> str | None:
-    """The host *url* redirects to (one request), or None: it does not redirect, or it could not be asked."""
-    import requests
-
-    from door.scrapers.http_client import PoliteSession, RobotsBlocked
-
-    try:
-        target = PoliteSession(min_delay=0.3, max_delay=0.6, timeout=15, max_retries=0).redirect_target(url)
-    except (requests.RequestException, RobotsBlocked):
-        return None
-    return (urlsplit(target).hostname or "").lower() or None if target else None
-
-
 # Profile sites a personal page may link to, each with the host its public data is read through (the prompt says how).
 _PROFILE_HOSTS = {"github.com": ("github.com", "api.github.com"), "orcid.org": ("orcid.org", "pub.orcid.org")}
 
 
-def _page_links(url: str) -> list[str]:
-    """The absolute links of the page at *url* (one public, size-capped fetch), or [] when it cannot be read."""
+def _read_page(url: str) -> tuple[str | None, list[str]]:
+    """The host the page at *url* ends on after its redirects, and its absolute links (one public, size-capped
+    fetch), or ``(None, [])`` when it cannot be read."""
     import requests
     from bs4 import BeautifulSoup
 
@@ -171,18 +159,18 @@ def _page_links(url: str) -> list[str]:
         resp = PoliteSession(min_delay=0.3, max_delay=0.6, timeout=15, max_retries=0).get(url)
         resp.raise_for_status()
     except (requests.RequestException, RobotsBlocked):
-        return []
+        return None, []
     soup = BeautifulSoup(resp.text, "html.parser")
-    return [urljoin(resp.url, a["href"]) for a in soup.find_all("a", href=True)]
+    return (urlsplit(resp.url).hostname or "").lower() or None, [urljoin(resp.url, a["href"]) for a in soup.find_all("a", href=True)]
 
 
-def _linked_hosts(url: str, site: str) -> list[str]:
-    """The hosts the page at *url* links to that may be read beside it: GitHub and ORCID with their data hosts
+def _linked_hosts(url: str, links: list[str], site: str) -> list[str]:
+    """The hosts of *links* (the page at *url*'s) that may be read beside it: GitHub and ORCID with their data hosts
     (`_PROFILE_HOSTS`), and, when *url* is a home page (the user's own site, not a profile on a shared one), the
     subdomains of *site* (its host without `www.`). Found here, by code."""
     home = urlsplit(url).path in ("", "/")
     hosts: list[str] = []
-    for link in _page_links(url):
+    for link in links:
         host = (urlsplit(link).hostname or "").lower()
         if host.removeprefix("www.") in _PROFILE_HOSTS:
             hosts += _PROFILE_HOSTS[host.removeprefix("www.")]
@@ -197,7 +185,7 @@ _PLAIN_HOST = re.compile(r"[a-z0-9-]+(\.[a-z0-9-]+)+")
 
 def webfetch_rules(urls: list[str]) -> tuple[str, ...]:
     """`WebFetch(domain:<host>)` for each page the user gave, built here and never by the model: the host, its
-    www/apex twin and the host its address redirects to (a rule matches one host, no subdomains), with the data
+    www/apex twin and the host its address redirects to, read with its links in one fetch (a rule matches one host, no subdomains), with the data
     host of GitHub or ORCID (`_PROFILE_HOSTS`: `api.github.com`, `pub.orcid.org`, which the prompt reads them
     through); then what the given page links to (`_linked_hosts`). Only plain host names; none for LinkedIn and Indeed."""
     hosts: list[str] = []
@@ -205,11 +193,12 @@ def webfetch_rules(urls: list[str]) -> tuple[str, ...]:
         given = (urlsplit(url).hostname or "").lower()
         if not given or _is_no_fetch(given):
             continue
-        for host in (given, _redirect_host(url)):
+        landed, links = _read_page(url)
+        for host in (given, landed):
             if host and not _is_no_fetch(host):
                 hosts += [host, _twin(host), *_PROFILE_HOSTS.get(host.removeprefix("www."), ())]
         if given.removeprefix("www.") not in _PROFILE_HOSTS:
-            hosts += [h for h in _linked_hosts(url, given.removeprefix("www.")) if not _is_no_fetch(h)]
+            hosts += [h for h in _linked_hosts(url, links, given.removeprefix("www.")) if not _is_no_fetch(h)]
     return tuple(f"WebFetch(domain:{h})" for h in dict.fromkeys(hosts) if _PLAIN_HOST.fullmatch(h))
 
 
