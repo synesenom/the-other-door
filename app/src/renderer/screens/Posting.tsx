@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
 import { ErrorBox } from './AppName'
 import { call, errorText, languageLine, placeLine, scoreText } from '../api'
 import type { PrepareResult, Posting as PostingData, SetStatusResult } from '../api'
