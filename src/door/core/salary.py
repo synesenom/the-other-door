@@ -10,7 +10,7 @@ import re
 from datetime import date
 
 from door import i18n
-from door.core import cv_read
+from door.core import cv_read, utils
 
 _MAX_AD_LINES = 6
 _MAX_CV_CHARS = 6000
@@ -105,7 +105,8 @@ def _number(value) -> float | None:
 def parse(answer) -> dict | None:
     """The model's answer, checked: ``{"low", "high", "currency", "period", "gross", "position", "basis",
     "sources", "ad_salary"}``, or ``None`` when it found nothing or cannot be trusted (``low`` above
-    ``high``, no currency code, an unknown period, no source with an http(s) URL)."""
+    ``high``, no currency code, an unknown period, no source with an http(s) URL). A ``basis`` too long for
+    its info bubble (`utils.bubble_text`) is left out."""
     if not isinstance(answer, dict) or answer.get("found") is False:
         return None
     low, high = _number(answer.get("low")), _number(answer.get("high"))
@@ -126,7 +127,7 @@ def parse(answer) -> dict | None:
         "low": low, "high": high, "currency": currency, "period": period,
         "gross": answer.get("gross") is not False,
         "position": position if position in _POSITIONS else None,
-        "basis": str(answer.get("basis") or "").strip(),
+        "basis": utils.bubble_text(str(answer.get("basis") or "")),
         "sources": sources,
         "ad_salary": ad_salary.strip() if isinstance(ad_salary, str) and ad_salary.strip() else None,
     }

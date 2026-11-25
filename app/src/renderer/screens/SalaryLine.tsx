@@ -15,6 +15,15 @@ export function salaryRange(s: Salary): string {
   return `${figures} ${s.currency} ${PERIOD[s.period]}, ${s.gross ? 'gross' : 'net'}`
 }
 
+/** "payscale.com": the site a page is on, named by its address, not by its long title. */
+function site(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '')
+  } catch {
+    return url
+  }
+}
+
 /** "Nov 7", or nothing for a date that cannot be read. */
 function asOf(value: string): string | null {
   const d = new Date(value)
@@ -28,6 +37,8 @@ function asOf(value: string): string | null {
 export function SalaryLine({ salary }: { salary: Salary | null | undefined }) {
   if (!salary) return null
   const date = asOf(salary.as_of)
+  // each site once, linking to the first of its pages read; the page's title on hover
+  const sites = salary.sources.filter((s, i, all) => all.findIndex((o) => site(o.url) === site(s.url)) === i)
   return (
     <section className="salary-line" aria-label="Salary">
       <div className="score-line">
@@ -44,14 +55,15 @@ export function SalaryLine({ salary }: { salary: Salary | null | undefined }) {
       <p className="small muted">
         {salary.ad_salary && `The ad says ${salary.ad_salary}. `}
         {'From '}
-        {salary.sources.map((s, i) => (
+        {sites.map((s, i) => (
           <span key={s.url}>
             {i > 0 && ', '}
-            <button type="button" className="link-inline" onClick={() => void window.door.invoke('open-external', s.url)}>
-              {s.title}
+            <button type="button" className="link-inline" title={s.title} onClick={() => void window.door.invoke('open-external', s.url)}>
+              {site(s.url)}
             </button>
           </span>
         ))}
+        {'.'}
       </p>
     </section>
   )

@@ -1,3 +1,5 @@
+import { BackButton } from './BackButton'
+import { useHistoryBack } from './history-back'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { AppName, ErrorBox, named } from './AppName'
 import { call, errorText, statusSummary } from '../api'
@@ -262,6 +264,9 @@ export function Matches({
     }
     setView(next)
   }
+  // The phone's Back: the application back to its posting, the posting back to the list, never further.
+  const inMaterials = selected !== null && view === 'materials'
+  useHistoryBack((pushedNow ? 1 : 0) + (inMaterials ? 1 : 0), () => (inMaterials ? switchView('posting') : setPushed(false)))
   const posting = selected && <ReadingPane jobId={selected} view={view} onView={switchView} onChanged={changed} initialDoc={initialDoc} />
   const noticeLines = notice && (
     <>
@@ -279,9 +284,7 @@ export function Matches({
         <section className="reading-pane" key={selected}>
           {view === 'posting' && (
             <div className="pushed-bar">
-              <button type="button" className="back" onClick={() => setPushed(false)} title="Esc">
-                ← Matches
-              </button>
+              <BackButton label="← Matches" onClick={() => setPushed(false)} title="Esc" />
               {at >= 0 && ids.length > 1 && (
                 <div className="stepper" role="group" aria-label="Previous and next match">
                   <span className="small muted">
@@ -307,7 +310,7 @@ export function Matches({
     <div className="matches">
       <section className="list-pane" ref={listRef}>
         <div className="list-head rule-heavy">
-          {/* As Applications' head: the title on the left, adding a job on the right. */}
+          {/* The title on the left, adding a job on the right. */}
           <div className="board-head">
             <h1 className="display-l">Matches</h1>
             <div className="actions head-actions">

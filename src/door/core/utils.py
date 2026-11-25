@@ -16,6 +16,17 @@ from pathlib import Path
 STALE_PART_SECONDS = 3600
 
 
+# A model's summary read in an info bubble (a match's reason, a salary's why): its prompt asks for at most 20 words;
+# one past this, the model's whole working rather than a summary, is not shown.
+BUBBLE_WORDS = 25
+
+
+def bubble_text(text: str) -> str:
+    """``text`` stripped, or "" when it is longer than `BUBBLE_WORDS` words."""
+    text = (text or "").strip()
+    return text if len(text.split()) <= BUBBLE_WORDS else ""
+
+
 def _sweep_stale_parts(dest: Path, prefix: str) -> None:
     """Remove the `prefix` staging folders a killed staged write left in `dest`, never one still in use, and never
     another tool's (cloudflared's `dest` is the shared ~/.local/bin)."""

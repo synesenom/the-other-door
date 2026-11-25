@@ -1,3 +1,4 @@
+import { BackButton } from './BackButton'
 import { ErrorBox, named } from './AppName'
 import { useRemote } from '../remote'
 import { useEffect, useState } from 'react'
@@ -110,9 +111,7 @@ export function Materials({ jobId, onBack, backLabel = '← Posting', onPosting,
   if (loadError)
     return (
       <div className="materials">
-        <button type="button" className="back" onClick={onBack}>
-          {backLabel}
-        </button>
+        <BackButton label={backLabel} onClick={onBack} />
         <ErrorBox text={loadError} />
       </div>
     )
@@ -121,9 +120,7 @@ export function Materials({ jobId, onBack, backLabel = '← Posting', onPosting,
   if (!m)
     return (
       <div className="materials">
-        <button type="button" className="back" onClick={onBack}>
-          {backLabel}
-        </button>
+        <BackButton label={backLabel} onClick={onBack} />
         <p className="body muted">There is nothing prepared for this job yet.</p>
         {onPosting && (
           <p>
@@ -202,9 +199,7 @@ export function Materials({ jobId, onBack, backLabel = '← Posting', onPosting,
   const docs: Document[] = ['cv', 'cover_letter']
   return (
     <div className="materials">
-      <button type="button" className="back" onClick={onBack}>
-        {backLabel}
-      </button>
+      <BackButton label={backLabel} onClick={onBack} />
       <header className="materials-head">
         <div className="posting-head">
           <h1 className="display-l">{sent ? 'What you sent' : 'Ready to send'}</h1>

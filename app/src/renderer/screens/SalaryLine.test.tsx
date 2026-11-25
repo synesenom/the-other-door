@@ -25,12 +25,23 @@ const salary: Salary = {
 }
 
 describe('SalaryLine', () => {
-  it('shows the range, its period and its sources as links', async () => {
+  it('shows the range, its period and its sources as links named by their site', async () => {
     const door = mockDoor({})
     render(<SalaryLine salary={salary} />)
     expect(screen.getByText('55,000–70,000 DKK a month, gross')).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: 'Union survey' }))
+    await userEvent.click(screen.getByRole('button', { name: 'example.org' }))
     expect(door.actions['open-external']).toHaveBeenCalledWith('https://example.org/survey')
+  })
+
+  it('names a site once, however many of its pages were read', () => {
+    mockDoor({})
+    const pages = [
+      { title: 'Average Senior Data Scientist Salary in Denmark (Payscale)', url: 'https://www.payscale.com/research/a' },
+      { title: 'Lead Software Engineer salary in Denmark (Payscale)', url: 'https://www.payscale.com/research/b' },
+      { title: 'Data Scientist Salary in Denmark (Levels.fyi)', url: 'https://www.levels.fyi/t/data-scientist' },
+    ]
+    render(<SalaryLine salary={{ ...salary, sources: pages }} />)
+    expect(screen.getByLabelText('Salary')).toHaveTextContent('From payscale.com, levels.fyi.')
   })
 
   it('says it is an estimate, and why, behind the info icon', () => {

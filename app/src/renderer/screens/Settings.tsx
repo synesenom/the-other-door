@@ -139,8 +139,7 @@ export function Settings({
           <h2 className="label" id="settings-computer">
             This computer
           </h2>
-          <p className="small muted">Your profile and jobs are on the computer running <AppName />, in</p>
-          {home && <p className="body settings-path">{home}</p>}
+          <p className="small muted">Your profile and jobs are on the computer running <AppName />.</p>
           <p className="small muted">The phone finds, prepares and keeps your applications. Setting up, your profile and CV, connections and moving your data are done on the computer where it is installed.</p>
         </section>
       ) : (

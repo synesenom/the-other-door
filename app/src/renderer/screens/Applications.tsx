@@ -1,9 +1,10 @@
+import { BackButton } from './BackButton'
+import { useHistoryBack } from './history-back'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ErrorBox, named } from './AppName'
 import { call, errorText } from '../api'
 import type { Document, Match, Opening, MatchesResult, SetStatusResult } from '../api'
 import { useNarrow } from '../useNarrow'
-import { ImportDialog } from './ImportDialog'
 import { boardColumns, cardNote, stalledText } from './board'
 import { WarningMark } from './CheckMark'
 import { ReadingPane } from './ReadingPane'
@@ -70,7 +71,6 @@ export function Applications({
   const [initialDoc, setInitialDoc] = useState<Document | undefined>(undefined)
   const [error, setError] = useState<string | null>(null)
   const [tick, setTick] = useState(0)
-  const [importing, setImporting] = useState(false)
   const [notice, setNotice] = useState<{ text: string; warning?: string } | null>(null)
   const opened = useRef<string | null>(null)
   // Ready to send was opened straight from a Prepared card: its back link returns to the board, not to a posting
@@ -147,6 +147,12 @@ export function Applications({
     opened.current = null
     refresh()
   }
+  // The phone's Back: the application back to its posting (or to the board, opened from a Prepared card), the
+  // posting back to the board, never further.
+  const inMaterials = selected !== null && view === 'materials'
+  useHistoryBack(inMaterials && fromBoard ? 1 : (pushedNow ? 1 : 0) + (inMaterials ? 1 : 0), () =>
+    inMaterials ? (fromBoard ? backToBoard() : switchView('posting')) : setPushed(false),
+  )
   const posting = selected && (
     <ReadingPane
       jobId={selected}
@@ -172,9 +178,7 @@ export function Applications({
       <div className="matches pushed">
         <section className="reading-pane">
           {view === 'posting' && (
-            <button type="button" className="back" onClick={() => setPushed(false)}>
-              ← Applications
-            </button>
+            <BackButton label="← Applications" onClick={() => setPushed(false)} />
           )}
           {posting}
         </section>
@@ -195,16 +199,9 @@ export function Applications({
     : columns
   return (
     <div className="board-screen">
-      <div className="board-head">
-        <div>
-          <h1 className="display-l">Applications</h1>
-          {rows && rows.length > 0 && <p className="subtitle">{`${rows.length} in play${interviewing ? ` · ${interviewing} in interviews` : ''}`}</p>}
-        </div>
-        <div className="actions head-actions">
-          <button type="button" className="secondary" onClick={() => setImporting(true)}>
-            Add a job…
-          </button>
-        </div>
+      <div>
+        <h1 className="display-l">Applications</h1>
+        {rows && rows.length > 0 && <p className="subtitle">{`${rows.length} in play${interviewing ? ` · ${interviewing} in interviews` : ''}`}</p>}
       </div>
       {noticeLines}
       {rows === null && !error && (
@@ -236,16 +233,6 @@ export function Applications({
               </section>
           ))}
         </div>
-      )}
-      {importing && (
-        <ImportDialog
-          onClose={() => setImporting(false)}
-          onOpen={(id) => {
-            setImporting(false)
-            select(id, 'posting', { keep: true })
-            refresh()
-          }}
-        />
       )}
     </div>
   )

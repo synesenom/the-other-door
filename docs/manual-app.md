@@ -287,7 +287,7 @@ what it asks of you, the salary to expect once the job is prepared (below), and 
   you have already applied to, it is the only prepare button left.
 - **Prepare again…** (a text button, next to it, only before you apply) tailors them anew; it asks
   first, because it replaces the CV and letter and any revisions.
-- **Apply on <the employer's site>** opens the employer's application page when the board's ad links to one (most LinkedIn and some Jobindex ads); otherwise **Open in browser** opens the ad where it was found.
+- **Apply** opens the employer's application page when the board's ad links to one (most LinkedIn and some Jobindex ads); otherwise **Open in browser** opens the ad where it was found.
 - **Status…** changes where the job stands (below).
 - **Not for me…** is the quick way to drop a job: it asks why, the job leaves the list, and the next match opens in its place. Once an application is prepared it is under **Status…** instead.
 
@@ -384,7 +384,7 @@ to Not yet applied stays in Matches.
 
 ## Add a job
 
-**Add a job…** (in Matches and in Applications) brings in a posting you found yourself.
+**Add a job…** (in Matches) brings in a posting you found yourself.
 
 - **Link**: paste the address. *The other door* reads the page and finds the title and company. When
   it cannot (a page behind a sign-in, one built only with JavaScript, or one that names no title and
@@ -410,7 +410,7 @@ interview round with no news in 21 days; open it and choose Ghosted under Status
 the jobs in play and in interviews. Clicking a card opens its posting across the whole window,
 where you change its status; "← Applications" goes back. A card in Prepared opens Ready to send
 instead, with "See the posting" under the title for its status and Prepare again.
-**Add a job…** imports an ad. When nothing is in play, the screen says so. On a narrow window
+When nothing is in play, the screen says so. On a narrow window
 the board scrolls sideways in its own box.
 
 ## Notifications
