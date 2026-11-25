@@ -187,8 +187,10 @@ export function Guide() {
             <p className="notice small">Marked as applied.</p>
           </Row>
           <Row label="install line">
-            <InstallLineView what="prompt" onInstall={() => undefined} onDismiss={() => undefined} />
-            <InstallLineView what="ios" onInstall={() => undefined} onDismiss={() => undefined} />
+            <div style={{ width: '100%', minWidth: 0 }}>
+              <InstallLineView what="prompt" onInstall={() => undefined} onDismiss={() => undefined} />
+              <InstallLineView what="ios" onInstall={() => undefined} onDismiss={() => undefined} />
+            </div>
           </Row>
           <Row label="error">
             <ErrorBox className="small" text="The other door could not start the run." />

@@ -726,6 +726,6 @@ details[open] > summary::before { transform: rotate(90deg); }
   .board-card-warning > .hint-pop::before { content: none; }
 }
 /* The phone's install line: one quiet line above the app, its words and its text buttons. */
-.install-line { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex: none; margin: var(--space-2) var(--phone-gutter); padding: var(--space-3) var(--space-5); }
-.install-line button { white-space: nowrap; }
+.install-line { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-4); flex: none; margin: var(--space-2) var(--phone-gutter); padding: var(--space-3) var(--space-5); }
+.install-line button { white-space: nowrap; } /* on a very narrow screen a button goes under the words, never past the edge */
 .install-line button + button { margin-left: 0; }
