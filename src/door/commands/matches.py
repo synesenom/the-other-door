@@ -471,11 +471,6 @@ def _posted_text(posted_at) -> str:
     return f"{dt.date().isoformat()} ({age})"
 
 
-def _blocks_of(posting: dict) -> list[dict]:
-    """The posting's description as blocks: `show`'s ``description_blocks``, else built the same way from the stored text."""
-    return posting.get("description_blocks") or ad_layout.blocks(posting.get("description", ""), posting.get("layout"))
-
-
 def _description_renderables(blocks: list[dict], width: int) -> list:
     """The description's blocks: headings bold and set apart, list items with a bullet, a blank line
     after a paragraph that wraps (wider than `width`)."""
@@ -607,7 +602,7 @@ def _render_posting_detail(posting: dict, status: str, console=None, *, descript
     if not description:
         return
     common._section(console, "Description")
-    for renderable in _description_renderables(_blocks_of(posting), console.width - 2):
+    for renderable in _description_renderables(posting["description_blocks"], console.width - 2):
         console.print(Padding(renderable, (0, 2)))
 
 
@@ -633,7 +628,7 @@ def _page_description(posting: dict, console) -> None:
     with console.pager(styles=True):
         console.print(Text.assemble((common.plain(posting.get("title", "")), "bold"), " · ", (common.plain(posting.get("company", "")), "cyan")))
         common._section(console, "Description")
-        for renderable in _description_renderables(_blocks_of(posting), console.width - 2):
+        for renderable in _description_renderables(posting["description_blocks"], console.width - 2):
             console.print(Padding(renderable, (0, 2)))
 
 

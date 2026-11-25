@@ -50,11 +50,16 @@ def verified(answer, count: int) -> dict:
     return {"headings": sorted(headings - both), "bullets": sorted(bullets - both)}
 
 
+def _made_for(description: str, layout) -> bool:
+    """Whether ``layout`` was made for this very description."""
+    return isinstance(layout, dict) and layout.get("sha256") == description_hash(description)
+
+
 def blocks(description: str, layout: dict | None) -> list[dict]:
     """The description as ``[{"kind": "heading"|"bullet"|"paragraph", "text"}]``, one per non-empty line.
     Without a layout made for this very description every line is a paragraph."""
     rows = lines(description)
-    valid = isinstance(layout, dict) and layout.get("sha256") == description_hash(description)
+    valid = _made_for(description, layout)
     headings = set(layout.get("headings") or []) if valid else set()
     bullets = set(layout.get("bullets") or []) if valid else set()
     out = []
@@ -68,18 +73,13 @@ def blocks(description: str, layout: dict | None) -> list[dict]:
     return out
 
 
-def has_layout(posting: dict) -> bool:
-    layout = posting.get("layout")
-    return isinstance(layout, dict) and layout.get("sha256") == description_hash(posting.get("description") or "")
-
-
 def lay_out(path: Path, *, profile_dir: Path | None = None) -> bool:
     """Give the posting at ``path`` a layout when it has none for its description; True when it got one.
     A failed call changes nothing."""
     posting = json.loads(Path(path).read_text(encoding="utf-8"))
     description = posting.get("description") or ""
     rows = lines(description)
-    if not rows or has_layout(posting):
+    if not rows or _made_for(description, posting.get("layout")):
         return False
     text = "\n".join(f"{n}: {row}" for n, row in enumerate(rows, 1))[:_MAX_CHARS]
     try:

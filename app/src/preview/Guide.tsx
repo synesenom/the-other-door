@@ -261,7 +261,7 @@ export function Guide() {
           </Row>
           <Row label="description">
             <div className="description" style={{ width: '100%', maxWidth: 420 }}>
-              <h3 className="body item-name description-heading">About the role</h3>
+              <h3 className="body description-heading">About the role</h3>
               <p className="body">You take over a close that runs in eight working days.</p>
               <ul className="body description-list">
                 <li>Own the monthly close</li>

@@ -318,7 +318,7 @@ function Description({ posting }: { posting: PostingData }) {
       )
     } else if (block.kind === 'heading') {
       out.push(
-        <h3 key={i} className="body item-name description-heading">
+        <h3 key={i} className="body description-heading">
           {block.text}
         </h3>,
       )
