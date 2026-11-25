@@ -729,3 +729,4 @@ details[open] > summary::before { transform: rotate(90deg); }
 .install-line { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-4); flex: none; margin: var(--space-2) var(--phone-gutter); padding: var(--space-3) var(--space-5); }
 .install-line button { white-space: nowrap; } /* on a very narrow screen a button goes under the words, never past the edge */
 .install-line button + button { margin-left: 0; }
+.install-line > .small { flex: 1 1 10em; } /* the words take the room left and wrap beside the button */
