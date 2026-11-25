@@ -176,39 +176,41 @@ def _page_links(url: str) -> list[str]:
     return [urljoin(resp.url, a["href"]) for a in soup.find_all("a", href=True)]
 
 
-def _linked_hosts(url: str, sites: set[str]) -> list[str]:
-    """The hosts the page at *url* links to that may be read beside it: a subdomain of one of *sites* (the given
-    hosts without `www.`), or a profile site of `_PROFILE_HOSTS` with its data host. Found here, by code."""
+def _linked_hosts(url: str, site: str) -> list[str]:
+    """The hosts the page at *url* links to that may be read beside it: GitHub and ORCID with their data hosts
+    (`_PROFILE_HOSTS`), and, when *url* is a home page (the user's own site, not a profile on a shared one), the
+    subdomains of *site* (its host without `www.`). Found here, by code."""
+    home = urlsplit(url).path in ("", "/")
     hosts: list[str] = []
     for link in _page_links(url):
         host = (urlsplit(link).hostname or "").lower()
-        if any(host.endswith("." + site) for site in sites) and not host.startswith("www."):
-            hosts.append(host)
-        elif host.removeprefix("www.") in _PROFILE_HOSTS:
+        if host.removeprefix("www.") in _PROFILE_HOSTS:
             hosts += _PROFILE_HOSTS[host.removeprefix("www.")]
+        elif home and host.endswith("." + site):
+            hosts.append(host)
     return hosts
+
+
+# A host a rule may name: plain DNS labels (a page's link could carry a comma, a space or an escape into the rule list).
+_PLAIN_HOST = re.compile(r"[a-z0-9-]+(\.[a-z0-9-]+)+")
 
 
 def webfetch_rules(urls: list[str]) -> tuple[str, ...]:
     """`WebFetch(domain:<host>)` for each page the user gave, built here and never by the model: the host, its
-    www/apex twin and the host its address redirects to (a rule matches one host, no subdomains); then the hosts
-    the given page links to that are its own subdomains, or GitHub and ORCID (`_linked_hosts`); `github.com`
-    also gets `api.github.com`, which the prompt reads repositories through. None for LinkedIn and Indeed."""
+    www/apex twin and the host its address redirects to (a rule matches one host, no subdomains), with the data
+    host of GitHub or ORCID (`_PROFILE_HOSTS`: `api.github.com`, `pub.orcid.org`, which the prompt reads them
+    through); then what the given page links to (`_linked_hosts`). Only plain host names; none for LinkedIn and Indeed."""
     hosts: list[str] = []
     for url in urls:
         given = (urlsplit(url).hostname or "").lower()
         if not given or _is_no_fetch(given):
             continue
-        own: list[str] = []
         for host in (given, _redirect_host(url)):
-            if not host or _is_no_fetch(host):
-                continue
-            own += [host, _twin(host)]
-            if host in ("github.com", "www.github.com"):
-                own.append("api.github.com")
-        hosts += own
-        hosts += [h for h in _linked_hosts(url, {h.removeprefix("www.") for h in own}) if not _is_no_fetch(h)]
-    return tuple(f"WebFetch(domain:{h})" for h in dict.fromkeys(hosts))
+            if host and not _is_no_fetch(host):
+                hosts += [host, _twin(host), *_PROFILE_HOSTS.get(host.removeprefix("www."), ())]
+        if given.removeprefix("www.") not in _PROFILE_HOSTS:
+            hosts += [h for h in _linked_hosts(url, given.removeprefix("www.")) if not _is_no_fetch(h)]
+    return tuple(f"WebFetch(domain:{h})" for h in dict.fromkeys(hosts) if _PLAIN_HOST.fullmatch(h))
 
 
 def _resolve_job_ref(ref: str, jobs_dir: Path | None = None) -> str:

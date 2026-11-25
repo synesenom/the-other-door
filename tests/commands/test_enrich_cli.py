@@ -448,14 +448,45 @@ def test_a_personal_site_may_be_walked_to_its_subdomains_and_the_profiles_it_lin
     # get a rule; any other site it links to, or a host that only ends like it, does not.
     calls = []
     _answer(monkeypatch, calls=calls)
-    links = ["https://blog.jane.example/posts", "/research", "https://github.com/jane", "https://orcid.org/0000-0002-1825-0097",
-             "https://evil.example/x", "https://jane.example.evil.example/", "https://notjane.example/"]
+    links = ["https://blog.jane.example/posts", "https://www.blog.jane.example/", "/research", "https://www.github.com/jane",
+             "https://orcid.org/0000-0002-1825-0097", "https://linkedin.jane.example/", "https://evil.example/x",
+             "https://jane.example.evil.example/", "https://notjane.example/"]
     monkeypatch.setattr(common, "_page_links", lambda url: links)
     enrich_cmd._enrich_core(["https://jane.example"], profile_dir=env.profile_dir)
     assert _rules(calls[0]) == [
         "WebFetch(domain:jane.example)", "WebFetch(domain:www.jane.example)", "WebFetch(domain:blog.jane.example)",
-        "WebFetch(domain:github.com)", "WebFetch(domain:api.github.com)", "WebFetch(domain:orcid.org)", "WebFetch(domain:pub.orcid.org)",
+        "WebFetch(domain:www.blog.jane.example)", "WebFetch(domain:github.com)", "WebFetch(domain:api.github.com)",
+        "WebFetch(domain:orcid.org)", "WebFetch(domain:pub.orcid.org)",
     ]
+
+
+def test_a_link_whose_host_is_not_a_plain_name_gets_no_rule(env, monkeypatch):
+    # The page writes these hosts; one with a comma or other text in it would break the rule list the call is given.
+    calls = []
+    _answer(monkeypatch, calls=calls)
+    links = ["https://x),webfetch,websearch,(.jane.example/", "https://a b.jane.example/", "https://attacker.com%23.jane.example/",
+             "https://evil.com\uff0e.jane.example/"]
+    monkeypatch.setattr(common, "_page_links", lambda url: links)
+    enrich_cmd._enrich_core(["https://jane.example"], profile_dir=env.profile_dir)
+    assert _rules(calls[0]) == ["WebFetch(domain:jane.example)", "WebFetch(domain:www.jane.example)"]
+
+
+def test_a_page_deeper_than_a_home_page_gets_no_subdomains(env, monkeypatch):
+    # A profile on a shared site (medium.com/@jane) is not the user's own site: its subdomains are other people's.
+    calls = []
+    _answer(monkeypatch, calls=calls)
+    monkeypatch.setattr(common, "_page_links", lambda url: ["https://attacker.medium.com/", "https://github.com/jane"])
+    enrich_cmd._enrich_core(["https://medium.com/@jane"], profile_dir=env.profile_dir)
+    assert _rules(calls[0]) == ["WebFetch(domain:medium.com)", "WebFetch(domain:www.medium.com)",
+                                "WebFetch(domain:github.com)", "WebFetch(domain:api.github.com)"]
+
+
+def test_a_given_profile_site_gets_its_data_host_and_is_not_walked(env, monkeypatch):
+    calls = []
+    _answer(monkeypatch, calls=calls)
+    monkeypatch.setattr(common, "_page_links", lambda url: pytest.fail("a profile site's own page is not read for links"))
+    enrich_cmd._enrich_core(["https://orcid.org/0000-0002-1825-0097"], profile_dir=env.profile_dir)
+    assert _rules(calls[0]) == ["WebFetch(domain:orcid.org)", "WebFetch(domain:www.orcid.org)", "WebFetch(domain:pub.orcid.org)"]
 
 
 @responses.activate
