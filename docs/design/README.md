@@ -285,8 +285,7 @@ components; only the layout changes below the sidebar breakpoint (`size.sidebar-
   score stays on the right in the display face. "Find new jobs" is a small text button
   in the header (the phone has no sidebar foot), beside "Add a job".
 - **Ready to send**: a two-way switch (CV · pages | Letter · words) above the pages, which
-  swipe sideways with the next page peeking in; Revise is one text field with the accent
-  button beside it; sharing the PDF is the icon in the header. The desktop app uses the same
+  swipe sideways with the next page peeking in; sharing the PDF is the icon in the header. The desktop app uses the same
   switch, and it also picks the document Revise changes.
 - **Finding jobs**: the same step rows, smaller (19 px step names); it says the run is on
   the computer running *The other door* and the phone can be locked.

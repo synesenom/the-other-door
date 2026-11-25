@@ -37,6 +37,7 @@ test('pair by the link, then Matches, a posting, Applications and a prepared app
     await tabs.getByRole('button', { name: 'Applications' }).click()
     await page.getByRole('button', { name: /Finance Manager/ }).first().click()
     await expect(page.getByRole('heading', { name: 'Ready to send' })).toBeVisible()
+    await expect(page.getByLabel('Anything to change?')).toHaveCount(0)
     const paper = page.locator('img.paper').first()
     await expect(paper).toBeVisible({ timeout: 20_000 })
     const width = await paper.evaluate(async (el) => {
