@@ -7,7 +7,7 @@ export function InstallLineView({ what, onInstall, onDismiss }: { what: InstallO
   return (
     <div className="install-line notice" role="region" aria-label="Install the app">
       {what === 'prompt' ? (
-        <button type="button" className="quiet" onClick={onInstall}>
+        <button type="button" className="quiet install" onClick={onInstall}>
           Install the app
         </button>
       ) : (
