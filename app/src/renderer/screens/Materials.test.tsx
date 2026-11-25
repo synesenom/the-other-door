@@ -457,6 +457,18 @@ describe('Materials: text running off the page', () => {
     expect(screen.getByText('Some text runs off the page in your CV. Prepare it again to fix it.')).toBeInTheDocument()
   })
 
+  it('on the phone says to prepare again, since the change box is not there', async () => {
+    mockDoor({ show: posting({ materials: materials({ readability: [overflow] }) }) })
+    render(
+      <RemoteContext.Provider value={true}>
+        <Materials jobId="jobindex.1" onBack={noop} onApplied={noop} initialDoc="cover_letter" />
+      </RemoteContext.Provider>,
+    )
+    await screen.findByRole('heading', { name: 'Ready to send' })
+    expect(screen.getByText('Some text runs off the page in your CV. Prepare it again to fix it.')).toBeInTheDocument()
+    expect(screen.queryByText(/shorter version/)).toBeNull()
+  })
+
   it.each([
     [[{ file: 'cv', kind: 'glued', detail: 'x' }, { file: 'cv', kind: 'missing', detail: 'y' }]],
     [[{ ...overflow, file: 'cover_letter' }]],
