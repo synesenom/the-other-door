@@ -14,7 +14,7 @@ import threading
 import time
 from pathlib import Path
 
-from door.core import workspace
+from door.core import utils, workspace
 
 # The tools the phone app calls (app/src/renderer through app/src/web/bridge.ts), each with the argument
 # names the app sends. Setting up, the profile, the CV, the employers, revising and "I'm done" are done on
@@ -89,35 +89,31 @@ def refusal(tool: str, args) -> str | None:
     return None
 
 
-def _folders() -> list[str]:
-    """The folders of this computer a phone must not read, longest first (the data folder sits inside home)."""
-    from door.commands import report  # a top-level module may import commands; not the other way round
-
-    found = [workspace.HOME, workspace.REPO_ROOT, Path.home()] + ([os.environ["DOOR_HOME"]] if os.environ.get("DOOR_HOME") else [])
-    return sorted({s for folder in found for s in report._spellings(folder)}, key=len, reverse=True)
+def _masker():
+    """A function that removes the folders of this computer from a text (the data folder sits inside home)."""
+    places = {workspace.HOME: "", workspace.REPO_ROOT: "", Path.home(): ""}
+    if os.environ.get("DOOR_HOME"):
+        places[os.environ["DOOR_HOME"]] = ""
+    return utils.folder_masker(places)
 
 
 def mask(text: str) -> str:
     """`text` without the folders of this computer: only the folder part goes, so a file's name stays."""
-    for folder in _folders():
-        text = text.replace(folder, "")
-    return text
+    return _masker()(text)
 
 
-def _clean(value, folders: list[str]):
+def _clean(value, hide):
     """Every string of an answer (nested) without the folders, a score's reason cut to what a card shows."""
     if isinstance(value, str):
-        for folder in folders:
-            value = value.replace(folder, "")
-        return value
+        return hide(value)
     if isinstance(value, list):
-        return [_clean(v, folders) for v in value]
+        return [_clean(v, hide) for v in value]
     if isinstance(value, dict):
         out = {}
         for key, v in value.items():
             if key == "score_reason" and isinstance(v, str):
                 v = v[:_REASON_MAX]
-            out[key] = _clean(v, folders)
+            out[key] = _clean(v, hide)
         return out
     return value
 
@@ -139,4 +135,4 @@ def answer(tool: str, data):
             }
         elif tool == "status_summary" and isinstance(data.get("drive"), dict):
             data = {**data, "drive": {**data["drive"], "account": None}}
-    return _clean(data, _folders())
+    return _clean(data, _masker())
