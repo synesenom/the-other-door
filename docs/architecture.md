@@ -316,8 +316,13 @@ opens `/files/jobs/output/...` to an `<img>`, and `/` is the web build of the de
 (`app/src/web/`, issue 303). Every guarded route needs the token; wrong tries lock an address out. Over
 HTTP the long tools run as the server's own task and return at once (`job_result`, `cancel_job`).
 A paired phone gets only `serve_policy.PHONE_TOOLS`: finding, preparing and the applications
-(`status_summary`, `list_matches`, `show`, `set_status`, `mark_reviewed`, `mark_seen`, `import_posting`, `find_jobs`,
-`job_result`, `cancel_job`, `prepare`, `revise`, and `show_profile` to read). Nothing that sets up or
+(`status_summary`, `list_matches`, `show`, `set_status`, `mark_seen`, `import_posting`, `find_jobs`,
+`job_result`, `cancel_job`, `prepare`, and `show_profile` to read), each with only the arguments the app sends
+(`PHONE_TOOLS` maps a tool to their names; a string is capped, 30000 characters for an ad's `text`, 2000 for
+`notes` and `url`, 300 otherwise) and `prepare`, `import_posting` and `find_jobs` within a daily ceiling
+(`PHONE_DAILY`, 10, 30 and 6 in a rolling 24 hours, in memory). `mcp_server.serve_phone()` turns this on and
+`_DoorMCP.call_tool` asks `serve_policy.refusal` first, so it holds for every call; a request body is capped at 1 MB.
+No `revise`, no `mark_reviewed`. Nothing that sets up or
 changes the profile, the CV or the employers, no `ask`, `doctor`, `setup`, Drive, export or import;
 never a local path or a home-network address; and `compile` refuses any body that `render/html_guard.py`
 finds outside its tags, classes and links, whoever prepared it. Each

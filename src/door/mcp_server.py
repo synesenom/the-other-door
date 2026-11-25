@@ -59,6 +59,7 @@ from mcp.server.mcpserver.exceptions import ToolError, UnexpectedToolError
 from mcp.types import CallToolResult, TextContent
 
 from door import i18n
+from door import serve_policy
 from door import version as version_mod
 from door.core import path_scope
 from door.commands import _common as common
@@ -160,6 +161,9 @@ class _DoorMCP(MCPServer):
     """MCPServer whose every tool call is the one place a failure is logged (#593): over stdio and HTTP alike."""
 
     async def call_tool(self, name, arguments, context=None):
+        why = serve_policy.refusal(name, arguments) if _runs["phone"] else None
+        if why is not None:  # a phone's call outside its tools, arguments or daily ceiling; not logged: a flood would fill the log
+            return CallToolResult(content=[TextContent(type="text", text=json.dumps({"error": why}, indent=2))])
         refusal = _data_refusal(name)
         if refusal is not None and migrations.status()["state"] == "busy":
             await asyncio.to_thread(migrations.upgrade_all)  # a run held the lock at start: try again
@@ -407,17 +411,17 @@ class _CancelReporter:
 
 # The long tools' runs, for `job_result` and `cancel_job`. Over HTTP (`door serve`, #302) a run is a
 # task of the server's own and the call returns at once: a phone sleeps, a tunnel cuts long requests.
-_runs: dict = {"background": False, "running": None, "cancel": None, "task": None, "last": {}}
+_runs: dict = {"background": False, "phone": False, "running": None, "cancel": None, "task": None, "last": {}}
 _LONG_TOOLS = ("find_jobs", "prepare")
 
 
 def _runs_reset(*, background: bool = False) -> None:
-    _runs.update(background=background, running=None, cancel=None, task=None, last={})
+    _runs.update(background=background, phone=False, running=None, cancel=None, task=None, last={})
 
 
-def enable_background_runs() -> None:
-    """`door serve` calls this: from now on the long tools start their run and return."""
-    _runs["background"] = True
+def serve_phone() -> None:
+    """`door serve` calls this: the long tools start their run and return, and every call is held to `serve_policy`."""
+    _runs.update(background=True, phone=True)
 
 
 def _now_iso() -> str:

@@ -328,10 +328,10 @@ column comes under the pages.
 - Under the title, the **Salary** line, when preparing found one (above).
 - Under that, a line marked with the warning triangle names the numbers, employers, skills,
   certifications or degrees of the CV and letter that your `cv.md` and story bank do not back
-  ("Not in your CV: 87%, Nordwind. Check them before you send it."). A claim the tailor kept as true shows its reason in brackets after the name. Revise can take them out.
+  ("Not in your CV: 87%, Nordwind. Check them before you send it."). A claim the tailor kept as true shows its reason in brackets after the name. Revise can take them out (on the computer).
 - A second marked line says "Some text runs off the page in your CV. Ask for a shorter version." (with
   "Switch to the CV" while the letter is shown) when words of the CV never reached its PDF (Chromium cuts what runs past the
-  page); on materials that cannot be revised it says "Prepare it again to fix it." Prepare already
+  page); on materials that cannot be revised, and on the phone, it says "Prepare it again to fix it." Prepare already
   asked the tailor once to trim the CV before it shows this.
 - A CV is meant to be within its page limit, as your profile stands now (the job country's convention, usually 2), a letter 1 page and 250 to 350 words. When one is over,
   a note under the page says so in words ("(limit is 2)", "(aim for 250–350)").
@@ -667,7 +667,7 @@ On the phone: scan the QR code (or open the address and type the code), then in 
 **Install app** (iPhone: Safari's Share → **Add to Home Screen**). The app opens on your matches.
 
 The phone is for what you do on the road: find new jobs (the run goes on while the phone is locked),
-read postings, import an ad, prepare and revise an application, and keep Applications up to date. It
+read postings, import an ad, prepare an application, and keep Applications up to date. It
 has three tabs, Matches, Applications and Settings (only the look and where your data is).
 Everything else is done on the computer running *The other door*: first-time setup, your profile and
 CV (Profile is not on the phone), signing in to
@@ -676,7 +676,9 @@ folder that has no profile yet says to set it up there first.
 
 **What a paired phone can do.** It is not a Claude Code session on your machine: the server answers only
 the tools the phone app uses, never a file path on the machine (an ad comes as a link or text), never an
-address on the machine or your home network, and no question to Claude. Every
+address on the machine or your home network, and no question to Claude. It cannot revise a CV or letter
+(do that on the computer), it sends only the arguments the app sends, and a day allows 10 prepares, 30 imported
+ads and 6 runs to find jobs (a rolling 24 hours; try again tomorrow, or do it on the computer). Every
 prepared or revised CV and letter is refused before compiling if it would read or write another file.
 With a Cloudflare quick tunnel, Cloudflare's servers see the traffic decrypted on its way through;
 Tailscale keeps it encrypted to your machine.

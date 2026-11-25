@@ -236,9 +236,9 @@ export function Materials({ jobId, onBack, backLabel = '← Posting', onPosting,
             <WarningMark />
           </span>
           <span>
-            {m.revisable && doc === 'cv' ? (
+            {m.revisable && !remote && doc === 'cv' ? (
               'Some text runs off the page in your CV. Ask for a shorter version.'
-            ) : m.revisable ? (
+            ) : m.revisable && !remote ? (
               <>
                 Some text runs off the page in your CV.{' '}
                 <button type="button" className="link-inline" onClick={() => setChoice('cv')}>
@@ -273,7 +273,7 @@ export function Materials({ jobId, onBack, backLabel = '← Posting', onPosting,
         <div className={busy ? 'pages dimmed' : 'pages'} data-testid="pages" aria-busy={busy}>
           {figureFor(doc)}
         </div>
-        {!sent && (
+        {!sent && !remote && (
           <aside className="materials-aside">
             {m.revisable ? (
               <section className="revise">

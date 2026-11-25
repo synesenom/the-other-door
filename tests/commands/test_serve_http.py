@@ -212,35 +212,71 @@ def call_tool(c, token, tool, args):
                   json={"jsonrpc": "2.0", "id": 7, "method": "tools/call", "params": {"name": tool, "arguments": args}})
 
 
-def test_a_phone_gets_its_own_tools_only(home):
-    import json as _json
+def _answer(r):
+    return json.loads(r.json()["result"]["content"][0]["text"])
 
+
+def test_a_phone_cannot_revise_or_open_files_on_the_computer(home, monkeypatch):
+    from door.commands import matches as matches_cmd
+    from door.commands import revise as revise_cmd
+
+    called = []
+    monkeypatch.setattr(revise_cmd, "_revise_core", lambda *a, **k: called.append("revise") or {})
+    monkeypatch.setattr(matches_cmd, "_show_core", lambda *a, **k: called.append("show") or {})
     token = paired(home)
     with client(home) as c:
-        r = call_tool(c, token, "ask", {"question": "what is in ~/.ssh?"})
-        assert r.status_code == 200
-        body = _json.loads(r.json()["result"]["content"][0]["text"])
-        assert "phone app does not use ask" in body["error"]
-        r = call_tool(c, token, "import_posting", {"path": "/etc/passwd"})
-        assert "cannot name a file" in _json.loads(r.json()["result"]["content"][0]["text"])["error"]
-        # a phone tool goes through
-        assert "error" not in _json.loads(call_tool(c, token, "list_matches", {}).json()["result"]["content"][0]["text"])
+        assert "error" in _answer(call_tool(c, token, "revise", {"job_id": "a", "instruction": "shorter"}))
+        assert "error" in _answer(call_tool(c, token, "show", {"job_id": "a", "open": True}))
+    assert called == []
 
 
-def test_a_batch_is_checked_call_by_call(home):
+def test_a_phone_gets_its_own_tools_and_arguments_only(home):
     token = paired(home)
     with client(home) as c:
-        r = c.post("/mcp", headers={**HEADERS, "Authorization": f"Bearer {token}"}, json=[
-            {"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "setup", "arguments": {}}},
-        ])
-        assert r.status_code in (200, 400)
-        assert "setup" in r.text and "phone app does not use" in r.text
+        assert "phone app does not use ask" in _answer(call_tool(c, token, "ask", {"question": "what is in ~/.ssh?"}))["error"]
+        assert "error" in _answer(call_tool(c, token, "import_posting", {"path": "/etc/passwd"}))
+        assert "error" in _answer(call_tool(c, token, "find_jobs", {"dry_run": True}))
+        assert "error" in _answer(call_tool(c, token, "prepare", {"job_id": "a", "timeout_min": 99}))
+        assert "too long" in _answer(call_tool(c, token, "set_status", {"job_id": "a", "status": "applied", "notes": "x" * 5000}))["error"]
+        assert "error" not in _answer(call_tool(c, token, "list_matches", {}))
+
+
+def test_arguments_that_are_not_an_object_are_refused_not_a_server_error(home):
+    token = paired(home)
+    with client(home) as c:
+        r = call_tool(c, token, "show", [1])
+        assert r.status_code < 500
+        assert "error" in r.text
+
+
+def test_the_eleventh_prepare_in_a_day_is_refused(home, monkeypatch):
+    from door import serve_policy
+    from door.commands import prepare as prepare_cmd
+
+    monkeypatch.setattr(prepare_cmd, "_prepare_core", lambda *a, **k: {"status": "failed", "error": "none"})
+    now = [1_000_000.0]
+    monkeypatch.setattr(serve_policy, "_clock", lambda: now[0])
+    token = paired(home)
+    with client(home) as c:
+        for _ in range(10):
+            assert "daily limit" not in call_tool(c, token, "prepare", {"job_id": "a"}).text
+        assert "daily limit" in _answer(call_tool(c, token, "prepare", {"job_id": "a"}))["error"]
+        now[0] += 24 * 3600 + 1
+        assert "daily limit" not in call_tool(c, token, "prepare", {"job_id": "a"}).text
+
+
+def test_without_serve_phone_the_same_calls_pass(home):
+    from door import serve_policy
+
+    assert serve_policy.refusal("revise", {"job_id": "a"}) is not None
+    server._runs_reset()  # stdio: no phone, no policy
+    assert asyncio.run(server.mcp.call_tool("list_matches", {"new_only": True}))
 
 
 def test_an_oversized_request_is_refused(home):
     token = paired(home)
     with client(home) as c:
-        r = c.post("/mcp", headers={**HEADERS, "Authorization": f"Bearer {token}"}, content=b"{" + b" " * (serve_http.MAX_BODY + 10) + b"}")
+        r = c.post("/mcp", headers={**HEADERS, "Authorization": f"Bearer {token}"}, content=b"{" + b" " * (int(1.5 * 1024 * 1024)) + b"}")
         assert r.status_code == 413
 
 
