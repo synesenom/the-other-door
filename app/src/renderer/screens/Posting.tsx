@@ -7,7 +7,6 @@ import { SkillColumn } from './SkillColumn'
 import { Dialog } from './Dialog'
 import { Hint } from './Hint'
 import { SalaryLine } from './SalaryLine'
-import { Markdown } from './Markdown'
 import { Spinner } from './Spinner'
 import { prepareText } from './run-text'
 import { StatusDialog } from './StatusDialog'
@@ -298,8 +297,26 @@ export function Posting({ jobId, onChanged, onOpenMaterials }: Props) {
   )
 }
 
-/** The ad's text: a good match's as Markdown, its headings and lists set out; any other as it came. */
+/** The ad's text: a set-out one (`formatted`) with its `## ` headings and `- ` list items, every word shown as
+ * written (the ad is a stranger's: no link, emphasis or numbering is read from it); any other as it came. */
 function Description({ posting }: { posting: PostingData }) {
-  if (posting.formatted) return <Markdown text={posting.description ?? ''} className="body" />
-  return <p className="body description">{posting.description}</p>
+  if (!posting.formatted) return <p className="body description">{posting.description}</p>
+  const blocks = (posting.description ?? '').split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean)
+  return (
+    <div className="markdown body">
+      {blocks.map((block, i) => {
+        if (block.startsWith('## ')) return <h3 key={i} className="md-heading">{block.slice(3)}</h3>
+        const lines = block.split('\n')
+        if (lines.every((line) => line.startsWith('- ')))
+          return (
+            <ul key={i}>
+              {lines.map((line, n) => (
+                <li key={n}>{line.slice(2)}</li>
+              ))}
+            </ul>
+          )
+        return <p key={i}>{block}</p>
+      })}
+    </div>
+  )
 }

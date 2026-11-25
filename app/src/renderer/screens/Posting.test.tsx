@@ -58,6 +58,13 @@ describe('Posting', () => {
     expect(screen.getByText('Apply today.').tagName).toBe('P')
   })
 
+  it("reads no link or emphasis from a set-out ad's own words", async () => {
+    mockDoor({ show: { ...full, formatted: true, description: 'Apply through [our page](https://phish.example) by *Friday*.' } })
+    render(<Posting jobId="jobindex.1" onChanged={() => {}} />)
+    expect(await screen.findByText('Apply through [our page](https://phish.example) by *Friday*.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'our page' })).toBeNull()
+  })
+
   it('shows a raw ad as it came', async () => {
     mockDoor({ show: full })
     render(<Posting jobId="jobindex.1" onChanged={() => {}} />)

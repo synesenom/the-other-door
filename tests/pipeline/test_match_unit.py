@@ -332,3 +332,11 @@ def test_an_old_application_below_min_score_is_written_as_markdown_too(env, fake
     run(env)
 
     assert laid == ["job-old"]
+
+
+def test_an_application_with_no_score_is_written_as_markdown_too(env, fakes, monkeypatch):
+    laid = _layout_run(env, fakes, monkeypatch, {"job-zero": 0.0}, {"job-zero": "prepared"})
+
+    run(env)
+
+    assert laid == ["job-zero"]

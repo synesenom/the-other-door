@@ -112,7 +112,7 @@ def _lay_out(jobs_dir: Path, profile_dir: Path, app_tracker, threshold: float, m
     paths = {str(p.get("id")): path for path, p in found}
     postings = [p for _, p in found]
     matches = common._drop_stale(select_matches(jobs_dir, app_tracker, threshold, postings=postings), max_age)
-    applications = select_matches(jobs_dir, app_tracker, 0.0, status=tracker_mod.ONGOING_STATUSES, postings=postings)
+    applications = [p for p in postings if app_tracker.get_status(str(p.get("id"))) in tracker_mod.ONGOING_STATUSES]
     todo = [m for m in sorted(matches + applications, key=lambda m: -(m.get("score") or 0.0))
             if ad_layout.needs_layout(m)][:MAX_LAID_OUT_PER_RUN]
     if todo:
