@@ -854,12 +854,8 @@ def _init_core(fields: dict, profile_dir: Path | None = None, example_dir: Path 
         example_dir = workspace.PROFILE_EXAMPLE_DIR
 
     fresh = not (profile_dir / "config.json").exists()
-    migrations.ensure_folder(profile_dir, "profile")
-    if fresh and migrations.read_version(profile_dir) is None:
-        migrations.write_version(profile_dir, migrations.current("profile"))  # no config: not v0.1.0's profile
-    copied = _copy_missing_example_files(example_dir, profile_dir)
     base = _load_base_config(profile_dir, example_dir)
-    dropped = sorted(_invalid_keys(base) - fields.keys())
+    dropped = sorted(_invalid_keys(base, profile_dir) - fields.keys())
     base = {key: value for key, value in base.items() if key not in dropped}
     merged = {**base, **fields}
     # `exclude` is merged key by key, so setting only `companies` keeps
@@ -868,10 +864,14 @@ def _init_core(fields: dict, profile_dir: Path | None = None, example_dir: Path 
         merged["exclude"] = {**base["exclude"], **fields["exclude"]}
 
     try:
-        Profile.model_validate(merged)
+        Profile.model_validate(merged, context={"profile_dir": profile_dir})
     except ValidationError as exc:
         raise ConfigError(format_validation_error(exc, "profile/config.json")) from None
 
+    migrations.ensure_folder(profile_dir, "profile")  # nothing is written before the config validates
+    if fresh and migrations.read_version(profile_dir) is None:
+        migrations.write_version(profile_dir, migrations.current("profile"))  # no config: not v0.1.0's profile
+    copied = _copy_missing_example_files(example_dir, profile_dir)
     config_path = profile_dir / "config.json"
     config_path.parent.mkdir(parents=True, exist_ok=True)
     utils.write_json_atomic(config_path, merged)
@@ -885,14 +885,14 @@ def _init_core(fields: dict, profile_dir: Path | None = None, example_dir: Path 
     return {"config_path": str(config_path), "copied": copied, "dropped": dropped, "disclaimers": disclaimers}
 
 
-def _invalid_keys(config: dict) -> set[str]:
+def _invalid_keys(config: dict, profile_dir: Path) -> set[str]:
     """The top-level keys of `config` that `Profile` refuses: an unknown key, a bad value."""
     from pydantic import ValidationError
 
     from door.core.profile_loader import Profile
 
     try:
-        Profile.model_validate(config)
+        Profile.model_validate(config, context={"profile_dir": profile_dir})
     except ValidationError as exc:
         return {str(err["loc"][0]) for err in exc.errors() if err["loc"] and str(err["loc"][0]) in config}
     return set()

@@ -162,7 +162,7 @@
   },
   {
     "name": "doctor",
-    "description": "Check every prerequisite: Python, profile, Chromium, the `claude` CLI,\n    the MCP server entry and dev deps.\n\n    Offline by default, a few seconds: Chromium prints a test page. ``quick=True`` skips the print\n    (Chromium only has to start). With ``probe=True`` it also probes each\n    configured site's live scraper (one ``scraper: <site>`` check per site,\n    page 1 only; live requests, so it can take a\n    while) and saves the raw response of a suspicious probe under\n    ``jobs/drift/<site>/``. Call it when a command fails for an environment\n    reason, or first thing in a setup conversation; pass ``probe`` when a\n    site returned nothing and the user wants to know whether its scraper\n    broke. Identical to `./door doctor [--probe]`.\n\n    Args:\n        probe: Also run the live ``scraper: <site>`` probes.\n        quick: Skip the test print of the Chromium check.\n\n    Returns:\n        ``{\"ok\", \"checks\": [{\"name\", \"status\": \"ok\" | \"missing\" | \"warn\" |\n        \"drift\", \"required\", \"detail\", \"fix\"}], \"last_run\", \"last_scrape\"}`` —\n        ``fix`` is the command to run for a failed check. ``drift`` means a\n        site's page no longer has the structure its scraper reads (offered a\n        fix by `setup` with ``probe=True``); a ``scraper:`` ``warn`` is an unreachable site, a\n        login/bot wall or a result count far from the recent runs. Neither\n        makes ``ok`` false.\n    ",
+    "description": "Check every prerequisite: Python, profile, Chromium, the `claude` CLI,\n    the MCP server entry and dev deps.\n\n    Offline by default, a few seconds: Chromium prints a test page. ``quick=True`` skips the print\n    (Chromium only has to start). With ``probe=True`` it also probes each\n    configured site's live scraper (one ``scraper: <site>`` check per site,\n    page 1 only; live requests, so it can take a\n    while) and saves the raw response of a suspicious probe under\n    ``jobs/drift/<site>/``. Call it when a command fails for an environment\n    reason, or first thing in a setup conversation; pass ``probe`` when a\n    site returned nothing and the user wants to know whether its scraper\n    broke. Identical to `./door doctor [--probe]`.\n\n    Args:\n        probe: Also run the live ``scraper: <site>`` probes.\n        quick: Skip the test print of the Chromium check.\n\n    Returns:\n        ``{\"ok\", \"checks\": [{\"name\", \"status\": \"ok\" | \"missing\" | \"warn\" |\n        \"drift\", \"required\", \"detail\", \"fix\"}], \"last_run\", \"last_scrape\"}`` —\n        ``fix`` is the command to run for a failed check. ``drift`` means a\n        site's page no longer has the structure its scraper reads; a ``scraper:`` ``warn`` is an unreachable site, a\n        login/bot wall or a result count far from the recent runs. Neither\n        makes ``ok`` false.\n    ",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -1547,7 +1547,7 @@
   },
   {
     "name": "setup",
-    "description": "Install missing prerequisites (Chromium, the `claude` CLI).\n\n    Call it first WITHOUT `yes`: nothing runs, and ``plan`` lists the exact\n    command(s) per tool. Show them to the user, then call again with\n    ``yes=True`` and ``install`` = the tools they approved. Nothing here\n    needs sudo; a step that fails can be run in a terminal, or via `./scripts/setup.sh`.\n    The profile is not created here: collect the fields and call\n    `init_profile`. Same logic as `./door doctor --fix`.\n\n    Args:\n        install: Tools to install: \"chromium\", \"claude\". Omit\n            for every tool `doctor` reports missing.\n        yes: The user approved the plan — run it.\n        probe: Probe each configured site live (as `doctor` with\n            ``probe=True``) so ``fixes`` can offer a drifted scraper.\n            Off by default — the installs need no network.\n        fix_scrapers: Sites whose drifted scraper to repair\n            (``doctor`` with ``probe=True`` shows them as ``scraper: <site>``\n            with status ``drift``; the plan's ``fixes`` lists the offers). Only with\n            ``yes``, and only for sites the user approved: each runs the\n            headless scraper-fixer on a new branch, gates it on the offline\n            tests plus a fresh probe, then pushes and opens a PR. Refused\n            while a run is in progress or the working tree is dirty.\n\n    Returns:\n        ``{\"outcome\": \"needs_confirmation\" | \"ok\" | \"incomplete\", \"platform\",\n        \"plan\", \"results\", \"doctor\", \"todo\", \"fixes\"}``. ``fixes`` holds the\n        offers (``[{\"site\", \"check\"}]``) until fixes run, then one outcome\n        per site: ``pr`` (with ``url``), ``local_branch`` (with ``branch``\n        and the ``commands`` to finish by hand), ``gate_failed``,\n        ``fixer_failed`` or ``refused``.\n    ",
+    "description": "Install missing prerequisites (Chromium, the `claude` CLI).\n\n    Call it first WITHOUT `yes`: nothing runs, and ``plan`` lists the exact\n    command(s) per tool. Show them to the user, then call again with\n    ``yes=True`` and ``install`` = the tools they approved. Nothing here\n    needs sudo; a step that fails can be run in a terminal, or via `./scripts/setup.sh`.\n    The profile is not created here: collect the fields and call\n    `init_profile`. Same logic as `./door doctor --fix`.\n\n    Args:\n        install: Tools to install: \"chromium\", \"claude\". Omit\n            for every tool `doctor` reports missing.\n        yes: The user approved the plan — run it.\n\n    Returns:\n        ``{\"outcome\": \"needs_confirmation\" | \"ok\" | \"incomplete\", \"platform\",\n        \"plan\", \"results\", \"doctor\", \"todo\"}``.\n    ",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -1569,26 +1569,6 @@
         "yes": {
           "default": false,
           "title": "Yes",
-          "type": "boolean"
-        },
-        "fix_scrapers": {
-          "anyOf": [
-            {
-              "items": {
-                "type": "string"
-              },
-              "type": "array"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Fix Scrapers"
-        },
-        "probe": {
-          "default": false,
-          "title": "Probe",
           "type": "boolean"
         }
       },

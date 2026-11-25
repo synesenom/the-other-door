@@ -54,9 +54,6 @@ def _tailor_outputs_missing(output_dir: Path) -> list[str]:
 # `claude -p`, a tool missing here is silently denied.
 _TAILOR_ALLOWED_TOOLS = ("Agent", "mcp__door__compile", "mcp__door__check_facts")
 
-# The file the tailor writes its new CARL stories to, in its output folder; `prepare`
-# adds them to the story bank afterwards (the agent cannot write under the profile).
-_STORIES_FILE = "stories.json"
 # The `--agents` file `_run_tailor` writes beside the posting copy: the tailor and its reviewer.
 _AGENTS_FILE = "agents.json"
 _TAILOR_AGENTS = ("tailor", "reviewer")
@@ -82,14 +79,9 @@ def _tailor_templates(profile_dir: Path) -> dict[str, Path]:
 
 
 def _tailor_read_files(profile_dir: Path) -> list[Path]:
-    """The CV and the two templates, when they live outside the profile folder (the code's templates do)."""
-    try:
-        config = profile_loader.load_config_or_defaults(profile_dir)
-    except Exception:  # noqa: BLE001 - an invalid config fails the run on its own; the rules stay narrow
-        config = {}
-    files = [workspace.cv_path(config, profile_dir), *_tailor_templates(profile_dir).values()]
+    """The two templates, when they live outside the profile folder (the code's do). The CV never does: `Profile` refuses it."""
     profile = profile_dir.absolute()
-    return [f.absolute() for f in files if not f.absolute().is_relative_to(profile)]
+    return [f.absolute() for f in _tailor_templates(profile_dir).values() if not f.absolute().is_relative_to(profile)]
 
 
 def _tailor_tools(job_id: str, posting_path: Path) -> list[str]:
@@ -153,7 +145,7 @@ def _tailor_args(job_id: str, posting_path: Path, feedback: str | None = None) -
     """
     output_dir = workspace.JOBS_DIR / "output" / job_id
     tpl = _tailor_templates(workspace.PROFILE_DIR)
-    fields = {"output_dir": str(output_dir), "stories": str(output_dir / _STORIES_FILE)}
+    fields = {"output_dir": str(output_dir)}
     prompt = claude_cli.prompt(
         "tailor-request", **fields, job_id=repr(job_id), posting=str(posting_path),
         config=str(workspace.PROFILE_DIR / "config.json"), profile_dir=str(workspace.PROFILE_DIR),
@@ -175,50 +167,6 @@ def _tailor_args(job_id: str, posting_path: Path, feedback: str | None = None) -
     return argv
 
 
-def _add_stories(output_dir: Path, profile_dir: Path) -> dict:
-    """Add the stories the tailor wrote to `output_dir/stories.json` to the profile's
-    story bank (`StoryBank` dedups by title), then remove the file.
-
-    Returns ``{"added", "present", "skipped": [line, ...]}``: a story that is not an
-    object with every field a non-empty string is skipped with a line saying why.
-    """
-    from door.tailoring import StoryBank, _REQUIRED_FIELDS
-
-    summary = {"added": 0, "present": 0, "skipped": []}
-    path = Path(output_dir) / _STORIES_FILE
-    if not path.is_file():
-        return summary
-    try:
-        stories = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError) as exc:
-        summary["skipped"].append(f"{_STORIES_FILE} could not be read: {exc}")
-        stories = []
-    if not isinstance(stories, list):
-        summary["skipped"].append(f"{_STORIES_FILE} is not a list of stories")
-        stories = []
-    valid = []
-    for i, story in enumerate(stories, 1):
-        if not isinstance(story, dict):
-            summary["skipped"].append(f"story {i}: not an object")
-            continue
-        bad = [f for f in _REQUIRED_FIELDS if not isinstance(story.get(f), str) or not story[f].strip()]
-        if bad:
-            summary["skipped"].append(f"story {i} ({str(story.get('title') or 'untitled')[:60]}): missing or empty {', '.join(bad)}")
-            continue
-        valid.append({f: story[f].strip() for f in _REQUIRED_FIELDS})
-    if valid:
-        bank = StoryBank(Path(profile_dir) / "story_bank.md")
-        before = len(bank.stories)
-        for story in valid:
-            bank.append(story)
-        summary["added"] = len(bank.stories) - before
-        summary["present"] = len(valid) - summary["added"]
-        if summary["added"]:
-            bank.save()
-    path.unlink(missing_ok=True)
-    return summary
-
-
 class TailorError(claude_cli.ClaudeError):
     """The `claude -p` tailor run failed (non-zero exit, timeout, or no `claude`)."""
 
@@ -235,7 +183,7 @@ def _run_tailor(job_id: str, posting_path: Path, timeout_s: float | None = None,
     this command (see issue #72).
 
     `feedback` marks the one retry after the ATS read-back (`_prepare_core`): the prompt lists the
-    problems, the fact check's state and the stories of the first run are kept, and the call is
+    problems, the fact check's state of the first run is kept, and the call is
     recorded as `tailoring_retry`.
 
     Returning True only means `claude` exited 0 — callers must still check
@@ -348,12 +296,11 @@ def _prepare_core(
         given and nothing clears min_score; else
         ``{"job_id", "outcome": "prepared" | "skipped" | "failed",
         "output_dir", "files": [name, ...], "regenerated_incomplete",
-        "error"?, "missing"?, "unsupported"?, "stories"?, "salary"?, "readability"?, "warning"?}`` — ``readability`` (a prepared job only) is
+        "error"?, "missing"?, "unsupported"?, "salary"?, "readability"?, "warning"?}`` — ``readability`` (a prepared job only) is
         the ATS read-back of both PDFs, ``[{file, kind, detail}]`` (None when it could not be made), taken after
         one more tailor run for the ``missing``, ``overflow`` and ``pages`` kinds (`readability.FIXABLE`) when there were any, and
         ``warning`` says so when problems remain; neither can fail the prepare; ``salary`` (a prepared
-        job only) is `_estimate_salary`'s estimate or None; ``stories`` is
-        `_add_stories`'s count of the CARL stories added to the story bank; ``files`` lists the material files present
+        job only) is `_estimate_salary`'s estimate or None; ``files`` lists the material files present
         afterwards; ``missing`` is set when the tailor run finished without
         writing all of them.
 
@@ -431,7 +378,6 @@ def _prepare_core(
     progress_mod.report(f"tailoring {label}", stage="prepare")
     tailor_dir = jobs_dir / ".tailor" / job_id  # the posting copy and agents file; the tailor sees only this of jobs/
     model_copy = tailor_dir / "posting.json"  # no excerpts of removed text: the tailor reads this
-    (output_dir / _STORIES_FILE).unlink(missing_ok=True)  # never stories of an earlier run
     readback: list[dict] | None = None
     retry_failed = False
     try:
@@ -482,8 +428,6 @@ def _prepare_core(
     _step("checking the facts")
     with progress_mod.heartbeat("checking the facts", stage="prepare", interval_s=_HEARTBEAT_INTERVAL_S):
         unsupported = facts_mod.check(output_dir, profile_dir or workspace.PROFILE_DIR)
-    # After the check: stories written this run must not back the run's own figures.
-    stories = _add_stories(output_dir, profile_dir or workspace.PROFILE_DIR)
     try:
         with ledger_lock(jobs_dir, "prepare"):
             app_tracker = _tracker_mod.ApplicationTracker(jobs_dir / "applications.json")
@@ -499,7 +443,7 @@ def _prepare_core(
 
     _step("status set to prepared", "ok")
     estimate = _estimate_salary(job_id, jobs_dir, profile_dir or workspace.PROFILE_DIR)
-    done = {**result, "outcome": "prepared", "files": _present(), "unsupported": unsupported, "stories": stories,
+    done = {**result, "outcome": "prepared", "files": _present(), "unsupported": unsupported,
             "salary": estimate, "readability": readback}
     if readback:
         done["warning"] = (f"the PDFs may not read back cleanly in an ATS: {len(readback)} problem(s), "

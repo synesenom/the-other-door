@@ -41,7 +41,9 @@ or empty, everything stays where it is today. What moves: `profile/`, `jobs/`, `
 running *The other door*, and rewritten when that changes; the checkout's own `.mcp.json` is used when
 `DOOR_HOME` is unset). What does not: `profile.example/`, and `src/`,
 which ship with the code. Relative paths in `config.json` (`cv_content`, `cv_template`,
-`cover_letter_template`, `photo`, e.g. `profile/cv.md`) resolve from `DOOR_HOME`. `./door doctor` prints
+`cover_letter_template`, `photo`, e.g. `profile/cv.md`) resolve from `DOOR_HOME`, and must name a file
+inside `profile/` (one that points elsewhere is refused with the key's name, so an imported archive or a
+Drive copy cannot make the tailor read any file). `./door doctor` prints
 `data folder: <path>`. Register the MCP server for Claude Code with the same variable in its
 `env` if you use it with a custom folder.
 
@@ -201,9 +203,9 @@ The keys you set up — `init` and `/onboard` ask for the ones without a default
 |-----|------|----------------------|---------|
 | `name`, `email` | string | required | tailoring |
 | `location` | string | required | scrapers (search location), pre-filter, prescreen |
-| `cv_template`, `cover_letter_template` | path or `null` | the built-in template (`profile/<name>` if you put one there); a path set must exist | tailoring |
-| `cv_content` | path | required (the file may not exist yet) | `match`, prescreen, tailoring |
-| `photo` | path or `null` | none | your CV photo, a JPEG or PNG; `compile` puts it in the CV where the job country's conventions allow one (below). Set it by giving the picture to `init`, the desktop app's Profile screen or `/onboard`, not by hand: they check it, drop its EXIF and GPS data, scale it to CV size and keep it as `profile/photo.jpg`. A file `config.json` names that is missing, over 10 MB or not a JPEG or PNG is refused with the reason under the key |
+| `cv_template`, `cover_letter_template` | path or `null` | the built-in template (`profile/<name>` if you put one there); a path set must exist and lie inside `profile/` | tailoring |
+| `cv_content` | path | required (the file may not exist yet; it must lie inside `profile/`) | `match`, prescreen, tailoring |
+| `photo` | path or `null` | none | your CV photo, a JPEG or PNG; `compile` puts it in the CV where the job country's conventions allow one (below). Set it by giving the picture to `init`, the desktop app's Profile screen or `/onboard`, not by hand: they check it, drop its EXIF and GPS data, scale it to CV size and keep it as `profile/photo.jpg`. A file `config.json` names that lies outside `profile/`, is missing, over 10 MB or not a JPEG or PNG is refused with the reason under the key |
 | `role_targets` | list of strings, ≥1 | required | scrapers, prescreen, `match` |
 | `search_keywords` | list of strings | `[]` (falls back to `role_targets`) | scrapers; `init`'s reading step (or "expand my search keywords") fills it in, in English and each of your `languages` (a Hungarian reader gets "accountant" and "könyvelő"); one list, any mix of languages |
 | `topic_terms` | list of strings | `[]` (any content word of the keywords) | what makes a job title *on topic* (which employers are queued and followed, which feed postings are kept): one of these or a whole keyword. Proposed with the keywords, in each of your `languages`: your field, its subjects and neighbours (for an accountant "accounting", "audit", "tax"), never a bare role noun like "analyst". Plain words are enough: a term of six letters or more also matches as the end of a word ("physics" in "Astrophysics"), inside a word when `languages` has a compounding one (Danish, Hungarian, Swedish: "sygeplejerske" in "Intensivsygeplejerske"), and with the plural endings of your `languages` ("reward" in "Rewards"). Write `x*` (starts a word), `*x` (ends one) or `*x*` (inside one) to say it yourself. "&" reads as "and" (`m&e` matches "M&amp;E Officer"), and an all-caps term of three letters or more (`MEAL`) is case-sensitive, so it is not a "meal" |
@@ -218,7 +220,7 @@ The keys you set up — `init` and `/onboard` ask for the ones without a default
 | `enrich_sources` | list of strings | `[]` | `enrich` / `/expand` (the pages read when none are passed) |
 | `max_age_days` | int ≥ 1, or `null` for no cutoff | `30` | `jobs`, `jobs prepare` (without a job): hide postings older than this (by `posted_at`, else `scraped_at`); `search`: the furthest back a board is read (an employer's feed has no such limit: what is new is what *The other door* has not seen); `match`, `find`: how far back to look for unscored postings |
 | `retire_after_days` | int ≥ 0 | `90` | `collect`: a followed employer that yielded no on-topic posting (title with a content word of `search_keywords`, else `role_targets`) and none scored at or above `min_score` for this many days becomes `dormant` in `companies.json` and is no longer read. `0` never retires. An employer added by hand (`found_via` `manual`) is never retired; a dormant one is followed again when `search` or `discover` sees an on-topic ad of it, or by `companies add NAME` |
-| `follow_ai_fallback` | bool | `true` | `follow`: for an employer every check left unresolved, ask Claude Haiku once (web search, on your Claude plan, never an API key) where its careers page is; the URL goes through the same checks and only a confirmed feed is followed (`found_via` `ai`, the URL in the evidence). Not asked again for 90 days. `false` never asks |
+| `follow_ai_fallback` | bool | `true` | `follow`: for an employer every check left unresolved, ask Claude Haiku once (web search, on your Claude plan, never an API key) where its careers page is; the URL goes through the same checks and only a confirmed feed is followed (`found_via` `ai`, the URL in the evidence). At most 30 employers are asked a run; the rest stay queued for the next run. Not asked again for 90 days. `false` never asks |
 
 ### Advanced keys
 
@@ -244,7 +246,7 @@ Tuning knobs with sensible defaults; most profiles never set them.
 | `translate_titles` | bool | `true` | `scrape`'s language pass (below) |
 | `translate_model` | string | `"haiku"` | `scrape`'s language pass |
 | `revise_model` | string | `"sonnet"` | `revise` |
-| `claude_config_dir` | path | — (the environment's `CLAUDE_CONFIG_DIR`, else `~/.claude`) | every `claude -p` call (`match`, `scrape`'s title translation, `prepare`, `revise`, `setup`'s scraper fix) and `doctor`'s login check |
+| `claude_config_dir` | path | — (the environment's `CLAUDE_CONFIG_DIR`, else `~/.claude`) | every `claude -p` call (`match`, `scrape`'s title translation, `prepare`, `revise`) and `doctor`'s login check |
 
 More detail on a few of them:
 

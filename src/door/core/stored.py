@@ -83,7 +83,6 @@ INVENTORY: tuple[Stored, ...] = (
     Stored("jobs/output/*/photo.*", GENERATED, "the profile's photo, copied beside the page for the printed CV"),
     Stored("jobs/output/*/facts.json", GENERATED, "door.tailoring.facts: what cv.md and the story bank do not back, with the sha256 of the inputs it was asked for (the same inputs are not asked again)"),
     Stored("jobs/output/*/.facts_rounds", GENERATED, "door.commands.check_facts: the fact check rounds used in this prepare run, a number", "cleared when a fresh tailor run starts"),
-    Stored("jobs/output/*/stories.json", GENERATED, "the stories the tailor wrote, until prepare adds them to the story bank"),
     Stored("jobs/output/*/sent/**", GENERATED, "the materials as sent, with their sha256 in the ledger"),
     Stored("jobs/output/*/*.json", GENERATED, "other notes the tailor or prepare leaves for the job"),
     # --- jobs/ ---

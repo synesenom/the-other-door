@@ -252,24 +252,3 @@ If any assertion fails or a visual defect is found:
 4. Re-inspect.
 
 Repeat until all assertions pass, up to 3 total rounds. If the PDFs still fail after 3 iterations, report exactly which assertion is failing and what was tried, then stop.
-
-### Step 8 — New stories
-
-After the PDFs have passed all assertions in Step 7, write the new reusable CARL stories (context, action, result, learning) to `stories.json` in your output folder (its path is in the prompt). `prepare` adds them to the story bank afterwards, skipping any already there (by title) and any with a missing or empty field; you never write the story bank yourself.
-
-1. For each final CV bullet that follows a clear context → action → result shape, format it as a CARL story (add the learning only if `cv.md` supports one; otherwise skip the bullet) using the job title and company as the story heading.
-2. Write them as a JSON list of objects with exactly these string fields, all non-empty (plain text, not HTML):
-
-```json
-[
-  {
-    "title": "<Role> at <Company>",
-    "context": "...",
-    "action": "...",
-    "result": "...",
-    "learning": "..."
-  }
-]
-```
-
-Write `[]` when no bullet makes a story. Every story comes from `cv.md` as the CV does: nothing invented.

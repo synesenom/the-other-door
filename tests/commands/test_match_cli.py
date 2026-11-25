@@ -379,3 +379,51 @@ def test_match_core_keeps_why_postings_failed(cli_env, monkeypatch):
     result = match_cmd._match_core(jobs_dir=cli_env.jobs_dir, profile_dir=cli_env.profile_dir)
     assert result["failed"] == seen["ids"]
     assert result["failures"] == [{"id": i, "error": "claude exited 1: overloaded"} for i in seen["ids"]]
+
+
+# --------------------------------------------------------------------------- #
+# the cap on a run's scoring (#551)
+# --------------------------------------------------------------------------- #
+
+def _stub_cap_scorer(monkeypatch):
+    import door.matching.scorer as scorer_mod
+
+    seen: list[str] = []
+
+    def fake(postings, *, on_result=None, model=None, **kw):
+        results = {}
+        for p in postings:
+            seen.append(p["id"])
+            results[p["id"]] = {"score": 0.9, "score_reason": "ok", "matching_skills": [], "missing_skills": [],
+                                "scored_by": model, "scored_at": "2026-09-23T00:00:00+00:00"}
+            if on_result:
+                on_result(p["id"], results[p["id"]])
+        return results, []
+
+    monkeypatch.setattr(scorer_mod, "score_postings", fake)
+    return seen
+
+
+def test_a_flood_from_one_site_does_not_keep_another_sites_ads_from_being_scored_under_the_cap(cli_env, monkeypatch):
+    import door.matching.scorer as scorer_mod
+
+    for i in range(1000):
+        _write_match_posting(cli_env.jobs_dir, "2026-07-01", "flood", f"flood.{i}", company=f"Fake{i % 3}",
+                             prescreen_score=0.99)
+    for i in range(20):
+        _write_match_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", f"jobindex.{i}", company=f"Real{i}",
+                             prescreen_score=0.3)
+    seen = _stub_cap_scorer(monkeypatch)
+
+    result = match_cmd._match_core(jobs_dir=cli_env.jobs_dir, profile_dir=cli_env.profile_dir)
+
+    assert len(seen) == match_cmd.MAX_SCORED_PER_RUN == 150
+    assert -(-len(seen) // scorer_mod.DEFAULT_CHUNK) <= 30
+    assert all(f"jobindex.{i}" in seen for i in range(20))
+    assert result["scored"] == 150 and result["waiting"] == 870
+
+
+def test_nothing_is_waiting_when_everything_fits_the_cap(cli_env, monkeypatch):
+    _write_match_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "jobindex.1")
+    _stub_cap_scorer(monkeypatch)
+    assert match_cmd._match_core(jobs_dir=cli_env.jobs_dir, profile_dir=cli_env.profile_dir)["waiting"] == 0

@@ -180,6 +180,43 @@ def test_init_profile_returns_the_disclaimer_of_a_source_turned_on(tmp_path, mon
     assert result["disclaimers"] == [{"key": "linkedin_discovery", "text": discovery_sources.info("linkedin")["disclaimer"]}]
 
 
+@pytest.mark.parametrize("key, value", [
+    ("cv_content", "/root/.ssh/id_rsa"),
+    ("cv_template", "../../etc/x.html"),
+    ("cover_letter_template", "/etc/x.html"),
+    ("photo", "/tmp/elsewhere/x.jpg"),
+])
+def test_init_profile_refuses_a_new_path_outside_the_profile_folder_and_writes_nothing(tmp_path, monkeypatch, key, value):
+    monkeypatch.setattr(workspace, "HOME", tmp_path)
+    monkeypatch.setattr(workspace, "PROFILE_DIR", tmp_path / "profile")
+    result = server.init_profile(other={key: value})
+    assert key in str(result["error"])
+    assert not (tmp_path / "profile").exists()  # a refused first call leaves no folder
+
+    server.init_profile(name="Ada")
+    before = (tmp_path / "profile" / "config.json").read_text()
+    assert key in str(server.init_profile(other={key: value})["error"])
+    assert (tmp_path / "profile" / "config.json").read_text() == before
+
+
+def test_init_profile_saves_over_a_config_with_an_old_path_outside_the_profile_folder(tmp_path, monkeypatch):
+    import json
+
+    monkeypatch.setattr(workspace, "HOME", tmp_path)
+    monkeypatch.setattr(workspace, "PROFILE_DIR", tmp_path / "profile")
+    server.init_profile(name="Ada")
+    path = tmp_path / "profile" / "config.json"
+    config = json.loads(path.read_text())
+    config["cv_content"] = "/Users/x/.config/door/drive.json"
+    path.write_text(json.dumps(config))
+
+    result = server.init_profile(min_score=0.7)
+
+    assert result["dropped"] == ["cv_content"]
+    saved = json.loads(path.read_text())
+    assert saved["min_score"] == 0.7 and saved.get("cv_content") != "/Users/x/.config/door/drive.json"
+
+
 def test_init_profile_tool_description_lists_the_supported_languages():
     """The model picks `languages` from the description, so it names every language with a file."""
     tool = next(t for t in _list_tools().tools if t.name == "init_profile")
@@ -444,7 +481,7 @@ _SURFACE_ONLY = {"quiet", "ctx"}
 # parameter on one side covers several on the other.
 _ALIASES = {
     ("jobs add", "source"): {"path", "text"},  # a file argument, or pasted text
-    ("doctor", "fix"): {"install", "fix_scrapers"},  # `--fix` is the `setup` tool
+    ("doctor", "fix"): {"install"},  # `--fix` is the `setup` tool
     ("doctor", "no_chromium"): {"install"},
     ("doctor", "no_claude"): {"install"},
     ("init", "show"): set(),  # `--show` is the no-argument `show_profile` tool
@@ -687,14 +724,6 @@ def test_enrich_refuses_a_cv_file_outside_the_data_folder(tmp_path, monkeypatch)
     assert "outside the data folder" in server.enrich(files=[str(outside)])["error"]
 
 
-def test_init_profile_keeps_the_photo_key_inside_the_data_folder(tmp_path, monkeypatch):
-    from door.core import workspace
-
-    monkeypatch.setattr(workspace, "HOME", tmp_path / "home")
-    (tmp_path / "home").mkdir()
-    assert "outside the data folder" in server.init_profile(other={"photo": str(tmp_path / "x.jpg")})["error"]
-
-
 def test_story_tools_wrap_the_cores_and_turn_expected_errors_into_error(tmp_path, monkeypatch):
     from door.core import workspace
 
@@ -767,26 +796,6 @@ def test_show_with_open_opens_both_prepared_pdfs(cli_env, monkeypatch):
     assert opened == []
     server.show("jobindex-top", open=True)
     assert opened == [str(out / "cv.pdf"), str(out / "cover_letter.pdf")]
-
-
-def test_setup_runs_the_scraper_fix_it_is_given(cli_env, monkeypatch):
-    import door.core.doctor as doctor
-    from door.core import scraper_fix
-
-    checks = [
-        {"name": "claude CLI", "status": "ok", "required": True, "detail": "", "fix": None},
-        {"name": "scraper: jobindex", "status": "drift", "required": False, "detail": "no results block",
-         "fix": "choose `fix scraper` in `setup`", "fixable": True},
-    ]
-    monkeypatch.setattr(doctor, "run_checks", lambda *a, **k: {"ok": True, "checks": checks, "last_run": None, "last_scrape": []})
-    fixed = []
-    monkeypatch.setattr(scraper_fix, "fix_scraper", lambda site, **kw: fixed.append(site) or {"site": site, "outcome": "pr", "url": "u"})
-
-    server.setup(install=[], yes=True)
-    assert fixed == []
-    result = server.setup(install=[], yes=True, fix_scrapers=["jobindex"])
-    assert fixed == ["jobindex"]
-    assert result["fixes"] == [{"site": "jobindex", "outcome": "pr", "url": "u"}]
 
 
 class _Drive:
