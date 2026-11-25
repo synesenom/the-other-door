@@ -6,7 +6,6 @@ and one tool, `fetch_page` (`core/page_fetch`, with its limits in code), and ret
 call that writes (the enricher, the drafter) has no tools at all and gets that text as data beside the CV.
 """
 
-import json
 import sys
 
 from door.core import claude_cli, workspace
@@ -22,7 +21,6 @@ SCHEMA = {
     },
     "required": ["pages", "unreachable"],
 }
-_TOOL = "mcp__pages__fetch_page"
 TIMEOUT_S = 300   # the reader's own, apart from the writer's
 
 
@@ -46,19 +44,10 @@ def read(urls: list[str], *, model: str | None = None, profile_dir=None) -> dict
     """
     if not urls:
         return {"pages": [], "unreachable": []}
-    args = [
-        "--model", model or claude_cli.model_of("page-reader"),
-        "--system-prompt", claude_cli.prompt("page-reader"),
-        "--json-schema", json.dumps(SCHEMA), *claude_cli.STREAM_ARGS,
-        "--restricted",
-        "--mcp-config", json.dumps(_mcp_config()),
-        "--tools", "",  # no built-in tool: only the fetch tool below
-        "--allowedTools", _TOOL,
-        "--no-session-persistence",
-    ]
-    stdout = claude_cli.run(args, feature="page_reading", input="Read these pages:\n" + "".join(f"{u}\n" for u in urls),
-                            timeout_s=TIMEOUT_S, profile_dir=profile_dir)
-    answer = claude_cli.json_result(stdout)
+    answer = claude_cli.ask(
+        "page-reader", "Read these pages:\n" + "".join(f"{u}\n" for u in urls), feature="page_reading", model=model,
+        schema=SCHEMA, mcp_config=_mcp_config(), timeout_s=TIMEOUT_S, profile_dir=profile_dir,
+    )
     if not isinstance(answer, dict) or not isinstance(answer.get("pages"), list):
         raise claude_cli.ClaudeError("claude's answer has no `pages` list")
     return {"pages": answer["pages"], "unreachable": answer.get("unreachable") or []}

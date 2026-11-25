@@ -192,5 +192,5 @@ def test_the_tools_are_the_built_in_names_of_the_allowed_tools(monkeypatch):
     monkeypatch.setattr(claude_cli.subprocess, "run", _fake_run(calls, _stream(_result(result="x"))))
     claude_cli.ask("cv-enricher", "q", feature="enrich", allowed_tools=("WebSearch", "mcp__x__y"))
     argv = calls[0]
-    assert "--restricted" in argv and argv[argv.index("--tools") + 1] == "WebSearch,mcp__x__y"
+    assert "--restricted" in argv and argv[argv.index("--tools") + 1] == "WebSearch"
     assert argv[argv.index("--allowedTools") + 1] == "WebSearch,mcp__x__y"

@@ -284,6 +284,7 @@ def ask(
     timeout_s: float | None = None,
     profile_dir: Path | None = None,
     effort: str | None = None,
+    mcp_config: dict | None = None,
 ):
     """One question to the model: the body of `src/door/prompts/<agent>.md` as the system prompt (`fields`
     filled in, see `prompt`), `input` on stdin, no session kept. The model and the tools are the file's
@@ -292,7 +293,8 @@ def ask(
     With `schema`, the answer is asked for as JSON of that shape and returned
     as a dict; without, the answer text is returned stripped. Either way the
     answer comes as a stream (`STREAM_ARGS`) whose envelope `run()` returns
-    and whose weight it records under `feature`. `effort` is `--effort`.
+    and whose weight it records under `feature`. `effort` is `--effort`. `mcp_config` is the one MCP server the
+    call may use (its `mcp__…` tools named in the allowed tools).
 
     Raises:
         ClaudeError: as `run()`, or an answer that is not a JSON object when a
@@ -307,8 +309,9 @@ def ask(
     if allowed_tools:
         # Restricted, with only the built-in tools named (a rule such as `WebSearch` names its tool): a hostile page
         # or ad read by the call can then reach nothing else (no shell, no file).
-        builtin = list(dict.fromkeys(t.split("(")[0] for t in allowed_tools))
-        args += ["--restricted", "--tools", ",".join(builtin), "--allowedTools", ",".join(allowed_tools)]
+        builtin = list(dict.fromkeys(t.split("(")[0] for t in allowed_tools if not t.startswith("mcp__")))
+        args += ["--restricted", *(["--mcp-config", json.dumps(mcp_config)] if mcp_config else []),
+                 "--tools", ",".join(builtin), "--allowedTools", ",".join(allowed_tools)]
     else:
         args += ["--tools", ""]
     args.append("--no-session-persistence")
