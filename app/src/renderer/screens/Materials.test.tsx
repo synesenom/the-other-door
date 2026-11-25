@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Materials } from './Materials'
 import { mockDoor, stubNarrow } from '../testing'
+import { RemoteContext } from '../remote'
 
 afterEach(cleanup)
 
@@ -145,6 +146,18 @@ describe('Materials', () => {
     expect(screen.getByLabelText('Anything to change?')).toHaveAttribute('placeholder', expect.stringMatching(/^Change the letter: /))
     await pick('CV')
     expect(screen.getByLabelText('Anything to change?')).toHaveAttribute('placeholder', expect.stringMatching(/^Change the CV: /))
+  })
+
+  it('on the phone shows the pages but no change box, since a phone cannot revise', async () => {
+    mockDoor({ show: posting() })
+    render(
+      <RemoteContext.Provider value={true}>
+        <Materials jobId="jobindex.1" onBack={noop} onApplied={noop} initialDoc="cover_letter" />
+      </RemoteContext.Provider>,
+    )
+    await screen.findByRole('heading', { name: 'Ready to send' })
+    expect(screen.getAllByRole('img').length).toBeGreaterThan(0)
+    expect(screen.queryByLabelText('Anything to change?')).toBeNull()
   })
 
   it('a cancelled save says nothing', async () => {

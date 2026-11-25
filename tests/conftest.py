@@ -264,8 +264,10 @@ def progress_events():
 @pytest.fixture(autouse=True)
 def _stdio_runs():
     """`door serve` turns on background runs for the process (#302); every test starts over stdio's rules."""
-    from door import mcp_server
+    from door import mcp_server, serve_policy
 
     mcp_server._runs_reset()
+    serve_policy.reset()
     yield
     mcp_server._runs_reset()
+    serve_policy.reset()
