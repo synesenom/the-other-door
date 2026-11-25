@@ -53,7 +53,7 @@ Things you can say:
 - "Show me the Trustpilot one." → `show`; "not the Aarhus one, too far" → `set_status` `discarded` with the reason as `notes`.
 - "Here's an ad I found: …" → `import_posting` with the pasted text alone (or just its `url`:
   the page is fetched); Haiku reads its title, company and location, and Claude asks you only for
-  a title or company it could not find. It is scored right away, so
+  a title or company it could not find in the ad's text. It is scored right away, so
   you hear its score and can say "prepare it" or "not this one".
 - "Prepare the Trustpilot one." → `prepare` (minutes — the tailor agent runs); "prepare the best one" → `prepare` with no job. The CV and letter are written in the language the ad is written in (English when it cannot be told), whatever language your `cv.md` is in: what is kept from it is translated, headings, the letter's date and sign-off included.
 - "Let me see it." → `show`: once prepared, it adds both PDFs, page images, keywords, what was tailored, page counts, letter length.
