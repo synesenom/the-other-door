@@ -8,6 +8,7 @@ import json
 import types
 
 import pytest
+import responses
 from click.testing import CliRunner
 
 from door.cli import cli
@@ -51,6 +52,7 @@ def env(tmp_path, monkeypatch):
     (profile_dir / "config.json").write_text(json.dumps(config))
     monkeypatch.setattr(workspace, "PROFILE_DIR", profile_dir)
     monkeypatch.setattr(http_client.PoliteSession, "redirect_target", lambda self, url: None)
+    monkeypatch.setattr(common, "_page_links", lambda url: [])
     return types.SimpleNamespace(profile_dir=profile_dir, cv_path=cv_path, proposals_path=profile_dir / ".enrich_proposals.json")
 
 
@@ -439,3 +441,32 @@ def test_a_linked_page_on_another_host_is_said_to_need_giving(env, monkeypatch):
     assert result.exit_code == 0, out
     assert "Not read: https://api.github.com/users/jane/repos?per_page=100 is not one of the pages you gave; give it too to have it read." in out
     assert "Could not fetch https://jane.example/down" in out
+
+
+def test_a_personal_site_may_be_walked_to_its_subdomains_and_the_profiles_it_links(env, monkeypatch):
+    # Code reads the links of the given page, before the model sees anything: its own subdomains and GitHub or ORCID
+    # get a rule; any other site it links to, or a host that only ends like it, does not.
+    calls = []
+    _answer(monkeypatch, calls=calls)
+    links = ["https://blog.jane.example/posts", "/research", "https://github.com/jane", "https://orcid.org/0000-0002-1825-0097",
+             "https://evil.example/x", "https://jane.example.evil.example/", "https://notjane.example/"]
+    monkeypatch.setattr(common, "_page_links", lambda url: links)
+    enrich_cmd._enrich_core(["https://jane.example"], profile_dir=env.profile_dir)
+    assert _rules(calls[0]) == [
+        "WebFetch(domain:jane.example)", "WebFetch(domain:www.jane.example)", "WebFetch(domain:blog.jane.example)",
+        "WebFetch(domain:github.com)", "WebFetch(domain:api.github.com)", "WebFetch(domain:orcid.org)", "WebFetch(domain:pub.orcid.org)",
+    ]
+
+
+@responses.activate
+def test_the_links_of_a_page_are_read_from_its_html(monkeypatch):
+    monkeypatch.setattr("door.scrapers.http_client.time.sleep", lambda *a, **k: None)
+    responses.add(responses.GET, "https://jane.example/", body='<a href="/cv">CV</a> <a href="https://github.com/jane">gh</a> <a>none</a>')
+    assert common._page_links("https://jane.example/") == ["https://jane.example/cv", "https://github.com/jane"]
+
+
+@responses.activate
+def test_a_page_whose_links_cannot_be_read_has_none(monkeypatch):
+    monkeypatch.setattr("door.scrapers.http_client.time.sleep", lambda *a, **k: None)
+    responses.add(responses.GET, "https://jane.example/", status=500)
+    assert common._page_links("https://jane.example/") == []

@@ -46,6 +46,7 @@ def env(tmp_path, monkeypatch):
     monkeypatch.setattr(workspace, "PROFILE_DIR", profile_dir)
     monkeypatch.setattr(workspace, "PROFILE_EXAMPLE_DIR", REPO_ROOT / "profile.example")
     monkeypatch.setattr(http_client.PoliteSession, "redirect_target", lambda self, url: None)
+    monkeypatch.setattr(common, "_page_links", lambda url: [])
     _pdf(tmp_path / "old-cv.pdf", "Jane Doe, Lead Data Scientist at Acme since 2021")
     _docx(tmp_path / "old-cv.docx", ["Jane Doe", "Senior Data Scientist at Big Bank"])
     (tmp_path / "notes.md").write_text("PhD Copenhagen 2015")

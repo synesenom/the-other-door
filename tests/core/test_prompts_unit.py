@@ -18,8 +18,8 @@ from paths import REPO_ROOT
 PROMPTS = {
     "posting-reader": ("haiku", "cd4aa55578ca16f0e551b341a754ecf550fb53b6f1b6a3535e1307472279a65d"),
     "ask": ("haiku", "380bb96a9a677ee3e27b32ff7b1615324e5ccaaed57b3b0f3ba5f3e29cc87fb5"),
-    "cv-drafter": ("sonnet", "ca694cc5fcdc69329c8ccdd44d707bc41c887d84c4b8b0ad73a09180766228d4"),
-    "cv-enricher": ("sonnet", "5352b1ea450a1dda5c2e1afad47758cb928120413e96fd79299739ecccacd5b5"),
+    "cv-drafter": ("sonnet", "7df7e77d65d2a317ff2bca6b81c5b45ad20cd5a94a7733bb64394c22ea5f1aa4"),
+    "cv-enricher": ("sonnet", "41d5f828379b2c11af6d6d0116cbcf5e476fb943f619e911a08e2c8c7d4e9fef"),
     "skill-gaps": ("sonnet", "1f46f1a229ba3db39ca73c2b2cdc990945ff177d7b5dcc65b56a5b45ab470036"),
     "keywords": ("haiku", "6b9c81f3e5d8791f6750aca0c4207840daba6280df0b3d0d1a0519e2395f3513"),
     "skill-grouper": ("haiku", "f3492df541d158d0b13e3071464e7879bcdbabb30aca2a536bd304daa63d5e96"),

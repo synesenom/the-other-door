@@ -8,7 +8,7 @@ import re
 import shutil
 import sys
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import urljoin, urlsplit
 
 import click
 
@@ -126,7 +126,7 @@ _WEBFETCH_RULES = (
     "source, about); a page that renders with JavaScript loads its content from a data "
     "file (.json, .bib) named in its source, so fetch that. Read a GitHub user through "
     "https://api.github.com/users/<name>/repos?per_page=100 and name only non-fork repos "
-    "with stars or a description, with what each one does. Never fetch a LinkedIn or "
+    "with stars or a description, with what each one does. Read an ORCID iD through https://pub.orcid.org/v3.0/<id>/works. Never fetch a LinkedIn or "
     "Indeed URL: skip it and say so."
 )
 
@@ -156,21 +156,58 @@ def _redirect_host(url: str) -> str | None:
     return (urlsplit(target).hostname or "").lower() or None if target else None
 
 
+# Profile sites a personal page may link to, each with the host its public data is read through (the prompt says how).
+_PROFILE_HOSTS = {"github.com": ("github.com", "api.github.com"), "orcid.org": ("orcid.org", "pub.orcid.org")}
+
+
+def _page_links(url: str) -> list[str]:
+    """The absolute links of the page at *url* (one public, size-capped fetch), or [] when it cannot be read."""
+    import requests
+    from bs4 import BeautifulSoup
+
+    from door.scrapers.http_client import PoliteSession, RobotsBlocked
+
+    try:
+        resp = PoliteSession(min_delay=0.3, max_delay=0.6, timeout=15, max_retries=0).get(url)
+        resp.raise_for_status()
+    except (requests.RequestException, RobotsBlocked):
+        return []
+    soup = BeautifulSoup(resp.text, "html.parser")
+    return [urljoin(resp.url, a["href"]) for a in soup.find_all("a", href=True)]
+
+
+def _linked_hosts(url: str, sites: set[str]) -> list[str]:
+    """The hosts the page at *url* links to that may be read beside it: a subdomain of one of *sites* (the given
+    hosts without `www.`), or a profile site of `_PROFILE_HOSTS` with its data host. Found here, by code."""
+    hosts: list[str] = []
+    for link in _page_links(url):
+        host = (urlsplit(link).hostname or "").lower()
+        if any(host.endswith("." + site) for site in sites) and not host.startswith("www."):
+            hosts.append(host)
+        elif host.removeprefix("www.") in _PROFILE_HOSTS:
+            hosts += _PROFILE_HOSTS[host.removeprefix("www.")]
+    return hosts
+
+
 def webfetch_rules(urls: list[str]) -> tuple[str, ...]:
     """`WebFetch(domain:<host>)` for each page the user gave, built here and never by the model: the host, its
-    www/apex twin and the host its address redirects to (a rule matches one host, no subdomains); `github.com`
+    www/apex twin and the host its address redirects to (a rule matches one host, no subdomains); then the hosts
+    the given page links to that are its own subdomains, or GitHub and ORCID (`_linked_hosts`); `github.com`
     also gets `api.github.com`, which the prompt reads repositories through. None for LinkedIn and Indeed."""
     hosts: list[str] = []
     for url in urls:
         given = (urlsplit(url).hostname or "").lower()
         if not given or _is_no_fetch(given):
             continue
+        own: list[str] = []
         for host in (given, _redirect_host(url)):
             if not host or _is_no_fetch(host):
                 continue
-            hosts += [host, _twin(host)]
+            own += [host, _twin(host)]
             if host in ("github.com", "www.github.com"):
-                hosts.append("api.github.com")
+                own.append("api.github.com")
+        hosts += own
+        hosts += [h for h in _linked_hosts(url, {h.removeprefix("www.") for h in own}) if not _is_no_fetch(h)]
     return tuple(f"WebFetch(domain:{h})" for h in dict.fromkeys(hosts))
 
 
