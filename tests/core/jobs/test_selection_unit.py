@@ -442,16 +442,6 @@ def test_find_posting_ignores_output_directory(tmp_path):
     assert result is None
 
 
-def test_find_posting_tie_break_returns_first_in_sorted_walk_order(tmp_path):
-    jobs_dir = tmp_path / "jobs"
-    _write_posting(jobs_dir, "2026-07-02", "jobindex", "dup-job", title="Later Copy")
-    _write_posting(jobs_dir, "2026-07-01", "jobindex", "dup-job", title="Earlier Copy")
-
-    result = find_posting(jobs_dir, "dup-job")
-
-    assert result["title"] == "Earlier Copy"
-
-
 # --------------------------------------------------------------------------- #
 # find_posting_path (issue #72)
 # --------------------------------------------------------------------------- #
@@ -606,3 +596,13 @@ def test_pipeline_summary_and_select_matches_take_postings_already_read(tmp_path
     assert (summary["total"], summary["unapplied"]) == (2, 1)
     assert [m["id"] for m in matches] == ["job-new"]
     assert walks == []
+
+
+def test_a_posting_stored_on_two_days_is_read_and_written_from_its_newest_copy(tmp_path):
+    # collected again a month later: the list shows today's scored copy, so opening it must too
+    jobs_dir = tmp_path / "jobs"
+    _write_posting(jobs_dir, "2026-06-01", "career_sites", "job-twice", score=0.0, score_reason="prescreen: 0.49 below cutoff")
+    newest = _write_posting(jobs_dir, "2026-07-01", "career_sites", "job-twice", score=0.7)
+
+    assert find_posting(jobs_dir, "job-twice")["score"] == 0.7
+    assert find_posting_path(jobs_dir, "job-twice") == newest
