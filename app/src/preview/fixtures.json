@@ -757,41 +757,41 @@
     "workable": "Workable"
    },
    "cv_styles": {
-    "accents": {
-     "none": "#1E1A16",
-     "navy": "#1f3a5f",
-     "blue": "#2f55c8",
-     "teal": "#0f6466",
-     "forest": "#2f6b3a",
-     "burgundy": "#8a1c3c",
-     "plum": "#5e2a72",
-     "slate": "#475569",
-     "rust": "#a1401a"
-    },
-    "fonts": {
-     "door": {
-      "heading": "\"Young Serif\", serif",
-      "text": "Figtree, sans-serif",
-      "weight": 400
+      "accents": {
+       "none": "#1E1A16",
+       "navy": "#1f3a5f",
+       "blue": "#2f55c8",
+       "teal": "#0f6466",
+       "forest": "#2f6b3a",
+       "burgundy": "#8a1c3c",
+       "plum": "#5e2a72",
+       "slate": "#475569",
+       "rust": "#a1401a"
+      },
+      "fonts": {
+       "door": {
+        "heading": "\"Young Serif\", serif",
+        "text": "Figtree, sans-serif",
+        "weight": 400
+       },
+       "editorial": {
+        "heading": "\"Playfair Display\", serif",
+        "text": "Lato, sans-serif",
+        "weight": 700
+       },
+       "friendly": {
+        "heading": "Montserrat, sans-serif",
+        "text": "Merriweather, serif",
+        "weight": 700
+       },
+       "plain": {
+        "heading": "Figtree, sans-serif",
+        "text": "Figtree, sans-serif",
+        "weight": 600
+       }
+      }
      },
-     "editorial": {
-      "heading": "\"Playfair Display\", serif",
-      "text": "Lato, sans-serif",
-      "weight": 700
-     },
-     "friendly": {
-      "heading": "Montserrat, sans-serif",
-      "text": "Merriweather, serif",
-      "weight": 700
-     },
-     "plain": {
-      "heading": "Figtree, sans-serif",
-      "text": "Figtree, sans-serif",
-      "weight": 600
-     }
-    }
-   },
-   "fields": [
+    "fields": [
     {
      "key": "name",
      "type": "string",
@@ -1309,20 +1309,8 @@
   },
   "pass_rates_by_score": {
    "split": 0.74,
-   "top": {
-    "passed": 5,
-    "decided": 6,
-    "rate": 0.8333,
-    "low": 0.65,
-    "high": 0.94
-   },
-   "near_min": {
-    "passed": 1,
-    "decided": 6,
-    "rate": 0.1667,
-    "low": 0.06,
-    "high": 0.35
-   },
+   "top": {"passed": 5, "decided": 6, "rate": 0.8333, "low": 0.65, "high": 0.94},
+   "near_min": {"passed": 1, "decided": 6, "rate": 0.1667, "low": 0.06, "high": 0.35},
    "reading": "near_min_lower"
   },
   "in_progress": null,
@@ -1656,101 +1644,7 @@
    "source_name": "Greenhouse",
    "status": "unapplied",
    "history": [],
-   "materials": null,
-   "description_blocks": [
-    {
-     "kind": "paragraph",
-     "text": "Globex Energy is looking for a Group Controller to own the monthly close, reporting and the budget cycle."
-    },
-    {
-     "kind": "paragraph",
-     "text": "You will work closely with the business on forecasts and investment cases, keep the numbers in line with IFRS and our group policies, and improve how we report. You report to the CFO and travel to our sites a few times a year."
-    },
-    {
-     "kind": "paragraph",
-     "text": "We offer a hybrid workplace, a pension scheme and a team that likes clean numbers."
-    },
-    {
-     "kind": "heading",
-     "text": "About the role"
-    },
-    {
-     "kind": "paragraph",
-     "text": "As our Group Controller you join a finance team of twelve and report to the CFO. You take over a close that runs in eight working days today, and we would like it to run in five by the end of next year. You will be the person the business partners, the auditors and the management team come to with questions about the numbers, and you will have the room to change how we work where it makes sense."
-    },
-    {
-     "kind": "heading",
-     "text": "Your responsibilities"
-    },
-    {
-     "kind": "bullet",
-     "text": "Own the monthly, quarterly and year-end close, including the group consolidation and the eliminations"
-    },
-    {
-     "kind": "bullet",
-     "text": "Prepare the management reporting pack and present it to the management team every month"
-    },
-    {
-     "kind": "bullet",
-     "text": "Lead the budget and forecast cycle together with the business partners, three times a year"
-    },
-    {
-     "kind": "bullet",
-     "text": "Keep our accounting policies in line with IFRS and document the judgements behind them"
-    },
-    {
-     "kind": "bullet",
-     "text": "Be the main contact for the external auditors and drive the year-end audit"
-    },
-    {
-     "kind": "bullet",
-     "text": "Develop the internal controls, and make sure they are followed in every entity"
-    },
-    {
-     "kind": "bullet",
-     "text": "Coach two accountants and take part in hiring as the team grows"
-    },
-    {
-     "kind": "heading",
-     "text": "What you bring"
-    },
-    {
-     "kind": "bullet",
-     "text": "A master's degree in finance, accounting or economics, or a state-authorised auditor's background"
-    },
-    {
-     "kind": "bullet",
-     "text": "Five or more years in controlling or audit, some of it in an international group"
-    },
-    {
-     "kind": "bullet",
-     "text": "A solid grip of IFRS and consolidation; experience with an ERP such as SAP or Dynamics"
-    },
-    {
-     "kind": "bullet",
-     "text": "Strong Excel, and the curiosity to automate what you do more than twice"
-    },
-    {
-     "kind": "bullet",
-     "text": "Clear written and spoken English; Danish is an advantage but not a requirement"
-    },
-    {
-     "kind": "heading",
-     "text": "What we offer"
-    },
-    {
-     "kind": "paragraph",
-     "text": "Globex Energy offers a permanent full-time position with a hybrid setup (two days a week from home), a pension scheme from day one, health insurance, a lunch scheme and a yearly budget for courses and certifications. We have a flat organisation where you will see the effect of your work quickly, and colleagues who help each other."
-    },
-    {
-     "kind": "heading",
-     "text": "How to apply"
-    },
-    {
-     "kind": "paragraph",
-     "text": "Send your CV and a short letter through the link below. We interview on a running basis and close the position when we have found the right person, so do not wait for the deadline. Questions about the role can go to our Head of Finance; we are happy to have a call before you apply."
-    }
-   ]
+   "materials": null
   },
   "greenhouse.demo-8": {
    "id": "greenhouse.demo-8",
@@ -1836,101 +1730,7 @@
      "cv": "Jane Doe - CV.pdf",
      "cover_letter": "Jane Doe - Cover letter.pdf"
     }
-   },
-   "description_blocks": [
-    {
-     "kind": "paragraph",
-     "text": "Example Bank is looking for a Head of Finance to own the monthly close, reporting and the budget cycle."
-    },
-    {
-     "kind": "paragraph",
-     "text": "You will work closely with the business on forecasts and investment cases, keep the numbers in line with IFRS and our group policies, and improve how we report. You sit on the management team."
-    },
-    {
-     "kind": "paragraph",
-     "text": "We offer a hybrid workplace, a pension scheme and a team that likes clean numbers."
-    },
-    {
-     "kind": "heading",
-     "text": "About the role"
-    },
-    {
-     "kind": "paragraph",
-     "text": "As our Head of Finance you join a finance team of twelve and report to the CFO. You take over a close that runs in eight working days today, and we would like it to run in five by the end of next year. You will be the person the business partners, the auditors and the management team come to with questions about the numbers, and you will have the room to change how we work where it makes sense."
-    },
-    {
-     "kind": "heading",
-     "text": "Your responsibilities"
-    },
-    {
-     "kind": "bullet",
-     "text": "Own the monthly, quarterly and year-end close, including the group consolidation and the eliminations"
-    },
-    {
-     "kind": "bullet",
-     "text": "Prepare the management reporting pack and present it to the management team every month"
-    },
-    {
-     "kind": "bullet",
-     "text": "Lead the budget and forecast cycle together with the business partners, three times a year"
-    },
-    {
-     "kind": "bullet",
-     "text": "Keep our accounting policies in line with IFRS and document the judgements behind them"
-    },
-    {
-     "kind": "bullet",
-     "text": "Be the main contact for the external auditors and drive the year-end audit"
-    },
-    {
-     "kind": "bullet",
-     "text": "Develop the internal controls, and make sure they are followed in every entity"
-    },
-    {
-     "kind": "bullet",
-     "text": "Coach two accountants and take part in hiring as the team grows"
-    },
-    {
-     "kind": "heading",
-     "text": "What you bring"
-    },
-    {
-     "kind": "bullet",
-     "text": "A master's degree in finance, accounting or economics, or a state-authorised auditor's background"
-    },
-    {
-     "kind": "bullet",
-     "text": "Five or more years in controlling or audit, some of it in an international group"
-    },
-    {
-     "kind": "bullet",
-     "text": "A solid grip of IFRS and consolidation; experience with an ERP such as SAP or Dynamics"
-    },
-    {
-     "kind": "bullet",
-     "text": "Strong Excel, and the curiosity to automate what you do more than twice"
-    },
-    {
-     "kind": "bullet",
-     "text": "Clear written and spoken English; Danish is an advantage but not a requirement"
-    },
-    {
-     "kind": "heading",
-     "text": "What we offer"
-    },
-    {
-     "kind": "paragraph",
-     "text": "Example Bank offers a permanent full-time position with a hybrid setup (two days a week from home), a pension scheme from day one, health insurance, a lunch scheme and a yearly budget for courses and certifications. We have a flat organisation where you will see the effect of your work quickly, and colleagues who help each other."
-    },
-    {
-     "kind": "heading",
-     "text": "How to apply"
-    },
-    {
-     "kind": "paragraph",
-     "text": "Send your CV and a short letter through the link below. We interview on a running basis and close the position when we have found the right person, so do not wait for the deadline. Questions about the role can go to our Head of Finance; we are happy to have a call before you apply."
-    }
-   ]
+   }
   },
   "jobindex.demo-1": {
    "id": "jobindex.demo-1",
@@ -1956,6 +1756,7 @@
    ],
    "language": "en",
    "language_requirement": "none",
+   "description_blocks": [{"kind": "paragraph", "text": "Our group finance team in Copenhagen is looking for a Senior Financial Controller to own the monthly close, reporting and the budget cycle."}, {"kind": "paragraph", "text": "You will work closely with the business on forecasts and investment cases, keep the numbers in line with IFRS and our group policies, and improve how we report. Experience with SAP S/4HANA is a plus."}, {"kind": "paragraph", "text": "We offer a hybrid workplace, a pension scheme and a team that likes clean numbers."}, {"kind": "heading", "text": "About the role"}, {"kind": "paragraph", "text": "As our Senior Financial Controller you join a finance team of twelve and report to the CFO. You take over a close that runs in eight working days today, and we would like it to run in five by the end of next year. You will be the person the business partners, the auditors and the management team come to with questions about the numbers, and you will have the room to change how we work where it makes sense."}, {"kind": "heading", "text": "Your responsibilities"}, {"kind": "bullet", "text": "Own the monthly, quarterly and year-end close, including the group consolidation and the eliminations"}, {"kind": "bullet", "text": "Prepare the management reporting pack and present it to the management team every month"}, {"kind": "bullet", "text": "Lead the budget and forecast cycle together with the business partners, three times a year"}, {"kind": "bullet", "text": "Keep our accounting policies in line with IFRS and document the judgements behind them"}, {"kind": "bullet", "text": "Be the main contact for the external auditors and drive the year-end audit"}, {"kind": "bullet", "text": "Develop the internal controls, and make sure they are followed in every entity"}, {"kind": "bullet", "text": "Coach two accountants and take part in hiring as the team grows"}, {"kind": "heading", "text": "What you bring"}, {"kind": "bullet", "text": "A master's degree in finance, accounting or economics, or a state-authorised auditor's background"}, {"kind": "bullet", "text": "Five or more years in controlling or audit, some of it in an international group"}, {"kind": "bullet", "text": "A solid grip of IFRS and consolidation; experience with an ERP such as SAP or Dynamics"}, {"kind": "bullet", "text": "Strong Excel, and the curiosity to automate what you do more than twice"}, {"kind": "bullet", "text": "Clear written and spoken English; Danish is an advantage but not a requirement"}, {"kind": "heading", "text": "What we offer"}, {"kind": "paragraph", "text": "Oceanic Shipping offers a permanent full-time position with a hybrid setup (two days a week from home), a pension scheme from day one, health insurance, a lunch scheme and a yearly budget for courses and certifications. We have a flat organisation where you will see the effect of your work quickly, and colleagues who help each other."}, {"kind": "heading", "text": "How to apply"}, {"kind": "paragraph", "text": "Send your CV and a short letter through the link below. We interview on a running basis and close the position when we have found the right person, so do not wait for the deadline. Questions about the role can go to our Head of Finance; we are happy to have a call before you apply."}],
    "description": "Our group finance team in Copenhagen is looking for a Senior Financial Controller to own the monthly close, reporting and the budget cycle.\n\nYou will work closely with the business on forecasts and investment cases, keep the numbers in line with IFRS and our group policies, and improve how we report. Experience with SAP S/4HANA is a plus.\n\nWe offer a hybrid workplace, a pension scheme and a team that likes clean numbers.\n\nAbout the role\n\nAs our Senior Financial Controller you join a finance team of twelve and report to the CFO. You take over a close that runs in eight working days today, and we would like it to run in five by the end of next year. You will be the person the business partners, the auditors and the management team come to with questions about the numbers, and you will have the room to change how we work where it makes sense.\n\nYour responsibilities\n\n- Own the monthly, quarterly and year-end close, including the group consolidation and the eliminations\n- Prepare the management reporting pack and present it to the management team every month\n- Lead the budget and forecast cycle together with the business partners, three times a year\n- Keep our accounting policies in line with IFRS and document the judgements behind them\n- Be the main contact for the external auditors and drive the year-end audit\n- Develop the internal controls, and make sure they are followed in every entity\n- Coach two accountants and take part in hiring as the team grows\n\nWhat you bring\n\n- A master's degree in finance, accounting or economics, or a state-authorised auditor's background\n- Five or more years in controlling or audit, some of it in an international group\n- A solid grip of IFRS and consolidation; experience with an ERP such as SAP or Dynamics\n- Strong Excel, and the curiosity to automate what you do more than twice\n- Clear written and spoken English; Danish is an advantage but not a requirement\n\nWhat we offer\n\nOceanic Shipping offers a permanent full-time position with a hybrid setup (two days a week from home), a pension scheme from day one, health insurance, a lunch scheme and a yearly budget for courses and certifications. We have a flat organisation where you will see the effect of your work quickly, and colleagues who help each other.\n\nHow to apply\n\nSend your CV and a short letter through the link below. We interview on a running basis and close the position when we have found the right person, so do not wait for the deadline. Questions about the role can go to our Head of Finance; we are happy to have a call before you apply.",
    "url": "https://example.com/jobs/jobindex.demo-1",
    "posted_at": "2026-10-31T18:04:12.319Z",
@@ -1964,101 +1765,7 @@
    "source_name": "Jobindex",
    "status": "unapplied",
    "history": [],
-   "materials": null,
-   "description_blocks": [
-    {
-     "kind": "paragraph",
-     "text": "Our group finance team in Copenhagen is looking for a Senior Financial Controller to own the monthly close, reporting and the budget cycle."
-    },
-    {
-     "kind": "paragraph",
-     "text": "You will work closely with the business on forecasts and investment cases, keep the numbers in line with IFRS and our group policies, and improve how we report. Experience with SAP S/4HANA is a plus."
-    },
-    {
-     "kind": "paragraph",
-     "text": "We offer a hybrid workplace, a pension scheme and a team that likes clean numbers."
-    },
-    {
-     "kind": "heading",
-     "text": "About the role"
-    },
-    {
-     "kind": "paragraph",
-     "text": "As our Senior Financial Controller you join a finance team of twelve and report to the CFO. You take over a close that runs in eight working days today, and we would like it to run in five by the end of next year. You will be the person the business partners, the auditors and the management team come to with questions about the numbers, and you will have the room to change how we work where it makes sense."
-    },
-    {
-     "kind": "heading",
-     "text": "Your responsibilities"
-    },
-    {
-     "kind": "bullet",
-     "text": "Own the monthly, quarterly and year-end close, including the group consolidation and the eliminations"
-    },
-    {
-     "kind": "bullet",
-     "text": "Prepare the management reporting pack and present it to the management team every month"
-    },
-    {
-     "kind": "bullet",
-     "text": "Lead the budget and forecast cycle together with the business partners, three times a year"
-    },
-    {
-     "kind": "bullet",
-     "text": "Keep our accounting policies in line with IFRS and document the judgements behind them"
-    },
-    {
-     "kind": "bullet",
-     "text": "Be the main contact for the external auditors and drive the year-end audit"
-    },
-    {
-     "kind": "bullet",
-     "text": "Develop the internal controls, and make sure they are followed in every entity"
-    },
-    {
-     "kind": "bullet",
-     "text": "Coach two accountants and take part in hiring as the team grows"
-    },
-    {
-     "kind": "heading",
-     "text": "What you bring"
-    },
-    {
-     "kind": "bullet",
-     "text": "A master's degree in finance, accounting or economics, or a state-authorised auditor's background"
-    },
-    {
-     "kind": "bullet",
-     "text": "Five or more years in controlling or audit, some of it in an international group"
-    },
-    {
-     "kind": "bullet",
-     "text": "A solid grip of IFRS and consolidation; experience with an ERP such as SAP or Dynamics"
-    },
-    {
-     "kind": "bullet",
-     "text": "Strong Excel, and the curiosity to automate what you do more than twice"
-    },
-    {
-     "kind": "bullet",
-     "text": "Clear written and spoken English; Danish is an advantage but not a requirement"
-    },
-    {
-     "kind": "heading",
-     "text": "What we offer"
-    },
-    {
-     "kind": "paragraph",
-     "text": "Oceanic Shipping offers a permanent full-time position with a hybrid setup (two days a week from home), a pension scheme from day one, health insurance, a lunch scheme and a yearly budget for courses and certifications. We have a flat organisation where you will see the effect of your work quickly, and colleagues who help each other."
-    },
-    {
-     "kind": "heading",
-     "text": "How to apply"
-    },
-    {
-     "kind": "paragraph",
-     "text": "Send your CV and a short letter through the link below. We interview on a running basis and close the position when we have found the right person, so do not wait for the deadline. Questions about the role can go to our Head of Finance; we are happy to have a call before you apply."
-    }
-   ]
+   "materials": null
   },
   "jobindex.demo-5": {
    "id": "jobindex.demo-5",
@@ -2091,21 +1798,7 @@
    "source_name": "Jobindex",
    "status": "unapplied",
    "history": [],
-   "materials": null,
-   "description_blocks": [
-    {
-     "kind": "paragraph",
-     "text": "Contoso Retail is looking for a Business Controller to own the monthly close, reporting and the budget cycle."
-    },
-    {
-     "kind": "paragraph",
-     "text": "You will work closely with the business on forecasts and investment cases, keep the numbers in line with IFRS and our group policies, and improve how we report. You follow 40 stores and their monthly results."
-    },
-    {
-     "kind": "paragraph",
-     "text": "We offer a hybrid workplace, a pension scheme and a team that likes clean numbers."
-    }
-   ]
+   "materials": null
   },
   "jobindex.demo-7": {
    "id": "jobindex.demo-7",
@@ -2183,21 +1876,7 @@
      "cv": "Jane Doe - CV.pdf",
      "cover_letter": "Jane Doe - Cover letter.pdf"
     }
-   },
-   "description_blocks": [
-    {
-     "kind": "paragraph",
-     "text": "Vandelay Logistics is looking for a Accounting Manager to own the monthly close, reporting and the budget cycle."
-    },
-    {
-     "kind": "paragraph",
-     "text": "You will work closely with the business on forecasts and investment cases, keep the numbers in line with IFRS and our group policies, and improve how we report. You lead a team of four accountants."
-    },
-    {
-     "kind": "paragraph",
-     "text": "We offer a hybrid workplace, a pension scheme and a team that likes clean numbers."
-    }
-   ]
+   }
   },
   "successfactors.demo-6": {
    "id": "successfactors.demo-6",
@@ -2291,101 +1970,7 @@
      "cv": "Jane Doe - CV.pdf",
      "cover_letter": "Jane Doe - Cover letter.pdf"
     }
-   },
-   "description_blocks": [
-    {
-     "kind": "paragraph",
-     "text": "Initech Pharma is looking for a Finance Manager to own the monthly close, reporting and the budget cycle."
-    },
-    {
-     "kind": "paragraph",
-     "text": "You will work closely with the business on forecasts and investment cases, keep the numbers in line with IFRS and our group policies, and improve how we report. You own the relationship with our external auditors."
-    },
-    {
-     "kind": "paragraph",
-     "text": "We offer a hybrid workplace, a pension scheme and a team that likes clean numbers."
-    },
-    {
-     "kind": "heading",
-     "text": "About the role"
-    },
-    {
-     "kind": "paragraph",
-     "text": "As our Finance Manager you join a finance team of twelve and report to the CFO. You take over a close that runs in eight working days today, and we would like it to run in five by the end of next year. You will be the person the business partners, the auditors and the management team come to with questions about the numbers, and you will have the room to change how we work where it makes sense."
-    },
-    {
-     "kind": "heading",
-     "text": "Your responsibilities"
-    },
-    {
-     "kind": "bullet",
-     "text": "Own the monthly, quarterly and year-end close, including the group consolidation and the eliminations"
-    },
-    {
-     "kind": "bullet",
-     "text": "Prepare the management reporting pack and present it to the management team every month"
-    },
-    {
-     "kind": "bullet",
-     "text": "Lead the budget and forecast cycle together with the business partners, three times a year"
-    },
-    {
-     "kind": "bullet",
-     "text": "Keep our accounting policies in line with IFRS and document the judgements behind them"
-    },
-    {
-     "kind": "bullet",
-     "text": "Be the main contact for the external auditors and drive the year-end audit"
-    },
-    {
-     "kind": "bullet",
-     "text": "Develop the internal controls, and make sure they are followed in every entity"
-    },
-    {
-     "kind": "bullet",
-     "text": "Coach two accountants and take part in hiring as the team grows"
-    },
-    {
-     "kind": "heading",
-     "text": "What you bring"
-    },
-    {
-     "kind": "bullet",
-     "text": "A master's degree in finance, accounting or economics, or a state-authorised auditor's background"
-    },
-    {
-     "kind": "bullet",
-     "text": "Five or more years in controlling or audit, some of it in an international group"
-    },
-    {
-     "kind": "bullet",
-     "text": "A solid grip of IFRS and consolidation; experience with an ERP such as SAP or Dynamics"
-    },
-    {
-     "kind": "bullet",
-     "text": "Strong Excel, and the curiosity to automate what you do more than twice"
-    },
-    {
-     "kind": "bullet",
-     "text": "Clear written and spoken English; Danish is an advantage but not a requirement"
-    },
-    {
-     "kind": "heading",
-     "text": "What we offer"
-    },
-    {
-     "kind": "paragraph",
-     "text": "Initech Pharma offers a permanent full-time position with a hybrid setup (two days a week from home), a pension scheme from day one, health insurance, a lunch scheme and a yearly budget for courses and certifications. We have a flat organisation where you will see the effect of your work quickly, and colleagues who help each other."
-    },
-    {
-     "kind": "heading",
-     "text": "How to apply"
-    },
-    {
-     "kind": "paragraph",
-     "text": "Send your CV and a short letter through the link below. We interview on a running basis and close the position when we have found the right person, so do not wait for the deadline. Questions about the role can go to our Head of Finance; we are happy to have a call before you apply."
-    }
-   ]
+   }
   },
   "teamtailor.demo-4": {
    "id": "teamtailor.demo-4",
@@ -2417,101 +2002,7 @@
    "source_name": "Teamtailor",
    "status": "unapplied",
    "history": [],
-   "materials": null,
-   "description_blocks": [
-    {
-     "kind": "paragraph",
-     "text": "Hooli Software is looking for a Finance Business Partner to own the monthly close, reporting and the budget cycle."
-    },
-    {
-     "kind": "paragraph",
-     "text": "You will work closely with the business on forecasts and investment cases, keep the numbers in line with IFRS and our group policies, and improve how we report. You will be the finance partner for two product lines."
-    },
-    {
-     "kind": "paragraph",
-     "text": "We offer a hybrid workplace, a pension scheme and a team that likes clean numbers."
-    },
-    {
-     "kind": "heading",
-     "text": "About the role"
-    },
-    {
-     "kind": "paragraph",
-     "text": "As our Finance Business Partner you join a finance team of twelve and report to the CFO. You take over a close that runs in eight working days today, and we would like it to run in five by the end of next year. You will be the person the business partners, the auditors and the management team come to with questions about the numbers, and you will have the room to change how we work where it makes sense."
-    },
-    {
-     "kind": "heading",
-     "text": "Your responsibilities"
-    },
-    {
-     "kind": "bullet",
-     "text": "Own the monthly, quarterly and year-end close, including the group consolidation and the eliminations"
-    },
-    {
-     "kind": "bullet",
-     "text": "Prepare the management reporting pack and present it to the management team every month"
-    },
-    {
-     "kind": "bullet",
-     "text": "Lead the budget and forecast cycle together with the business partners, three times a year"
-    },
-    {
-     "kind": "bullet",
-     "text": "Keep our accounting policies in line with IFRS and document the judgements behind them"
-    },
-    {
-     "kind": "bullet",
-     "text": "Be the main contact for the external auditors and drive the year-end audit"
-    },
-    {
-     "kind": "bullet",
-     "text": "Develop the internal controls, and make sure they are followed in every entity"
-    },
-    {
-     "kind": "bullet",
-     "text": "Coach two accountants and take part in hiring as the team grows"
-    },
-    {
-     "kind": "heading",
-     "text": "What you bring"
-    },
-    {
-     "kind": "bullet",
-     "text": "A master's degree in finance, accounting or economics, or a state-authorised auditor's background"
-    },
-    {
-     "kind": "bullet",
-     "text": "Five or more years in controlling or audit, some of it in an international group"
-    },
-    {
-     "kind": "bullet",
-     "text": "A solid grip of IFRS and consolidation; experience with an ERP such as SAP or Dynamics"
-    },
-    {
-     "kind": "bullet",
-     "text": "Strong Excel, and the curiosity to automate what you do more than twice"
-    },
-    {
-     "kind": "bullet",
-     "text": "Clear written and spoken English; Danish is an advantage but not a requirement"
-    },
-    {
-     "kind": "heading",
-     "text": "What we offer"
-    },
-    {
-     "kind": "paragraph",
-     "text": "Hooli Software offers a permanent full-time position with a hybrid setup (two days a week from home), a pension scheme from day one, health insurance, a lunch scheme and a yearly budget for courses and certifications. We have a flat organisation where you will see the effect of your work quickly, and colleagues who help each other."
-    },
-    {
-     "kind": "heading",
-     "text": "How to apply"
-    },
-    {
-     "kind": "paragraph",
-     "text": "Send your CV and a short letter through the link below. We interview on a running basis and close the position when we have found the right person, so do not wait for the deadline. Questions about the role can go to our Head of Finance; we are happy to have a call before you apply."
-    }
-   ]
+   "materials": null
   },
   "thehub.demo-2": {
    "id": "thehub.demo-2",
@@ -2544,17 +2035,7 @@
    "source_name": "The Hub",
    "status": "unapplied",
    "history": [],
-   "materials": null,
-   "description_blocks": [
-    {
-     "kind": "paragraph",
-     "text": "Acme Foods søger en økonomichef, der vil stå for regnskab, budget og rapportering."
-    },
-    {
-     "kind": "paragraph",
-     "text": "Du leder et team på fem og arbejder tæt sammen med direktionen."
-    }
-   ]
+   "materials": null
   },
   "jobindex.demo-9": {
    "id": "jobindex.demo-9",
@@ -2595,21 +2076,7 @@
      "notes": "They went with an internal candidate."
     }
    ],
-   "materials": null,
-   "description_blocks": [
-    {
-     "kind": "paragraph",
-     "text": "Contoso Retail is looking for a Business Controller to own the monthly close, reporting and the budget cycle."
-    },
-    {
-     "kind": "paragraph",
-     "text": "You will work closely with the business on forecasts and investment cases, keep the numbers in line with IFRS and our group policies, and improve how we report. You follow 40 stores and their monthly results."
-    },
-    {
-     "kind": "paragraph",
-     "text": "We offer a hybrid workplace, a pension scheme and a team that likes clean numbers."
-    }
-   ]
+   "materials": null
   }
  },
  "list_stories": {
