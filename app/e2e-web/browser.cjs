@@ -9,8 +9,7 @@ if (process.env.DOOR_WEB_PROFILE) app.setPath('userData', process.env.DOOR_WEB_P
 app.whenReady().then(() => {
   const win = new BrowserWindow({ width: Number(process.env.DOOR_WEB_WIDTH) || 412, height: 915, webPreferences: { contextIsolation: true, sandbox: true } })
   win.webContents.setUserAgent(
-    process.env.DOOR_WEB_UA ||
-      'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36',
+    'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36',
   )
   void win.loadURL(process.env.DOOR_WEB_URL || 'about:blank')
 })

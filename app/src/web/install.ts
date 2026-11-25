@@ -29,30 +29,22 @@ export function captureInstallPrompt(): void {
   window.addEventListener('appinstalled', onInstalled)
 }
 
-/** Forgets everything kept (tests). */
-export function resetInstall(): void {
-  window.removeEventListener('beforeinstallprompt', onPrompt)
-  window.removeEventListener('appinstalled', onInstalled)
-  listening = false
-  kept = null
-}
-
-export function subscribe(cb: () => void): () => void {
+function subscribe(cb: () => void): () => void {
   watchers.add(cb)
   return () => void watchers.delete(cb)
 }
 
-export function isStandalone(): boolean {
+function isStandalone(): boolean {
   return window.matchMedia('(display-mode: standalone)').matches || (navigator as { standalone?: boolean }).standalone === true
 }
 
-export function isIosSafari(): boolean {
+function isIosSafari(): boolean {
   const ua = navigator.userAgent
   const ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)
   return ios && !/CriOS|FxiOS|EdgiOS/.test(ua)
 }
 
-export function dismissed(): boolean {
+function dismissed(): boolean {
   return localStorage.getItem(KEY) === '1'
 }
 
@@ -70,7 +62,7 @@ export async function install(): Promise<void> {
   await e.prompt()
 }
 
-export function offer(): InstallOffer {
+function offer(): InstallOffer {
   if (isStandalone() || dismissed()) return null
   if (kept) return 'prompt'
   return isIosSafari() ? 'ios' : null

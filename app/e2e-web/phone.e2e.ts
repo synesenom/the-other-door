@@ -2,7 +2,7 @@
 // data, in a phone-sized window. Pairing through the QR code's link, Matches, a posting, Applications, a
 // prepared application's pages loaded through /files, and what belongs to the door machine.
 import { resolve } from 'node:path'
-import { _electron as electron, expect, test } from '@playwright/test'
+import { _electron as electron, devices, expect, test, webkit } from '@playwright/test'
 import { phoneProfile, serveDemo, type Served } from './serve-fixture'
 
 const APP = resolve(__dirname, '..')
@@ -70,11 +70,8 @@ test('a wrong code is refused and the pair screen stays', async () => {
   }
 })
 
-const IPHONE_UA =
-  'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1'
-
 /** A 390 px phone that pairs with a fresh code. */
-async function openPaired(extra: Record<string, string> = {}) {
+async function openPaired() {
   return electron.launch({
     args: [resolve(__dirname, 'browser.cjs'), ...(process.env.CI ? ['--no-sandbox'] : [])],
     cwd: APP,
@@ -83,7 +80,6 @@ async function openPaired(extra: Record<string, string> = {}) {
       DOOR_WEB_PROFILE: phoneProfile(served.fixture),
       DOOR_WEB_URL: `${served.url}/#pair=${served.newCode()}`,
       DOOR_WEB_WIDTH: '390',
-      ...extra,
     },
   })
 }
@@ -118,11 +114,13 @@ test('after pairing the browser offers the install: the line shows, the tap prom
   }
 })
 
-test('an iPhone in Safari is told to tap Share, with no install button (#576)', async () => {
+test('an iPhone in Safari (WebKit) is told to tap Share, with no install button (#576)', async () => {
   test.skip(!served.fixture.hasPython, `no Python at ${served.fixture.python}`)
-  const app = await openPaired({ DOOR_WEB_UA: IPHONE_UA })
+  const browser = await webkit.launch()
   try {
-    const page = await app.firstWindow()
+    const context = await browser.newContext({ ...devices['iPhone 13'] })
+    const page = await context.newPage()
+    await page.goto(`${served.url}/#pair=${served.newCode()}`)
     await expect(page.getByRole('heading', { name: 'Matches', level: 1 })).toBeVisible({ timeout: 30_000 })
     await expect(page.getByText('To install, tap Share, then Add to Home Screen.')).toBeVisible()
     await expect(page.getByRole('button', { name: 'Install the app' })).toHaveCount(0)
@@ -131,6 +129,6 @@ test('an iPhone in Safari is told to tap Share, with no install button (#576)', 
       if (process.env.SHOTS) await page.screenshot({ path: `${process.env.SHOTS}/install-iphone-${theme}.png` })
     }
   } finally {
-    await app.close()
+    await browser.close()
   }
 })

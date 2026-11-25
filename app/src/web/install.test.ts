@@ -1,6 +1,10 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { captureInstallPrompt, dismiss, dismissed, install, isIosSafari, isStandalone, offer, resetInstall, subscribe } from './install'
+import { act, renderHook } from '@testing-library/react'
+import { captureInstallPrompt, dismiss, install, useInstallOffer } from './install'
+
+const offer = () => renderHook(() => useInstallOffer()).result.current
+const isIosSafari = () => offer() === 'ios'
 
 const IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1'
 const IPHONE_CHROME = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/124.0 Mobile/15E148 Safari/604.1'
@@ -21,11 +25,13 @@ function fakeEvent() {
 
 beforeEach(() => {
   localStorage.clear()
-  resetInstall()
   media(false)
   setNav(ANDROID)
 })
-afterEach(() => vi.restoreAllMocks())
+afterEach(() => {
+  window.dispatchEvent(new Event('appinstalled')) // forgets a kept prompt
+  vi.restoreAllMocks()
+})
 
 describe('isIosSafari', () => {
   it('is true for iPhone Safari and for an iPad that says Macintosh', () => {
@@ -44,41 +50,42 @@ describe('isIosSafari', () => {
   })
 })
 
-describe('isStandalone', () => {
-  it('reads the display mode and iOS navigator.standalone', () => {
-    expect(isStandalone()).toBe(false)
+describe('opened from the home screen', () => {
+  it('offers nothing, by the display mode or by iOS navigator.standalone', () => {
+    setNav(IPHONE)
+    expect(offer()).toBe('ios')
     media(true)
-    expect(isStandalone()).toBe(true)
+    expect(offer()).toBeNull()
     media(false)
     setNav(IPHONE, 5, true)
-    expect(isStandalone()).toBe(true)
+    expect(offer()).toBeNull()
   })
 })
 
 describe('the install prompt', () => {
   it('keeps the event (preventDefault), offers it, and prompts once on install()', async () => {
-    const seen = vi.fn()
-    subscribe(seen)
     const e = fakeEvent()
     captureInstallPrompt()
-    window.dispatchEvent(e)
+    const { result } = renderHook(() => useInstallOffer())
+    act(() => void window.dispatchEvent(e))
     expect(e.defaultPrevented).toBe(true)
-    expect(seen).toHaveBeenCalled()
-    expect(offer()).toBe('prompt')
-    await install()
+    expect(result.current).toBe('prompt')
+    await act(() => install())
+    expect(result.current).toBeNull()
     expect(e.prompt).toHaveBeenCalledTimes(1)
   })
   it('appinstalled clears the offer', () => {
     captureInstallPrompt()
-    window.dispatchEvent(fakeEvent())
-    window.dispatchEvent(new Event('appinstalled'))
-    expect(offer()).toBeNull()
+    const { result } = renderHook(() => useInstallOffer())
+    act(() => void window.dispatchEvent(fakeEvent()))
+    expect(result.current).toBe('prompt')
+    act(() => void window.dispatchEvent(new Event('appinstalled')))
+    expect(result.current).toBeNull()
   })
   it('iOS Safari gets the Share words; standalone and dismissed get nothing', () => {
     setNav(IPHONE)
     expect(offer()).toBe('ios')
-    dismiss()
-    expect(dismissed()).toBe(true)
+    act(() => dismiss())
     expect(offer()).toBeNull()
     localStorage.clear()
     media(true)

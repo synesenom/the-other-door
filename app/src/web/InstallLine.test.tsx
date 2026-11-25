@@ -3,7 +3,7 @@ import { act, cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { InstallLine } from './InstallLine'
-import { captureInstallPrompt, resetInstall } from './install'
+import { captureInstallPrompt } from './install'
 
 const IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1'
 
@@ -13,11 +13,11 @@ function fakeEvent() {
 
 beforeEach(() => {
   localStorage.clear()
-  resetInstall()
   window.matchMedia = vi.fn().mockReturnValue({ matches: false }) as never
 })
 afterEach(() => {
   cleanup()
+  window.dispatchEvent(new Event('appinstalled')) // forgets a kept prompt
   vi.restoreAllMocks()
 })
 
@@ -28,7 +28,9 @@ describe('InstallLine', () => {
     render(<InstallLine />)
     expect(screen.queryByRole('button', { name: 'Install the app' })).toBeNull()
     act(() => void window.dispatchEvent(e))
-    await userEvent.click(await screen.findByRole('button', { name: 'Install the app' }))
+    const names = (await screen.findAllByRole('button')).map((b) => b.textContent)
+    expect(names).toEqual(['Not now', 'Install the app'])
+    await userEvent.click(screen.getByRole('button', { name: 'Install the app' }))
     expect(e.prompt).toHaveBeenCalledTimes(1)
     act(() => void window.dispatchEvent(new Event('appinstalled')))
     expect(screen.queryByRole('button', { name: 'Install the app' })).toBeNull()

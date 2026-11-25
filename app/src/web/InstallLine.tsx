@@ -6,16 +6,15 @@ export function InstallLineView({ what, onInstall, onDismiss }: { what: InstallO
   if (!what) return null
   return (
     <div className="install-line notice" role="region" aria-label="Install the app">
-      {what === 'prompt' ? (
-        <button type="button" className="quiet install" onClick={onInstall}>
-          Install the app
-        </button>
-      ) : (
-        <small>To install, tap Share, then Add to Home Screen.</small>
-      )}
+      {what === 'ios' && <span className="small">To install, tap Share, then Add to Home Screen.</span>}
       <button type="button" className="quiet" onClick={onDismiss}>
         Not now
       </button>
+      {what === 'prompt' && (
+        <button type="button" className="secondary" onClick={onInstall}>
+          Install the app
+        </button>
+      )}
     </div>
   )
 }

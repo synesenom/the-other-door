@@ -6,17 +6,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 vi.mock('../renderer/App', () => ({ App: () => <h1>The desktop screens</h1> }))
 
 import { Web } from './Web'
-import { captureInstallPrompt, resetInstall } from './install'
+import { captureInstallPrompt } from './install'
 import type { TokenStore } from './token-store'
 
 beforeEach(() => {
   localStorage.clear()
-  resetInstall()
   window.matchMedia = vi.fn().mockReturnValue({ matches: false }) as never
 })
 
 afterEach(() => {
   cleanup()
+  window.dispatchEvent(new Event('appinstalled')) // forgets a kept install prompt
   window.location.hash = ''
   window.history.replaceState(null, '', '/')
 })

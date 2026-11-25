@@ -91,6 +91,12 @@ jobs:
           CI: "1"
 
       # The phone app (#303): its web build against a real `door serve` on made-up data, at phone sizes.
+      - name: Install WebKit for the phone test (an iPhone in Safari)
+        working-directory: app
+        run: npx playwright install --with-deps webkit
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "0"
+
       - name: Phone app end-to-end test
         working-directory: app
         run: xvfb-run -a npm run test:web
