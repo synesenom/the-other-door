@@ -773,17 +773,6 @@ def test_tailor_args_scope_read_to_the_profile_the_posting_and_the_output(cli_en
     assert _rule("Read", cli_env.jobs_dir) not in reads   # not the other postings, not the ledgers
 
 
-def test_tailor_args_read_templates_kept_outside_the_profile(cli_env, tmp_path):
-    from profile_utils import write_config
-
-    tpl = tmp_path / "elsewhere" / "cv.template.html"
-    tpl.parent.mkdir()
-    tpl.write_text("my styling")
-    write_config(cli_env.profile_dir, {"role_targets": ["x"], "location": "Copenhagen", "cv_template": str(tpl)})
-    reads = [t for t in _allowed(prepare_cmd._tailor_args("job-1", Path("/x/job-1.json"))) if t.startswith("Read(")]
-    assert _rule("Read", tpl, glob=False) in reads
-
-
 def test_tailor_args_read_the_codes_templates_when_the_profile_has_none(cli_env):
     example = workspace.PROFILE_EXAMPLE_DIR
     argv = prepare_cmd._tailor_args("job-1", Path("/x/job-1.json"))

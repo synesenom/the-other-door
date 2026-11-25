@@ -136,21 +136,31 @@ def _edited(textpage, text: str, height: float, edits: list[tuple[list[float], s
     return "".join(out)
 
 
+MAX_PAGES = 30  # a real CV is a few pages
+MAX_TEXT = 300_000
+
+
 def draft_text(pdf_path: Path) -> str:
     """The text of every page of the PDF as a draft reads it (see the module).
 
     Raises:
         FileNotFoundError: If `pdf_path` does not exist.
+        ValueError: If it has more than `MAX_PAGES` pages or more than `MAX_TEXT` characters of text: not a CV.
     """
     doc = pdf_render.open_pdf(pdf_path)
     try:
-        texts = []
+        if len(doc) > MAX_PAGES:
+            raise ValueError(f"{pdf_path.name} has {len(doc)} pages, more than the {MAX_PAGES} of a CV")
+        texts, size = [], 0
         for page in doc:
             height = page.get_height()
             edits = _edits(_runs(page, height))
             textpage = page.get_textpage()
             text = textpage.get_text_range()
             texts.append(pdf_render.clean_text(_edited(textpage, text, height, edits) if edits else text))
+            size += len(texts[-1])
+            if size > MAX_TEXT:
+                raise ValueError(f"{pdf_path.name} has more than {MAX_TEXT} characters of text, too much for a CV")
         return "\n".join(texts).strip()
     finally:
         doc.close()

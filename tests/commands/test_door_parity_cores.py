@@ -125,10 +125,7 @@ def example_dir(tmp_path):
     example = tmp_path / "profile.example"
     shutil.copytree(workspace.PROFILE_EXAMPLE_DIR, example)
     config = json.loads((example / "config.json").read_text())
-    for field, filename in (
-        ("cv_content", "cv.md"),
-    ):
-        config[field] = str(example / filename)
+    config["cv_content"] = str(tmp_path / "profile" / "cv.md")  # inside the profile folder the tests init
     (example / "config.json").write_text(json.dumps(config))
     return example
 

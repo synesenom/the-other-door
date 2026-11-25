@@ -16,6 +16,12 @@ from door.core import workspace
 from door.core.profile_loader import Profile
 
 
+@pytest.fixture(autouse=True)
+def _profile_folder(tmp_path, monkeypatch):
+    """The files these tests name live under tmp_path: that is the profile folder."""
+    monkeypatch.setattr(workspace, "PROFILE_DIR", tmp_path)
+
+
 def _make_templates(dir_path):
     """Create the three template files the loader requires; return their paths."""
     dir_path.mkdir(parents=True, exist_ok=True)
@@ -290,3 +296,22 @@ def test_the_templates_are_optional_and_a_profile_without_them_is_valid(tmp_path
     path.write_text(json.dumps(cfg))
     config = profile_loader.load_profile_config(path.parent, check_paths=True)
     assert "cv_template" not in config and "cover_letter_template" not in config
+
+
+@pytest.mark.parametrize("key", ["cv_content", "cv_template", "cover_letter_template", "photo"])
+@pytest.mark.parametrize("value", ["/Users/x/.config/door/drive.json", "../.config/door/drive.json"])
+def test_a_cv_content_outside_the_profile_folder_is_refused_by_name(tmp_path, monkeypatch, key, value):
+    monkeypatch.setattr(workspace, "HOME", tmp_path)
+    monkeypatch.setattr(workspace, "PROFILE_DIR", tmp_path / "profile")
+    cfg = _valid_config(tmp_path / "profile" / "tpl")
+    cfg[key] = value
+    with pytest.raises(ValidationError, match=f"{key} must be a file inside the profile folder"):
+        Profile.model_validate(cfg)
+
+
+def test_a_path_inside_the_profile_folder_is_accepted(tmp_path, monkeypatch):
+    monkeypatch.setattr(workspace, "HOME", tmp_path)
+    monkeypatch.setattr(workspace, "PROFILE_DIR", tmp_path / "profile")
+    cfg = _valid_config(tmp_path / "profile" / "tpl")
+    cfg["cv_content"] = "profile/cv.md"
+    assert Profile.model_validate(cfg).cv_content == (tmp_path / "profile" / "cv.md").resolve()
