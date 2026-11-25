@@ -49,7 +49,7 @@ def _read(entry: os.DirEntry) -> dict | None:
         if cached is None or cached[:2] != stamp:
             cached = (*stamp, json.loads(Path(entry.path).read_text(encoding="utf-8")))
             _cache[entry.path] = cached
-    except (json.JSONDecodeError, OSError):
+    except (ValueError, OSError):  # bad JSON, or bytes that are not text
         return None
     data = cached[2]
     return dict(data) if isinstance(data, dict) else data
@@ -64,12 +64,14 @@ def iter_postings(jobs_dir: Path) -> Iterator[tuple[Path, dict]]:
     """
     days: list[list[tuple[Path, dict]]] = []
     seen: set = set()
+    walked: set[str] = set()
     for date_dir in reversed(date_dirs(jobs_dir)):  # newest first, so the first copy of an id is kept
         day: list[tuple[Path, dict]] = []
         entries = sorted((entry for site in os.scandir(date_dir) if site.is_dir()
                           for entry in os.scandir(site.path) if entry.name.endswith(".json")),
                          key=lambda entry: entry.path)
         for entry in entries:
+            walked.add(entry.path)
             data = _read(entry)
             if data is None:
                 continue
@@ -78,6 +80,9 @@ def iter_postings(jobs_dir: Path) -> Iterator[tuple[Path, dict]]:
                 seen.add(job_id)
                 day.append((Path(entry.path), data))
         days.append(day)
+    root = str(workspace.postings_dir(jobs_dir))
+    for gone in [path for path in _cache if path.startswith(root) and path not in walked]:
+        del _cache[gone]  # a posting deleted or moved since the last walk
     for day in reversed(days):  # back to oldest first
         yield from day
 

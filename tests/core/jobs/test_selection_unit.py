@@ -646,3 +646,32 @@ def test_a_server_reads_each_unchanged_posting_once_and_a_changed_one_again(tmp_
     path.write_text(path.read_text().replace("0.7", "0.8"))
     os.utime(path, ns=(path.stat().st_atime_ns, path.stat().st_mtime_ns + 1_000_000))
     assert find_posting(jobs_dir, "job-a")["score"] == 0.8
+
+
+def test_a_caller_changing_a_posting_changes_no_later_read(tmp_path, monkeypatch):
+    from door.core.jobs import selection
+
+    monkeypatch.setattr(selection, "_cache", {})
+    _write_posting(tmp_path / "jobs", "2026-07-01", "jobindex", "job-a")
+    find_posting(tmp_path / "jobs", "job-a")["title"] = "changed"
+    assert find_posting(tmp_path / "jobs", "job-a")["title"] != "changed"
+
+
+def test_a_deleted_posting_leaves_the_cache_after_a_whole_walk(tmp_path, monkeypatch):
+    from door.core.jobs import selection
+
+    monkeypatch.setattr(selection, "_cache", {})
+    path = _write_posting(tmp_path / "jobs", "2026-07-01", "jobindex", "job-a")
+    list(selection.iter_postings(tmp_path / "jobs"))
+    path.unlink()
+    list(selection.iter_postings(tmp_path / "jobs"))
+    assert selection._cache == {}
+
+
+def test_a_file_that_is_not_text_is_skipped(tmp_path):
+    # a macOS ._name.json sidecar on an exFAT or network drive
+    _write_posting(tmp_path / "jobs", "2026-07-01", "jobindex", "job-a")
+    (tmp_path / "jobs" / "postings" / "2026-07-01" / "jobindex" / "._job-a.json").write_bytes(b"\x00\x05\x16\x07\xff\xfe")
+    from door.core.jobs import selection
+
+    assert [p["id"] for p in selection.read_postings(tmp_path / "jobs")] == ["job-a"]
