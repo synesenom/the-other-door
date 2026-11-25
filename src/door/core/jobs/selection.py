@@ -38,15 +38,22 @@ def iter_postings(jobs_dir: Path) -> Iterator[tuple[Path, dict]]:
     """Every readable posting as ``(path, posting)``, in sorted date/site/file order.
 
     Walks ``jobs/postings/<YYYY-MM-DD>/<site>/*.json`` under `date_dirs`; malformed
-    or unreadable JSON files are skipped.
+    or unreadable JSON files are skipped. A posting stored on several days (collected
+    again later) is its newest copy only, so every list, count and lookup reads the same one.
     """
-    for date_dir in date_dirs(jobs_dir):
+    newest_first: list[tuple[Path, dict]] = []
+    seen: set = set()
+    for date_dir in reversed(date_dirs(jobs_dir)):
         for json_path in sorted(date_dir.glob("*/*.json")):
             try:
                 data = json.loads(json_path.read_text(encoding="utf-8"))
             except (json.JSONDecodeError, OSError):
                 continue
-            yield json_path, data
+            job_id = data.get("id") if isinstance(data, dict) else None
+            if job_id is None or job_id not in seen:
+                seen.add(job_id)
+                newest_first.append((json_path, data))
+    yield from sorted(newest_first, key=lambda found: found[0].parts[-3:])  # back to date/site/file order
 
 
 def read_postings(jobs_dir: Path) -> list[dict]:
@@ -120,9 +127,8 @@ def find_posting(jobs_dir: Path, job_id: str) -> dict | None:
     Walks ``jobs/postings/<YYYY-MM-DD>/<site>/*.json`` the same way ``select_matches``
     does — only date-named top-level directories are scanned, so
     ``jobs/output/`` and similar are never scanned. Malformed JSON files are
-    skipped tolerantly. If the same ``job_id`` appears in more than one
-    posting file, the one in the newest date directory
-    wins (the one the match list shows).
+    skipped tolerantly. A posting stored on several days is its newest
+    copy (`iter_postings`).
 
     Parameters
     ----------
@@ -137,8 +143,7 @@ def find_posting(jobs_dir: Path, job_id: str) -> dict | None:
         The matching posting dict, or ``None`` if ``jobs_dir`` doesn't exist
         or no posting has this ``job_id``.
     """
-    found = find_posting_path(jobs_dir, job_id)
-    return None if found is None else json.loads(found.read_text(encoding="utf-8"))
+    return next((data for _, data in iter_postings(jobs_dir) if data.get("id") == job_id), None)
 
 
 def find_posting_path(jobs_dir: Path, job_id: str) -> Path | None:
@@ -164,11 +169,7 @@ def find_posting_path(jobs_dir: Path, job_id: str) -> Path | None:
         The matching posting JSON file's path, or ``None`` if ``jobs_dir``
         doesn't exist or no posting has this ``job_id``.
     """
-    found = None
-    for path, data in iter_postings(jobs_dir):  # dates in order: the last copy found is the newest
-        if data.get("id") == job_id:
-            found = path
-    return found
+    return next((path for path, data in iter_postings(jobs_dir) if data.get("id") == job_id), None)
 
 
 # Statuses always shown in a ledger breakdown, zero-filled when absent, in

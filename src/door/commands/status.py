@@ -329,7 +329,7 @@ def _status_summary_core(jobs_dir: Path | None = None, profile_dir: Path | None 
         "application": application,
         "pass_rates": {stage: _tracker_mod.pass_rate(counts) for stage, counts in stages.items()},
         "pass_rates_by_score": _tracker_mod.score_bands(
-            _tracker_mod.application_results(app_tracker), _first_scores(postings)),
+            _tracker_mod.application_results(app_tracker), _scores(postings)),
         "standing": _tracker_mod.standings(app_tracker),
         "no_answer": {"count": _tracker_mod.no_answer_count(app_tracker, job_ids=ongoing_ids), "days": _tracker_mod.NO_ANSWER_DAYS},
         "in_progress": _in_progress(jobs_dir),
@@ -343,14 +343,9 @@ def _status_summary_core(jobs_dir: Path | None = None, profile_dir: Path | None 
     }
 
 
-def _first_scores(postings: list[dict]) -> dict[str, float]:
-    """``{job id: score}``, the first positive score of a job stored under several dates."""
-    scores: dict[str, float] = {}
-    for posting in postings:
-        score = posting.get("score")
-        if score and posting.get("id") not in scores:
-            scores[posting["id"]] = score
-    return scores
+def _scores(postings: list[dict]) -> dict[str, float]:
+    """``{job id: score}`` of the scored postings."""
+    return {p["id"]: p["score"] for p in postings if p.get("score") and p.get("id")}
 
 
 def _plan_block(jobs_dir: Path, records: list[dict]) -> dict | None:
