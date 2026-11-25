@@ -105,14 +105,15 @@ MAX_LAID_OUT_PER_RUN = 30  # ads laid out (`matching/ad_layout`) a run, best-sco
 
 
 def _lay_out(jobs_dir: Path, profile_dir: Path, app_tracker, threshold: float, max_age: int) -> None:
-    """A good match still in play is shown with its headings and lists: lay out, best-scored first, up to
-    `MAX_LAID_OUT_PER_RUN` of those with no layout for their description (the rest wait for the next run).
-    A failed call leaves the raw text."""
+    """A good match and every application still in play (whatever its score or age) is written as Markdown, best-scored first, up to `MAX_LAID_OUT_PER_RUN`
+    a run (the rest wait for the next run); prepared materials keep their own copy of the ad. A failed call
+    leaves the raw text."""
     found = list(selection.iter_postings(jobs_dir))  # one walk of the store: the matches and where each is
     paths = {str(p.get("id")): path for path, p in found}
-    in_play = ("unapplied", *tracker_mod.ONGOING_STATUSES)
-    todo = [m for m in common._drop_stale(select_matches(jobs_dir, app_tracker, threshold, status=in_play,
-                                                         postings=[p for _, p in found]), max_age)
+    postings = [p for _, p in found]
+    matches = common._drop_stale(select_matches(jobs_dir, app_tracker, threshold, postings=postings), max_age)
+    applications = [p for p in postings if app_tracker.get_status(str(p.get("id"))) in tracker_mod.ONGOING_STATUSES]
+    todo = [m for m in sorted(matches + applications, key=lambda m: -(m.get("score") or 0.0))
             if ad_layout.needs_layout(m)][:MAX_LAID_OUT_PER_RUN]
     if todo:
         progress_mod.report("laying out the best ads", 0, len(todo), stage="match")

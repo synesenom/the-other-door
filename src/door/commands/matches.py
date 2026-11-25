@@ -16,7 +16,6 @@ from door.commands import compile as compile_cmd
 from door.commands import salary as salary_cmd
 from door.commands import status as status_cmd
 from door.core import profile_loader, sites, workspace
-from door.matching import ad_layout
 from door.tailoring import facts as facts_mod
 from door.render import html_doc, readability
 
@@ -336,7 +335,6 @@ def _show_core(job_id: str, *, open: bool = False, jobs_dir: Path | None = None)
         "source_name": sites.source_name(posting.get("source")),
         "status": app_tracker.get_status(job_id) or "unapplied",
         "history": app_tracker.timeline(job_id),
-        "description_blocks": ad_layout.blocks(posting.get("description", ""), posting.get("layout")),
         "materials": materials,
         "salary": salary_cmd.cached(job_id, jobs_dir),
         "no_answer": _tracker_mod.no_answer(app_tracker, job_id),
@@ -471,20 +469,24 @@ def _posted_text(posted_at) -> str:
     return f"{dt.date().isoformat()} ({age})"
 
 
-def _description_renderables(blocks: list[dict], width: int) -> list:
-    """The description's blocks: headings bold and set apart, list items with a bullet, a blank line
-    after a paragraph that wraps (wider than `width`)."""
+def _description_renderables(posting: dict, width: int) -> list:
+    """The description, one line per block: a Markdown one (`formatted`) with its headings bold and set
+    apart and its list items with a bullet; a blank line after a paragraph that wraps (wider than `width`)."""
     from rich.text import Text
 
+    formatted = bool(posting.get("formatted"))
     out: list = []
     previous_wrapped = False
-    for block in blocks:
-        text = block["text"]
-        if block["kind"] == "heading":
+    for line in (line.strip() for line in (posting.get("description") or "").splitlines()):
+        if not line:
+            continue
+        kind, text = ("heading", line[3:]) if formatted and line.startswith("## ") else \
+            ("bullet", line[2:]) if formatted and line.startswith("- ") else ("paragraph", line)
+        if kind == "heading":
             out += [Text(""), Text(text, style="bold cyan")] if out else [Text(text, style="bold cyan")]
             previous_wrapped = False
             continue
-        if block["kind"] == "bullet":
+        if kind == "bullet":
             out.append(Text("• " + text))
             previous_wrapped = False
             continue
@@ -602,7 +604,7 @@ def _render_posting_detail(posting: dict, status: str, console=None, *, descript
     if not description:
         return
     common._section(console, "Description")
-    for renderable in _description_renderables(posting["description_blocks"], console.width - 2):
+    for renderable in _description_renderables(posting, console.width - 2):
         console.print(Padding(renderable, (0, 2)))
 
 
@@ -628,7 +630,7 @@ def _page_description(posting: dict, console) -> None:
     with console.pager(styles=True):
         console.print(Text.assemble((common.plain(posting.get("title", "")), "bold"), " · ", (common.plain(posting.get("company", "")), "cyan")))
         common._section(console, "Description")
-        for renderable in _description_renderables(posting["description_blocks"], console.width - 2):
+        for renderable in _description_renderables(posting, console.width - 2):
             console.print(Padding(renderable, (0, 2)))
 
 

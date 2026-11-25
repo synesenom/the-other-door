@@ -42,28 +42,30 @@ describe('Posting', () => {
     expect(screen.getByText('You will analyse data.')).toBeInTheDocument()
   })
 
-  it('lays the ad out in headings, lists and paragraphs when it has blocks', async () => {
+  it('sets a formatted ad out in headings, lists and paragraphs', async () => {
     mockDoor({
       show: {
         ...full,
-        description_blocks: [
-          { kind: 'heading', text: 'About the role' },
-          { kind: 'paragraph', text: 'You will analyse data.' },
-          { kind: 'bullet', text: 'SQL' },
-          { kind: 'bullet', text: 'Python' },
-          { kind: 'paragraph', text: 'Apply today.' },
-        ],
+        formatted: true,
+        description: '## About the role\n\nYou will analyse data.\n\n- SQL\n- Python\n\nApply today.',
       },
     })
     const { container } = render(<Posting jobId="jobindex.1" onChanged={() => {}} />)
     expect(await screen.findByRole('heading', { name: 'About the role' })).toBeInTheDocument()
-    const list = container.querySelector('.description-list') as HTMLElement
+    const list = container.querySelector('.markdown ul') as HTMLElement
     expect(within(list).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['SQL', 'Python'])
     expect(screen.getByText('You will analyse data.').tagName).toBe('P')
     expect(screen.getByText('Apply today.').tagName).toBe('P')
   })
 
-  it('falls back to the plain description without blocks', async () => {
+  it("reads no link or emphasis from a set-out ad's own words", async () => {
+    mockDoor({ show: { ...full, formatted: true, description: 'Apply through [our page](https://phish.example) by *Friday*.' } })
+    render(<Posting jobId="jobindex.1" onChanged={() => {}} />)
+    expect(await screen.findByText('Apply through [our page](https://phish.example) by *Friday*.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'our page' })).toBeNull()
+  })
+
+  it('shows a raw ad as it came', async () => {
     mockDoor({ show: full })
     render(<Posting jobId="jobindex.1" onChanged={() => {}} />)
     expect(await screen.findByText('You will analyse data.')).toBeInTheDocument()
