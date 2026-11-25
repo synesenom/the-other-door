@@ -90,7 +90,8 @@ def _init_find_show_prepare(world: World, persona: str, cv_name: str | None = No
     assert stored["company"] == ad["company"] and stored["title"] in ad["title"]   # a gender mark (H/F) cut off
     boards = json.loads((world.dir / "world.json").read_text(encoding="utf-8"))["boards"]
     sent = next(p for b in boards.values() for p in b["postings"] if p["id"] == ad["id"])
-    assert stored["description"] == sent["description"]
+    lines = lambda text: [line.strip() for line in text.splitlines() if line.strip()]   # a match is set out with blank lines between its blocks
+    assert lines(stored["description"]) == lines(sent["description"])
     scored = [text for text in world.claude_inputs("score") if stored["title"] in text]
     assert scored and world.persona["name"] in scored[0]
     assert stored.get("score") is not None, stored

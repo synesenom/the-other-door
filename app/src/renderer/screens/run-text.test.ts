@@ -17,13 +17,13 @@ describe('runText: what a run is doing, in words, never its raw message', () => 
   it.each([
     ['follow', 12, 40, "Finding new jobs: looking up employers' career pages (12 of 40)"],
     ['collect', 3, 57, 'Finding new jobs: reading career pages (3 of 57)'],
-    ['match', 12, 40, 'Finding new jobs: scoring the new ads (12 of 40)'],
+    ['match', 12, 40, 'Finding new jobs: scoring and setting out the new ads (12 of 40)'],
   ])('says %s in words', (name, done, total, text) => {
     expect(runText(run([{ name, status: 'running', detail: '', done, total }]))).toBe(text)
   })
 
   it('leaves the count out when there is none, and says Discover only when nothing else runs', () => {
-    expect(runText(run([{ name: 'match', status: 'running', detail: '', done: 0 }]))).toBe('Finding new jobs: scoring the new ads')
+    expect(runText(run([{ name: 'match', status: 'running', detail: '', done: 0 }]))).toBe('Finding new jobs: scoring and setting out the new ads')
     expect(runText(run([{ name: 'discover', status: 'running', detail: '' }]))).toBe('Finding new jobs: finding employers')
   })
 

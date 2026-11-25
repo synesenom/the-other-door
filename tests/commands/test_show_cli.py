@@ -134,10 +134,8 @@ def test_show_lists_matching_and_missing_skills(cli_env):
 
 
 def test_show_sets_description_headings_apart(cli_env):
-    _write_show_posting(
-        cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc",
-        description="We are hiring.\nAbout the role\nYou will build models.",
-    )
+    desc = "We are hiring.\n\n## About the role\n\nYou will build models."
+    _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc", description=desc, formatted=True)
 
     result = CliRunner().invoke(cli, ["jobs", "show", "job-abc"])
 
@@ -742,3 +740,23 @@ def test_the_card_says_the_page_limit_once_on_the_cv_row_not_under_read_by_an_at
     text = _rendered({**base, "readability": [pages, missing]})
     assert "Kubernetes" in text and "over the limit" not in text
 
+
+
+def test_jobs_show_of_a_raw_ad_treats_every_line_as_a_paragraph(cli_env):
+    _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc",
+                        description="We are hiring.\n## About the role\nYou will build models.")
+
+    result = CliRunner().invoke(cli, ["jobs", "show", "job-abc"])
+
+    lines = [line.strip() for line in result_text(result).splitlines()]
+    assert lines[lines.index("## About the role") - 1] == "We are hiring."
+
+
+def test_jobs_show_prints_a_bullet_for_a_list_item(cli_env):
+    _write_show_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-lay",
+                        description="## Our list\n\n- Python", formatted=True)
+
+    result = CliRunner().invoke(cli, ["jobs", "show", "job-lay"])
+
+    assert result.exit_code == 0, result_text(result)
+    assert "• Python" in result_text(result)

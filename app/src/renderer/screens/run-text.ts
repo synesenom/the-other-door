@@ -8,7 +8,7 @@ const STEP_WORDS: Record<string, string> = {
   discover: 'finding employers',
   follow: "looking up employers' career pages",
   collect: 'reading career pages',
-  match: 'scoring the new ads',
+  match: 'scoring and setting out the new ads',
 }
 
 // the lock purposes of `find` and its single steps
@@ -17,7 +17,7 @@ const FINDING = new Set(['run', 'scrape', 'search', 'discover', 'follow', 'colle
 const isStep = (s: unknown): s is StepRow =>
   typeof s === 'object' && s !== null && typeof (s as StepRow).name === 'string' && typeof (s as StepRow).status === 'string'
 
-/** One line for a run holding the lock, e.g. "Finding new jobs: scoring the new ads (12 of 40)". */
+/** One line for a run holding the lock, e.g. "Finding new jobs: scoring and setting out the new ads (12 of 40)". */
 export function runText(progress: InProgress): string {
   const steps = Array.isArray(progress.steps) ? progress.steps.filter(isStep) : []
   if (progress.purpose === 'prepare') return 'Preparing an application…'

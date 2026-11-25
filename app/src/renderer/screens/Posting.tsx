@@ -236,7 +236,7 @@ export function Posting({ jobId, onChanged, onOpenMaterials }: Props) {
       {posting.language && <p className="body">{languageLine(posting.language, posting.language_requirement)}</p>}
       {posting.description && (
         <section>
-          <p className="body description">{posting.description}</p>
+          <Description posting={posting} />
         </section>
       )}
       {narrow && (
@@ -294,5 +294,29 @@ export function Posting({ jobId, onChanged, onOpenMaterials }: Props) {
         />
       )}
     </article>
+  )
+}
+
+/** The ad's text: a set-out one (`formatted`) with its `## ` headings and `- ` list items, every word shown as
+ * written (the ad is a stranger's: no link, emphasis or numbering is read from it); any other as it came. */
+function Description({ posting }: { posting: PostingData }) {
+  if (!posting.formatted) return <p className="body description">{posting.description}</p>
+  const blocks = (posting.description ?? '').split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean)
+  return (
+    <div className="markdown body">
+      {blocks.map((block, i) => {
+        if (block.startsWith('## ')) return <h3 key={i} className="md-heading">{block.slice(3)}</h3>
+        const lines = block.split('\n')
+        if (lines.every((line) => line.startsWith('- ')))
+          return (
+            <ul key={i}>
+              {lines.map((line, n) => (
+                <li key={n}>{line.slice(2)}</li>
+              ))}
+            </ul>
+          )
+        return <p key={i}>{block}</p>
+      })}
+    </div>
   )
 }

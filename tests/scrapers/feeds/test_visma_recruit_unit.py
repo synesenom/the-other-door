@@ -283,3 +283,11 @@ def test_resolve_keeps_the_name_when_no_guessed_site_shows_a_list(session):
     det = visma_recruit.resolve(session, visma_recruit.detect_url(ad), ad)
 
     assert det.entry is None and det.employer == "Nässjö kommun"
+
+
+def test_a_schema_only_ad_is_text_without_its_markup_style_or_script():
+    schema = {"@context": "https://schema.org", "@type": "JobPosting", "title": "Data Scientist",
+              "description": "<style>.swapimg {display: none;}</style><script>var x=1;</script><p>Data Scientist</p><p>Stockholm</p>"}
+    page = f'<html><script type="application/ld+json">{json.dumps(schema).replace("</", "<\\/")}</script></html>'
+
+    assert visma_recruit.parse_detail(page)["description"] == "Data Scientist\nStockholm"

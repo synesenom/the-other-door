@@ -752,3 +752,14 @@ def test_add_records_title_translation_under_the_import_feature(env, monkeypatch
     monkeypatch.setattr(language.usage, "record", lambda feature, *a, **k: seen.append(feature))
     add_cmd._add_core(None, text=DANISH_AD, title="Dataanalytiker", company="Acme", jobs_dir=env.jobs_dir)
     assert seen == ["import_posting"]
+
+
+@pytest.mark.parametrize("score, laid_out", [(0.8, True), (0.3, False)])
+def test_only_an_added_ad_that_clears_min_score_gets_a_layout(env, monkeypatch, score, laid_out):
+    from door.matching import ad_layout
+
+    laid = []
+    monkeypatch.setattr(ad_layout, "lay_out", lambda path, **kw: laid.append(path.stem) or True)
+    _score_with(monkeypatch, [], score=score)
+    result = add_cmd._add_core(None, text=AD, title="Lead", company="Acme", jobs_dir=env.jobs_dir)
+    assert laid == ([result["job_id"]] if laid_out else [])

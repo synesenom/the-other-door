@@ -206,7 +206,7 @@ A source serving your city that you never turned on is listed there too, with a 
 
 You can switch screens while it runs: the button then reads "Finding jobs…" and takes you
 back (on the Finding jobs screen itself it is greyed out), and Matches says above its list which
-step is running ("Finding new jobs: scoring the new ads (12 of 40)"). Quitting *The other door* stops the run.
+step is running ("Finding new jobs: scoring and setting out the new ads (12 of 40)"). Quitting *The other door* stops the run.
 Which discovery sources run is your choice in Profile, not something asked per run.
 
 ### Stop
@@ -279,7 +279,7 @@ bar at the bottom.
 
 Choosing a row shows the posting: title (and its English translation), company and place,
 the score (the reason for it behind the info icon beside it: hover or focus it), the skills that fit and the gaps, the ad's language and
-what it asks of you, the salary to expect once the job is prepared (below), and the ad itself. The buttons:
+what it asks of you, the salary to expect once the job is prepared (below), and the ad itself, with its headings and lists set out once the job has reached your "Match fit" setting or you are applying for it (a plain text flow until then, and whenever Claude could not set it out; the next run tries again). The buttons:
 
 - **Prepare application** (the one dark button while nothing is prepared and the job is not
   yet applied) tailors a CV and a cover letter for this posting (below).

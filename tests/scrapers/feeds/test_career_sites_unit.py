@@ -434,3 +434,9 @@ def test_page_company_names_an_employer_on_a_co_uk_host():
 def test_page_company_skips_every_label_of_a_two_label_ending(host, name):
     soup = BeautifulSoup("<html><head></head><body></body></html>", "html.parser")
     assert career_sites._page_company(soup, host) == name
+
+
+def test_a_json_ld_description_leaves_out_its_style_and_script():
+    job = {"description": "&lt;style&gt;.swapimg {display: none;}&lt;/style&gt;&lt;script&gt;var x=1;&lt;/script&gt;&lt;p&gt;Data Scientist&lt;/p&gt;"}
+
+    assert career_sites._description(job) == "Data Scientist"
