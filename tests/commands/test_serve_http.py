@@ -22,7 +22,7 @@ LIST = {"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}}
 @pytest.fixture
 def home(tmp_path):
     (tmp_path / "jobs" / "output" / "jobindex.1").mkdir(parents=True)
-    (tmp_path / "jobs" / "output" / "jobindex.1" / "cv-1.png").write_bytes(b"\x89PNG page")
+    (tmp_path / "jobs" / "output" / "jobindex.1" / "cv_page_1.png").write_bytes(b"\x89PNG page")
     (tmp_path / "profile").mkdir()
     (tmp_path / "profile" / "cv.md").write_text("secret cv")
     return tmp_path
@@ -141,8 +141,8 @@ def test_files_serves_page_images_under_output_only(home):
     token = paired(home)
     auth = {"Authorization": f"Bearer {token}"}
     with client(home) as c:
-        assert c.get("/files/jobs/output/jobindex.1/cv-1.png").status_code == 401
-        r = c.get("/files/jobs/output/jobindex.1/cv-1.png", headers=auth)
+        assert c.get("/files/jobs/output/jobindex.1/cv_page_1.png").status_code == 401
+        r = c.get("/files/jobs/output/jobindex.1/cv_page_1.png", headers=auth)
         assert r.status_code == 200 and r.content == b"\x89PNG page"
         assert r.headers["cache-control"] == "no-store"
         for bad in ("/files/profile/cv.md", "/files/jobs/output/../../profile/cv.md",
@@ -152,9 +152,26 @@ def test_files_serves_page_images_under_output_only(home):
 
 def test_files_refuses_a_symlink_out_of_output(home):
     token = paired(home)
-    os.symlink(home / "profile" / "cv.md", home / "jobs" / "output" / "jobindex.1" / "leak.png")
+    os.symlink(home / "profile" / "cv.md", home / "jobs" / "output" / "jobindex.1" / "cv_page_2.png")
     with client(home) as c:
-        assert c.get("/files/jobs/output/jobindex.1/leak.png", headers={"Authorization": f"Bearer {token}"}).status_code == 404
+        assert c.get("/files/jobs/output/jobindex.1/cv_page_2.png", headers={"Authorization": f"Bearer {token}"}).status_code == 404
+
+
+def test_files_serves_only_the_rendered_pages_not_the_files_behind_them(home):
+    out = home / "jobs" / "output" / "my-job_1.x"
+    (out / "sent").mkdir(parents=True)
+    for rel in ("cv.pdf", "cover_letter.pdf", "cv_page_1.png", "sent/cv.pdf", "sent/cv_page_1.png",
+                "facts.json", "cv.html", "x.pdf", "cv_page_a.png", "sent/facts.json", "sent/photo.jpg"):
+        (out / rel).write_bytes(b"data")
+    (out / "deeper").mkdir()
+    (out / "deeper" / "cv.pdf").write_bytes(b"data")
+    token = paired(home)
+    auth = {"Authorization": f"Bearer {token}"}
+    with client(home) as c:
+        for ok in ("cv.pdf", "cover_letter.pdf", "cv_page_1.png", "sent/cv.pdf", "sent/cv_page_1.png"):
+            assert c.get(f"/files/jobs/output/my-job_1.x/{ok}", headers=auth).status_code == 200, ok
+        for bad in ("facts.json", "cv.html", "x.pdf", "cv_page_a.png", "sent/facts.json", "sent/photo.jpg", "deeper/cv.pdf"):
+            assert c.get(f"/files/jobs/output/my-job_1.x/{bad}", headers=auth).status_code == 404, bad
 
 
 def test_the_web_app_is_public_and_holds_no_data(home, web):
@@ -192,11 +209,11 @@ def test_a_session_sets_an_httponly_files_cookie_that_opens_only_files(home):
         cookie = r.headers["set-cookie"]
         assert "door_files=" in cookie and "HttpOnly" in cookie and "SameSite=strict" in cookie and "Path=/files" in cookie
         # an <img> sends the cookie, not a header
-        assert c.get("/files/jobs/output/jobindex.1/cv-1.png").status_code == 200
+        assert c.get("/files/jobs/output/jobindex.1/cv_page_1.png").status_code == 200
         # the cookie never stands in for the token on the tools
         assert c.post("/mcp", json=INIT, headers=HEADERS).status_code == 401
         pairing.unpair(home, "Pixel")
-        assert c.get("/files/jobs/output/jobindex.1/cv-1.png").status_code == 401
+        assert c.get("/files/jobs/output/jobindex.1/cv_page_1.png").status_code == 401
 
 
 def test_the_web_app_carries_a_strict_content_security_policy(home, web):
@@ -284,3 +301,59 @@ def test_the_forwarded_address_is_the_one_the_proxy_added(home):
     # X-Forwarded-For: <what the client claimed>, <what the proxy saw>; only the last is the proxy's
     assert serve_http._client({"client": ("127.0.0.1", 1), "headers": [(b"x-forwarded-for", b"6.6.6.6, 203.0.113.7")]}) == "203.0.113.7"
     assert serve_http._client({"client": ("127.0.0.1", 1), "headers": [(b"cf-connecting-ip", b"198.51.100.2"), (b"x-forwarded-for", b"6.6.6.6")]}) == "198.51.100.2"
+
+
+def test_a_phone_answer_names_no_folder_of_the_computer(home, monkeypatch):
+    from door.commands import add as add_cmd
+    from door.commands import matches as matches_cmd
+    from door.core import workspace
+    from door.core.sync import drive
+
+    monkeypatch.setattr(workspace, "HOME", home)
+    monkeypatch.setattr(workspace, "PROFILE_DIR", home / "profile")
+    monkeypatch.setattr(workspace, "JOBS_DIR", home / "jobs")
+    (home / "profile" / "config.json").write_text(json.dumps({
+        "role_targets": ["data scientist"], "location": "Copenhagen", "remote": "hybrid", "name": "Ada", "email": "ada@example.com",
+        "enrich_sources": ["https://example.com/ada"], "claude_config_dir": str(home / "claude"),
+    }))
+    monkeypatch.setattr(drive, "read_state", lambda: {"refresh_token": "t", "account": "ada@gmail.com"})
+    out = str(home / "jobs" / "output" / "jobindex.1")
+    monkeypatch.setattr(matches_cmd, "_show_core", lambda *a, **k: {
+        "id": "jobindex.1", "score_reason": "x" * 900, "materials": {"output_dir": out, "pdfs": {"cv": out + "/cv.pdf"}}})
+    monkeypatch.setattr(add_cmd, "_add_core", lambda *a, **k: (_ for _ in ()).throw(ValueError(f"cannot write {home}/jobs/x")))
+    token = paired(home)
+    with client(home) as c:
+        answers = {
+            "show_profile": call_tool(c, token, "show_profile", {}),
+            "status_summary": call_tool(c, token, "status_summary", {}),
+            "list_matches": call_tool(c, token, "list_matches", {}),
+            "show": call_tool(c, token, "show", {"job_id": "jobindex.1"}),
+            "import_posting": call_tool(c, token, "import_posting", {"text": "an ad"}),
+        }
+    for name, r in answers.items():
+        assert str(home) not in r.text, name
+    profile = _answer(answers["show_profile"])
+    assert profile["cv"]["text"] == "secret cv"
+    assert "path" not in profile["cv"] and "options" not in profile and "templates" not in profile
+    assert "enrich_sources" not in profile and "claude_config_dir" not in profile["config"]
+    assert profile["config"]["email"] == "ada@example.com"
+    assert _answer(answers["status_summary"])["drive"]["account"] is None
+    shown = _answer(answers["show"])
+    assert len(shown["score_reason"]) <= 400
+    assert shown["materials"]["output_dir"].endswith("jobindex.1")
+
+
+def test_a_crash_a_phone_sees_names_no_folder_of_the_computer(home, monkeypatch):
+    from door.commands import matches as matches_cmd
+    from door.core import workspace
+
+    monkeypatch.setattr(workspace, "HOME", home)
+
+    def crash(*a, **k):
+        raise PermissionError(f"denied: {home}/jobs/x")  # not an error a tool turns into {"error"}
+
+    monkeypatch.setattr(matches_cmd, "_show_core", crash)
+    token = paired(home)
+    with client(home) as c:
+        r = call_tool(c, token, "show", {"job_id": "jobindex.1"})
+    assert "denied" in r.text and str(home) not in r.text

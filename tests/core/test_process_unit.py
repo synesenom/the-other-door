@@ -3,7 +3,7 @@ and the run.json a long-lived process leaves. Nothing real is started or killed.
 
 import signal
 
-from door.core import process
+from door.core import path_scope, process
 
 
 def test_stopping_ends_each_process_group_not_just_its_first_process(monkeypatch):
@@ -94,3 +94,11 @@ def test_a_group_nobody_may_signal_is_left_alone(monkeypatch):
 def test_elsewhere_a_server_starts_a_session_of_its_own_with_no_windows_flags(monkeypatch, tmp_path):
     seen = _spawn_flags(monkeypatch, tmp_path, "darwin")
     assert seen.get("start_new_session") is True and "creationflags" not in seen
+
+
+def test_a_server_started_for_a_phone_does_not_take_the_apps_trust_in_file_dialogs(monkeypatch, tmp_path):
+    monkeypatch.setenv(path_scope.ENV, "1")
+    monkeypatch.setenv("SOME_OTHER", "kept")
+    env = process.door_env(tmp_path)
+    assert path_scope.ENV not in env
+    assert env["DOOR_HOME"] == str(tmp_path) and env["SOME_OTHER"] == "kept" and "PYTHONPATH" in env

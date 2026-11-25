@@ -50,26 +50,15 @@ def _default_name() -> str:
     return f"door-report-{date.today().isoformat()}.zip"
 
 
-def _spellings(folder) -> set[str]:
-    """The ways a folder may be written: as given, resolved, and on macOS with or without `/private`."""
-    found = {str(folder), str(Path(folder).expanduser().resolve())}
-    found |= {s.removeprefix("/private") for s in found if s.startswith("/private/")}
-    return {s for s in found if len(s) > 1}
-
-
 def _masker():
     """A function that hides emails, the data folder (``<data folder>``) and the home folder (``~``) in a text."""
-    data_folders = [workspace.HOME] + ([os.environ["DOOR_HOME"]] if os.environ.get("DOOR_HOME") else [])
-    places = []
-    for folders, word in ((data_folders, "<data folder>"), ([Path.home()], "~")):
-        for folder in folders:
-            places += [(spelling, word) for spelling in _spellings(folder)]
-    places.sort(key=lambda p: len(p[0]), reverse=True)  # the longest first: the data folder is often inside home
+    places = {Path.home(): "~", workspace.HOME: "<data folder>"}
+    if os.environ.get("DOOR_HOME"):
+        places[os.environ["DOOR_HOME"]] = "<data folder>"
+    hide_folders = utils.folder_masker(places)
 
     def mask(text: str) -> str:
-        for spelling, word in places:
-            text = text.replace(spelling, word)
-        return _EMAIL.sub("<email>", text)
+        return _EMAIL.sub("<email>", hide_folders(text))
 
     return mask
 

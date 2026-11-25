@@ -120,6 +120,17 @@ def _answer_of(result: CallToolResult) -> dict | None:
     return None
 
 
+def _for_phone(text: str) -> str:
+    """`text` as a phone may read it: no folder of this computer. Others get it as it is."""
+    return serve_policy.mask(text) if _runs["phone"] else text
+
+
+def _answer_for_phone(tool: str, result: CallToolResult) -> CallToolResult:
+    """A tool's answer as a phone may read it (`serve_policy.answer`): its one JSON text block, filtered."""
+    blocks = [TextContent(type="text", text=json.dumps(serve_policy.answer(tool, json.loads(b.text)), indent=2)) for b in result.content]
+    return CallToolResult(content=blocks, is_error=result.is_error)
+
+
 def _log_answer(tool: str, answer: dict | None) -> None:
     """A tool's ``{"error"}`` and the warnings it returned, to the problem log (never its arguments)."""
     if not answer or tool in _UNLOGGED_ANSWERS:
@@ -179,10 +190,10 @@ class _DoorMCP(MCPServer):
             if isinstance(exc, UnexpectedToolError):
                 # The client gets the reason (as in mcp 1.x); a plain ToolError is logged by MCPServer as one
                 # line, not as a traceback on stderr (the problem log has the crash).
-                raise ToolError(f"Error executing tool {name}: {exc.__cause__}") from exc.__cause__
+                raise ToolError(_for_phone(f"Error executing tool {name}: {exc.__cause__}")) from exc.__cause__
             raise
         _log_answer(name, _answer_of(result))
-        return result
+        return _answer_for_phone(name, result) if _runs["phone"] else result
 
     def _one_at_a_time(self, name):
         """mcp 2.x runs a sync tool in a thread; 1.x ran them on the loop, one after another. The writing tools take

@@ -3,13 +3,18 @@ machine: it gets the tools the phone app uses, with the arguments the app sends 
 file path, no prompt to Claude (`ask`), no free-text `revise`, and a daily ceiling on the tools that cost.
 
 `refusal(tool, args)` says why a call is refused, or None. `mcp_server._DoorMCP.call_tool` asks it first for
-every call when the server runs for a phone (`mcp_server.serve_phone`).
+every call when the server runs for a phone (`mcp_server.serve_phone`), and passes every answer and error through
+`answer` / `mask` (#546): the phone gets no folder of this computer, no Drive account, no computer-only setting.
 """
 
 from __future__ import annotations
 
+import os
 import threading
 import time
+from pathlib import Path
+
+from door.core import utils, workspace
 
 # The tools the phone app calls (app/src/renderer through app/src/web/bridge.ts), each with the argument
 # names the app sends. Setting up, the profile, the CV, the employers, revising and "I'm done" are done on
@@ -27,6 +32,14 @@ PHONE_TOOLS: dict[str, frozenset[str]] = {
     "prepare": frozenset({"job_id", "force"}),
     "import_posting": frozenset({"text", "url", "title", "company", "location", "force"}),
 }
+
+# The profile settings the phone shows (name, email, the search) and the ones the page it prints reads; every other
+# key (paths, the Claude folder, the Drive and discovery choices, the employer lists) stays on the computer.
+PHONE_PROFILE_KEYS = frozenset({
+    "name", "email", "location", "needs_work_permit", "role_targets", "search_keywords", "topic_terms", "remote",
+    "min_score", "exclude", "languages", "cv_accent", "cv_fonts", "max_age_days", "preferences",
+})
+_REASON_MAX = 400
 
 # The longest string a phone may send: a pasted ad (as `commands/add._READ_MAX_CHARS`), a note, a link, any other.
 _CAPS = {"text": 30000, "notes": 2000, "url": 2000}
@@ -74,3 +87,52 @@ def refusal(tool: str, args) -> str | None:
             recent.append(now)
             _calls[tool] = recent
     return None
+
+
+def _masker():
+    """A function that removes the folders of this computer from a text (the data folder sits inside home)."""
+    places = {workspace.HOME: "", workspace.REPO_ROOT: "", Path.home(): ""}
+    if os.environ.get("DOOR_HOME"):
+        places[os.environ["DOOR_HOME"]] = ""
+    return utils.folder_masker(places)
+
+
+def mask(text: str) -> str:
+    """`text` without the folders of this computer: only the folder part goes, so a file's name stays."""
+    return _masker()(text)
+
+
+def _clean(value, hide):
+    """Every string of an answer (nested) without the folders, a score's reason cut to what a card shows."""
+    if isinstance(value, str):
+        return hide(value)
+    if isinstance(value, list):
+        return [_clean(v, hide) for v in value]
+    if isinstance(value, dict):
+        out = {}
+        for key, v in value.items():
+            if key == "score_reason" and isinstance(v, str):
+                v = v[:_REASON_MAX]
+            out[key] = _clean(v, hide)
+        return out
+    return value
+
+
+def answer(tool: str, data):
+    """What a phone is sent of a tool's answer: the profile without its paths and computer-only settings, no Drive
+    account, every folder of this computer masked."""
+    if isinstance(data, dict):
+        if tool == "show_profile" and "error" not in data:
+            config = data.get("config")
+            if isinstance(config, dict):
+                config = {k: v for k, v in config.items() if k in PHONE_PROFILE_KEYS}
+            cv = data.get("cv")
+            data = {
+                "config": config,
+                "errors": data.get("errors"),
+                "cv": {k: v for k, v in cv.items() if k != "path"} if isinstance(cv, dict) else cv,
+                "discovery_unchosen": data.get("discovery_unchosen"),
+            }
+        elif tool == "status_summary" and isinstance(data.get("drive"), dict):
+            data = {**data, "drive": {**data["drive"], "account": None}}
+    return _clean(data, _masker())
