@@ -214,7 +214,7 @@ def test_init_profile_saves_over_a_config_with_an_old_path_outside_the_profile_f
 
     assert result["dropped"] == ["cv_content"]
     saved = json.loads(path.read_text())
-    assert saved["min_score"] == 0.7 and saved["cv_content"] != "/Users/x/.config/door/drive.json"
+    assert saved["min_score"] == 0.7 and saved.get("cv_content") != "/Users/x/.config/door/drive.json"
 
 
 def test_init_profile_tool_description_lists_the_supported_languages():

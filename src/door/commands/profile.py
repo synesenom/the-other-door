@@ -854,9 +854,7 @@ def _init_core(fields: dict, profile_dir: Path | None = None, example_dir: Path 
     fresh = not (profile_dir / "config.json").exists()
     base = _load_base_config(profile_dir, example_dir)
     dropped = sorted(_invalid_keys(base, profile_dir) - fields.keys())
-    example = json.loads((example_dir / "config.json").read_text(encoding="utf-8"))
-    # a dropped required key (`cv_content`) falls back to the example's value, so it is not left missing
-    base = {key: value for key, value in base.items() if key not in dropped} | {k: example[k] for k in dropped if k in Profile.model_fields and Profile.model_fields[k].is_required() and k in example}
+    base = {key: value for key, value in base.items() if key not in dropped}
     merged = {**base, **fields}
     # `exclude` is merged key by key, so setting only `companies` keeps
     # the existing `keywords`.

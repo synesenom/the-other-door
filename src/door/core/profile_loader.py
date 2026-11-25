@@ -56,7 +56,7 @@ class Profile(BaseModel):
     needs_work_permit: bool = False
     # The HTML templates: None = the code's own (`door.core.templates`); a path names the user's own.
     cv_template: Path | None = None
-    cv_content: Path
+    cv_content: Path = Path("profile/cv.md")
     cover_letter_template: Path | None = None
     # The candidate's CV photo (a JPEG or PNG, kept by `save_photo` as profile/photo.jpg); `compile` puts it in the CV
     # where the country's conventions allow one. None = no photo.
