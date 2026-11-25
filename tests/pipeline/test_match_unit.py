@@ -322,3 +322,13 @@ def test_jobs_still_in_play_are_written_as_markdown_and_closed_ones_are_not(env,
     run(env)
 
     assert sorted(laid) == ["job-app", "job-int", "job-new", "job-prep"]
+
+
+def test_an_old_application_below_min_score_is_written_as_markdown_too(env, fakes, monkeypatch):
+    laid = _layout_run(env, fakes, monkeypatch, {"job-old": 0.3}, {"job-old": "applied"})
+    path = next(env.jobs_dir.glob("postings/*/*/job-old.json"))
+    path.write_text(json.dumps({**json.loads(path.read_text()), "posted_at": "2020-01-01T00:00:00"}))
+
+    run(env)
+
+    assert laid == ["job-old"]
