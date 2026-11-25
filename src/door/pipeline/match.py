@@ -20,6 +20,7 @@ from door.commands import _common as common
 from door.commands import match as match_cmd
 from door.commands import scrape as scrape_cmd
 from door.core import cv_read, lock, profile_loader
+from door.core import progress as progress_mod
 from door.core.employers import companies as store
 from door.core.jobs import tracker as tracker_mod
 from door.core import workspace
@@ -99,6 +100,22 @@ def _skipped_block(jobs_dir: Path, config: dict, threshold: float, started: floa
     }
 
 
+def _lay_out(jobs_dir: Path, profile_dir: Path, app_tracker, threshold: float, max_age: int) -> None:
+    """A good match still in play is shown with its headings and lists: lay out, best-scored first, up to
+    `MAX_LAID_OUT_PER_RUN` of those with no layout for their description (the rest wait for the next run).
+    A failed call leaves the raw text."""
+    in_play = ("unapplied", "prepared", "applied", *tracker_mod.INTERVIEW_STATUSES)
+    todo = [m for m in common._drop_stale(select_matches(jobs_dir, app_tracker, threshold, status=in_play), max_age)
+            if ad_layout.needs_layout(m)][:match_cmd.MAX_LAID_OUT_PER_RUN]
+    if todo:
+        progress_mod.report("laying out the best ads", 0, len(todo), stage="match")
+    for done, m in enumerate(todo, 1):
+        path = find_posting_path(jobs_dir, str(m.get("id")))
+        if path is not None:
+            ad_layout.lay_out(path, profile_dir=profile_dir)
+        progress_mod.report("laying out the best ads", done, len(todo), stage="match")
+
+
 @lock.locked("match")
 def _match_step_core(
     *, jobs_dir: Path | None = None, profile_dir: Path | None = None, progress=None,
@@ -137,15 +154,10 @@ def _match_step_core(
         scored = match_cmd._match_core(jobs_dir=jobs_dir, profile_dir=profile_dir)
 
         app_tracker = tracker_mod.ApplicationTracker(jobs_dir / "applications.json")
-        matches = common._drop_stale(
-            select_matches(jobs_dir, app_tracker, threshold),
-            config.get("max_age_days", common._DEFAULT_MAX_AGE_DAYS),
-        )
+        max_age = config.get("max_age_days", common._DEFAULT_MAX_AGE_DAYS)
+        matches = common._drop_stale(select_matches(jobs_dir, app_tracker, threshold), max_age)
         _stamp_relevant(matches, profile_dir)
-        for m in matches:  # a good match is shown with its headings and lists; a failed call leaves the raw text
-            path = find_posting_path(jobs_dir, str(m.get("id")))
-            if path is not None:
-                ad_layout.lay_out(path, profile_dir=profile_dir)
+        _lay_out(jobs_dir, profile_dir, app_tracker, threshold, max_age)
         new = [m for m in matches if m.get("id") in unscored]
         block = {
             **scored, "step": "match", "passes": passes, "min_score": threshold,

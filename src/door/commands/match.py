@@ -46,6 +46,7 @@ def _recent_candidates_dirs(jobs_dir: Path, max_age_days: int | None, today=None
 
 
 MAX_SCORED_PER_RUN = 150  # 30 Haiku calls; the rest wait for the next run (#551)
+MAX_LAID_OUT_PER_RUN = 30  # ads laid out (`matching/ad_layout`) a run, best-scored first; the rest wait for the next run
 MAX_FAILURES = 20  # failures kept with their reason in the run record
 
 

@@ -73,14 +73,20 @@ def blocks(description: str, layout: dict | None) -> list[dict]:
     return out
 
 
+def needs_layout(posting: dict) -> bool:
+    """Whether the posting has text and no layout made for it."""
+    description = posting.get("description") or ""
+    return bool(lines(description)) and not _made_for(description, posting.get("layout"))
+
+
 def lay_out(path: Path, *, profile_dir: Path | None = None) -> bool:
     """Give the posting at ``path`` a layout when it has none for its description; True when it got one.
     A failed call changes nothing."""
     posting = json.loads(Path(path).read_text(encoding="utf-8"))
+    if not needs_layout(posting):
+        return False
     description = posting.get("description") or ""
     rows = lines(description)
-    if not rows or _made_for(description, posting.get("layout")):
-        return False
     text = "\n".join(f"{n}: {row}" for n, row in enumerate(rows, 1))[:_MAX_CHARS]
     try:
         answer = claude_cli.ask("ad-layout", text, feature="ad_layout", schema=_SCHEMA, timeout_s=120,

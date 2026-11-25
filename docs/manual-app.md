@@ -206,7 +206,7 @@ A source serving your city that you never turned on is listed there too, with a 
 
 You can switch screens while it runs: the button then reads "Finding jobs…" and takes you
 back (on the Finding jobs screen itself it is greyed out), and Matches says above its list which
-step is running ("Finding new jobs: scoring the new ads (12 of 40)"). Quitting *The other door* stops the run.
+step is running ("Finding new jobs: scoring and setting out the new ads (12 of 40)"). Quitting *The other door* stops the run.
 Which discovery sources run is your choice in Profile, not something asked per run.
 
 ### Stop
