@@ -126,13 +126,6 @@ def test_parse_accepts_a_valid_answer():
     assert parsed["sources"] == [{"title": "Lonstatistik", "url": "https://example.com/stats"}]
 
 
-def test_parse_keeps_a_one_line_why_and_drops_a_long_one():
-    # the why sits in an info bubble beside the range: one short line, never the model's whole reasoning
-    assert salary.parse(GOOD)["basis"] == "11 years against the 5 the ad asks for"
-    rambling = "Market data for senior data scientists in Denmark is about DKK 655k-715k a year, " * 4
-    assert salary.parse({**GOOD, "basis": rambling})["basis"] == ""
-
-
 @pytest.mark.parametrize("change", [
     {"low": 80000},                      # low above high
     {"sources": []},                     # nothing cited

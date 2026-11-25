@@ -284,7 +284,7 @@ export function Matches({
         <section className="reading-pane" key={selected}>
           {view === 'posting' && (
             <div className="pushed-bar">
-              <BackButton label="← Matches" onClick={() => setPushed(false)} title="Esc" />
+              <BackButton label="Matches" onClick={() => setPushed(false)} title="Esc" />
               {at >= 0 && ids.length > 1 && (
                 <div className="stepper" role="group" aria-label="Previous and next match">
                   <span className="small muted">

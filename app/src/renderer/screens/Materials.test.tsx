@@ -520,7 +520,7 @@ describe('Materials: the document it opens on', () => {
 
   it('names where the back link goes', async () => {
     mockDoor({ show: posting() })
-    render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} backLabel="← Applications" />)
+    render(<Materials jobId="jobindex.1" onBack={noop} onApplied={noop} backLabel="Applications" />)
     expect(await screen.findByRole('button', { name: '← Applications' })).toBeInTheDocument()
   })
 })

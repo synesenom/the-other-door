@@ -278,8 +278,9 @@ components; only the layout changes below the sidebar breakpoint (`size.sidebar-
   22 px stroke icon over an 11 px label; the active tab is ink, 600 weight and underlined. 22 px of bottom padding clears the home indicator.
 - **Pushed screens**: list → posting → materials, each with a back link naming the screen
   it returns to ("← Matches"). Pushed screens hide the tab bar and put their actions in a
-  bottom bar: one primary ink button filling the width next to one secondary button
-  ("Not for me…" | "Prepare application", "Save CV…" | "I've applied").
+  bottom bar: the text buttons side by side from the left, and the ink button beside them when it fits,
+  else on its own full-width row under them ("Not for me…" | "Prepare application", "Save CV…" | "I've applied");
+  a button never breaks its words.
 - **Matches**: one list, rows separated by hairlines, the new dot before the title; the
   score stays on the right in the display face. "Find new jobs" is a small text button
   in the header (the phone has no sidebar foot), beside "Add a job".

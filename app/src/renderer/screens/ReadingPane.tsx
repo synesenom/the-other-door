@@ -12,7 +12,7 @@ interface Props {
   onChanged: (result: SetStatusResult, title: string) => void
   /** The document Ready to send opens on (a clicked notification); else the one its first warning names, the CV when none. */
   initialDoc?: Document
-  /** Ready to send's back link: its words and where it goes; "← Posting" to the posting when left out. */
+  /** Ready to send's back link: its words and where it goes; "Posting" to the posting when left out. */
   back?: { label: string; onBack: () => void }
 }
 

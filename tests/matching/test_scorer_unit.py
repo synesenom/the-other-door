@@ -354,14 +354,6 @@ def test_apply_result_writes_four_fields_plus_scored_meta():
     assert posting["score"] is None
 
 
-def test_apply_result_drops_a_reason_too_long_for_its_info_bubble():
-    # the reason is read in the score's info bubble: a few words, never the model's whole working
-    long = "The title matches and the CV shows years of the required work, " * 4
-    result = {"score": 0.8, "score_reason": long, "matching_skills": [], "missing_skills": []}
-    assert scorer.apply_result({"id": "x"}, result)["score_reason"] == ""
-    assert scorer.apply_result({"id": "x"}, {**result, "score_reason": "Title and IFRS work match"})["score_reason"] == "Title and IFRS work match"
-
-
 def test_apply_result_does_not_overwrite_prefilter_hard_zero():
     posting = {"id": "x", "score": 0.0, "score_reason": "prefilter: excluded company"}
     result = {

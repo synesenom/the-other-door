@@ -160,7 +160,7 @@ export function Applications({
       onView={switchView}
       onChanged={changed}
       initialDoc={initialDoc}
-      back={fromBoard ? { label: '← Applications', onBack: backToBoard } : undefined}
+      back={fromBoard ? { label: 'Applications', onBack: backToBoard } : undefined}
     />
   )
   const noticeLines = notice && (
@@ -178,7 +178,7 @@ export function Applications({
       <div className="matches pushed">
         <section className="reading-pane">
           {view === 'posting' && (
-            <BackButton label="← Applications" onClick={() => setPushed(false)} />
+            <BackButton label="Applications" onClick={() => setPushed(false)} />
           )}
           {posting}
         </section>

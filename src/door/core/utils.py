@@ -17,7 +17,7 @@ STALE_PART_SECONDS = 3600
 
 
 # A model's summary read in an info bubble (a match's reason, a salary's why): its prompt asks for at most 20 words;
-# one past this, the model's whole working rather than a summary, is not shown.
+# one past this, the model's whole working rather than a summary, is not shown. Applied where it is shown (`show`).
 BUBBLE_WORDS = 25
 
 

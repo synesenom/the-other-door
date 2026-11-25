@@ -6,6 +6,7 @@ import { CheckMark, CrossMark, WarningMark } from '../renderer/screens/CheckMark
 import { Switch } from '../renderer/screens/Switch'
 import { ErrorBox } from '../renderer/screens/AppName'
 import { Hint } from '../renderer/screens/Hint'
+import { BackButton } from '../renderer/screens/BackButton'
 
 const COLOURS = [
   'ground', 'surface', 'page', 'ink', 'ink-muted', 'border',
@@ -124,6 +125,20 @@ export function Guide() {
               </span>
               <input className="onb-input" defaultValue="Copenhagen" aria-label="City" />
             </div>
+          </Row>
+          <Row label="hint-pop below">
+            <span className="hint" style={{ position: 'relative', paddingBottom: 56 }}>
+              <button type="button" className="hint-icon" aria-label="About the score">
+                <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M12 11v5.5M12 7.5v.01" />
+                </svg>
+              </button>
+              <span className="hint-pop small below" aria-hidden="true">Opens below the icon when above it would be cut off.</span>
+            </span>
+          </Row>
+          <Row label="back (BackButton)">
+            <BackButton label="Matches" onClick={() => undefined} />
           </Row>
           <Row label="field-label">
             <label className="field">

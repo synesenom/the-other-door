@@ -311,7 +311,7 @@ Prepared.
 
 Preparing also estimates the salary to expect, by itself: there is nothing to press. The posting and
 Ready to send then show a **Salary** line ("55,000–70,000 DKK a month, gross"), the pages it was
-read from as links under it, the ad's own figure when it states one, and, behind the info icon, where
+read from as links under it (each named by its site, once, the page's title on hover), the ad's own figure when it states one, and, behind the info icon, where
 your experience puts you and why. It is an estimate from public pages, not advice. It is one quick web
 search on your Claude plan, done once per job and again only when the saved one is more than 90 days
 old at the next prepare; it is skipped while the plan is close to its limit. When the search finds no
@@ -668,7 +668,7 @@ On the phone: scan the QR code (or open the address and type the code), then in 
 
 The phone is for what you do on the road: find new jobs (the run goes on while the phone is locked),
 read postings, import an ad, prepare and revise an application, and keep Applications up to date. It
-has three tabs, Matches, Applications and Settings (only the look and where your data is).
+has three tabs, Matches, Applications and Settings (only the look, and a line saying your data is on the computer, with no folder).
 Everything else is done on the computer running *The other door*: first-time setup, your profile and
 CV (Profile is not on the phone), signing in to
 Claude, connecting Google Drive and moving your data. A data

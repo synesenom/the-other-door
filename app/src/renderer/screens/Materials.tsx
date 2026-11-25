@@ -14,7 +14,7 @@ interface Props {
   jobId: string
   /** The back link: to the posting this was opened from. */
   onBack: () => void
-  /** The back link's words; "← Posting" when left out. */
+  /** The back link's words; "Posting" when left out. */
   backLabel?: string
   /** Opened from the board, where the back link no longer passes the posting: a way to it (Status, Prepare again). */
   onPosting?: () => void
@@ -63,7 +63,7 @@ const overflows = (m: MaterialsData) => (m.readability ?? []).some((p) => p.file
 
 type Notice = { text: string } | null
 
-export function Materials({ jobId, onBack, backLabel = '← Posting', onPosting, onApplied, initialDoc }: Props) {
+export function Materials({ jobId, onBack, backLabel = 'Posting', onPosting, onApplied, initialDoc }: Props) {
   const remote = useRemote()
   const narrow = useNarrow()
   const [posting, setPosting] = useState<Posting | null>(null)
