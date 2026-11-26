@@ -105,9 +105,90 @@ def test_the_real_profile_step_on_a_missing_folder(tmp_path):
     assert not (tmp_path / "nothing").exists()
 
 
+V040 = TESTS_DIR / "data_versions" / "0.4.0" / "profile"  # what v0.4.0 wrote
+
+
+def _v040_profile(home: Path, **paths) -> Path:
+    """v0.4.0's saved profile in *home*, its config's path keys set to *paths* (None: the key left out)."""
+    profile = home / "profile"
+    shutil.copytree(V040, profile)
+    config = json.loads((profile / "config.json").read_text())
+    for key, value in paths.items():
+        config.pop(key, None)
+        if value is not None:
+            config[key] = value
+    (profile / "config.json").write_text(json.dumps(config, indent=2))
+    return profile
+
+
+def _load(profile: Path) -> dict:
+    from door.core import profile_loader
+    return profile_loader.load_profile_config(profile, check_paths=True)
+
+
+def test_the_files_step_drops_a_path_outside_the_profile_and_brings_nothing_in(tmp_path, monkeypatch):
+    monkeypatch.setattr(workspace, "HOME", tmp_path)
+    monkeypatch.setattr(workspace, "PROFILE_DIR", tmp_path / "profile")
+    mine = tmp_path / "mine"
+    mine.mkdir()
+    (mine / "resume.md").write_text("# Ada, my own\n")
+    (mine / "cv.template.html").write_text("<html>my style</html>")
+    profile = _v040_profile(
+        tmp_path,
+        cv_content=str(mine / "resume.md"),           # absolute, outside
+        cv_template="mine/cv.template.html",          # relative to the data folder, outside profile/
+        photo=str(tmp_path / "gone.jpg"),             # outside and gone
+        cover_letter_template="profile/cover-letter.template.html",  # inside: left as it is
+    )
+    files_before = sorted(f.name for f in profile.iterdir())
+    with pytest.raises(Exception):
+        _load(profile)  # what main refuses before the step
+    migrations.PROFILE_STEPS[1].run(profile)
+    config = json.loads((profile / "config.json").read_text())
+    assert not {"cv_content", "cv_template", "photo"} & config.keys()
+    assert config["cover_letter_template"] == "profile/cover-letter.template.html"
+    assert sorted(f.name for f in profile.iterdir()) == files_before  # no file of this computer brought in
+    assert (mine / "resume.md").exists()  # nothing outside the folder changes
+    _load(profile)
+
+
+def test_the_files_step_turns_a_link_out_of_the_profile_into_a_copy(tmp_path, monkeypatch):
+    monkeypatch.setattr(workspace, "HOME", tmp_path)
+    monkeypatch.setattr(workspace, "PROFILE_DIR", tmp_path / "profile")
+    mine = tmp_path / "mine"
+    mine.mkdir()
+    (mine / "cv.md").write_text("# Ada, my own\n")
+    profile = _v040_profile(tmp_path, cv_content="profile/cv.md")
+    (profile / "cv.md").unlink(missing_ok=True)
+    (profile / "cv.md").symlink_to(mine / "cv.md")
+    migrations.PROFILE_STEPS[1].run(profile)
+    assert not (profile / "cv.md").is_symlink()
+    assert (profile / "cv.md").read_text() == "# Ada, my own\n"
+    assert json.loads((profile / "config.json").read_text())["cv_content"] == "profile/cv.md"
+    _load(profile)
+
+
+@pytest.mark.parametrize("text", ["not json", "[1, 2]"])
+def test_the_files_step_leaves_a_config_it_cannot_read(tmp_path, text):
+    profile = tmp_path / "profile"
+    profile.mkdir()
+    (profile / "config.json").write_text(text)
+    migrations.PROFILE_STEPS[1].run(profile)
+    assert (profile / "config.json").read_text() == text
+
+
+def test_the_files_step_leaves_v040s_own_profile_byte_for_byte(tmp_path, monkeypatch):
+    monkeypatch.setattr(workspace, "HOME", tmp_path)
+    monkeypatch.setattr(workspace, "PROFILE_DIR", tmp_path / "profile")
+    profile = _v040_profile(tmp_path)
+    before = (profile / "config.json").read_bytes()
+    migrations.PROFILE_STEPS[1].run(profile)
+    assert (profile / "config.json").read_bytes() == before
+
+
 def test_current_version_is_the_app_major_and_the_number_of_steps():
-    assert migrations.current("profile") == migrations.Version(0, 1)
-    assert len(migrations.PROFILE_STEPS) == 1
+    assert migrations.current("profile") == migrations.Version(0, 2)
+    assert len(migrations.PROFILE_STEPS) == 2
     assert migrations.current("jobs") == migrations.Version(0, len(migrations.JOBS_STEPS))
 
 
@@ -115,7 +196,7 @@ def test_the_major_is_read_from_the_app_version_at_call_time(monkeypatch):
     from door import version
 
     monkeypatch.setattr(version, "VERSION", "3.2.1")
-    assert migrations.current("profile") == migrations.Version(3, 1)
+    assert migrations.current("profile") == migrations.Version(3, len(migrations.PROFILE_STEPS))
 
 
 # ---- the runner ----------------------------------------------------------------------------------------
@@ -390,7 +471,7 @@ def test_two_processes_at_once_the_second_finds_it_done(home, tmp_path):
 def test_ensure_folder_stamps_a_folder_it_creates_or_finds_empty(tmp_path):
     profile = tmp_path / "profile"
     migrations.ensure_folder(profile, "profile")
-    assert (profile / ".data_version").read_text() == "0.1\n"
+    assert (profile / ".data_version").read_text() == f"{migrations.current('profile')}\n"
     empty = tmp_path / "jobs"
     empty.mkdir()
     (empty / ".lock").write_text("")
