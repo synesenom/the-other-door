@@ -288,3 +288,16 @@ def test_a_drafted_cv_comes_back_whole_in_a_chat(world, monkeypatch):
     monkeypatch.setattr(cv_cmd, "_draft_cv_core", lambda *a, **k: {"written": False, "markdown": text, "todos": []})
     answer = _call("draft_cv", {"sources": ["cv.pdf"]})
     assert answer["markdown"] == text
+
+
+def test_the_tailors_server_names_its_reader_and_is_not_guarded(world, monkeypatch):
+    entry = workspace.mcp_config_entry(reader="tailor")["mcpServers"]["door"]["env"]
+    assert entry[workspace.READER_ENV] == "tailor"
+    assert workspace.READER_ENV not in workspace.mcp_config_entry()["mcpServers"]["door"]["env"]  # `ask`'s and a chat's
+    monkeypatch.setenv(workspace.READER_ENV, "tailor")
+    assert _call("list_matches", {"score": 0.1})["matches"][0]["title"] == f"Data Analyst {CANARY}"
+
+
+def test_a_chats_compile_is_guarded(world):
+    answer = _call("compile", {"job_id": f"jobindex.a {CANARY}"})
+    assert "error" in answer and not _outside_marker(answer)

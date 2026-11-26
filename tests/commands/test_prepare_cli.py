@@ -180,7 +180,7 @@ def test_tailor_argv_runs_the_tailor_agent_directly(cli_env):
     assert argv[argv.index("--agents") + 1] == str(posting.parent / "agents.json")
     assert "--restricted" in argv
     assert argv[argv.index("--allowedTools") + 1] == ",".join(prepare_cmd._tailor_tools("jobindex-acme-ds", posting))
-    assert json.loads(argv[argv.index("--mcp-config") + 1]) == workspace.mcp_config_entry()
+    assert json.loads(argv[argv.index("--mcp-config") + 1]) == workspace.mcp_config_entry(reader="tailor")
 
 
 def test_tailor_prompt_names_only_the_tailor_folder_and_carries_name_and_email(cli_env):

@@ -50,6 +50,7 @@ import contextlib
 import functools
 import inspect
 import json
+import os
 import threading
 import weakref
 from pathlib import Path
@@ -132,8 +133,9 @@ def _answer_for_phone(tool: str, result: CallToolResult) -> CallToolResult:
 
 def _in_chat() -> bool:
     """Whether a model reads the answers: every client but the desktop app (which starts the server with
-    `path_scope.ENV`) and the phone (`door serve`)."""
-    return not _runs["phone"] and not path_scope.from_app()
+    `path_scope.ENV`), the phone (`door serve`) and the tailor (`workspace.READER_ENV`: it reads the posting file
+    itself, and the cut answers of its own tools would only hurt its fixing)."""
+    return not _runs["phone"] and not path_scope.from_app() and not os.environ.get(workspace.READER_ENV)
 
 
 def _answer_for_chat(tool: str, result: CallToolResult) -> CallToolResult:

@@ -38,11 +38,17 @@ def config_dir() -> Path:
     return (Path(xdg) if xdg else Path.home() / ".config") / "door"
 
 
-def mcp_config_entry() -> dict:
-    """The `.mcp.json` content that starts the door server with the interpreter running now."""
+READER_ENV = "DOOR_READER"  # names who reads a server's answers when it is not a chat: the tailor, which reads the posting itself
+
+
+def mcp_config_entry(reader: str | None = None) -> dict:
+    """The `.mcp.json` content that starts the door server with the interpreter running now (`reader`: the
+    server's `READER_ENV`, for the tailor's own)."""
     env = {"PYTHONPATH": str(REPO_ROOT / "src"), "DOOR_HOME": str(HOME), "PYTHONUTF8": "1"}  # never the code page (#132)
     if os.environ.get("DOOR_BIN"):  # the packaged app's bundled Chromium, for the tailor's compile
         env["DOOR_BIN"] = os.environ["DOOR_BIN"]
+    if reader:
+        env[READER_ENV] = reader
     return {"mcpServers": {"door": {
         "command": sys.executable,
         "args": ["-m", "door.mcp_server"],
