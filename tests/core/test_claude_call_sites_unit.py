@@ -34,7 +34,7 @@ def _stdout(result: str) -> str:
 
 def _scored(ids):
     return json.dumps({"results": [{"job_id": i, "score": 0.5, "score_reason": "r", "matching_skills": [],
-                                    "missing_skills": [], "flags": [], "language_requirement": "none"} for i in ids]})
+                                    "missing_skills": [], "flags": [], "model_addressed": [], "language_requirement": "none"} for i in ids]})
 
 
 def _capture(calls, stdout):

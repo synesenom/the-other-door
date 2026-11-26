@@ -68,7 +68,7 @@ def test_the_scorer_system_prompt_is_the_text_the_code_assembled_before():
               "languages": ["en", "da"], "min_score": 0.6, "exclude": {"companies": ["Acme"], "keywords": ["intern"]},
               "needs_work_permit": True, "preferences": "small teams {cv} and {profile}"}
     text = scorer.build_system_prompt(config, "# Jane Doe\n\n## Skills\n\nPython, {rubric} SQL\n\n", scorer.load_rubric_md())
-    assert hashlib.sha256(text.encode("utf-8")).hexdigest() == "7f9750439830700b46fd79b192c380601e51146d500822b468a44321193aaa11"
+    assert hashlib.sha256(text.encode("utf-8")).hexdigest() == "97f177cba1eb46d2a4d71326464152f4f3b67299a6b82bb66bd542b832935fec"
 
 
 def test_the_matcher_file_tells_its_model_and_has_no_tools():
