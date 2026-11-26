@@ -106,6 +106,46 @@ describe('PhoneSetup', () => {
   })
 
 
+  it('the address is asked for as the dialog opens: Continue waits for it, saying so', async () => {
+    let ready: (v: unknown) => void = () => undefined
+    const { call } = mockDoor({
+      phone_start: () => new Promise((r) => (ready = r)),
+      pair_phone: () => ({ device: 'My phone', qr_svg: SVG, expires_at: future() }),
+      phone_status: { ...serving, devices: [] },
+    })
+    render(<PhoneSetup onClose={vi.fn()} pollMs={5} />)
+    expect(call.mock.calls.filter((c) => c[0] === 'phone_start')).toEqual([['phone_start', {}]])
+    await userEvent.click(screen.getByRole('button', { name: 'Continue' }))
+    expect(await screen.findByText(/Getting your phone's address/)).toBeInTheDocument()
+    ready({ ...serving, devices: [] })
+    expect(await screen.findByRole('img', { name: 'QR code that pairs your phone' })).toBeInTheDocument()
+    expect(call.mock.calls.filter((c) => c[0] === 'phone_start')).toHaveLength(1)
+  })
+
+  it('Cancel before Continue stops what opening started', async () => {
+    const onClose = vi.fn()
+    const { call } = mockDoor({ phone_start: { ...serving, devices: [] }, phone_stop: { stopped: true } })
+    render(<PhoneSetup onClose={onClose} pollMs={5} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    await vi.waitFor(() => expect(call).toHaveBeenCalledWith('phone_stop', {}))
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  it('a start that failed is tried again by Continue', async () => {
+    let n = 0
+    const { call } = mockDoor({
+      phone_start: () => (n++ === 0 ? { error: 'the tunnel could not connect to Cloudflare' } : { ...serving, devices: [] }),
+      pair_phone: () => ({ device: 'My phone', qr_svg: SVG, expires_at: future() }),
+      phone_status: { ...serving, devices: [] },
+    })
+    render(<PhoneSetup onClose={vi.fn()} pollMs={5} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Continue' }))
+    expect(await screen.findByText('the tunnel could not connect to Cloudflare')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Continue' }))
+    expect(await screen.findByRole('img', { name: 'QR code that pairs your phone' })).toBeInTheDocument()
+    expect(call.mock.calls.filter((c) => c[0] === 'phone_start')).toHaveLength(2)
+  })
+
   it('an expired code says so and makes a new one on a click', async () => {
     let n = 0
     const { call } = mockDoor({
