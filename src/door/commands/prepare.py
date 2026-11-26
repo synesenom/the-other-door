@@ -78,35 +78,28 @@ def _tailor_templates(profile_dir: Path) -> dict[str, Path]:
     return {key: templates.resolve(key, config, profile_dir) for key in templates.FILES}
 
 
-def _tailor_read_files(profile_dir: Path) -> list[Path]:
-    """The two templates, when they live outside the profile folder (the code's do). The CV never does: `Profile` refuses it."""
-    profile = profile_dir.absolute()
-    return [f.absolute() for f in _tailor_templates(profile_dir).values() if not f.absolute().is_relative_to(profile)]
+def _stage_tailor_inputs(tailor_dir: Path, profile_dir: Path) -> None:
+    """Copy what the tailor reads of the profile into its own folder: `cv.md`, the story bank and the two templates.
+    It sees nothing else of the profile (no config, no employer list): an ad that steered it could copy only these."""
+    for name in ("cv.md", "story_bank.md"):
+        if (profile_dir / name).is_file():
+            utils.write_atomic(tailor_dir / name, (profile_dir / name).read_bytes())
+    for key, src in _tailor_templates(profile_dir).items():
+        utils.write_atomic(tailor_dir / templates.FILES[key], src.read_bytes())
 
 
 def _tailor_tools(job_id: str, posting_path: Path) -> list[str]:
-    """`_TAILOR_ALLOWED_TOOLS` plus the path rules: Read the profile, the posting and the
-    job's own output folder (where `compile` puts the page images); write only there."""
-    profile_dir = workspace.PROFILE_DIR
+    """`_TAILOR_ALLOWED_TOOLS` plus the path rules: Read the tailor's own folder (the posting copy and what
+    `_stage_tailor_inputs` copied) and the job's output folder (where `compile` puts the page images); write only
+    the output folder."""
     output_dir = (workspace.JOBS_DIR / "output" / job_id).absolute()
     reads = [
-        f"Read({_rule_path(profile_dir.absolute())}/**)",
-        f"Read({_rule_path(Path(posting_path).absolute())})",
+        f"Read({_rule_path(Path(posting_path).parent.absolute())}/**)",
         f"Read({_rule_path(output_dir)}/**)",
-        *(f"Read({_rule_path(f)})" for f in _tailor_read_files(profile_dir)),
     ]
     # Claude Code never matches `Write(path)` rules; `Edit(path)` covers every file-writing tool.
     writes = [f"Edit({_rule_path(output_dir)}/**)"]
     return [*_TAILOR_ALLOWED_TOOLS, *reads, *writes]
-
-
-def _tailor_folders(posting_path: Path) -> list[Path]:
-    """The folders the tailor session works in besides its output folder (its working
-    directory): the profile, the posting's own folder, and the folder of a CV or template
-    kept outside the profile."""
-    folders = [workspace.PROFILE_DIR, Path(posting_path).parent]
-    folders += [f.parent for f in _tailor_read_files(workspace.PROFILE_DIR)]
-    return list(dict.fromkeys(Path(f).absolute() for f in folders))
 
 
 def _cv_conventions_text(posting_path: Path) -> str:
@@ -138,19 +131,24 @@ def _tailor_args(job_id: str, posting_path: Path, feedback: str | None = None) -
 
     The session runs in the job's output folder (`_run_tailor`), not the checkout, in
     `--restricted` mode: no tool that runs commands, file tools confined to the working
-    directories (that folder and `_tailor_folders`), no project or user settings. The
+    directories (that folder and the tailor's own, `jobs/.tailor/<job_id>/`), no project or user settings. The
     tailor and reviewer agents come from `--agents` (the `src/door/prompts/` files), the
     door server from `--mcp-config` alone. `feedback` (the retry after the ATS read-back) adds the
     problems the PDFs read back with: the files exist, keep them and fix only these.
     """
     output_dir = workspace.JOBS_DIR / "output" / job_id
-    tpl = _tailor_templates(workspace.PROFILE_DIR)
+    tailor_dir = Path(posting_path).parent
+    try:
+        config = profile_loader.load_config_or_defaults(workspace.PROFILE_DIR)
+    except Exception:  # noqa: BLE001 - an invalid config fails the run on its own (`_prepare_core` loads it first)
+        config = {}
     fields = {"output_dir": str(output_dir)}
     prompt = claude_cli.prompt(
         "tailor-request", **fields, job_id=repr(job_id), posting=str(posting_path),
-        config=str(workspace.PROFILE_DIR / "config.json"), profile_dir=str(workspace.PROFILE_DIR),
-        story_bank=str(workspace.PROFILE_DIR / "story_bank.md"), cv_template=str(tpl["cv_template"]),
-        cover_letter_template=str(tpl["cover_letter_template"]), conventions=_cv_conventions_text(posting_path))
+        candidate_name=config.get("name", ""), candidate_email=config.get("email", ""),
+        cv=str(tailor_dir / "cv.md"), story_bank=str(tailor_dir / "story_bank.md"),
+        cv_template=str(tailor_dir / templates.FILES["cv_template"]),
+        cover_letter_template=str(tailor_dir / templates.FILES["cover_letter_template"]), conventions=_cv_conventions_text(posting_path))
     if feedback:
         prompt += "\n\n" + claude_cli.prompt("tailor-retry", **fields, feedback=feedback)
     argv = [
@@ -162,8 +160,7 @@ def _tailor_args(job_id: str, posting_path: Path, feedback: str | None = None) -
         "--mcp-config", json.dumps(workspace.mcp_config_entry()),
         *claude_cli.STREAM_ARGS,  # the stream carries the run's usage and the plan's limits (#575)
     ]
-    for folder in _tailor_folders(posting_path):
-        argv += ["--add-dir", str(folder)]
+    argv += ["--add-dir", str(tailor_dir.absolute())]
     return argv
 
 
@@ -376,13 +373,14 @@ def _prepare_core(
 
     label = common._job_label(job_id, jobs_dir)
     progress_mod.report(f"tailoring {label}", stage="prepare")
-    tailor_dir = jobs_dir / ".tailor" / job_id  # the posting copy and agents file; the tailor sees only this of jobs/
+    tailor_dir = jobs_dir / ".tailor" / job_id  # the posting copy, agents file and copies of cv.md, the story bank and the templates: all the tailor sees
     model_copy = tailor_dir / "posting.json"  # no excerpts of removed text: the tailor reads this
     readback: list[dict] | None = None
     retry_failed = False
     try:
         with progress_mod.heartbeat(f"tailoring {label}", stage="prepare", interval_s=_HEARTBEAT_INTERVAL_S):
             utils.write_json_atomic(model_copy, integrity.for_model(json.loads(posting_path.read_text(encoding="utf-8"))))
+            _stage_tailor_inputs(tailor_dir, home)
             _run_tailor(job_id, model_copy, timeout_s=timeout_s)
             _step("tailored the CV and cover letter", "ok")
             if not _tailor_outputs_missing(output_dir):

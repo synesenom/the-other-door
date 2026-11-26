@@ -183,15 +183,47 @@ def test_tailor_argv_runs_the_tailor_agent_directly(cli_env):
     assert json.loads(argv[argv.index("--mcp-config") + 1]) == workspace.mcp_config_entry()
 
 
-def test_tailor_prompt_names_absolute_data_paths(cli_env):
+def test_tailor_prompt_names_only_the_tailor_folder_and_carries_name_and_email(cli_env):
     from pathlib import Path
 
-    argv = prepare_cmd._tailor_args("job-1", Path("/x/job-1.json"))
+    posting = Path("/x/.tailor/job-1/posting.json")
+    argv = prepare_cmd._tailor_args("job-1", posting)
     prompt = argv[0]
-    assert str(workspace.PROFILE_DIR / "config.json") in prompt
     assert str(workspace.JOBS_DIR / "output" / "job-1") in prompt
-    assert str(workspace.PROFILE_DIR / "story_bank.md") in prompt
-    assert " profile/config.json" not in prompt and " jobs/output/" not in prompt
+    assert "/x/.tailor/job-1/cv.md" in prompt and "/x/.tailor/job-1/story_bank.md" in prompt
+    assert "/x/.tailor/job-1/cv.template.html" in prompt and "/x/.tailor/job-1/cover-letter.template.html" in prompt
+    assert str(workspace.PROFILE_DIR) not in prompt
+    assert "Jane Doe" in prompt and "jane@example.com" in prompt
+
+
+def test_tailor_argv_gives_no_access_to_the_profile_folder(cli_env):
+    from pathlib import Path
+
+    posting = Path("/x/.tailor/job-1/posting.json")
+    argv = prepare_cmd._tailor_args("job-1", posting)
+    profile = workspace.PROFILE_DIR.as_posix()
+    rules = argv[argv.index("--allowedTools") + 1].split(",")
+    assert not [r for r in rules if r.startswith("Read(") and profile in r]
+    assert [argv[i + 1] for i, a in enumerate(argv) if a == "--add-dir"] == ["/x/.tailor/job-1"]
+    assert not [a for a in argv if profile in a]
+
+
+def test_prepare_stages_exactly_the_tailor_inputs_and_removes_them(cli_env, monkeypatch):
+    write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc", score=0.9)
+    (cli_env.profile_dir / "story_bank.md").write_text("## A story\n")
+    (cli_env.profile_dir / "cv.md").write_text("# Jane Doe\n", encoding="utf-8")
+    seen = {}
+
+    def _run(job_id, posting_path, **kw):
+        seen["files"] = sorted(p.name for p in posting_path.parent.iterdir())
+        seen["cv"] = (posting_path.parent / "cv.md").read_text(encoding="utf-8")
+        return fake_tailor(cli_env.jobs_dir)(job_id, posting_path)
+
+    monkeypatch.setattr(prepare_cmd, "_run_tailor", _run)
+    prepare_cmd._prepare_core("job-abc", jobs_dir=cli_env.jobs_dir)
+    assert seen["files"] == ["cover-letter.template.html", "cv.md", "cv.template.html", "posting.json", "story_bank.md"]
+    assert seen["cv"] == (cli_env.profile_dir / "cv.md").read_text(encoding="utf-8")
+    assert not (cli_env.jobs_dir / ".tailor" / "job-abc").exists()
 
 
 def test_tailor_mcp_config_names_the_server_absolutely(cli_env):
@@ -763,35 +795,34 @@ def test_tailor_args_scope_write_to_the_jobs_output_folder(cli_env):
     assert writes == [_rule("Edit", out)]   # Claude Code never matches a Write(path) rule
 
 
-def test_tailor_args_scope_read_to_the_profile_the_posting_and_the_output(cli_env):
-    posting = Path("/x/job-1.json")
+def test_tailor_args_scope_read_to_its_own_folder_and_the_output(cli_env):
+    posting = Path("/x/.tailor/job-1/posting.json")
     allowed = _allowed(prepare_cmd._tailor_args("job-1", posting))
     reads = {t for t in allowed if t.startswith("Read(")}
-    assert _rule("Read", cli_env.profile_dir) in reads
-    assert _rule("Read", posting, glob=False) in reads
-    assert _rule("Read", cli_env.jobs_dir / "output" / "job-1") in reads
-    assert _rule("Read", cli_env.jobs_dir) not in reads   # not the other postings, not the ledgers
+    assert reads == {_rule("Read", posting.parent), _rule("Read", cli_env.jobs_dir / "output" / "job-1")}
 
 
-def test_tailor_args_read_the_codes_templates_when_the_profile_has_none(cli_env):
-    example = workspace.PROFILE_EXAMPLE_DIR
-    argv = prepare_cmd._tailor_args("job-1", Path("/x/job-1.json"))
-    reads = [t for t in _allowed(argv) if t.startswith("Read(")]
-    for name in ("cv.template.html", "cover-letter.template.html"):
-        assert _rule("Read", example / name, glob=False) in reads
-        assert str(example / name) in argv[0]  # the prompt names the file to read
-    added = [argv[i + 1] for i, a in enumerate(argv) if a == "--add-dir"]
-    assert str(example) in added
-
-
-def test_tailor_args_prefer_a_template_the_user_kept_in_the_profile(cli_env):
+def test_tailor_prompt_names_the_staged_template_even_when_the_user_kept_their_own(cli_env):
     (cli_env.profile_dir / "cv.template.html").write_text("my styling")
-    argv = prepare_cmd._tailor_args("job-1", Path("/x/job-1.json"))
-    assert str(cli_env.profile_dir / "cv.template.html") in argv[0]
-    assert str(workspace.PROFILE_EXAMPLE_DIR / "cv.template.html") not in argv[0]
-    reads = [t for t in _allowed(argv) if t.startswith("Read(")]
-    assert _rule("Read", workspace.PROFILE_EXAMPLE_DIR / "cv.template.html", glob=False) not in reads
-    assert _rule("Read", workspace.PROFILE_EXAMPLE_DIR / "cover-letter.template.html", glob=False) in reads
+    prompt = prepare_cmd._tailor_args("job-1", Path("/x/.tailor/job-1/posting.json"))[0]
+    assert "/x/.tailor/job-1/cv.template.html" in prompt
+    assert str(cli_env.profile_dir) not in prompt and str(workspace.PROFILE_EXAMPLE_DIR) not in prompt
+
+
+def test_prepare_stages_the_users_own_template_not_the_codes(cli_env, monkeypatch):
+    write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc", score=0.9)
+    (cli_env.profile_dir / "cv.template.html").write_text("my styling")
+    seen = {}
+
+    def _run(job_id, posting_path, **kw):
+        seen["cv"] = (posting_path.parent / "cv.template.html").read_text()
+        seen["letter"] = (posting_path.parent / "cover-letter.template.html").read_text()
+        return fake_tailor(cli_env.jobs_dir)(job_id, posting_path)
+
+    monkeypatch.setattr(prepare_cmd, "_run_tailor", _run)
+    prepare_cmd._prepare_core("job-abc", jobs_dir=cli_env.jobs_dir)
+    example = workspace.PROFILE_EXAMPLE_DIR / "cover-letter.template.html"
+    assert seen["cv"] == "my styling" and seen["letter"] == example.read_text()
 
 
 def test_tailor_rule_paths_are_absolute_in_claude_codes_form():
@@ -799,14 +830,6 @@ def test_tailor_rule_paths_are_absolute_in_claude_codes_form():
     from pathlib import PureWindowsPath
 
     assert prepare_cmd._rule_path(PureWindowsPath("C:/Users/me/jobs")) == "//c/Users/me/jobs"
-
-
-def test_tailor_args_add_only_the_profile_the_posting_folder_and_the_codes_templates(cli_env, tmp_path, monkeypatch):
-    monkeypatch.setattr(workspace, "HOME", tmp_path / "home")
-    posting = cli_env.jobs_dir / ".tailor" / "job-1" / "posting.json"
-    argv = prepare_cmd._tailor_args("job-1", posting)
-    added = [argv[i + 1] for i, a in enumerate(argv) if a == "--add-dir"]
-    assert added == [str(cli_env.profile_dir), str(posting.parent), str(workspace.PROFILE_EXAMPLE_DIR)]
 
 
 def test_an_injected_ad_gets_no_command_and_no_file_outside_its_scope(cli_env, monkeypatch):
