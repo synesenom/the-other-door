@@ -128,6 +128,19 @@ def test_a_name_public_dns_cannot_confirm_is_given_after_a_bounded_wait(tmp_path
     assert len(asked) * (phone.PUBLISHED_TIMEOUT + 0.5) <= 120
 
 
+def test_the_pairing_lives_as_long_as_the_tunnel(tmp_path):
+    # a quick tunnel's address dies with it, and the phone's pairing is kept on that address
+    w = World(tmp_path)
+    phone.start(tmp_path, **deps(w, tmp_path))
+    pairing.redeem(tmp_path, pairing.new_code(tmp_path, "My phone", strong=True))
+    phone.stop(tmp_path, **deps(w, tmp_path))
+    assert pairing.devices(tmp_path) == []
+    # a phone left paired by a tunnel that died with the computer is forgotten by the next start
+    pairing.redeem(tmp_path, pairing.new_code(tmp_path, "My phone", strong=True))
+    phone.start(tmp_path, **deps(w, tmp_path))
+    assert pairing.devices(tmp_path) == []
+
+
 def test_stop_ends_everything_it_started(tmp_path):
     w = World(tmp_path)
     phone.start(tmp_path, **deps(w, tmp_path, platform="darwin"))

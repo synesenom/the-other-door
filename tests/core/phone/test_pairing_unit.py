@@ -65,9 +65,23 @@ def test_a_second_phone_is_refused_until_the_first_is_unpaired(tmp_path):
     assert pairing.new_code(tmp_path, "iPad", now=NOW)
 
 
+def test_an_older_code_of_the_same_name_does_not_replace_the_paired_phone(tmp_path):
+    qr = pairing.new_code(tmp_path, "My phone", strong=True)
+    typed = pairing.new_code(tmp_path, "My phone")
+    _, token = pairing.redeem(tmp_path, qr)
+    assert pairing.redeem(tmp_path, typed) is None
+    assert pairing.verify(tmp_path, token) == "My phone"
+
+
+def test_a_qr_code_cancels_every_older_code(tmp_path):
+    typed = pairing.new_code(tmp_path, "Pixel", now=NOW)
+    pairing.new_code(tmp_path, "Tablet", now=NOW, strong=True)
+    assert pairing.redeem(tmp_path, typed, now=NOW) is None
+
+
 def test_two_codes_made_before_either_is_used_pair_only_one_phone(tmp_path):
-    first = pairing.new_code(tmp_path, "Pixel", now=NOW)
-    second = pairing.new_code(tmp_path, "Tablet", now=NOW, strong=True)
+    first = pairing.new_code(tmp_path, "Pixel", now=NOW, strong=True)
+    second = pairing.new_code(tmp_path, "Tablet", now=NOW)
     assert pairing.redeem(tmp_path, first, now=NOW)
     assert pairing.redeem(tmp_path, second, now=NOW) is None
     assert [d["device"] for d in pairing.devices(tmp_path)] == ["Pixel"]

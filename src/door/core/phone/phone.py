@@ -201,6 +201,7 @@ def _start(home: Path, **deps) -> dict:
         return current
     if _read_run(home):
         stop(home, **deps)
+    pairing.forget(home)  # a phone paired with a tunnel that died with the computer: its address is gone
 
     port = d.get("port") or _free_port()
     logs = home / "logs"
@@ -260,6 +261,7 @@ def _stop(home: Path, **deps) -> dict:
         return {"stopped": False}
     _stop_pids(run, d["kill"])
     _run_file(home).unlink(missing_ok=True)
+    pairing.forget(home)  # the tunnel's address dies with it, and the phone's pairing with the address
     return {"stopped": True}
 
 

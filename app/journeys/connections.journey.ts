@@ -362,7 +362,7 @@ test.describe('Your phone', () => {
     phoneScans(world)
     await expect(setup.getByRole('heading', { name: 'Add The other door to your home screen' })).toBeVisible()
     await expect(setup).toContainText('Your phone is paired. Once it opens The other door, it offers to install it as an app.')
-    await expect(setup).toContainText('When this computer restarts, disconnect your phone here, set it up again and scan the new code.')
+    await expect(setup).toContainText('When this computer restarts, set your phone up again here and scan the new code.')
     await button(setup, 'Done').click()
     await expect(setup).toHaveCount(0)
     await expect(row).toContainText('Connected until this computer restarts')
@@ -371,7 +371,7 @@ test.describe('Your phone', () => {
     await expect(button(row, 'Disconnect…')).toBeVisible()
   })
 
-  test('closed before the scan: Pair your phone brings the code back; Disconnect asks, then unpairs and stops', async ({ page, world }) => {
+  test('closed before the scan: Pair your phone brings the code back; Disconnect asks, then stops', async ({ page, world }) => {
     await openSettings(page)
     const row = phoneRow(page)
     await button(row, 'Set up your phone…').click()
@@ -392,16 +392,10 @@ test.describe('Your phone', () => {
     await button(row, 'Disconnect…').click()
     await button(ask, 'Cancel').click()
     await expect(ask).toHaveCount(0)
-    world.faults({ tools: { unpair_phone: { error: "no paired phone is called 'My phone'", once: true } } })
-    await button(row, 'Disconnect…').click()
-    await button(ask, 'Disconnect').click()
-    await expect(row.getByRole('alert')).toHaveText("no paired phone is called 'My phone'")
-    expect(world.toolCalls('phone_stop')).toHaveLength(0)
     await button(row, 'Disconnect…').click()
     await button(ask, 'Disconnect').click()
     await expect(button(row, 'Set up your phone…')).toBeVisible()
-    await expect(row.getByRole('alert')).toHaveCount(0)
-    expect(world.toolCalls('unpair_phone').map((c) => c.args)).toEqual([{ device: 'My phone' }, { device: 'My phone' }])
+    expect(world.toolCalls('unpair_phone')).toHaveLength(0) // the pairing ends with the tunnel
     expect(world.toolCalls('phone_stop')).toHaveLength(1)
   })
 

@@ -210,7 +210,7 @@ No Sync now: `sync_data {}` runs by itself on connecting, once when the app open
 |---|---|
 | `status===null` and no error | status "Checking your phone…" (no buttons) | — not tested: phone_status answers before the row is looked at
 | `phone_status` threw | alert with the error text, no state line, **no buttons at all** (the button needs `status!==null`). Dead end until Settings remounts. | — unit: `app/src/renderer/screens/PhoneSetup.test.tsx`; ✓ phone_status failing still leaves a way to try again in the row
-| not running, `devices.length>0` | "Disconnected when this computer restarted. Disconnect it here, then set it up again and scan a new code." + **"Disconnect…"** (one phone: it is unpaired before another is set up) | — unit: `app/src/renderer/screens/PhoneSetup.test.tsx`
+| not running, `devices.length>0` | as not set up: **"Set up your phone…"** (starting forgets the old pairing) | — unit: `app/src/renderer/screens/PhoneSetup.test.tsx`
 | not running, no devices | no state line, only **"Set up your phone"** | — unit: `app/src/renderer/screens/PhoneSetup.test.tsx`
 | running | One muted line, no address and no word of serving: "Connected until this computer restarts" when a phone is paired, "Not paired yet." when none is. Buttons **"Disconnect"** (quiet), and **"Pair your phone"** when none is paired. No device names: the app pairs one phone, always as "My phone". Fine mark only when running and a phone is paired. | — ✓ Continue, the QR code at once, the phone scans it, Done: the row says it is paired
 
@@ -219,11 +219,10 @@ No Sync now: `sync_data {}` runs by itself on connecting, once when the app open
 
 Actions:
 - **Set up your phone** → PhoneSetup dialog starting at step `how`. **Pair your phone** → starting at step `pair` (§7). — unit: `app/src/renderer/screens/PhoneSetup.test.tsx`; ✓ Continue, the QR code at once, the phone scans it, Done: the row says it is paired
-- **Disconnect** → a dialog "Disconnect your phone?" (Cancel / Disconnect); Disconnect runs `unpair_phone {device}` for each paired device (one, or an older second), then `phone_stop {}`, then `phone_status`. A failed unpair stops there: its error shows and nothing is stopped. — ✓ closed before the scan: Pair your phone brings the code back; Disconnect asks, then unpairs and stops
-  - Error: "no paired phone is called '<d>'" (alert; Python repr quotes). — ✓ closed before the scan: Pair your phone brings the code back; Disconnect asks, then unpairs and stops
+- **Disconnect** → a dialog "Disconnect your phone?" (Cancel / Disconnect); Disconnect runs `phone_stop {}` (the pairing ends with the tunnel), then `phone_status`. — ✓ closed before the scan: Pair your phone brings the code back; Disconnect asks, then stops
   - Buttons are disabled while busy. — not tested: the pretend server answers at once
-- `phone_stop {}` (the end of Disconnect) That kills the tunnel, caffeinate and serve, and deletes `run.json`. Returns `{stopped}`, which is ignored. — ✓ closed before the scan: Pair your phone brings the code back; Disconnect asks, then unpairs and stops; unit: `app/src/renderer/screens/PhoneSetup.test.tsx`
-- When the dialog closes, `phone_status` is read again. — ✓ closed before the scan: Pair your phone brings the code back; Disconnect asks, then unpairs and stops
+- `phone_stop {}` (the end of Disconnect) That kills the tunnel, caffeinate and serve, deletes `run.json` and forgets the paired phone and its codes. Returns `{stopped}`, which is ignored. — ✓ closed before the scan: Pair your phone brings the code back; Disconnect asks, then stops; unit: `app/src/renderer/screens/PhoneSetup.test.tsx`
+- When the dialog closes, `phone_status` is read again. — ✓ closed before the scan: Pair your phone brings the code back; Disconnect asks, then stops
 
 ---
 
@@ -412,7 +411,7 @@ Focus: the Dialog focuses its first control on open. After a step change, if foc
 ### Step `home`
 - h3 "Add The other door to your home screen". — ✓ Continue, the QR code at once, the phone scans it, Done: the row says it is paired
 - "Your phone is paired. Once it opens The other door, it offers to install it as an app." — ✓ Continue, the QR code at once, the phone scans it, Done: the row says it is paired
-- The muted line "When this computer restarts, disconnect your phone here, set it up again and scan the new code. The address changes with it, so add it again to your home screen and remove the old one." — ✓ Continue, the QR code at once, the phone scans it, Done: the row says it is paired
+- The muted line "When this computer restarts, set your phone up again here and scan the new code. The address changes with it, so add it again to your home screen and remove the old one." — ✓ Continue, the QR code at once, the phone scans it, Done: the row says it is paired
 - **"Done"** (primary) closes the dialog, and the row re-reads `phone_status`. It now shows `Serving at …` and **"Remove phone"**. — ✓ Continue, the QR code at once, the phone scans it, Done: the row says it is paired
 
 ---

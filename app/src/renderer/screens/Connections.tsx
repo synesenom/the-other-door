@@ -323,14 +323,10 @@ function ServedPhone() {
   useEffect(() => {
     void load()
   }, [])
-  // Disconnect: the phone's pairing goes (every one this computer keeps: one, or an old second from before),
-  // then this computer stops serving it
+  // Disconnect: this computer stops serving the phone, and its pairing ends with the tunnel's address
   const disconnect = () => {
     setConfirming(false)
-    return run(async () => {
-      for (const d of status?.devices ?? []) await call('unpair_phone', { device: d.device })
-      await call('phone_stop', {})
-    })
+    return run(() => call('phone_stop', {}))
   }
   const run = async (work: () => Promise<unknown>) => {
     setBusy(true)
@@ -348,7 +344,6 @@ function ServedPhone() {
   const paired = (status?.devices.length ?? 0) > 0
   let state: ReactNode
   if (status === null && !error) state = <Spinner message="Checking your phone…" />
-  else if (!running && paired) state = <p className="small muted">Disconnected when this computer restarted. Disconnect it here, then set it up again and scan a new code.</p>
   // not set up: the name and Set up your phone say it all, and the dialog tells what it is
   else if (!running) state = null
   else if (!paired) state = <p className="small muted">Not paired yet.</p>
@@ -364,10 +359,6 @@ function ServedPhone() {
         </button>
       )}
     </>
-  ) : paired ? (
-    <button type="button" className="secondary" disabled={busy} onClick={() => setConfirming(true)}>
-      Disconnect…
-    </button>
   ) : status !== null ? (
     <button type="button" className="secondary" onClick={() => setSetup('how')}>
       Set up your phone…

@@ -123,7 +123,6 @@ describe('createWebDoor', () => {
     const { door } = setup(() => ({}))
     expect(await door.invoke('info')).toEqual({ environment: 'production', remote: true })
     expect(await door.invoke('pick-cv-files')).toEqual({ files: [], refused: [] })
-    expect(await door.invoke('export-data')).toEqual({ ok: false, error: expect.stringMatching(/computer running The other door/) })
   })
 
   it('a target opened before the app listens is held until it does', async () => {
@@ -171,6 +170,6 @@ describe('the phone refuses every action that is not on its list', () => {
   it('rejects an action it does not know, and answers a desktop-only one with where to do it', async () => {
     const { door } = setup(() => ({}))
     await expect((door as { invoke(a: string): Promise<unknown> }).invoke('no-such-action')).rejects.toThrow(/not available on the phone/)
-    expect(await door.invoke('pick-archive')).toEqual({ error: expect.stringMatching(/computer running The other door/) })
+    expect(await door.invoke('pick-photo')).toEqual({ error: expect.stringMatching(/computer running The other door/) })
   })
 })

@@ -30,13 +30,11 @@ describe('Connections: Your phone', () => {
     expect(screen.getByRole('dialog', { name: 'Set up your phone' })).toBeInTheDocument()
   })
 
-  it('phones paired but nothing serving, as after a restart: says what to do', async () => {
+  it('a phone left paired, nothing serving (after a restart): set it up again (starting forgets the old pairing)', async () => {
     connections({ phone_status: { ...idle, devices: [{ device: 'Pixel', paired_at: 'x', last_seen: null }] } })
     const row = within(await screen.findByRole('listitem', { name: 'Your phone' }))
-    expect(await row.findByText(/scan a new code/)).toBeInTheDocument()
-    // one phone is allowed: the old pairing goes first, then it is set up again
-    expect(row.getByRole('button', { name: 'Disconnect…' })).toBeInTheDocument()
-    expect(row.queryByRole('button', { name: 'Set up your phone…' })).toBeNull()
+    expect(await row.findByRole('button', { name: 'Set up your phone…' })).toBeInTheDocument()
+    expect(row.queryByRole('button', { name: 'Disconnect…' })).toBeNull()
   })
 
   it('the state cannot be read: says why, and Check again reads it again', async () => {
@@ -56,8 +54,8 @@ describe('Connections: Your phone', () => {
     expect(call.mock.calls.filter((c) => c[0] === 'phone_status')).toHaveLength(2)
   })
 
-  it('a paired phone: Connected, no names or addresses, and one Disconnect that asks, then unpairs and stops', async () => {
-    const { call } = connections({ phone_status: serving, unpair_phone: { removed: 'Pixel' }, phone_stop: { stopped: true } })
+  it('a paired phone: Connected, no names or addresses, and one Disconnect that asks, then stops (the pairing ends with it)', async () => {
+    const { call } = connections({ phone_status: serving, phone_stop: { stopped: true } })
     const row = within(await screen.findByRole('listitem', { name: 'Your phone' }))
     expect(await row.findByText('Connected until this computer restarts')).toBeInTheDocument()
     expect(row.queryByText(/trycloudflare|Pixel|[Ss]erving/)).toBeNull()
@@ -68,10 +66,7 @@ describe('Connections: Your phone', () => {
     expect(call.mock.calls.filter((c) => c[0] === 'unpair_phone' || c[0] === 'phone_stop')).toEqual([])
     await userEvent.click(row.getByRole('button', { name: 'Disconnect…' }))
     await userEvent.click(within(screen.getByRole('dialog', { name: 'Disconnect your phone?' })).getByRole('button', { name: 'Disconnect' }))
-    expect(call.mock.calls.filter((c) => c[0] === 'unpair_phone' || c[0] === 'phone_stop')).toEqual([
-      ['unpair_phone', { device: 'Pixel' }],
-      ['phone_stop', {}],
-    ])
+    expect(call.mock.calls.filter((c) => c[0] === 'unpair_phone' || c[0] === 'phone_stop')).toEqual([['phone_stop', {}]])
   })
 
   it('serving, nothing paired yet: Pair your phone opens the QR code', async () => {
