@@ -654,7 +654,7 @@ the phone shows it and holds no data of its own.
 Set it up in the desktop app: **Settings → Connections → Your phone → Set up your phone…**. It starts a
 Cloudflare quick tunnel (free, no account, no router port opened), which gives this computer an
 `https://<random>.trycloudflare.com` address your phone can reach from anywhere. Finding that new
-address can take up to a minute; it starts as the dialog opens, so it is mostly ready when you press
+address can take a minute or two; it starts as the dialog opens, so it is mostly ready when you press
 **Continue**. Then it shows a QR code that pairs your phone once, for five minutes. The address and the
 pairing last until this computer restarts or you press **Disconnect**: then set it up again and scan a
 new code (the app on your phone's home screen keeps the old address, so add it again and remove the old one).

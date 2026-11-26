@@ -33,24 +33,27 @@ read your folder can read them. The folder's contents are never committed to the
 
 ## What leaves your computer
 
-Four things, to four different parties. Nothing is sent to the project.
+Nothing is sent to the project. What goes out goes to job sites, Claude, Google Drive and Wikidata (below),
+to Cloudflare when you set up the phone ([The phone](#the-phone)), and to GitHub and Google for downloads
+and update checks ([What it downloads](#what-it-downloads)).
 
 ### Job sites
 
 It reads job boards, employers' job feeds and career pages. Every request is logged out: no login, no
-cookies of yours, no CAPTCHA solving, no proxy; the system proxy and `.netrc` are not read. No request
+cookies of yours, no CAPTCHA solving. No request
 carries your CV; a search sends your search terms (and your city or country for a board that needs one),
 and a followed employer's page is asked for by its address. Requests to one site are paced, one at a time per
 site, and a site's `Crawl-delay` is honoured. The sources that only find employers (LinkedIn,
 profession.hu, HelloWork, Jobbsafari) are off until you turn them on, and stop at the first sign of
-pushback.
+pushback (LinkedIn waits out one refusal, then stops for the run).
 
 Two things to know. The requests send a common browser's `User-Agent` and do not name the project.
 And `robots.txt` is read for its `Sitemap:` lines and `Crawl-delay` but does not block a request; the
 bar for each source is its terms, recorded as a verdict ([how it fetches](job-sites.md#how-the-other-door-fetches),
 [the legal disclaimer](../LEGAL_DISCLAIMER.md)).
 
-A request, and every redirect of it, connects only to a public internet address. A link that points at
+A request to a board or an employer's feed, and every redirect of it, connects only to a public
+internet address, and ignores the system proxy and `.netrc`. A link that points at
 your computer, your home network or a cloud metadata address is refused. This matters because a posting
 or a page you import can contain any link.
 
@@ -82,11 +85,9 @@ gate does not catch). Where the model has tools, they are cut down; see [What Cl
 Optional, off until you connect it. It stores one archive, `My Drive/The other door/door-data.tar.gz`, of
 your `profile/` and `jobs/` (not this computer's usage log, not `claude_config_dir`). The archive is not
 encrypted: it is as private as your Google account. The app asks Google for the `drive.file` permission only,
-so it can see just the folder and file it made, nothing else in your Drive. The sign-in is a loopback
-redirect with PKCE. The connection (a refresh token, the Google account, the archive's id) is kept in
-`drive.json` in your user config folder (`~/.config/door/`, `%APPDATA%\door\` on Windows), readable by you
-only (file mode 0600, folder 0700), outside the data folder so it never travels with an export. The OAuth
-client id and secret are in the source: Google treats a desktop-app secret as public. "Disconnect" in
+so it can see just the folder and file it made, nothing else in your Drive. The connection is kept in your
+user config folder, readable by you only, outside the data folder so it never travels with an export
+([Your data](data.md)). "Disconnect" in
 Settings removes the connection. See also the [privacy page](https://enysmones.com/the-other-door/#privacy).
 
 ### Wikidata
@@ -102,26 +103,24 @@ data; the phone holds none of its own.
 **How it is served.** The server listens on this computer only (`127.0.0.1`, unless you pass `--host`).
 For your phone to reach it, the app (or Claude Code's `phone_start`) starts a Cloudflare quick tunnel: an
 `https://<random>.trycloudflare.com` address, new each time, with no router port opened. Cloudflare's servers
-see the traffic decrypted on its way through. On a Mac the computer is kept awake while it serves (`caffeinate`).
+see the traffic decrypted on its way through, and the new address is looked up once through Cloudflare's
+public DNS before it is shown. On a Mac the computer is kept awake while it serves (`caffeinate`).
 Stopping it, or the tunnel dying, ends the pairing too, and a phone needs to be paired again.
 
-**Pairing.** The QR code holds a one-time code of 24 random characters that works for five minutes and
-once; it sits in the part of the link after `#`, which a browser does not send to a server. A code you
-type, from `./door serve pair`, is 8 characters and works for ten minutes. A new QR code cancels every
-older code. One phone is paired at a time. The phone trades the code for a device token, and the server keeps
-only SHA-256 hashes of codes and tokens, in a folder only you can open (`<data folder>/.serve/`, mode 0700,
-files 0600), so a stolen file pairs nothing. Ten wrong tokens or codes from one address within ten minutes lock
-that address out for fifteen. Unpairing (Settings → Connections → Your phone, or `./door serve unpair`)
-makes the token stop working at once.
+**Pairing.** The app's QR code holds a one-time code of 24 random characters that works for five
+minutes; it sits in the part of the link after `#`, which a browser does not send to a server. A code from
+`./door serve pair` is 8 characters and works for ten minutes. One phone is paired at a time. The server
+keeps only hashes of codes and tokens, in a folder only you can open, so a stolen file pairs nothing, and
+repeated wrong codes from one address lock it out for a while. Disconnecting makes the phone's token stop
+working at once.
 
 **What a paired phone can do.** Not what a Claude Code session on your computer can. The server answers only
 the eleven tools the phone app uses, with the arguments the app sends and no others, and strings over a cap
 are refused. It never takes a local file path, and it refuses `ask`, free-text `revise`, profile edits, Drive,
 export and import. What it answers has this computer's folders masked, no Drive account, and only the profile
-settings the phone shows. A day allows 10 prepares, 30 imported ads and 6 runs to find jobs. The files it can
-fetch are a job's rendered CV and letter (PDF and page images) and nothing else of the job's folder; a
-page image loads through an HttpOnly, same-site cookie limited to `/files`. Answers are marked
-`no-store`, and the web page itself comes with a strict content policy (its own scripts only).
+settings the phone shows, and a day allows only so many prepares, imports and runs ([On your phone](manual-app.md#on-your-phone)).
+The files it can fetch are a job's rendered CV and letter (PDF and page images) and nothing else of the job's
+folder, and the page runs only its own scripts.
 
 What it cannot promise: the page and the manifest are public, so anyone who finds the tunnel address sees
 the app's code (no data); every route that reaches data needs the token.
@@ -140,8 +139,8 @@ treated as untrusted too:
   sandbox is turned off; the rest still holds.
 - **The tailor has no shell.** It runs from the job's output folder in `claude -p --restricted`. It can
   read the profile, the posting and that folder, write only there, and call `compile` and `check_facts`. It
-  cannot write your story bank or `cv.md`. Other calls that read a page or an ad get no tools, or web
-  search alone.
+  cannot write your story bank or `cv.md`. Other calls that read an ad get no tools or web search
+  alone; reading your public pages (setting up, Add a page) may fetch up to 20 pages it chooses.
 - **Facts are checked, not blocked.** Numbers, years, employers, skills, certifications and degrees in a
   CV or letter that your CV and story bank do not back are listed (`check_facts`), and you are told. It is
   a check by another model call, not a guarantee, and it does not stop you sending.
@@ -157,38 +156,29 @@ treated as untrusted too:
 
 Two programs are downloaded, each from a pinned version and checked against a sha256 written in the code
 before it is used: the Chromium headless shell that prints PDFs (from Google's Chrome for Testing), and
-`cloudflared` for the phone (from Cloudflare's GitHub releases). A file that does not match is discarded,
-and the install is staged, never half done. The installed app brings Chromium with it. The fonts are
-shipped with the code, not downloaded.
+`cloudflared` for the phone (from Cloudflare's GitHub releases). The installed app brings Chromium with it.
+The fonts are shipped with the code. `./door doctor --fix` installs Claude's `claude` tool with Claude's own
+installer (`claude.ai/install.sh`, or npm), which is not pinned.
 
-**App updates** come from this project's GitHub releases. The check sends the app's version and nothing else of yours. A signed
-and notarized macOS build, the Windows installer and the AppImage download an update in the background and
-install it on restart. An unsigned macOS build and the `.deb` do not replace themselves: they say a version is
-available and link to the release page. Whether a given release is signed depends on how it was built.
+**App updates** come from this project's GitHub releases. The check sends the app's version and nothing else of yours.
 
 ## Problem reports
 
-`logs/door.log` holds one line per failure: a tool's name and its error message, never what it was given. It
-holds no CV text, profile values or ad text. `./door data report`, or Settings → Help → Save logs…, packs
-it with the last five run records cut to counts and errors, the checks of `doctor`, and the version and
-operating system into one `.zip`. Emails, the data folder and your home folder are masked; nothing from
-`profile/`, no postings and no ledger go in. It is saved only where you choose and is never sent
-automatically: you attach it yourself.
+`logs/door.log` holds one line per failure: a tool's name and its error message. It is not given your CV,
+profile or ads, but an error message can repeat words you gave a tool (a job named by words that matched
+nothing). `./door data report`, or Settings → Help → Save logs…, packs it with the last run records and checks
+into one `.zip`, emails and folders masked, nothing from `profile/` and no postings
+([the problem log](data.md#the-problem-log)). It is saved only where you choose and never sent: you attach it yourself.
 
 ## Reporting a security problem
 
-See [SECURITY.md](../SECURITY.md). Please do not put the details in a public issue. Use the **Report a
-vulnerability** button on the repository's Security tab, or email the address in that file. It is a personal
-project with no promised response time; only the latest release is supported.
+See [SECURITY.md](../SECURITY.md): please do not put the details in a public issue.
 
 ## What it does not protect against
 
 - **Someone with your computer or your account.** Your data folder and `drive.json` are readable by your
   user, and nothing is encrypted. Disk encryption and a screen lock are your protection.
-- **Cloudflare.** It sees the phone's traffic, decrypted, as it passes. If that is not acceptable, do not
-  set up the phone.
-- **The sites, Anthropic and Google.** What you send them is under their own terms and retention. Job
-  sites see your requests; Anthropic sees what the `claude` tool sends; Google holds the Drive archive.
+- **Cloudflare, the sites, Anthropic and Google.** What goes to them (above) is under their own terms and
+  retention. If Cloudflare reading the phone's traffic is not acceptable, do not set up the phone.
 - **A job ad that tricks a model.** The gate and the cut-down tools limit what a hostile ad can do, but a
   model can still be misled into a wrong score or a wrong sentence in a letter. Read what you send.
-- **Applying for you.** It never submits an application: the sending is yours.
