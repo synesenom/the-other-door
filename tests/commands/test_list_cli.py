@@ -493,7 +493,7 @@ def test_list_core_scored_does_not_depend_on_status_or_filters(cli_env):
     app_tracker.set_status("job-a", "applied")
     app_tracker.save()
 
-    assert _list_core_result(cli_env, limit=1, new_only=True)["scored"] == 2
+    assert _list_core_result(cli_env, new_only=True)["scored"] == 2
 
 
 # --------------------------------------------------------------------------- #
@@ -568,7 +568,7 @@ def test_weak_bar_is_the_configs_not_the_calls(cli_env):
 
 def test_weak_is_none_for_any_other_view(cli_env):
     _weak_env(cli_env, [0.4])
-    for kwargs in ({"status": "applied"}, {"ongoing": True}, {"closed": True}, {"new_only": True}, {"limit": 1}):
+    for kwargs in ({"status": "applied"}, {"ongoing": True}, {"closed": True}, {"new_only": True}):
         result = _list_core_result(cli_env, **kwargs)
         assert "weak" in result and result["weak"] is None, kwargs
 

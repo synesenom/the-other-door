@@ -81,9 +81,9 @@ def test_a_dated_line_before_the_first_heading_or_under_a_skills_section_is_no_r
     assert _years(cv, sections=[{"heading": "Experience", "kind": "experience"}, {"heading": "Toolbox", "kind": "skills"}]) == 2
 
 
-def _input(cv=CV, profile=None, **replace):
+def _input(years=11, profile=None):
     profile = profile or {"name": "Jane Doe", "email": "jane@example.com", "location": "Copenhagen"}
-    return salary.build_input(POSTING, cv, profile, cv_read_utils.reading(cv, **replace), now_year=2026)
+    return salary.build_input(POSTING, profile, years)
 
 
 def test_input_has_the_ad_the_country_and_the_counted_years():
@@ -93,21 +93,11 @@ def test_input_has_the_ad_the_country_and_the_counted_years():
     assert "DKK 60,000 per month" in text
     assert "11 years" in text
     assert "Cake on Fridays" not in text
-
-
-def test_input_has_no_line_of_the_cv_only_the_years():
-    """The call has WebSearch: a hidden instruction in an ad must find nothing of the CV to put into a search."""
-    cv = CV + "\n- Canary-CV-9f3a: led the secret merger at Acme Corp.\n"
-    text = _input(cv)
-    for private in ("Canary-CV-9f3a", "secret merger", "Jane", "Doe", "jane.doe@example.com", "12 34 56 78",
-                    "Acme Corp", "IFRS", "Big Bank", "Aarhus"):
-        assert private not in text
-    assert "11 years" in text
+    assert "Jane" not in text and "jane@example.com" not in text
 
 
 def test_input_says_when_the_years_cannot_be_counted():
-    text = _input("## Work Experience\n\n### Controller | Acme\n")
-    assert "not countable" in text and "Acme" not in text
+    assert "not countable" in _input(None)
 
 
 GOOD = {

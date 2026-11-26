@@ -81,8 +81,8 @@ def test_list_core_returns_no_ranks_and_remembers_no_list(env):
     _posting(env.jobs_dir, "jobindex-low", 0.7)
     _posting(env.jobs_dir, "jobindex-top", 0.95)
     _posting(env.jobs_dir, "jobindex-mid", 0.8)
-    result = _list(env, limit=2)
-    assert [m["id"] for m in result["matches"]] == ["jobindex-top", "jobindex-mid"]
+    result = _list(env)
+    assert [m["id"] for m in result["matches"]] == ["jobindex-top", "jobindex-mid", "jobindex-low"]
     assert all("rank" not in m for m in result["matches"])
     assert not (env.jobs_dir / "last_list.json").exists()
 

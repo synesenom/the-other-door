@@ -69,10 +69,9 @@ def _experience_lines(description: str) -> list[str]:
     return found[:_MAX_AD_LINES]
 
 
-def build_input(posting: dict, cv_text: str, profile: dict, reading: dict, *, now_year: int | None = None) -> str:
+def build_input(posting: dict, profile: dict, years: int | None) -> str:
     """The question's text: the ad (title, company, place, country and currency, the ad's own salary
-    and experience lines) and the candidate's years of experience, counted from the reading `reading` of the CV: an
-    integer, nothing else of the CV."""
+    and experience lines) and the candidate's `years` of experience (`years_of_experience`): it never sees the CV."""
     place = posting.get("location") or profile.get("location") or ""
     country = i18n.country_for_location(place) or i18n.country_for_location(str(profile.get("location") or ""))
     out = ["# The job", f"Title: {posting.get('title', '')}", f"Company: {posting.get('company', '')}",
@@ -86,7 +85,6 @@ def build_input(posting: dict, cv_text: str, profile: dict, reading: dict, *, no
     if asked:
         out.append("What the ad asks for:")
         out += [f"- {ln}" for ln in asked]
-    years = years_of_experience(reading, cv_text, now_year=now_year)
     out += ["", "# The candidate",
             f"The candidate's years of experience: {years} years" if years is not None
             else "The candidate's years of experience: not countable from the CV"]
