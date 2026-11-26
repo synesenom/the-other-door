@@ -1,17 +1,16 @@
 # Security and privacy
 
-This page is for anyone deciding whether to trust *The other door*. It says who and what the app trusts,
-what each source it does not trust could try, what stops it, what the protections cost you, and what is not
-covered yet. It is a personal project, run on your own computer with your own Claude plan. The page says only
-what the code does; where something is not enforced, it says so. Each protection names the issue or pull
-request that added it, and links to the page that holds the detail.
+This page is for anyone deciding whether to trust *The other door*. It says what the app trusts, what each
+source it does not trust could try, what stops it, what that costs you, and what is not done yet. It is a
+personal project, run on your own computer with your own Claude plan. The page says only what the code does;
+where something is not enforced, it says so. Each protection names the issue or pull request that added it,
+and links to the page that holds the detail.
 
 <!-- toc -->
 **Contents**
 
 - [Who is trusted](#who-is-trusted)
-- [Where your data lives](#where-your-data-lives)
-- [What leaves your computer](#what-leaves-your-computer)
+- [Where your data lives and what leaves your computer](#where-your-data-lives-and-what-leaves-your-computer)
 - [How each untrusted source is held back](#how-each-untrusted-source-is-held-back)
   - [Job ads, scraped pages and employer feeds](#job-ads-scraped-pages-and-employer-feeds)
   - [Employer pages and discovery sources](#employer-pages-and-discovery-sources)
@@ -20,11 +19,8 @@ request that added it, and links to the page that holds the detail.
   - [Archives you import and Drive pulls](#archives-you-import-and-drive-pulls)
   - [What a model writes](#what-a-model-writes)
   - [A Claude Code chat](#a-claude-code-chat)
-  - [A paired phone](#the-phone)
+  - [The phone](#the-phone)
   - [Releases and updates](#releases-and-updates)
-- [Google Drive, Wikidata and the other services](#google-drive-wikidata-and-the-other-services)
-- [What it downloads](#what-it-downloads)
-- [Problem reports](#problem-reports)
 - [What these protections cost you](#what-these-protections-cost-you)
 - [Not yet done](#not-yet-done)
 - [What is not covered](#what-is-not-covered)
@@ -33,324 +29,239 @@ request that added it, and links to the page that holds the detail.
 
 ## Who is trusted
 
-**Trusted: you**, the person at the computer. Your CV, story bank and settings are yours, and the app does
-what you tell it.
+You are, as the person at the computer: your CV, story bank and settings, and what you tell the app to do.
+Everyone else whose words or files it reads or runs is not: job-ad authors and the pages and feeds they come
+from, employer pages and discovery sources, pages and CV files you give it, archives and Drive pulls, a paired
+phone, what a Claude Code chat reads from the tools, and whoever could publish or tamper with a release. What
+an attacker wants is always one of these: to change your CV or settings, to steer a Claude call that has
+tools, to use up your Claude plan, to make your computer fetch from your own network, or to carry your CV out.
 
-**Not trusted** is anyone else whose words or files the app reads or runs:
+## Where your data lives and what leaves your computer
 
-- the authors of job ads, and of the pages and feeds the ads come from;
-- employer pages and the discovery sources (LinkedIn and others) that point to employers;
-- pages you give it to read for your CV (setting up, "Add a page");
-- CV files you open;
-- an archive you import, or data pulled from Google Drive;
-- a paired phone, and whoever holds its token;
-- a Claude Code chat that reads what the tools answer;
-- whoever could publish a release, or tamper with an update on its way to you.
+Everything is in your data folder: `profile/` (settings, CV, story bank), `jobs/` (postings, applications,
+the CVs and letters it made), `backups/` and `logs/` ([Your data](data.md)). The project runs no server and
+holds no account of yours, and nothing is sent to the project. The files are ordinary files of your user
+account and are not encrypted: whoever can read your folder can read them.
 
-What the attacker wants is the same each time: to change your CV or settings, to steer a Claude call that
-has tools, to use up your Claude plan, to make your computer fetch something on your own network, or to carry
-your CV out. The sections below say, for each source, what stops that.
+What goes out, and to whom:
 
-## Where your data lives
+- **Job sites and employers:** searches and page requests, logged out, with no CV. [How it fetches](job-sites.md#how-the-other-door-fetches).
+- **Claude, through your own `claude` tool and plan:** there is no API key anywhere. Scoring sends each
+  posting with your CV and some settings; preparing sends your CV, story bank, the posting, your name and
+  email. Other short calls read your CV when you set up, propose search terms, check facts and set out ads.
+  Two calls search the web and send no CV: the salary estimate sends the ad's own lines and your years of
+  experience ([#583](https://github.com/synesenom/the-other-door/pull/583)), and the careers-page finder sends
+  an employer's name and your location. Anthropic reads what a call sends under your account and its terms.
+  Your other MCP servers are not loaded into these calls.
+- **Google Drive**, only if you connect it: one archive of `profile/` and `jobs/` in its own folder. It is not
+  encrypted, so it is as private as your Google account. The app asks for the `drive.file` permission only, so
+  it sees nothing else in your Drive. "Disconnect" in Settings removes the connection.
+- **Wikidata:** employer names, with your profile's country code and language, to find an employer's website.
+- **Cloudflare**, only if you set up the phone: its servers carry the phone's traffic ([the phone](#the-phone)).
+- **GitHub and Google:** downloads and update checks. The check sends the app's version and nothing else.
 
-Everything is on your own computer, in the data folder: `profile/` (your settings, CV, story bank) and
-`jobs/` (postings, your applications, the CVs and letters it made), plus `backups/` and `logs/`. By default
-that is the checkout; the desktop app and `DOOR_HOME` put it in a folder of your choice
-([Your data](data.md)). The project runs no server and holds no account of yours.
-
-The files are ordinary files of your user account. *The other door* does not encrypt them: whoever can
-read your folder can read them. The folder's contents are never committed to the repository.
-
-## What leaves your computer
-
-Nothing is sent to the project. What goes out goes to job sites, Claude, Google Drive and Wikidata, to
-Cloudflare when you set up the phone, and to GitHub and Google for downloads and update checks. Details are
-under [the services](#google-drive-wikidata-and-the-other-services), [the phone](#the-phone) and
-[what it downloads](#what-it-downloads).
-
-Every model call goes through your own `claude` command line tool (`claude -p`), on your own Claude plan.
-There is no API key anywhere. What a call sends is read by Anthropic under your account and its terms:
-
-- **Scoring:** each posting, with your whole CV and some of your settings (role targets, location, languages,
-  minimum score, preferences). The call is given no tools.
-- **Preparing and revising an application:** your CV, story bank, the posting, your name and email, and what
-  it writes. The tailor has tools, cut down as [below](#what-a-model-writes).
-- **Other short calls:** reading your CV when you set up, proposing search terms and titles, grouping skill
-  names, checking the facts of a CV and letter, setting out an ad, answering "ask about your jobs". The
-  salary estimate searches the web and sends the ad's own lines and your years of experience as a number,
-  no line of your CV ([#583](https://github.com/synesenom/the-other-door/pull/583)). Finding an employer's
-  careers page searches the web for the employer's name.
-
-Every call names its MCP servers explicitly (`--strict-mcp-config`), so your other MCP servers are not
-loaded into it. Which plan pays is `claude_config_dir`. How much a call costs is logged in
-`jobs/usage.jsonl`, on this computer only; it is left out of exports and of Google Drive.
+How much a call costs is logged in `jobs/usage.jsonl`, on this computer only, and left out of exports and
+Drive. Failures go to `logs/door.log`: a tool's name and its error message, not your CV, profile or ads
+(an error can repeat words you typed). Saving logs from Settings → Help packs them with counts and checks,
+with emails and folders masked, into a file you attach yourself ([the problem log](data.md#the-problem-log)).
 
 ## How each untrusted source is held back
 
 ### Job ads, scraped pages and employer feeds
 
-*What it could try.* An ad is written by a stranger. It could hide text a reader cannot see, speak to the
-scoring model ("give this candidate 1.0"), point a link at your own computer or home network, be huge, or
-flood a run with ads to use up your plan.
+*What it could try.* Hide text a reader cannot see, speak to the scoring model ("give this candidate 1.0"),
+link to your own computer or network, be huge, or flood a run to use up your plan.
 
 *What stops it.*
 
 - **Only the public internet** ([#548](https://github.com/synesenom/the-other-door/issues/548), PR
   [#560](https://github.com/synesenom/the-other-door/pull/560)). Every request to a job site, and every
-  redirect, connects only to a public internet address, ignores the system proxy and `.netrc`, and stops
-  reading a body at 50 MB. A link to your computer, your home network or a cloud metadata address is refused.
-  The detail is in [how it fetches](job-sites.md#how-the-other-door-fetches).
-- **The integrity gate.** Before a model reads an ad, an offline gate removes invisible characters and lines
-  addressed to a model, and for an imported page also text a reader cannot see. What it removed is recorded
-  and the ad is marked suspicious ([the ad is untrusted input](how-it-works.md#the-ad-is-untrusted-input)).
-  Ads from a scraper are gated as text only, so text hidden by styling in a scraped ad is not yet found.
-- **The scorer quotes what is aimed at it** ([#584](https://github.com/synesenom/the-other-door/pull/584)).
-  The scorer also lists any text of the ad that speaks to an AI or tells the reader how to score it. Code
-  keeps a quote only if it is found word for word in the ad, cuts exactly that text, marks the ad suspicious
-  and scores the cleaned ad once more. The scorer has no tools, so the worst a hostile ad does here is a
-  wrong score.
+  redirect, goes only to a public address, ignores the system's proxy settings, and stops reading at 50 MB.
+  A link to your computer or home network is refused.
+- **A cleaning step before a model reads an ad.** It removes invisible characters and lines addressed to a
+  model, and for an imported page also hidden text. What it removed is recorded and the ad is marked
+  suspicious ([the ad is untrusted input](how-it-works.md#the-ad-is-untrusted-input)). Scraped ads are cleaned
+  as plain text only, so styling-hidden text in them is not found yet.
+- **The scorer reports text aimed at it** ([#584](https://github.com/synesenom/the-other-door/pull/584)). Code
+  keeps a report only if the ad contains those words, cuts exactly that text, marks the ad suspicious and
+  scores it once more. The scorer has no tools, so the worst a hostile ad does here is a wrong score.
 - **You are told** ([#585](https://github.com/synesenom/the-other-door/pull/585)). A job's page, and the
   result of "Add a job", say when part of an ad was hidden or written for an AI, and show what was cut.
 - **A run is capped** ([#551](https://github.com/synesenom/the-other-door/issues/551), PR
-  [#564](https://github.com/synesenom/the-other-door/pull/564)). A run scores at most 150 ads (30 calls),
-  taken in turn from each site so one site that floods the list cannot crowd out the others, and a score is
-  kept only for a job in its own batch. A translated title is one line of at most 200 characters, and a skill
-  name over 60 characters is never kept as an alias.
-- **An added ad keeps only what it says** ([#545](https://github.com/synesenom/the-other-door/issues/545),
-  PR [#567](https://github.com/synesenom/the-other-door/pull/567)). When you add a job, the title, company
-  and place that a model reads from the ad are kept only if the ad contains those words.
+  [#564](https://github.com/synesenom/the-other-door/pull/564)): 150 ads scored, taken in turn from each
+  site so one flooding site cannot crowd out the rest, a score kept only for its own job, and lengths of
+  translated titles and skill aliases bounded.
+- **An added ad keeps only what it says** ([#545](https://github.com/synesenom/the-other-door/issues/545), PR
+  [#567](https://github.com/synesenom/the-other-door/pull/567)): the title, company and place a model reads
+  are kept only if the ad contains those words.
+- **Printing is safe** ([#549](https://github.com/synesenom/the-other-door/issues/549)): the command line
+  prints ad, page and model text without terminal tricks or markup, in postings, imports and reports and the
+  employer list. `companies merge` does not yet ([#589](https://github.com/synesenom/the-other-door/issues/589)).
 
 ### Employer pages and discovery sources
 
-*What it could try.* A careers page or a discovery source could answer with links to private addresses, feed
-back a model-readable instruction, or push back until the app misbehaves.
+*What it could try.* Answer with links to private addresses, or push back until the app misbehaves.
 
 *What stops it.* The same public-only connection as the boards
 ([#580](https://github.com/synesenom/the-other-door/pull/580)). The sources that only find employers
-(LinkedIn, profession.hu, HelloWork, Jobbsafari) are off until you turn them on, logged out only (no login,
-cookies or session), paced, capped, stopped for the run at the first sign of pushback and rested for a day
-after a refusal. Every source has a recorded verdict on its terms, and one the terms forbid runs only after
-you turned it on and read the disclaimer; one that is reserved is never fetched
-([how it fetches](job-sites.md#how-the-other-door-fetches), [the legal disclaimer](../LEGAL_DISCLAIMER.md)).
-Asking a careers-page model about employers is capped at 30 a run (#551). `robots.txt` is read for its
-`Sitemap:` lines and `Crawl-delay` but does not block a request, and the requests send a common browser's
-`User-Agent`; the bar for each source is its terms.
+(LinkedIn, profession.hu, HelloWork, Jobbsafari) are off until you turn them on, logged out only, paced,
+capped, stopped at the first sign of pushback and rested a day after a refusal. Every source has a recorded
+verdict on its terms; one the terms forbid runs only after you turned it on and read the disclaimer, and a
+reserved one is never fetched ([the legal disclaimer](../LEGAL_DISCLAIMER.md)). A careers-page model is asked
+about at most 30 employers a run (#551). `robots.txt` is read for its sitemap and crawl delay but does not
+block a request; the bar for each source is its terms.
 
 ### Pages you give it to read
 
-*What it could try.* A page you give to "Add a page" or setting up could carry instructions to the model, to
-make it send your CV somewhere or read your files.
+*What it could try.* Carry instructions to the model, to send your CV somewhere or read your files.
 
 *What stops it* ([#549](https://github.com/synesenom/the-other-door/issues/549), PR
-[#561](https://github.com/synesenom/the-other-door/pull/561)). Reading pages and writing your CV are two
-separate calls. The call that reads the pages is given only their addresses and one tool, which fetches at
-most 20 pages, only public addresses, never LinkedIn or Indeed (their terms forbid it), and cuts each page
-to a size. The call that sees your CV has no tools at all and gets the page text as data. So no call that
-sees your private data has the network, and no call with the network sees your private data. The limits are
-in code, not in the prompt ([architecture](architecture.md), the `cv enrich` row).
-Text from a page, an ad or a model is escaped before the command line prints it, so it cannot use terminal
-markup.
+[#561](https://github.com/synesenom/the-other-door/pull/561)). Reading the pages and writing your CV are two
+separate calls. The reader gets only the addresses and one tool that fetches at most 20 public pages, never
+LinkedIn or Indeed, and cuts each page to a size. The call that sees your CV has no tools and gets the page
+text as data. So the call that reads pages and the call that sees your CV are never the same one. The limits
+are in code, not in the prompt ([architecture](architecture.md), the `cv enrich` row).
 
 ### CV files you open
 
-*What it could try.* A settings file or CV could name a file outside your profile, or be built to fill
-memory.
+*What it could try.* Name a file outside your profile, or be built to fill memory.
 
 *What stops it* ([#552](https://github.com/synesenom/the-other-door/issues/552), PR
-[#566](https://github.com/synesenom/the-other-door/pull/566)). The CV, the templates and the photo named in
-`config.json` must be files inside the profile folder, whatever way the settings arrive (typed, imported or
-pulled from Drive). A CV file is read only up to a size: a part of a DOCX of 20 MB unpacked, a PDF of 30
-pages and 300,000 characters. A tool that takes a path (reading a CV file, a photo, an export or import)
-refuses one outside the data folder and the checkout; in the desktop app every path comes from a dialog the
-main process opens, so the window cannot name one.
+[#566](https://github.com/synesenom/the-other-door/pull/566)). The CV, templates and photo named in your
+settings must be files inside the profile folder, however the settings arrive. A CV file is read only up to a
+size (a DOCX 20 MB unpacked, a PDF 30 pages and 300,000 characters). A tool that takes a path refuses one
+outside the data folder and the checkout; in the desktop app every path comes from a dialog the app opens.
 
 ### Archives you import and Drive pulls
 
-*What it could try.* An archive could carry links or paths that write outside the data folder, or a settings
-file with paths of its own.
-
-*What stops it.* An import refuses links, absolute paths and `..` in the archive, and the settings it holds
-go through the same check as a typed one (above). A Drive pull is the same archive. Drive is optional and
-sees only its own folder ([below](#google-drive-wikidata-and-the-other-services)). Archives have no size
-limit ([not covered](#what-is-not-covered)).
+*What it could try.* Carry links or paths that write outside the data folder, or settings with paths of
+their own. *What stops it.* An import refuses links, absolute paths and `..`, and its settings go through the
+same check as a typed one. A Drive pull is the same archive. Archives have no size limit
+([not covered](#what-is-not-covered)).
 
 ### What a model writes
 
-*What it could try.* A model reads untrusted text and writes your CV and letter. An ad could steer it to
-write something into the PDF, to carry your data in a link, to change your story bank, or to run a command.
+*What it could try.* A model reads untrusted text and writes your CV and letter, so an ad could steer it to
+hide your data in a link, change your story bank, or run a command. *What stops it* (detail:
+[architecture](architecture.md#tailoring-and-rendering-srcdoortailoring-render)):
 
-*What stops it.*
-
-- **The tailor sees only what it needs**
-  ([#582](https://github.com/synesenom/the-other-door/pull/582)). It runs from a folder of its own, in
-  `claude -p --restricted` (no shell). It reads only copies of your CV, story bank and templates, the posting
-  without its score, and your name and email as text. It never sees `config.json`, your employer list or
-  the rest of your profile, and the copies are removed when it ends.
-- **It writes no stories and no links of its own**
-  ([#550](https://github.com/synesenom/the-other-door/issues/550), PR
+- **The tailor sees little and has no shell** ([#582](https://github.com/synesenom/the-other-door/pull/582)).
+  It runs from its own folder and reads only copies of your CV, story bank and templates, the posting without
+  its score, and your name and email. It never sees your other settings.
+- **No stories, no links of its own** ([#550](https://github.com/synesenom/the-other-door/issues/550), PR
   [#562](https://github.com/synesenom/the-other-door/pull/562)). A prepared job adds nothing to your story
-  bank, and a link in a CV or letter that your CV and story bank do not write prints as plain text, so a link
-  cannot carry what the model read to a stranger.
-- **The body is an allow-list.** `cv.html` and `cover_letter.html` hold only a small set of tags, classes
-  and links (`https:`, `mailto:` and in-page ones). No script, style, image, SVG or `on*` handler. `compile`
-  refuses a body with anything else.
-- **The printer is sealed.** The PDF is printed by a headless Chromium with JavaScript off, a fresh profile, a
-  loopback server over the job's folder only, and every other request failed. On Linux as root, or where the
-  system refuses it, Chromium's own sandbox is turned off; the rest still holds.
-- **Facts are checked, not blocked.** Numbers, years, employers, skills, certifications and degrees that
-  your CV and story bank do not back are listed (`check_facts`) and you are told. It is a check by another
-  model call, not a guarantee, and it does not stop you sending.
+  bank, and a link your CV and story bank do not write prints as plain text.
+- **The body is an allow-list.** A CV or letter holds only a small set of tags and links; no script, image or
+  other code, or it is refused. The PDF is printed by a sealed headless Chromium (no JavaScript, only the
+  job's own folder served). On Linux as root, Chromium's own sandbox is off; the rest holds.
+- **Facts are checked, not blocked:** numbers, employers, skills and degrees your CV does not back are listed.
+  It is another model call, not a guarantee.
 - **Scraper repair is gone** ([#553](https://github.com/synesenom/the-other-door/issues/553), PR
-  [#565](https://github.com/synesenom/the-other-door/pull/565)). No model writes code from a site's page.
-  A site that changes is fixed in a new version of the app.
-- **The desktop window is walled in.** Context isolation and the sandbox are on, Node is off in the page,
-  every permission request is denied, it can navigate only to its own page, and only `http(s)` links open in
-  your browser. A test fails if anything under `app/` runs the CLI or a model.
+  [#565](https://github.com/synesenom/the-other-door/pull/565)): no model writes code from a site's page.
+- **The desktop window is walled in:** the page cannot run programs or ask for permissions, and a test fails
+  if anything in the app runs the command line or a model.
 
 ### A Claude Code chat
 
-*What it could try.* A chat can run commands on your computer. If a tool answer carried an ad's text, a line
-in the ad could tell the chat to use that power.
+*What it could try.* A chat can run commands on your computer, so a line in an ad could tell it to.
 
 *What stops it* ([#586](https://github.com/synesenom/the-other-door/pull/586)). In a chat, no tool answer
-carries an ad's text. `show` opens the full ad in your browser (its own address, or a saved plain page with
-the text escaped) and gives Claude only a short summary, which one tool-less call extracts and code cuts to
-fixed bounds. Every other text in an answer (titles, companies, errors, notes, employer names, progress
-lines) is cut and comes inside a marker `<ad-…>…</ad-…>` with a random token chosen anew for each answer, so
-text inside it cannot close it early or pass for the server's own words. Only the values the code makes
-itself (ids, paths, statuses, timestamps) stay as they are, and tools that return only your own data (your
-CV, story bank, profile, checks of this computer) answer whole. The desktop app, the phone and the command
-line are not chats and show the whole ad. A Claude that The other door itself starts in the background is
-never taken for the app, so its answers are guarded too; the one exception is the tailor's own server, which
-names its reader, because the tailor reads the posting itself.
+carries an ad's text. `show` opens the ad in your browser and gives Claude a short summary made by a tool-less
+call and cut to fixed lengths. Every other text in an answer is cut and fenced with a marker that changes on
+each answer, except values the code makes itself and tools that return only your own data. The desktop app,
+the phone and the command line show the whole ad. A Claude the app starts in the background is never taken for
+the app, so its answers are guarded too; the tailor's own server is the one exception, because the tailor
+reads the posting itself. Detail: [manual-claude.md](manual-claude.md).
+
+The exception: `enrich` and `draft_cv` answer with text written from the pages you named, and that text
+reaches a chat unmarked ([#587](https://github.com/synesenom/the-other-door/issues/587)).
 
 ### The phone
 
-The phone app is the desktop app's screens in a browser. The computer does all the work and holds all the
-data; the phone holds none of its own. *What it could try:* a stolen phone, a leaked token or a hostile page
-in its browser.
+The phone app is the desktop app's screens in a browser; the computer does the work and holds the data. It is
+reached through a Cloudflare tunnel, so Cloudflare's servers see the traffic on its way. Pairing is a QR code
+holding a one-time code that works for five minutes; one phone is paired at a time; the server keeps only
+fingerprints of codes and tokens, and repeated wrong codes lock an address out.
 
-**How it is served.** The server listens on this computer only (`127.0.0.1`, unless you pass `--host`). For
-your phone to reach it, the app starts a Cloudflare quick tunnel: an `https://<random>.trycloudflare.com`
-address, new each time, with no router port opened. Cloudflare's servers see the traffic decrypted on its way
-through. Stopping it, or the tunnel dying, ends the pairing too.
+The phone server keeps running after you quit the app, and the phone stays paired, until the computer restarts
+or you press Disconnect in Settings → Connections → Your phone, which unpairs it and stops serving.
 
-**Pairing.** The app's QR code holds a one-time code of 24 random characters that works for five minutes; it
-sits after the `#` of the link, which a browser does not send to a server. One phone is paired at a time. The
-server keeps only hashes of codes and tokens, in a folder only you can open, and repeated wrong codes from
-one address lock it out for a while. Disconnecting makes the token stop working at once.
+*What a stolen phone, a leaked token or a hostile page in its browser could try, and what stops it*
+(detail: [On your phone](manual-app.md#on-your-phone)):
 
-**What a paired phone can do** ([#544](https://github.com/synesenom/the-other-door/issues/544), PR
-[#568](https://github.com/synesenom/the-other-door/pull/568)). Not what a Claude Code session on your
-computer can. The server answers only the eleven tools the phone app uses, with the arguments the app sends
-and no others. It never takes a local file path, and it refuses `ask`, `revise`, profile edits, Drive, export
-and import. A string over a cap (30,000 characters for a pasted ad, 2,000 for a note or a link, 300 for any
-other) and a request body over about 1 MB are refused. A day allows 10 prepares, 30 imported ads and 6
-runs ([On your phone](manual-app.md#on-your-phone)).
+- **Only what the app does** ([#544](https://github.com/synesenom/the-other-door/issues/544), PR
+  [#568](https://github.com/synesenom/the-other-door/pull/568)): eleven tools with the arguments the app
+  sends and no others, no local paths, no `ask`, `revise`, profile edits, Drive, export or import, a cap on
+  every string and request, and daily limits on the calls that cost.
+- **Nothing private in answers** ([#546](https://github.com/synesenom/the-other-door/issues/546), PR
+  [#569](https://github.com/synesenom/the-other-door/pull/569)): this computer's folders and the Drive account
+  are masked, only the settings the phone shows are sent, and only a job's rendered CV and letter are served.
+- **An imported ad keeps only what it says**, as above (#545).
 
-**What it is sent** ([#546](https://github.com/synesenom/the-other-door/issues/546), PR
-[#569](https://github.com/synesenom/the-other-door/pull/569)). Every answer and error has this computer's
-folders masked, the Drive account left out, and only the profile settings the phone shows. The phone can
-fetch a job's rendered CV and letter (PDF and page images) and nothing else of the job's folder, and the page
-runs only its own scripts. An ad you import from the phone has its title and company kept only if the ad
-contains those words ([#545](https://github.com/synesenom/the-other-door/issues/545), above).
-
-What it cannot promise: the page and the manifest are public, so anyone who finds the tunnel address sees
-the app's code (no data); every route that reaches data needs the token. One free-text channel remains
-on purpose: someone holding the phone can paste an ad written to steer the tailor and prepare it. That is
-bounded by the daily limits, the tailor's walls and the allow-list above, and closing it would remove what
-the phone is for.
+It cannot promise: the page itself is public, so anyone who finds the address sees the app's code, no data.
+One free-text channel stays on purpose: someone holding the phone can paste an ad written to steer the tailor
+and prepare it. The daily limits, the tailor's walls and the allow-list bound it.
 
 ### Releases and updates
 
-*What it could try.* Whoever could write to a release could ship code that installed apps run. See
-[not yet done](#not-yet-done): this protection is not in place yet.
+*What it could try.* Whoever could write to a release could ship code that installed apps run. This is not
+stopped yet: see [not yet done](#not-yet-done).
 
-## Google Drive, Wikidata and the other services
-
-**Google Drive** is optional, off until you connect it. It stores one archive,
-`My Drive/The other door/door-data.tar.gz`, of your `profile/` and `jobs/` (not this computer's usage log, not
-`claude_config_dir`). The archive is not encrypted: it is as private as your Google account. The app asks
-Google for the `drive.file` permission only, so it can see just the folder and file it made, nothing else in
-your Drive. The connection is kept in your user config folder, readable by you only, outside the data folder
-so it never travels with an export ([Your data](data.md)). "Disconnect" in Settings removes the connection.
-See also the [privacy page](https://enysmones.com/the-other-door/#privacy).
-
-**Wikidata.** To find an employer's own website from its name, the app asks Wikidata's public API (no key, no
-login) for the employer's name, at most 60 names a run. Only employer names are sent.
-
-**Cloudflare** carries the phone's traffic ([the phone](#the-phone)); **GitHub** serves releases and update
-checks, which send the app's version and nothing else of yours.
-
-## What it downloads
-
-Two programs are downloaded, each from a pinned version and checked against a sha256 written in the code
-before it is used: the Chromium headless shell that prints PDFs (from Google's Chrome for Testing), and
-`cloudflared` for the phone (from Cloudflare's GitHub releases). The installed app brings Chromium with it.
-The fonts are shipped with the code. `./door doctor --fix` installs Claude's `claude` tool with Claude's own
-installer (`claude.ai/install.sh`, or npm), which is not pinned.
-
-## Problem reports
-
-`logs/door.log` holds one line per failure: a tool's name and its error message. It is not given your CV,
-profile or ads, but an error message can repeat words you gave a tool. `./door data report`, or Settings →
-Help → Save logs…, packs it with the last run records and checks into one `.zip`, emails and folders masked,
-nothing from `profile/` and no postings ([the problem log](data.md#the-problem-log)). It is saved only where
-you choose and never sent: you attach it yourself.
+Two programs are downloaded and checked against a fingerprint fixed in the code before use: the Chromium that
+prints PDFs, and `cloudflared` for the phone; the installed app brings its own Chromium. A `cloudflared` found
+on your `PATH` or already in `~/.local/bin` is used without that check; only the app's bundled one and the
+one The other door downloads are checked ([#588](https://github.com/synesenom/the-other-door/issues/588)).
+`doctor --fix` installs Claude's own `claude` tool with Claude's installer, which is not checked either.
 
 ## What these protections cost you
 
-Each limit has a reason above. Here they are in one place.
+What you give up for them; the reasons are in the passages above.
 
-- **In a Claude Code chat the ad opens in your browser, and Claude sees only a summary.** So an ad cannot
-  steer a chat that can run commands. The first look at an older job costs one small model call; later looks
-  reuse it. The app and the command line show the whole ad.
-- **The tailor sees only your CV, story bank and templates.** So a letter cannot draw on your other settings,
-  and an ad cannot make it copy them out.
-- **The salary estimate uses your years of experience, not what is special in your history.** So the web
-  search sees no line of your CV. There is no skill-gap report any more.
-- **A suspicious ad has text cut out and is scored twice.** That is one more call for such an ad.
-- **Fetching:** no private networks, no proxy, nothing over 50 MB. When it reads your own pages it fetches
-  at most 20, and no LinkedIn or Indeed pages.
-- **A run scores at most 150 ads and asks a model about at most 30 employers.** The rest wait for the next
-  run.
-- **A broken site waits for an app update.** There is no automatic repair.
-- **The phone has daily limits** (10 prepares, 30 imported ads, 6 runs), **cannot revise a CV or letter, and
-  cannot edit your CV or profile.** It reaches the computer over a Cloudflare quick tunnel, so Cloudflare
-  sees its traffic, and after the app stops or restarts the phone needs pairing again.
+- In a chat the ad opens in your browser and Claude sees only a summary. The first look at each job in a
+  chat costs one small model call.
+- The tailor sees only your CV, story bank and templates, so a letter cannot draw on other settings.
+- The salary estimate uses your years of experience, not what is special in your history. There is no
+  skill-gap report.
+- A suspicious ad has text cut out and is scored twice.
+- Fetching: no private networks, no proxy for job sites, nothing over 50 MB; reading your pages, at most 20
+  and no LinkedIn or Indeed.
+- A run scores at most 150 ads and asks about at most 30 employers; the rest wait for the next run.
+- A broken site waits for an app update; nothing repairs itself.
+- The phone has daily limits, no revising, no editing of your CV or profile, and goes through Cloudflare.
+- Settings and the CV must live inside the profile folder, and an oversized CV file is refused.
+- Some discovery sources stay off until you turn them on.
 
 ## Not yet done
 
 **Signed updates** ([epic #554](https://github.com/synesenom/the-other-door/issues/554); sub-issues
 [#555](https://github.com/synesenom/the-other-door/issues/555),
 [#556](https://github.com/synesenom/the-other-door/issues/556),
-[#557](https://github.com/synesenom/the-other-door/issues/557),
-[#558](https://github.com/synesenom/the-other-door/issues/558) are open).
+[#557](https://github.com/synesenom/the-other-door/issues/557) and
+[#558](https://github.com/synesenom/the-other-door/issues/558) are open). Today an installed app's automatic
+update is not checked against a signature. It is checked against a fingerprint that sits in the same release,
+and anyone who can write to a release can change both. So whoever could alter a release could ship code to
+installed Windows apps and Linux AppImages, which update by themselves at their next daily check. The builds
+are also not signed by Apple or Microsoft. Meanwhile, a macOS build and the `.deb` do not update by
+themselves: Settings shows "Version X is available" with a link. Install only from this project's releases page.
 
-Today an installed app's automatic update is not checked against a signature. The app checks the download
-against a checksum that sits in the same release, and anyone who can write to a release can change both. So
-whoever could publish or alter a release could ship code to installed Windows apps and Linux AppImages,
-which update by themselves, at their next daily check. The builds are also not signed by Apple or
-Microsoft.
-
-What you can do meanwhile: a macOS build and the `.deb` do not update by themselves; Settings shows "Version
-X is available" with a link, and you install it yourself. Install only from this project's releases page.
+Also open: a chat sees unmarked text from `enrich` and `draft_cv`
+([#587](https://github.com/synesenom/the-other-door/issues/587)), an unchecked `cloudflared`
+([#588](https://github.com/synesenom/the-other-door/issues/588)), and `companies merge` printing without
+the safe printing above ([#589](https://github.com/synesenom/the-other-door/issues/589)).
 
 ## What is not covered
 
-- **Someone with your computer or your account.** Your data folder and the Drive connection are readable by
-  your user, and nothing is encrypted. Disk encryption and a screen lock are your protection.
-- **Cloudflare, the sites, Anthropic and Google.** What goes to them is under their own terms and retention.
-  If Cloudflare reading the phone's traffic is not acceptable, do not set up the phone.
-- **A job ad that tricks a model.** The gate, the scorer's quoting, the cut-down tools and your own reading
-  limit what a hostile ad can do, but a model can still be misled into a wrong score or a wrong sentence in a
-  letter. Read what you send. The gate's phrase list is not replaced by a model, and styling-hidden text in
-  a scraped ad is not yet found.
-- **Proxies.** There is no proxy support, so a fetch never goes through one.
+- **Someone with your computer or account.** Nothing in your folder or the Drive connection is encrypted. Disk
+  encryption and a screen lock are your protection.
+- **Cloudflare, the sites, Anthropic and Google.** What goes to them is under their own terms. If Cloudflare
+  seeing the phone's traffic is not acceptable, do not set up the phone.
+- **A job ad that tricks a model.** The protections above limit what a hostile ad can do, but a model can
+  still be misled into a wrong score or a wrong sentence in a letter. Read what you send.
+- **Proxies for the rest.** Job-site fetches ignore the system's proxy; Google Drive and the program
+  downloads follow it. There is no proxy support for the sites.
 - **Archive size.** An archive you import has no size limit.
 - **Old installs.** The planned signature check cannot protect an app of version 0.4.0 or older: it installs
-  the next release unchecked once ([not yet done](#not-yet-done)).
-- **Hand-downloaded installers** are not signed or checksummed by the project.
+  the next release unchecked once. Installers you download by hand are not signed or checksummed.
 - **The phone's free-text channel**, as described under [the phone](#the-phone).
 
 ## Reporting a security problem

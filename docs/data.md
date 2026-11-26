@@ -1,9 +1,9 @@
 # Your data
 
 Your files stay on your computer, inside this checkout, unless you connect Google Drive
-([what it keeps there](security.md#google-drive-wikidata-and-the-other-services)). Both folders below are gitignored, so nothing personal is ever committed.
+([what it keeps there](security.md#where-your-data-lives-and-what-leaves-your-computer)). Both folders below are gitignored, so nothing personal is ever committed.
 
-What leaves your computer, and to whom: [Security and privacy](security.md#what-leaves-your-computer).
+What leaves your computer, and to whom: [Security and privacy](security.md#where-your-data-lives-and-what-leaves-your-computer).
 
 | Folder | What's in it |
 |--------|--------------|
