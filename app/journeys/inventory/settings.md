@@ -38,7 +38,7 @@ Sources I read in full: `app/src/renderer/screens/{Settings,Connections,SignIn,D
 | **Open the sign-in page again** | `shell.openExternal(url)` | Patch `shell.openExternal`. | — ✓ Sign in with Claude waits for the browser, with the profile’s email on claude’s page
 | **the data folder's path** (Your data) | `shell.showItemInFolder(home)` (Finder) | Patch `shell.showItemInFolder`. | — ✓ Your data says where the data folder is; its path shows it
 | **Export…** and **Import…** | Native dialogs | Patch `dialog.*`. | — ✓ Export… writes an archive where the user says, and names it; ✓ Import replaces the data and keeps what was here in backups/
-| Phone **Continue** (`phone_start{connection:'cloudflare'}`) | Spawns `python -m door serve start` (local), `caffeinate` on macOS, and `cloudflared tunnel` (internet). Downloads cloudflared from GitHub if none is found. | Stand-in `cloudflared` on PATH that prints `https://x.trycloudflare.com` and `Registered tunnel connection` to stdout (which is `logs/tunnel.log`) and stays alive. **These processes outlive the app: a test must call `phone_stop` (or kill them) in teardown.** | — skipped until the phone returns (#23) (boot.py's pretend tunnel)
+| Phone **Continue** (`phone_start{}`) | Spawns `python -m door serve start` (local), `caffeinate` on macOS, and `cloudflared tunnel` (internet). Downloads cloudflared from GitHub if none is found. | Stand-in `cloudflared` on PATH that prints `https://x.trycloudflare.com` and `Registered tunnel connection` to stdout (which is `logs/tunnel.log`) and stays alive. **These processes outlive the app: a test must call `phone_stop` (or kill them) in teardown.** | — ✓ Continue, the QR code at once, the phone scans it, Done: the row says it is paired (boot.py's pretend tunnel)
 
 ---
 
@@ -207,26 +207,26 @@ No Sync now: `sync_data {}` runs by itself on connecting, once when the app open
 
 ### 2c. Your phone row (`PhoneConnection`)
 - On mount, `phone_status` is called. This is the only Connections call that runs by itself. — unit: `app/src/renderer/screens/PhoneSetup.test.tsx`
-- **No demo or sandbox guard:** in the demo, Continue really serves the made-up data. — not tested: the demo window is not this world
+- **Staging and the sandbox never serve:** the row says "Not available in the sandbox" or "in staging" and reads nothing, and the main process refuses `phone_start` and `pair_phone` there. — not tested: the demo window is not this world
 
 | Condition | Visible |
 |---|---|
 | `status===null` and no error | status "Checking your phone…" (no buttons) | — not tested: phone_status answers before the row is looked at
-| `phone_status` threw | alert with the error text, no state line, **no buttons at all** (the button needs `status!==null`). Dead end until Settings remounts. | — unit: `app/src/renderer/screens/PhoneSetup.test.tsx`; skipped until the phone returns (#23)
-| not running, `devices.length>0` | "Disconnected when this computer restarted. Set it up again and scan a new code." + **"Set up your phone"** | — unit: `app/src/renderer/screens/PhoneSetup.test.tsx`
+| `phone_status` threw | alert with the error text, no state line, **no buttons at all** (the button needs `status!==null`). Dead end until Settings remounts. | — unit: `app/src/renderer/screens/PhoneSetup.test.tsx`; ✓ phone_status failing still leaves a way to try again in the row
+| not running, `devices.length>0` | "Disconnected when this computer restarted. Disconnect it here, then set it up again and scan a new code." + **"Disconnect…"** (one phone: it is unpaired before another is set up) | — unit: `app/src/renderer/screens/PhoneSetup.test.tsx`
 | not running, no devices | no state line, only **"Set up your phone"** | — unit: `app/src/renderer/screens/PhoneSetup.test.tsx`
-| running | One muted line, no address and no word of serving: "Connected" (lasting) or "Connected until this computer restarts" when a phone is paired, "Not paired yet." when none is. Buttons **"Disconnect"** (quiet), and **"Pair your phone"** when none is paired. No device names: the app pairs one phone, always as "My phone". Fine mark only when running and a phone is paired. | — skipped until the phone returns (#23); skipped until the phone returns (#23); lasting (Tailscale): not tested, the app never asks for it
+| running | One muted line, no address and no word of serving: "Connected until this computer restarts" when a phone is paired, "Not paired yet." when none is. Buttons **"Disconnect"** (quiet), and **"Pair your phone"** when none is paired. No device names: the app pairs one phone, always as "My phone". Fine mark only when running and a phone is paired. | — ✓ Continue, the QR code at once, the phone scans it, Done: the row says it is paired
 
 - "running" means `.serve/run.json` exists and the `serve_pid` (and `tunnel_pid` if set) are alive. A dead tunnel reads not running. — not tested: a note on the harness, not an action (the pretend tunnel keeps its state in the server)
 - To seed: `<home>/.serve/devices.json` = `[{"device","paired_at","last_seen","token_hash"…}]`. Only `device`, `paired_at` and `last_seen` are read. A `run.json` with live pids gives running; a test can use pids of its own long-lived processes. — not tested: a note on the harness, not an action
 
 Actions:
-- **Set up your phone** → PhoneSetup dialog starting at step `how`. **Pair your phone** → starting at step `pair` (§7). — unit: `app/src/renderer/screens/PhoneSetup.test.tsx`; skipped until the phone returns (#23)
-- **Disconnect** → a dialog "Disconnect your phone?" (Cancel / Disconnect); Disconnect runs `unpair_phone {device}` for each paired device (one, or an older second), then `phone_stop {}`, then `phone_status`. A failed unpair stops there: its error shows and nothing is stopped. — skipped until the phone returns (#23)
-  - Error: "no paired phone is called '<d>'" (alert; Python repr quotes). — skipped until the phone returns (#23)
+- **Set up your phone** → PhoneSetup dialog starting at step `how`. **Pair your phone** → starting at step `pair` (§7). — unit: `app/src/renderer/screens/PhoneSetup.test.tsx`; ✓ Continue, the QR code at once, the phone scans it, Done: the row says it is paired
+- **Disconnect** → a dialog "Disconnect your phone?" (Cancel / Disconnect); Disconnect runs `unpair_phone {device}` for each paired device (one, or an older second), then `phone_stop {}`, then `phone_status`. A failed unpair stops there: its error shows and nothing is stopped. — ✓ closed before the scan: Pair your phone brings the code back; Disconnect asks, then unpairs and stops
+  - Error: "no paired phone is called '<d>'" (alert; Python repr quotes). — ✓ closed before the scan: Pair your phone brings the code back; Disconnect asks, then unpairs and stops
   - Buttons are disabled while busy. — not tested: the pretend server answers at once
-- `phone_stop {}` (the end of Disconnect) That kills the tunnel, caffeinate and serve, and deletes `run.json`. Returns `{stopped}`, which is ignored. — skipped until the phone returns (#23); unit: `app/src/renderer/screens/PhoneSetup.test.tsx`
-- When the dialog closes, `phone_status` is read again. — skipped until the phone returns (#23)
+- `phone_stop {}` (the end of Disconnect) That kills the tunnel, caffeinate and serve, and deletes `run.json`. Returns `{stopped}`, which is ignored. — ✓ closed before the scan: Pair your phone brings the code back; Disconnect asks, then unpairs and stops; unit: `app/src/renderer/screens/PhoneSetup.test.tsx`
+- When the dialog closes, `phone_status` is read again. — ✓ closed before the scan: Pair your phone brings the code back; Disconnect asks, then unpairs and stops
 
 ---
 
@@ -371,9 +371,9 @@ Focus: the Dialog focuses its first control on open. After a step change, if foc
 ### Step `how` (from "Set up your phone")
 - Text: "The other door on your phone is this app, served by this computer. There is nothing to install: scan a code and it works anywhere while this computer is on." — unit: `app/src/renderer/screens/PhoneSetup.test.tsx`
 - Muted: "When this computer restarts, set this up again and scan a new code. What you see on your phone passes through Cloudflare, which could read it on the way." — unit: `app/src/renderer/screens/PhoneSetup.test.tsx`
-- Buttons **"Continue"** (primary; disabled while busy) and **"Cancel"** (quiet). — unit: `app/src/renderer/screens/PhoneSetup.test.tsx`; skipped until the phone returns (#23)
-- **Continue** → `phone_start {connection:'cloudflare'}` (timeout 300 s). While running, the status reads "Starting The other door for your phone…". — skipped until the phone returns (#23); the spinner: not caught
-  - Success → step `pair`, showing that status. — skipped until the phone returns (#23)
+- Buttons **"Continue"** (primary; disabled while busy) and **"Cancel"** (quiet). — unit: `app/src/renderer/screens/PhoneSetup.test.tsx`; ✓ Continue, the QR code at once, the phone scans it, Done: the row says it is paired
+- **Continue** → `phone_start {}` (timeout 300 s). While running, the status reads "Starting The other door for your phone…". — ✓ Continue, the QR code at once, the phone scans it, Done: the row says it is paired; the spinner: not caught
+  - Success → step `pair`, showing that status. — ✓ Continue, the QR code at once, the phone scans it, Done: the row says it is paired
   - It reuses a running cloudflare server. A stale `run.json` is stopped first. — not tested: the pretend tunnel has no stale run.json
 - Errors (alert, stays on `how`): — unit: `app/src/renderer/screens/PhoneSetup.test.tsx`
 
@@ -388,24 +388,22 @@ Focus: the Dialog focuses its first control on open. After a step change, if foc
 | No free port | `Error executing tool phone_start: no free port for the phone server` | — not tested: same path as a tunnel that does not start says why and stays on the first step; Continue again works
 | Timeout (300 s) | "The other door took too long to answer" | — not tested: 300 s
 
-  - `{needs: …}` answers exist only for tailscale, which the app never asks for, so those are unreachable. — not tested: unreachable
   - With a stand-in `cloudflared` on PATH that prints both lines, the happy path is offline: on disk `<home>/.serve/run.json`, `<home>/logs/{serve,tunnel,awake}.log`, `$XDG_CONFIG_HOME/door/instances.json`, and real child processes (**clean them up**). — not tested: a note on the harness, not an action (boot.py's pretend tunnel instead: no processes)
 
 ### Step `pair` (directly from "Pair your phone", or after Continue)
-- A muted line when `status.address` is set: — skipped until the phone returns (#23)
-  - `Serving at <address>, an address that stays the same.` (lasting) — not tested: Tailscale; the app never asks for it
-  - or `Serving at <address>. This address changes when this computer restarts.` — skipped until the phone returns (#23)
-  - **Opened via "Pair your phone" the dialog has no `status`, so this line is absent**, and the "already paired" baseline for polling is empty (see below). — skipped until the phone returns (#23)
-- On entering the step the code is made at once (`pair_phone {device: "My phone"}`, once per visit), with "Making a code…" while it runs. No name to type. If it fails, the error and **"Try again"** (primary). — skipped until the phone returns (#23)
-  - Success → `img "QR code that pairs your phone"` (a data:image/svg+xml base64 `src`), the text "Point your phone's camera at the code and open the link it shows. It works once, for five minutes.", and the status "Waiting for your phone…". — skipped until the phone returns (#23)
+- A muted line when `status.address` is set: — ✓ Continue, the QR code at once, the phone scans it, Done: the row says it is paired
+  - or `Serving at <address>. This address changes when this computer restarts.` — ✓ Continue, the QR code at once, the phone scans it, Done: the row says it is paired
+  - **Opened via "Pair your phone" the dialog has no `status`, so this line is absent**. — ✓ Continue, the QR code at once, the phone scans it, Done: the row says it is paired
+- On entering the step the code is made at once (`pair_phone {device: "My phone"}`, once per visit), with "Making a code…" while it runs. No name to type. If it fails, the error and **"Try again"** (primary). — ✓ Continue, the QR code at once, the phone scans it, Done: the row says it is paired
+  - Success → `img "QR code that pairs your phone"` (a data:image/svg+xml base64 `src`), the text "Point your phone's camera at the code and open the link it shows. It works once, for five minutes.", and the status "Waiting for your phone…". — ✓ Continue, the QR code at once, the phone scans it, Done: the row says it is paired
   - On disk: a pending entry in `<home>/.serve/pairing.json`. The code only exists inside the QR. — not tested: a note on the harness, not an action (the pretend tunnel keeps it in the server)
   - Errors (alert): — unit: `app/src/renderer/screens/PhoneSetup.test.tsx`
     - "The other door is not serving a phone yet; start it first" (the server stopped meanwhile, or "Pair your phone" after the processes died) — unit: `app/src/renderer/screens/PhoneSetup.test.tsx`
     - The device-name `ValueError` is unreachable: strong codes skip the duplicate check and an empty name falls back to "My phone". — not tested: unreachable
-- **Close** (quiet), always shown. — skipped until the phone returns (#23)
-- Polling every 2000 ms while a code shows and has not expired: — skipped until the phone returns (#23)
+- **Close** (quiet), always shown. — ✓ Continue, the QR code at once, the phone scans it, Done: the row says it is paired
+- Polling every 2000 ms while a code shows and has not expired: — ✓ Continue, the QR code at once, the phone scans it, Done: the row says it is paired
   - Each tick first checks `expires_at` against the window clock; if it has passed, the code is marked expired. — unit: `app/src/renderer/screens/PhoneSetup.test.tsx`
-  - Otherwise it calls `phone_status`. A device with the same name whose `paired_at` differs from the baseline moves to step `home`. — skipped until the phone returns (#23)
+  - Otherwise it calls `phone_status`. A device with the code's name moves to step `home`. — ✓ Continue, the QR code at once, the phone scans it, Done: the row says it is paired
   - The baseline is the devices in the `status` from Continue; via "Pair your phone" it is empty, so any "My phone" counts, even an old one; the row offers Pair your phone only when nothing is paired, so there is none.
   - Polling errors are swallowed. — not tested: not driven
   - A test can complete pairing without a phone by appending `{"device":"My phone","paired_at":"<now>","last_seen":null,…}` to `<home>/.serve/devices.json`, or by POSTing `/pair` to the serve port with the code decoded from the QR. — not tested: a note on the harness, not an action (phoneScans: <world>/phone-scanned)
@@ -415,10 +413,10 @@ Focus: the Dialog focuses its first control on open. After a step change, if foc
   - The real TTL is 5 min. Playwright `page.clock` can fast-forward the renderer's `Date.now()` and `setInterval`; `expires_at` is server time. — unit: `app/src/renderer/screens/PhoneSetup.test.tsx`
 
 ### Step `home`
-- h3 "Add The other door to your home screen". — skipped until the phone returns (#23)
-- "Your phone is paired. Once it opens The other door, it offers to install it as an app." — skipped until the phone returns (#23)
-- If not `status.lasting` (always so for cloudflare, and when there is no status): the muted line "When this computer restarts, set this up again and scan the new code. The address changes with it, so add it again to your home screen and remove the old one." — skipped until the phone returns (#23)
-- **"Done"** (primary) closes the dialog, and the row re-reads `phone_status`. It now shows `Serving at …` and **"Remove phone"**. — skipped until the phone returns (#23)
+- h3 "Add The other door to your home screen". — ✓ Continue, the QR code at once, the phone scans it, Done: the row says it is paired
+- "Your phone is paired. Once it opens The other door, it offers to install it as an app." — ✓ Continue, the QR code at once, the phone scans it, Done: the row says it is paired
+- The muted line "When this computer restarts, disconnect your phone here, set it up again and scan the new code. The address changes with it, so add it again to your home screen and remove the old one." — ✓ Continue, the QR code at once, the phone scans it, Done: the row says it is paired
+- **"Done"** (primary) closes the dialog, and the row re-reads `phone_status`. It now shows `Serving at …` and **"Remove phone"**. — ✓ Continue, the QR code at once, the phone scans it, Done: the row says it is paired
 
 ---
 
@@ -433,8 +431,8 @@ Not used anywhere in Settings. It is used by the CV editor. It renders `role="sw
 - **Claude row**: checking, not-installed, unknown (doctor failed / unreadable status), signed-in (email+plan, email only, plan only, neither, unknown plan string), api-key, signed-out. Plus the install dialog (cancel / install → incomplete / throw). — ✓ Settings shows who is signed in and the plan, with Use another account; ✓ the sidebar line opens Settings, where the row says Claude is not signed in; unit: `app/src/renderer/screens/Connections.test.tsx`; ✓ the row cannot read the sign-in and offers Check again, which recovers once doctor answers; api-key and plan/email variants: not tested (claude.py has one signed-in answer)
 - **Sign-in**: idle, starting, waiting (canOpen false/true), code box (blank disabled, refused code, wrong code → failed 400, right code → done → signed in), cancel, failed (4 message sources), timeout (push), stale done, stuck "Checking the sign-in…", `--email` passed or not. — ✓ Sign in with Claude waits for the browser, with the profile’s email on claude’s page; unit: `app/src/main/claude-login.test.ts`; ✓ a wrong code fails the sign-in; Try again with the right one signs in and clears the sidebar line; unit: `app/src/main/claude-login.test.ts`; unit: `app/src/renderer/screens/SignIn.test.tsx`; ✓ claude says the sign-in worked but doctor cannot see it: the block says so instead of checking forever
 - **Drive row**: demo, sandbox, checking, not configured (patch), off, connected (with or without account; last_synced null / valid / garbage; with or without last_error) and sidebar "Google Drive sync failed". Connect: waiting, success, and each error. Sync: each action, conflict → Keep this computer / Keep Drive / Not now, errors. Disconnect: cancel / confirm. — ✓ Connect waits for the browser, then syncs at once: this computer’s data goes to an empty Drive; unit: `app/src/renderer/screens/Connections.test.tsx`; ✓ opening the app syncs once: this computer’s data goes to an empty Drive, and the row says when; ✓ opening the app brings Drive’s data here, keeping this computer’s in backups/; ✓ opening the app replaces nothing: a line opens Settings, where the row asks which to keep; Not now puts it away; ✓ Keep this computer sends its data to Drive, replacing the copy there; ✓ Keep Drive brings Drive’s data here; this computer’s is kept in backups/; unit: `app/src/renderer/screens/Connections.test.tsx`; ✓ Disconnect asks first: Cancel keeps it; Disconnect sends the last changes, then forgets Drive and leaves the copy there; ✓ the sidebar says Google Drive sync failed and opens Settings, where the row says why
-- **Phone row**: checking, error dead-end, not set up, not serving with devices, serving (lasting / not, paired or not), Disconnect (cancel / ok / error), Pair your phone. — unit: `app/src/renderer/screens/PhoneSetup.test.tsx`; skipped until the phone returns (#23); skipped until the phone returns (#23); unit: `app/src/renderer/screens/PhoneSetup.test.tsx`
-- **PhoneSetup**: how (Continue ok / each error / Cancel / Escape), pair (with or without the status line, the code made at once ok / error → Try again, expired → New code, paired → home), home (Done; lasting line absent / present). — unit: `app/src/renderer/screens/PhoneSetup.test.tsx`; skipped until the phone returns (#23); unit: `app/src/renderer/screens/PhoneSetup.test.tsx`; skipped until the phone returns (#23)
+- **Phone row**: checking, error dead-end, not set up, not serving with devices, serving (paired or not), Disconnect (cancel / ok / error), Pair your phone. — unit: `app/src/renderer/screens/PhoneSetup.test.tsx`; ✓ Continue, the QR code at once, the phone scans it, Done: the row says it is paired; unit: `app/src/renderer/screens/PhoneSetup.test.tsx`
+- **PhoneSetup**: how (Continue ok / each error / Cancel / Escape), pair (with or without the status line, the code made at once ok / error → Try again, expired → New code, paired → home), home (Done). — unit: `app/src/renderer/screens/PhoneSetup.test.tsx`; ✓ Continue, the QR code at once, the phone scans it, Done: the row says it is paired; unit: `app/src/renderer/screens/PhoneSetup.test.tsx`; ✓ Continue, the QR code at once, the phone scans it, Done: the row says it is paired
 - **Data**: export cancel / exists / success (kB vs MB) / each Python error; import cancel / wrong extension / dialog cancel / success with or without backup and warnings / each Python error. — ✓ Export… writes an archive where the user says, and names it; unit: `tests/commands/test_archive_cli.py`; unit: `app/src/renderer/screens/DataMoves.test.tsx`; unit: `tests/commands/test_archive_cli.py`; ✓ Import… asks first; Cancel imports nothing; ✓ Import replaces the data and keeps what was here in backups/; ✓ Import… of something that is not an export is refused; nothing changes; unit: `app/src/main/archive-files.test.ts`; unit: `app/src/renderer/screens/DataMoves.test.tsx`
 - **Theme**: system / light / dark, persistence, `data-theme` attribute. — unit: `app/src/renderer/theme.test.ts`; ✓ Dark turns the whole app dark and stays dark after a reload; Light turns it light
 - **Where**: Drive unavailable in demo and sandbox. **The phone row is not guarded in the demo.** — ✓ Your data says where the data folder is; its path shows it; demo/sandbox: not tested (other windows)
@@ -453,9 +451,9 @@ Not used anywhere in Settings. It is used by the CV editor. It renders `role="sw
 | `connect_drive` | `{}` | `account` |
 | `sync_data` | `{}` / `{keep_local:true}` / `{keep_drive:true}` | `action` (push/pull/nothing/skipped); an error with `conflict:true` gives the conflict box |
 | `disconnect_drive` | `{}` | nothing (`disconnected` is ignored) |
-| `phone_status` | `{}` | `running`, `address`, `lasting`, `devices[]`: `device`, `paired_at` (`last_seen` is not read). `connection`, `web_built`, `tailscale_installed`, `port` and `started_at` are not read. |
-| `phone_start` | `{connection:'cloudflare'}` | as `phone_status` (`address`, `lasting`, `devices`) |
-| `pair_phone` | `{device}` | `device`, `qr_svg` (an SVG document string), `expires_at` (ISO) |
+| `phone_status` | `{}` | `running`, `address`, `devices[]`: `device`, `paired_at` (`last_seen` is not read). `web_built`, `port` and `started_at` are not read. |
+| `phone_start` | `{}` | as `phone_status` (`address`, `devices`) |
+| `pair_phone` | `{device}` | `device`, `qr_svg` (an SVG document string), `expires_at` (ISO); refused with "Only one phone can be paired: unpair <name> first to pair another." while one is paired |
 | `unpair_phone` | `{device}` | nothing |
 | `phone_stop` | `{}` | nothing |
 | `show_profile` (App) | `{}` | `config.email` (for SignIn), `config` null or not, `cv.exists` (sidebar CV line) |

@@ -9,10 +9,10 @@ import { mockDoor } from '../testing'
 afterEach(cleanup)
 
 const serving = {
-  running: true, connection: 'tailscale', address: 'https://mac.tail1234.ts.net', port: 8765, lasting: true,
-  devices: [{ device: 'Pixel', paired_at: '2026-10-30T10:00:00+00:00', last_seen: null }], web_built: true, tailscale_installed: true,
+  running: true, address: 'https://x.trycloudflare.com', port: 8765,
+  devices: [{ device: 'Pixel', paired_at: '2026-10-30T10:00:00+00:00', last_seen: null }], web_built: true,
 }
-const idle = { running: false, devices: [], web_built: true, tailscale_installed: false }
+const idle = { running: false, devices: [], web_built: true }
 const SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect width="10" height="10"/></svg>'
 const future = () => new Date(Date.now() + 5 * 60_000).toISOString()
 
@@ -34,7 +34,9 @@ describe('Connections: Your phone', () => {
     connections({ phone_status: { ...idle, devices: [{ device: 'Pixel', paired_at: 'x', last_seen: null }] } })
     const row = within(await screen.findByRole('listitem', { name: 'Your phone' }))
     expect(await row.findByText(/scan a new code/)).toBeInTheDocument()
-    expect(row.getByRole('button', { name: 'Set up your phone…' })).toBeInTheDocument()
+    // one phone is allowed: the old pairing goes first, then it is set up again
+    expect(row.getByRole('button', { name: 'Disconnect…' })).toBeInTheDocument()
+    expect(row.queryByRole('button', { name: 'Set up your phone…' })).toBeNull()
   })
 
   it('the state cannot be read: says why, and Check again reads it again', async () => {
@@ -57,8 +59,8 @@ describe('Connections: Your phone', () => {
   it('a paired phone: Connected, no names or addresses, and one Disconnect that asks, then unpairs and stops', async () => {
     const { call } = connections({ phone_status: serving, unpair_phone: { removed: 'Pixel' }, phone_stop: { stopped: true } })
     const row = within(await screen.findByRole('listitem', { name: 'Your phone' }))
-    expect(await row.findByText('Connected')).toBeInTheDocument()
-    expect(row.queryByText(/mac\.tail1234\.ts\.net|Pixel|[Ss]erving/)).toBeNull()
+    expect(await row.findByText('Connected until this computer restarts')).toBeInTheDocument()
+    expect(row.queryByText(/trycloudflare|Pixel|[Ss]erving/)).toBeNull()
     expect(row.queryByRole('button', { name: 'Pair your phone…' })).toBeNull()
     await userEvent.click(row.getByRole('button', { name: 'Disconnect…' }))
     const ask = screen.getByRole('dialog', { name: 'Disconnect your phone?' })
@@ -84,16 +86,16 @@ describe('Connections: Your phone', () => {
 describe('PhoneSetup', () => {
   it('nothing to choose or install: Continue, the QR code, then the home screen', async () => {
     let paired = false
-    const started = { ...serving, connection: 'cloudflare', lasting: false, address: 'https://x.trycloudflare.com' }
+    const started = { ...serving, devices: [] }
     const { call } = mockDoor({
       phone_start: started,
       pair_phone: () => ({ device: 'My phone', qr_svg: SVG, expires_at: future() }),
-      phone_status: () => (paired ? { ...started, devices: [...started.devices, { device: 'My phone', paired_at: 'x', last_seen: null }] } : started),
+      phone_status: () => (paired ? { ...started, devices: [{ device: 'My phone', paired_at: 'x', last_seen: null }] } : started),
     })
     render(<PhoneSetup onClose={vi.fn()} pollMs={5} />)
     expect(screen.getByText(/passes through Cloudflare/)).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Continue' }))
-    expect(call).toHaveBeenCalledWith('phone_start', { connection: 'cloudflare' })
+    expect(call).toHaveBeenCalledWith('phone_start', {})
     expect(await screen.findByText(/changes when this computer restarts/)).toBeInTheDocument()
 
     // the QR code at once, and nothing to read or type
@@ -108,23 +110,6 @@ describe('PhoneSetup', () => {
     expect(screen.getByText(/it offers to install it as an app/)).toBeInTheDocument()
   })
 
-  it('a phone paired before, scanning again under its name, counts as paired once its date changes', async () => {
-    const before = { device: 'My phone', paired_at: '2026-10-30T10:00:00+00:00', last_seen: null }
-    let rescanned = false
-    mockDoor({
-      phone_start: { ...serving, connection: 'cloudflare', lasting: false, devices: [before] },
-      pair_phone: { device: 'My phone', qr_svg: SVG, expires_at: future() },
-      phone_status: () => ({ ...serving, devices: [rescanned ? { ...before, paired_at: '2026-10-31T10:00:00+00:00' } : before] }),
-    })
-    render(<PhoneSetup onClose={vi.fn()} pollMs={5} />)
-    await userEvent.click(screen.getByRole('button', { name: 'Continue' }))
-    await screen.findByRole('img', { name: 'QR code that pairs your phone' })
-    await new Promise((r) => setTimeout(r, 30))
-    expect(screen.queryByRole('heading', { name: 'Add The other door to your home screen' })).toBeNull()
-    rescanned = true
-    expect(await screen.findByRole('heading', { name: 'Add The other door to your home screen' })).toBeInTheDocument()
-    expect(screen.getByText(/add it again/)).toBeInTheDocument()
-  })
 
   it('an expired code says so and makes a new one on a click', async () => {
     let n = 0

@@ -308,7 +308,7 @@ drive.upload = _upload
 drive.disconnect = _disconnect
 
 # --------------------------------------------------------------------------- the phone: a pretend tunnel
-# The same shapes as door.core.phone.phone: `address`, `lasting`, devices as {device, paired_at, last_seen}.
+# The same shapes as door.core.phone.phone: `address`, devices as {device, paired_at, last_seen}.
 # A pairing waits for "the phone": the test writes `<world>/phone-scanned` and the next status pairs it.
 _PHONE = {"running": False, "devices": [], "pending": None}
 _ADDRESS = "https://quiet-river.trycloudflare.example"
@@ -322,17 +322,17 @@ def _phone_status(home, **deps) -> dict:
         _PHONE["devices"] = [d for d in _PHONE["devices"] if d["device"] != name]
         _PHONE["devices"].append({"device": name, "paired_at": _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds"), "last_seen": None})
         _PHONE["pending"] = None
-    out = {"running": _PHONE["running"], "devices": list(_PHONE["devices"]), "web_built": True, "tailscale_installed": False}
+    out = {"running": _PHONE["running"], "devices": list(_PHONE["devices"]), "web_built": True}
     if _PHONE["running"]:
-        out.update(connection=_PHONE["connection"], address=_ADDRESS, port=8765, lasting=_PHONE["connection"] == "tailscale")
+        out.update(address=_ADDRESS, port=8765)
     return out
 
 
-def _phone_start(home, connection: str, **deps) -> dict:
+def _phone_start(home, **deps) -> dict:
     said = faults().get("phone", {}).get("start")
     if said:
         return said
-    _PHONE.update(running=True, connection=connection)
+    _PHONE.update(running=True)
     return _phone_status(home)
 
 
@@ -345,6 +345,8 @@ def _phone_stop(home, **deps) -> dict:
 def _phone_pair(home, device: str, **deps) -> dict:
     if not _PHONE["running"]:
         return {"error": "The other door is not serving a phone yet; start it first"}
+    if _PHONE["devices"]:
+        return {"error": f"Only one phone can be paired: unpair {_PHONE['devices'][0]['device']!r} first to pair another."}
     _PHONE["pending"] = device.strip()
     svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 29 29"><rect width="29" height="29" fill="#fff"/><path d="M1 1h7v7H1zM21 1h7v7h-7zM1 21h7v7H1z" fill="#000"/></svg>'
     expires = _dt.datetime.now(_dt.timezone.utc) + _dt.timedelta(seconds=300)

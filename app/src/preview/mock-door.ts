@@ -93,9 +93,8 @@ export function createMockDoor(scene: Scene, state: DataState, { delayMs = 300 }
   let phone: { running: boolean; devices: Device[] } = { running: false, devices: [] }
   const phoneStatus = () => ({
     ...phone,
-    ...(phone.running ? { connection: 'cloudflare', address: 'https://preview-made-up.trycloudflare.com', lasting: false } : {}),
+    ...(phone.running ? { address: 'https://preview-made-up.trycloudflare.com' } : {}),
     web_built: true,
-    tailscale_installed: false,
   })
   const phoneCall = (tool: string, args: Record<string, unknown>): Envelope | null => {
     if (tool === 'phone_start') {

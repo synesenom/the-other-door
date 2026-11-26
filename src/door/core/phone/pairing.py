@@ -3,7 +3,7 @@
 `serve pair` makes a code (8 characters, shown as XXXX-XXXX, valid ten minutes, good once); the phone
 trades it for a device token (`redeem`) and sends that token with every request (`verify`). Both live in
 `<home>/.serve/` (a 0700 folder, 0600 files) only as SHA-256 hashes: a stolen file pairs nothing.
-Each home is its own instance, so another person's token never verifies here.
+Each home pairs one phone. Each home is its own instance, so another person's token never verifies here.
 """
 
 from __future__ import annotations
@@ -64,14 +64,15 @@ def new_code(home: Path, device: str, *, now: datetime | None = None, strong: bo
     """A one-time pairing code for a device of this name; its hash is kept, not the code.
 
     `XXXX-XXXX` (ten minutes) to type from a terminal; `strong` is the QR code's: 24 characters
-    (about 2^119), five minutes, and it cancels the device's older codes. A QR code may name a paired
-    device: a quick tunnel's phone pairs again after a restart, and its old token goes when it is scanned.
+    (about 2^119), five minutes, and it cancels the device's older codes. One phone at a time: while
+    one is paired, no code is made until it is unpaired.
     """
     device = device.strip()
     if not device:
         raise ValueError("name the device, e.g. --device \"Anna's phone\"")
-    if not strong and any(d["device"].casefold() == device.casefold() for d in devices(home)):
-        raise ValueError(f"{device!r} is already paired; `serve unpair {device!r}` first to pair it again")
+    paired = devices(home)
+    if paired:
+        raise ValueError(f"Only one phone can be paired: unpair {paired[0]['device']!r} first to pair another.")
     folder = _folder(home)
     at = _now(now)
     code = "".join(secrets.choice(_ALPHABET) for _ in range(STRONG_LENGTH if strong else 8))

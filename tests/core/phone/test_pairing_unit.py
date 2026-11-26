@@ -48,23 +48,33 @@ def test_the_files_hold_hashes_only_and_are_private(tmp_path):
 
 
 def test_devices_lists_and_unpair_revokes_one(tmp_path):
-    tokens = {}
-    for name in ("Pixel", "iPad"):
-        _, tokens[name] = pairing.redeem(tmp_path, pairing.new_code(tmp_path, name, now=NOW), now=NOW)
-    names = [d["device"] for d in pairing.devices(tmp_path)]
-    assert names == ["Pixel", "iPad"]
+    _, token = pairing.redeem(tmp_path, pairing.new_code(tmp_path, "Pixel", now=NOW), now=NOW)
+    assert [d["device"] for d in pairing.devices(tmp_path)] == ["Pixel"]
     assert "token" not in json.dumps(pairing.devices(tmp_path)).lower().replace("token_hash", "")
-
     assert pairing.unpair(tmp_path, "pixel") is True  # case-insensitive
-    assert pairing.verify(tmp_path, tokens["Pixel"]) is None
-    assert pairing.verify(tmp_path, tokens["iPad"]) == "iPad"
+    assert pairing.verify(tmp_path, token) is None
     assert pairing.unpair(tmp_path, "nobody") is False
 
 
-def test_a_second_device_of_the_same_name_is_refused(tmp_path):
+def test_a_second_phone_is_refused_until_the_first_is_unpaired(tmp_path):
     pairing.redeem(tmp_path, pairing.new_code(tmp_path, "Pixel", now=NOW), now=NOW)
-    with pytest.raises(ValueError, match="already paired"):
-        pairing.new_code(tmp_path, "pixel", now=NOW)
+    for strong in (False, True):
+        with pytest.raises(ValueError, match="unpair"):
+            pairing.new_code(tmp_path, "iPad", now=NOW, strong=strong)
+    pairing.unpair(tmp_path, "Pixel")
+    assert pairing.new_code(tmp_path, "iPad", now=NOW)
+
+
+def test_a_devices_file_of_several_phones_from_before_still_works(tmp_path):
+    rows = [{"device": n, "token_hash": pairing._hash(t), "paired_at": "2026-01-01T00:00:00+00:00", "last_seen": None}
+            for n, t in (("Pixel", "a"), ("iPad", "b"))]
+    pairing._write(pairing._folder(tmp_path) / "devices.json", rows)
+    assert pairing.verify(tmp_path, "a") == "Pixel" and pairing.verify(tmp_path, "b") == "iPad"
+    with pytest.raises(ValueError, match="unpair"):
+        pairing.new_code(tmp_path, "Third", now=NOW)
+    pairing.unpair(tmp_path, "Pixel")
+    pairing.unpair(tmp_path, "iPad")
+    assert pairing.new_code(tmp_path, "Third", now=NOW)
 
 
 def test_a_device_needs_a_name(tmp_path):

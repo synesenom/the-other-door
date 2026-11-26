@@ -9,12 +9,9 @@ import { Spinner } from './Spinner'
 
 export interface PhoneStatus {
   running: boolean
-  connection?: 'tailscale' | 'cloudflare'
   address?: string
-  lasting?: boolean
   devices: { device: string; paired_at: string | null; last_seen: string | null }[]
   web_built: boolean
-  tailscale_installed: boolean
 }
 type Qr = { device: string; qr_svg: string; expires_at: string }
 /** One phone: always this name, so pairing again replaces the phone paired before. */
@@ -39,7 +36,7 @@ export function PhoneSetup({ onClose, start = 'how', pollMs = 2000 }: { onClose:
     setBusy('Starting The other door for your phone…')
     setError(null)
     try {
-      const r = await call<PhoneStatus | { error: string }>('phone_start', { connection: 'cloudflare' })
+      const r = await call<PhoneStatus | { error: string }>('phone_start', {})
       const why = failure(r)
       if (why) return setError(why)
       setStatus(r as PhoneStatus)
@@ -83,8 +80,6 @@ export function PhoneSetup({ onClose, start = 'how', pollMs = 2000 }: { onClose:
   useEffect(() => {
     if (step !== 'pair' || !qr || expired) return
     let live = true
-    // Compared by date: a phone pairing again after a restart keeps its name.
-    const pairedAt = new Map((status?.devices ?? []).map((d) => [d.device, d.paired_at]))
     const timer = setInterval(async () => {
       if (new Date(qr.expires_at).getTime() <= Date.now()) {
         if (live) setExpired(true)
@@ -92,7 +87,7 @@ export function PhoneSetup({ onClose, start = 'how', pollMs = 2000 }: { onClose:
       }
       try {
         const s = await call<PhoneStatus>('phone_status')
-        if (live && s.devices.some((d) => d.device === qr.device && d.paired_at !== pairedAt.get(d.device))) setStep('home')
+        if (live && s.devices.some((d) => d.device === qr.device)) setStep('home')
       } catch {
         // keep waiting
       }
@@ -101,7 +96,7 @@ export function PhoneSetup({ onClose, start = 'how', pollMs = 2000 }: { onClose:
       live = false
       clearInterval(timer)
     }
-  }, [step, qr, expired, status, pollMs])
+  }, [step, qr, expired, pollMs])
 
   // A step's button goes away with the step: the focus goes to Close, or Escape would no longer reach the dialog.
   const close = useRef<HTMLButtonElement>(null)
@@ -132,9 +127,7 @@ export function PhoneSetup({ onClose, start = 'how', pollMs = 2000 }: { onClose:
         <div className="phone-step">
           {status?.address && (
             <p className="small muted">
-              {status.lasting
-                ? `Serving at ${status.address}, an address that stays the same.`
-                : `Serving at ${status.address}. This address changes when this computer restarts.`}
+              Serving at {status.address}. This address changes when this computer restarts.
             </p>
           )}
           {!qr ? (
@@ -176,7 +169,7 @@ export function PhoneSetup({ onClose, start = 'how', pollMs = 2000 }: { onClose:
         <div className="phone-step">
           <h3 className="display-s">Add The other door to your home screen</h3>
           <p className="body">Your phone is paired. Once it opens <AppName />, it offers to install it as an app.</p>
-          {!status?.lasting && <p className="small muted">When this computer restarts, set this up again and scan the new code. The address changes with it, so add it again to your home screen and remove the old one.</p>}
+          <p className="small muted">When this computer restarts, disconnect your phone here, set it up again and scan the new code. The address changes with it, so add it again to your home screen and remove the old one.</p>
           <div className="actions">
             <button type="button" className="primary" onClick={onClose}>
               Done

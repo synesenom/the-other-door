@@ -5,7 +5,7 @@ installer (below) or runs from a checkout ([`app/README.md`](../app/README.md)).
 each screen does. The look is in [`design/`](design/README.md).
 
 The first time you open it on a computer with no profile, a short wizard sets *The other door* up
-([First launch](#first-launch)). "Find new jobs" runs the whole search from the app (below). [Profile](#profile) edits every setting of your profile, and Settings holds your [connections](#settings) (Claude and Google Drive) and the data folder. The app opens on Matches. When something needs you (Claude, your Claude plan's window, your CV, new search terms that could not be made, Google Drive, something that keeps going wrong), a short line under the sidebar's menu says so and, except for the plan's window, which has nothing to fix, opens where it is fixed.
+([First launch](#first-launch)). "Find new jobs" runs the whole search from the app (below). [Profile](#profile) edits every setting of your profile, and Settings holds your [connections](#settings) (Claude, Google Drive and your phone) and the data folder. The app opens on Matches. When something needs you (Claude, your Claude plan's window, your CV, new search terms that could not be made, Google Drive, something that keeps going wrong), a short line under the sidebar's menu says so and, except for the plan's window, which has nothing to fix, opens where it is fixed.
 Preparing an application needs the `claude` command line and a Chromium headless shell, which prints the PDFs. The installed app
 brings Chromium (and the Python it runs on) with it; the first screen of the wizard installs Claude and
 signs you in when it is missing. From a checkout, `./door doctor` checks them all. Should Chromium be missing all
@@ -77,9 +77,8 @@ and signs you in to your Claude plan.
 **Updating**: an installed app looks for a newer published version when it starts and once a day while
 it is open; there is nothing to press. Settings → Help shows the version you have. The Windows installer, the AppImage and a signed macOS build download it in the
 background and install it when you quit; Settings shows "Downloading X", then a "Restart to update to X" button
-that installs it at once. When the app installs an update itself, a running phone server is stopped first; one on Tailscale starts
-again with the new version, a quick tunnel needs setting up again with a new code. Your data stays where it is. A macOS build that is not signed, and the `.deb`, cannot
-replace themselves (a phone server the older version left is stopped at the next start, a Tailscale one starts again, a quick tunnel needs a new code): Settings says "Version X is available" with a Download button that opens the release page, and
+that installs it at once. When the app installs an update itself, a running phone server is stopped first, and the phone needs setting up again with a new code. Your data stays where it is. A macOS build that is not signed, and the `.deb`, cannot
+replace themselves (a phone server the older version left is stopped at the next start, and the phone needs a new code): Settings says "Version X is available" with a Download button that opens the release page, and
 you install the download over this one. The check sends no information about you; offline, or when the release
 cannot be reached, it shows nothing and writes one line to the problem log. The unsigned Windows installer may
 show SmartScreen's warning again on an update. Only a published release counts, not a draft or a pre-release. A
@@ -551,6 +550,10 @@ fine, an empty ring when not) and what you can do about it.
   kept in `backups/`). "Disconnect…" asks first, sends the last changes, and the copy on Drive stays. In staging
   and the sandbox Drive is not available (their throwaway data never reaches your Drive),
   and a build without *The other door*'s Google client says so.
+- **Your phone** (optional): "Set up your phone…" starts a Cloudflare quick tunnel and shows a QR code to scan
+  with the phone ([On your phone](#on-your-phone)). One phone is paired at a time. Connected, the row says so
+  with "Disconnect…" (it unpairs the phone and stops serving); to use a different phone, or after this computer
+  restarts, disconnect first and set it up again. In staging and the sandbox it is not available.
 
 **Where to find employers**: sites whose terms forbid automated reading (LinkedIn and the others),
 which *The other door* can still read for employers to follow, if you choose to. Only the ones serving your city
@@ -653,13 +656,10 @@ Set it up by hand, on the computer running *The other door*, once:
 1. Build the phone app: `cd app && npm run build:web`.
 2. Start the server: `./door serve` (it listens on this machine only, port 8765).
 3. Give it an `https://` address your phone can reach. A phone installs an app only from a secure
-   address. Two free ways, neither opens your router:
-   - **Cloudflare quick tunnel**, no account: install `cloudflared`, then
-     `cloudflared tunnel --url http://localhost:8765`. It prints an address like
-     `https://<random>.trycloudflare.com` that works from anywhere, for as long as it runs (a new
-     address each time; a named tunnel on your own domain keeps one).
-   - **Tailscale**: `tailscale serve 8765` gives `https://<machine>.<tailnet>.ts.net`, reachable from
-     your own devices with the Tailscale app.
+   address. A Cloudflare quick tunnel is free, needs no account and does not open your router: install
+   `cloudflared`, then `cloudflared tunnel --url http://localhost:8765`. It prints an address like
+   `https://<random>.trycloudflare.com` that works from anywhere, for as long as it runs (a new
+   address each time).
 4. Make a pairing code: `./door serve pair --device "My phone" --url https://<that address>`. It
    prints a code and a QR code; both work once, for ten minutes.
 
@@ -683,13 +683,13 @@ rendered CV and letter (PDF and page images), nothing else of a job's folder. It
 (do that on the computer), it sends only the arguments the app sends, and a day allows 10 prepares, 30 imported
 ads and 6 runs to find jobs (a rolling 24 hours; try again tomorrow, or do it on the computer). Every
 prepared or revised CV and letter is refused before compiling if it would read or write another file.
-With a Cloudflare quick tunnel, Cloudflare's servers see the traffic decrypted on its way through;
-Tailscale keeps it encrypted to your machine.
+Through a Cloudflare quick tunnel, Cloudflare's servers see the traffic decrypted on its way through.
 
 **Share an ad to The other door.** On Android, Share → **The other door** from Chrome, the LinkedIn app or an email
 imports the ad and scores it against your CV, then opens it, with Prepare and Not for me as usual. On an
 iPhone (which does not offer web apps in the share sheet), copy the link and paste it in Matches →
 **Add a job…**.
 
-`./door serve devices` lists the paired phones; `./door serve unpair "My phone"` takes one away
-(it shows the pairing screen again).
+One phone is paired at a time: pairing another is refused until the first is unpaired.
+`./door serve devices` shows the paired phone; `./door serve unpair "My phone"` takes it away
+(it shows the pairing screen again). In the desktop app, Settings → Connections → Your phone sets it up and disconnects it.

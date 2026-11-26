@@ -158,6 +158,16 @@ describe('registerIpc', () => {
     }
   })
 
+  it('never lets staging or the sandbox serve its data to a phone', async () => {
+    for (const info of [{ environment: 'sandbox' as const }, { environment: 'staging' as const }]) {
+      const { server, invoke } = setup(undefined, undefined, false, info)
+      for (const tool of ['phone_start', 'pair_phone']) {
+        expect(await invoke('door:call', tool, {})).toEqual({ ok: false, error: 'Your phone is not available in staging or the sandbox.' })
+      }
+      expect(server.call).not.toHaveBeenCalled()
+    }
+  })
+
   it('does not let the renderer choose the timeout', async () => {
     const { server, invoke } = setup()
     await invoke('door:call', 'import_posting', { text: 'x', timeout: 1 })
