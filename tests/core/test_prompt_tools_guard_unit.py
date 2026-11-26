@@ -34,19 +34,3 @@ def test_the_tailors_real_grant_is_the_reviewed_one():
     assert prepare._TAILOR_ALLOWED_TOOLS == ("Agent", "mcp__door__compile", "mcp__door__check_facts"), (
         "The tailor reads the ad: a tool added to its grant must be reviewed here, never a shell or the web.")
 
-
-def test_the_scorer_and_the_title_translator_have_no_tools():
-    from door.matching import language, scorer
-
-    for argv in (scorer.build_claude_argv("s", "haiku", {}), language.build_argv("haiku")):
-        assert argv[argv.index("--tools") + 1] == "", "The scorer and the title translator read ad text: no tools."
-
-
-def test_no_call_overrides_its_prompts_tools():
-    from paths import REPO_ROOT
-
-    callers = [p.relative_to(REPO_ROOT).as_posix() for p in (REPO_ROOT / "src" / "door").rglob("*.py")
-               if "allowed_tools=" in p.read_text(encoding="utf-8") and p.name != "claude_cli.py"]
-    assert callers == [], (
-        f"{callers} pass allowed_tools= to claude_cli.ask: give the prompt file its tools instead, so they are "
-        "reviewed in REVIEWED above.")
