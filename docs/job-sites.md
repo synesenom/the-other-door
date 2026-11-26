@@ -125,7 +125,7 @@ is not read separately.
 
 ## How The other door fetches
 
-Every request *The other door* makes, by any scraper, follows the same rules (the discovery sources, which reach only their own fixed sites, keep their own sessions, so the proxy and public-internet rules below are not theirs):
+Every request *The other door* makes, by any scraper, follows the same rules (the discovery sources keep their own pace and sessions, so the body cap and deadline below are not theirs; the proxy and public-internet rules are):
 
 - **robots.txt is read for its `Sitemap:` lines** (how `career_sites` finds job pages) and its
   `Crawl-delay`, which is honoured. The discovery sources keep their own, slower pace. Employer feeds are paced 0.2 to 0.5 s per host
