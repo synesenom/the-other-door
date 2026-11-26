@@ -64,8 +64,8 @@ There is no API key anywhere. What the call sends is read by Anthropic under you
 
 - **Scoring:** each posting, with your whole CV and some of your settings (role targets, location, languages,
   minimum score, preferences). The call is given no tools.
-- **Preparing and revising an application:** your CV, story bank, the posting and the profile files the
-  tailor reads, and what it writes.
+- **Preparing and revising an application:** your CV, story bank, the posting, your name and email, and
+  what it writes.
 - **Other short calls:** reading your CV when you set up, proposing search terms and titles, grouping skill
   names, checking the facts of a CV and letter, answering "ask about your jobs". The salary estimate, which uses
   web search, gets the ad's own lines and your years of experience as a number, no line of your CV. Finding an employer's careers page searches the web for the employer's name.
@@ -137,7 +137,8 @@ treated as untrusted too:
   `file:`, `data:`, `blob:`). One limit: on Linux as root, or where the system refuses it, Chromium's own
   sandbox is turned off; the rest still holds.
 - **The tailor has no shell.** It runs from the job's output folder in `claude -p --restricted`. It can
-  read the profile, the posting and that folder, write only there, and call `compile` and `check_facts`. It
+  read only copies of your CV, story bank and templates, the posting (without its score) and that folder,
+  none of your other settings, write only there, and call `compile` and `check_facts`. It
   cannot write your story bank or `cv.md`. Other calls that read an ad get no tools or web search
   alone; reading your public pages (setting up, Add a page) may fetch up to 20 pages it chooses.
 - **Facts are checked, not blocked.** Numbers, years, employers, skills, certifications and degrees in a

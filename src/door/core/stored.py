@@ -62,7 +62,7 @@ INVENTORY: tuple[Stored, ...] = (
     Stored("jobs/discovery/*.json", LEDGER, "door.core.jobs.discovery_state: one file per discovery source"),
     Stored("jobs/skill_aliases.json", LEDGER, "door.core.jobs.skill_aliases: {variant: canonical | null}"),
     Stored("jobs/salary.json", LEDGER, "door.core.salary"),
-    Stored("jobs/.tailor/**", TRANSIENT, "door.commands.prepare: the posting copy the tailor reads (posting.json) and the agent definitions handed to claude -p (agents.json), one folder per job", "removed when the tailor ends"),
+    Stored("jobs/.tailor/**", TRANSIENT, "door.commands.prepare: the posting copy the tailor reads (posting.json), copies of cv.md, story_bank.md and the two templates (all it sees of the profile) and the agent definitions handed to claude -p (agents.json), one folder per job", "removed when the tailor ends"),
     Stored("jobs/.data_version", LEDGER, "door.core.migrations: `<major>.<n>`, the jobs folder's data version"),
     Stored("jobs/.upgrading", TRANSIENT, "door.core.migrations: the backup's path while an upgrade runs; left out of export"),
     # --- jobs/ records ---
