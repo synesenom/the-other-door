@@ -75,7 +75,7 @@ Sources I read in full: `app/src/renderer/screens/{Settings,Connections,SignIn,D
 - Where `applyTheme` is called at startup is outside this area (`main.tsx`). It is worth an e2e check that a stored `dark` applies after a relaunch. — ✓ Dark turns the whole app dark and stays dark after a reload; Light turns it light (a reload keeps dark)
 
 ### Phone
-- The phone has no Settings: its tabs are Matches and Applications, and it is always light. — ✓ the phone e2e (npm run test:web) sees two tabs and a light ground under a dark system setting
+- The phone has no Settings: its tabs are Matches and Applications, and it is always light. — unit: `app/e2e-web/phone.e2e.ts` (two tabs and a light ground under a dark system setting)
 
 ### Narrow window (< 900 px; Electron `minWidth` is 720, so 720–899 px is testable)
 - There is no "Sections" nav on Settings at any width. — ✓ Settings has no side nav and no sidebar lines; Matches says Claude is not signed in on top
