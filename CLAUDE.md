@@ -387,6 +387,7 @@ A rule that only lives in prose gets forgotten; this table lists the ones someth
 | No real network, browser, robots or forbidden hosts in tests or code | `tests/core/test_network_guard_unit.py`, `test_no_browser_guard_unit.py`, `test_robots_guard_unit.py`, `test_no_forbidden_hosts_unit.py` | before #478 |
 | The commands checked in `tests/commands/test_terminal_text_cli.py` print outside text (ads, pages, feeds, model answers) through `common.plain` / `common.literal` | `tests/commands/test_terminal_text_cli.py` | #589 |
 | A scraper's request reaches only public addresses (no plain `requests.Session()` outside `http_client.py`) | `tests/scrapers/test_public_session_guard_unit.py` | this change |
+| A model call that reads outside text has only its reviewed tools; one with the web never sees the CV | `tests/core/test_prompt_tools_guard_unit.py` | v0.5.0 |
 | A CV or letter body stays inside the HTML allow-list | `tests/render/test_html_guard_unit.py` | before #478 |
 | A quiet zero-hit board is told from a broken one | `tests/scrapers/test_zero_hit_guard_unit.py` | before #478 |
 | The example CV is never scored or tailored | `tests/commands/test_example_cv_guard_cli.py` | before #478 |
