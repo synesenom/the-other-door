@@ -26,7 +26,7 @@ PROMPTS = {
     "keywords": ("haiku", "6b9c81f3e5d8791f6750aca0c4207840daba6280df0b3d0d1a0519e2395f3513"),
     "skill-grouper": ("haiku", "f3492df541d158d0b13e3071464e7879bcdbabb30aca2a536bd304daa63d5e96"),
     "reviser": ("sonnet", "5d9a5cb38d4b2cc68801817fe8a3e79e561d02d21e318178c41044f037ecaded"),
-    "salary": ("haiku", "cbd2fb767135c0f7268d5a1cf8850bbe367ec7af7da39bd7e60c5853075ce528"),  # basis: one short line about the candidate
+    "salary": ("haiku", "96329a2879b667444493cac0bdda3dc8bb895fdf4a58824bd2616fcb04492968"),  # basis: one short line about the candidate
     "story-from-text": ("sonnet", "95b7e7c71a4f29b5544f29c91c83f676ea7c06bfb97a16d1fe0fa456d64f1a54"),
     "story-from-cv": ("sonnet", "e3d7398892b12f04dd7d8cad7d4a380342c0591139fd480462022e7b8ca49e9b"),
     "titles": ("haiku", "9a43c42623988336bf2ff2157766650e4769632e65021f1b22156f6d22484299"),

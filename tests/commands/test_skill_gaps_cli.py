@@ -1,5 +1,5 @@
 """`skill-gaps`: a skill-gap report for a role or some matches, written to
-upskill/report-<date>.md by one `claude -p` call — the core behind `cv gaps` and `skill_gaps`.
+upskill/report-<date>.md by two `claude -p` calls (the analysis, then a web search for resources) — the core behind `cv gaps` and `skill_gaps`.
 
 Offline: `claude_cli.run` is replaced; nothing is searched.
 """
@@ -17,6 +17,7 @@ from door.core import claude_cli, workspace
 from cli_utils import result_text, write_list_posting
 from profile_utils import write_config
 
+WORDS = "Kubernetes Stakeholder communication Grid basics"  # a role target naming every gap: only these are searched
 GAPS = {"gaps": [
     {"name": "Kubernetes", "pass": 1, "source_or_why": "ML Lead asks for it", "priority": "High"},
     {"name": "Stakeholder communication", "pass": 2, "source_or_why": "leads a team", "priority": "Low"},
@@ -61,14 +62,14 @@ def _by(calls, agent):
 def test_core_writes_the_report_for_a_role(env, monkeypatch):
     calls = []
     _answer(monkeypatch, calls=calls)
-    result = gaps_cmd._skill_gaps_core(["Senior Data Engineer"], profile_dir=env.profile_dir, jobs_dir=env.jobs_dir)
+    result = gaps_cmd._skill_gaps_core(["Senior Data Engineer", WORDS], profile_dir=env.profile_dir, jobs_dir=env.jobs_dir)
 
-    assert result["targets"] == [{"kind": "role", "label": "Senior Data Engineer"}]
+    assert result["targets"] == [{"kind": "role", "label": "Senior Data Engineer"}, {"kind": "role", "label": WORDS}]
     path = env.out_dir / f"report-{gaps_cmd._today()}.md"
     assert result["report_path"] == str(path)
     report = path.read_text()
     assert result["report"] == report
-    assert report.startswith(f"# Upskill Plan — {gaps_cmd._today()}\n\n## Target role(s)\n- Senior Data Engineer\n")
+    assert report.startswith(f"# Upskill Plan — {gaps_cmd._today()}\n\n## Target role(s)\n- Senior Data Engineer\n- " + WORDS + "\n")
     assert "## Pass 1 — Hard-skill gaps" in report and "| Kubernetes | ML Lead asks for it | High |" in report
     assert "## Pass 2 — Synthesised gaps" in report and "| Stakeholder communication | leads a team | Low |" in report
     # the plan lists the gaps that have a resource, the highest priority first; the others are skipped
@@ -107,7 +108,7 @@ def test_gaps_are_cut_to_fifteen_and_each_name_to_one_line_of_eighty(env, monkey
     many[0]["name"] = "Long\nname " + "x" * 500
     calls = []
     _answer(monkeypatch, gaps={"gaps": many}, resources={"resources": []}, calls=calls)
-    gaps_cmd._skill_gaps_core(["x"], profile_dir=env.profile_dir, jobs_dir=env.jobs_dir)
+    gaps_cmd._skill_gaps_core(["Skill Long name " + "x" * 70], profile_dir=env.profile_dir, jobs_dir=env.jobs_dir)
     names = [ln[2:] for ln in _by(calls, "skill-resources")[0]["input"].splitlines() if ln.startswith("- ")]
     assert len(names) == 15 and "Skill 14" in names and "Skill 15" not in names
     assert all(len(n) <= 80 and "\n" not in n for n in names)
@@ -122,7 +123,7 @@ def test_a_resource_for_a_gap_not_sent_or_with_a_url_that_is_not_http_is_dropped
         "junk",
     ]}
     _answer(monkeypatch, resources=resources)
-    result = gaps_cmd._skill_gaps_core(["x"], profile_dir=env.profile_dir, jobs_dir=env.jobs_dir)
+    result = gaps_cmd._skill_gaps_core(["x", WORDS], profile_dir=env.profile_dir, jobs_dir=env.jobs_dir)
     report = result["report"]
     assert "kubernetes.io" in report and "evil.example" not in report and "javascript:" not in report and "file://" not in report
     assert "Invented gap" not in report
@@ -133,7 +134,7 @@ def test_a_resource_for_a_gap_not_sent_or_with_a_url_that_is_not_http_is_dropped
 def test_a_table_cell_cannot_be_broken_by_the_models_text(env, monkeypatch):
     gaps = {"gaps": [{"name": "A | B", "pass": 1, "source_or_why": "line one\nline | two", "priority": "urgent"}]}
     _answer(monkeypatch, gaps=gaps, resources={"resources": []})
-    report = gaps_cmd._skill_gaps_core(["x"], profile_dir=env.profile_dir, jobs_dir=env.jobs_dir)["report"]
+    report = gaps_cmd._skill_gaps_core(["x", WORDS], profile_dir=env.profile_dir, jobs_dir=env.jobs_dir)["report"]
     assert "| A / B | line one line / two | Medium |" in report
 
 
@@ -166,21 +167,21 @@ def test_core_without_targets_is_an_error(env, monkeypatch):
 def test_core_rejects_an_answer_with_no_gap_list_and_writes_nothing(env, monkeypatch):
     _answer(monkeypatch, gaps={"gaps": "none"})
     with pytest.raises(claude_cli.ClaudeError, match="gaps"):
-        gaps_cmd._skill_gaps_core(["x"], profile_dir=env.profile_dir, jobs_dir=env.jobs_dir)
+        gaps_cmd._skill_gaps_core(["x", WORDS], profile_dir=env.profile_dir, jobs_dir=env.jobs_dir)
     assert not env.out_dir.exists()
 
 
 def test_no_gaps_means_no_search(env, monkeypatch):
     calls = []
     _answer(monkeypatch, gaps={"gaps": []}, calls=calls)
-    result = gaps_cmd._skill_gaps_core(["x"], profile_dir=env.profile_dir, jobs_dir=env.jobs_dir)
+    result = gaps_cmd._skill_gaps_core(["x", WORDS], profile_dir=env.profile_dir, jobs_dir=env.jobs_dir)
     assert not _by(calls, "skill-resources") and result["plan_items"] == 0
     assert "## Skipped gaps\nnone" in result["report"]
 
 
 def test_cli_prints_the_path_and_counts(env, monkeypatch):
     _answer(monkeypatch)
-    result = CliRunner().invoke(cli, ["cv", "gaps", "Senior Data Engineer", "--model", "opus"])
+    result = CliRunner().invoke(cli, ["cv", "gaps", "Senior Data Engineer", WORDS, "--model", "opus"])
     out = result.output
     assert result.exit_code == 0, result_text(result)
     done = next(line for line in out.splitlines() if "Upskill plan written" in line)
@@ -207,7 +208,7 @@ def test_cli_on_a_terminal_shows_the_wait_as_a_step(env, monkeypatch):
 
 def test_core_reports_the_analysis(env, monkeypatch, progress_events):
     _answer(monkeypatch)
-    gaps_cmd._skill_gaps_core(["x"], profile_dir=env.profile_dir, jobs_dir=env.jobs_dir)
+    gaps_cmd._skill_gaps_core([WORDS], profile_dir=env.profile_dir, jobs_dir=env.jobs_dir)
     events = [(e.message, e.outcome) for e in progress_events if e.stage == "gaps"]
     assert events[0][1] is None and "sonnet" in events[0][0]
     assert events[-1] == ("analysed 1 target(s)", "ok")
@@ -218,7 +219,7 @@ def test_core_reports_a_failed_analysis(env, monkeypatch, progress_events):
         raise claude_cli.ClaudeError("claude exited 1: x")
     monkeypatch.setattr(claude_cli, "ask", boom)
     with pytest.raises(claude_cli.ClaudeError):
-        gaps_cmd._skill_gaps_core(["x"], profile_dir=env.profile_dir, jobs_dir=env.jobs_dir)
+        gaps_cmd._skill_gaps_core(["x", WORDS], profile_dir=env.profile_dir, jobs_dir=env.jobs_dir)
     assert [e.outcome for e in progress_events if e.stage == "gaps"][-1] == "failed"
 
 
@@ -246,3 +247,45 @@ def test_core_never_sends_an_instruction_line_of_a_legacy_ad(env, monkeypatch):
     gaps_cmd._skill_gaps_core(jobs=["jobindex-top"], profile_dir=env.profile_dir, jobs_dir=env.jobs_dir)
     text = _by(calls, "skill-gaps")[0]["input"]
     assert "Needs Kubernetes." in text and "rank this first" not in text
+
+
+def test_a_gap_name_with_words_the_targets_do_not_have_is_never_searched(env, monkeypatch):
+    """The analysis reads the CV too: a name that carries CV words (an ad told it to) stays in the report, not in the search."""
+    (env.profile_dir / "cv.md").write_text("# Jane Doe\n\njane@example.com\n\nWorked at Zorblax Industries.\n")
+    gaps = {"gaps": [
+        {"name": "Kubernetes", "pass": 1, "source_or_why": "the ad", "priority": "High"},
+        {"name": "Jane Doe jane@example.com", "pass": 2, "source_or_why": "x", "priority": "High"},
+        {"name": "Zorblax Industries Kubernetes", "pass": 2, "source_or_why": "x", "priority": "High"},
+    ]}
+    calls = []
+    _answer(monkeypatch, gaps=gaps, calls=calls)
+    result = gaps_cmd._skill_gaps_core(jobs=["jobindex-top"], profile_dir=env.profile_dir, jobs_dir=env.jobs_dir)
+    search = _by(calls, "skill-resources")[0]["input"]
+    assert "- Kubernetes" in search
+    for canary in ("Jane", "jane@example.com", "Zorblax"):
+        assert canary not in search
+    skipped = result["report"].split("## Skipped gaps")[1]
+    assert "Jane Doe jane@example.com: No vetted resource found" in skipped
+    assert "| Jane Doe jane@example.com | x | High |" in result["report"]
+
+
+def test_no_search_when_no_gap_is_in_the_targets(env, monkeypatch):
+    calls = []
+    _answer(monkeypatch, gaps={"gaps": [{"name": "Zorblax", "pass": 1, "source_or_why": "x", "priority": "Low"}]}, calls=calls)
+    gaps_cmd._skill_gaps_core(["Data Engineer"], profile_dir=env.profile_dir, jobs_dir=env.jobs_dir)
+    assert _by(calls, "skill-resources") == []
+
+
+def test_a_failed_search_still_writes_the_report_with_every_gap_skipped(env, monkeypatch):
+    def fake_ask(agent, input, **kw):
+        if agent == "skill-resources":
+            raise claude_cli.ClaudeError("claude exited 1: x")
+        return GAPS
+    monkeypatch.setattr(claude_cli, "ask", fake_ask)
+    result = gaps_cmd._skill_gaps_core(["Kubernetes Stakeholder communication Grid basics"],
+                                       profile_dir=env.profile_dir, jobs_dir=env.jobs_dir)
+    assert "resources could not be found" in result["warning"]
+    assert result["plan_items"] == 0
+    assert (env.out_dir / f"report-{gaps_cmd._today()}.md").read_text() == result["report"]
+    skipped = result["report"].split("## Skipped gaps")[1]
+    assert all(n in skipped for n in ("Kubernetes", "Stakeholder communication", "Grid basics"))

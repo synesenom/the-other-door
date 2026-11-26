@@ -1207,11 +1207,12 @@ def skill_gaps(
     """A skill-gap report with a WebSearch-cited learning plan, written to
     `upskill/report-<today>.md`.
 
-    "What should I learn for the Trustpilot job?": one `claude -p` call (minutes)
-    compares the CV with the targets — a hard-skill diff, then broader gaps
-    (soft skills, domain depth, tooling maturity, credentials, evidence) —
-    searches for real resources and writes the prioritised plan. Read the
-    report back to summarise it. Identical to `./door cv gaps`.
+    "What should I learn for the Trustpilot job?": two `claude -p` calls (minutes):
+    the first compares the CV with the targets — a hard-skill diff, then broader
+    gaps (soft skills, domain depth, tooling maturity, credentials, evidence);
+    the second, which sees only the gap names, searches the web for real
+    resources. The code writes the prioritised plan. Read the report back to
+    summarise it. Identical to `./door cv gaps`.
 
     Args:
         targets: Role names ("Senior Accountant") or skills.
@@ -1221,7 +1222,7 @@ def skill_gaps(
         model: Claude model to analyse with (default: sonnet).
 
     Returns:
-        ``{"report_path", "report" (its Markdown), "targets": [{"kind", "label", "job_id"?}], "plan_items"}``.
+        ``{"report_path", "report" (its Markdown), "targets": [{"kind", "label", "job_id"?}], "plan_items", "warning"?}``.
     """
     return gaps_cmd._skill_gaps_core(
         targets, jobs=jobs, top=top, model=model, profile_dir=workspace.PROFILE_DIR, jobs_dir=workspace.JOBS_DIR

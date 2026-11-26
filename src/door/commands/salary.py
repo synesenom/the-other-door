@@ -107,7 +107,7 @@ def _salary_core(job_id: str, refresh: bool = False, *, max_age_days: int | None
         cv_text = workspace.cv_path(config, profile_dir).read_text(encoding="utf-8")
     except OSError:
         cv_text = ""
-    text = salary.build_input(posting, cv_text, config, common._cv_reading(config, profile_dir))  # a CV that cannot be read is never sent as it is
+    text = salary.build_input(posting, cv_text, config, common._cv_reading(config, profile_dir))  # the reading only counts the years: the CV itself is never sent
     answer = claude_cli.ask("salary", text, model=model, feature="salary",
                             schema=_SCHEMA, timeout_s=180, profile_dir=profile_dir)
     parsed = salary.parse(answer)

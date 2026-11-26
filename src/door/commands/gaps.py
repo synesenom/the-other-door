@@ -10,6 +10,7 @@ can verify of each answer and writes the Markdown itself. The `skill_gaps` tool 
 
 import re
 import sys
+import unicodedata
 from datetime import date
 from pathlib import Path
 
@@ -132,6 +133,22 @@ def parse_gaps(answer: dict) -> list[dict]:
     return gaps
 
 
+def _words(text: str) -> set[str]:
+    """Runs of three or more letters or digits, lower-cased, accents folded."""
+    folded = unicodedata.normalize("NFKD", str(text or "").casefold()).encode("ascii", "ignore").decode()
+    return set(re.findall(r"[a-z0-9]{3,}", folded))
+
+
+def askable(gaps: list[dict], targets: list[dict]) -> list[dict]:
+    """The gaps whose every word (3+ letters or digits) is in the text of the targets the user named (a posting's title
+    and description, a role's name). The analysis reads the CV too, so a name carrying the CV's words, put there by a
+    hidden instruction in an ad, is never sent to the call that can search the web."""
+    known: set[str] = set()
+    for t in targets:
+        known |= _words(t["label"] if t["kind"] == "role" else f"{t['posting'].get('title', '')} {t['posting'].get('description', '')}")
+    return [g for g in gaps if _words(g["name"]) <= known]
+
+
 def parse_resources(answer: dict, gaps: list[dict]) -> dict[str, list[dict]]:
     """Gap name to its resources: only for a gap that was sent, and only an http(s) URL."""
     by_name = {g["name"] for g in gaps}
@@ -174,12 +191,11 @@ def _skill_gaps_core(
     progress=None,
 ) -> dict:
     """Write `upskill/report-<today>.md` for `targets` (role names), `jobs` (postings:
-    words from the company and title, or ids) and/or the `top` N matches, with one
-    two `claude -p` calls (the analysis, then a WebSearch for resources that sees only the gap names). Never prints: the calls are reported to ``progress``
+    words from the company and title, or ids) and/or the `top` N matches, with two `claude -p` calls (the analysis, then a WebSearch for resources that sees only the gap names). Never prints: the calls are reported to ``progress``
     (stage ``"gaps"``) as they start and, with an ``outcome``, as they end.
 
     Returns:
-        ``{"report_path", "report" (its Markdown), "targets": [{"kind", "label", "job_id"?}], "plan_items"}``.
+        ``{"report_path", "report" (its Markdown), "targets": [{"kind", "label", "job_id"?}], "plan_items", "warning"? (the resources could not be found)}``.
 
     Raises:
         FileNotFoundError, ConfigError: no or invalid profile/config.json; no CV.
@@ -209,16 +225,21 @@ def _skill_gaps_core(
     try:
         found = parse_gaps(claude_cli.ask("skill-gaps", prompt, model=model, feature="skill_gaps", schema=_GAPS_SCHEMA,
                                           timeout_s=timeout_s, profile_dir=profile_dir))
-        resources: dict[str, list[dict]] = {}
-        if found:
-            # the search has the web, so it gets the date and the gap names, never the CV or an ad
-            names = "\n".join(f"- {g['name']}" for g in found)
-            resources = parse_resources(
-                claude_cli.ask("skill-resources", f"Date: {today}\n\nGaps:\n{names}\n", feature="skill_gaps",
-                               schema=_RESOURCES_SCHEMA, timeout_s=timeout_s, profile_dir=profile_dir), found)
     except claude_cli.ClaudeError:
         progress_mod.report("the analysis failed", stage="gaps", outcome="failed")
         raise
+    resources: dict[str, list[dict]] = {}
+    warning = None
+    sendable = askable(found, resolved)
+    if sendable:
+        # the search has the web, so it gets the date and gap names found in the targets, never the CV or an ad
+        names = "\n".join(f"- {g['name']}" for g in sendable)
+        try:
+            resources = parse_resources(
+                claude_cli.ask("skill-resources", f"Date: {today}\n\nGaps:\n{names}\n", feature="skill_gaps",
+                               schema=_RESOURCES_SCHEMA, timeout_s=timeout_s, profile_dir=profile_dir), sendable)
+        except claude_cli.ClaudeError:
+            warning = "The learning resources could not be found: every gap is listed under Skipped gaps."
     progress_mod.report(f"analysed {len(resolved)} target(s)", stage="gaps", outcome="ok")
     report = build_report(today, resolved, found, resources)
 
@@ -226,12 +247,15 @@ def _skill_gaps_core(
     out_dir.mkdir(parents=True, exist_ok=True)
     report_path = out_dir / f"report-{today}.md"
     utils.write_atomic(report_path, report)
-    return {
+    result = {
         "report_path": str(report_path),
         "report": report,
         "targets": [{k: v for k, v in t.items() if k != "posting"} for t in resolved],
         "plan_items": len(_PLAN_ITEM_RE.findall(report)),
     }
+    if warning:
+        result["warning"] = warning
+    return result
 
 
 @click.command("skill-gaps")
