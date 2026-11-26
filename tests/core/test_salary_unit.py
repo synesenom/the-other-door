@@ -95,22 +95,19 @@ def test_input_has_the_ad_the_country_and_the_counted_years():
     assert "Cake on Fridays" not in text
 
 
-def test_input_leaves_out_name_email_and_phone():
-    text = _input(profile={"name": "Jane Doe", "email": "jane.doe@example.com", "location": "Copenhagen"})
-    for private in ("Jane", "Doe", "jane.doe@example.com", "12 34 56 78"):
+def test_input_has_no_line_of_the_cv_only_the_years():
+    """The call has WebSearch: a hidden instruction in an ad must find nothing of the CV to put into a search."""
+    cv = CV + "\n- Canary-CV-9f3a: led the secret merger at Acme Corp.\n"
+    text = _input(cv)
+    for private in ("Canary-CV-9f3a", "secret merger", "Jane", "Doe", "jane.doe@example.com", "12 34 56 78",
+                    "Acme Corp", "IFRS", "Big Bank", "Aarhus"):
         assert private not in text
-    assert "Senior Financial Controller" in text
+    assert "11 years" in text
 
 
-def test_the_cv_is_sent_from_its_first_section_so_the_header_never_goes():
-    text = _input("# Ada L\n\n> Engineer at Zed | ada@example.org\n\n## Experience\n\n### Dev — 2020 - 2022\n- Built it\n")
-    assert "Built it" in text and "Engineer at Zed" not in text and "# Ada" not in text
-
-
-def test_a_contact_value_the_reading_found_goes_even_when_the_profile_has_none():
-    cv = "# Ada\n\n**Tlf:** 99 88 77 66 | **Web:** ada-site.example\n\n## Experience\n\n### Dev at ada-site.example — 2020 - 2022\n"
-    text = _input(cv, profile={}, contacts=[{"kind": "web", "label": "Web", "value": "ada-site.example"}], name="Ada")
-    assert "ada-site.example" not in text and "Dev at" in text
+def test_input_says_when_the_years_cannot_be_counted():
+    text = _input("## Work Experience\n\n### Controller | Acme\n")
+    assert "not countable" in text and "Acme" not in text
 
 
 GOOD = {
@@ -153,20 +150,3 @@ def test_parse_of_null_and_junk_is_none():
 def test_parse_keeps_only_valid_sources():
     sources = [{"title": "bad", "url": "ftp://x"}, {"title": "ok", "url": "https://ok.example/p"}]
     assert salary.parse({**GOOD, "sources": sources})["sources"] == [{"title": "ok", "url": "https://ok.example/p"}]
-
-
-def test_sections_that_are_not_about_the_work_never_go_out_references_and_contacts_included():
-    cv = ("# Ada\n\n## Summary\n\nCall me.\n\n## Experience\n\n### Dev — 2020 - 2022\n- Built it\n\n"
-          "## References\n\nBo Berg, 00 00 00 99\n\n## Contact\n\nada@example.org\n\n## Skills\n\nPython\n")
-    kinds = ["summary", "experience", "other", "other", "skills"]
-    sections = [{"heading": h, "kind": k} for h, k in zip(["Summary", "Experience", "References", "Contact", "Skills"], kinds)]
-    text = _input(cv, profile={}, sections=sections)
-    assert "Built it" in text and "Python" in text
-    for gone in ("Bo Berg", "ada@example.org", "Call me"):
-        assert gone not in text
-
-
-def test_a_contact_value_is_removed_however_the_cv_spaces_it():
-    cv = "# Ada\n\n## Experience\n\n### Dev — 2020 - 2022\n- Reach me on +45  00 00\n  00 00 any time\n"
-    text = _input(cv, profile={}, contacts=[{"kind": "phone", "label": None, "value": "+45 00 00 00 00"}])
-    assert "00 00" not in text and "any time" in text

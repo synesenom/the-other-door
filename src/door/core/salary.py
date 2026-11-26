@@ -1,7 +1,7 @@
 """Salary estimate (#371), the pure parts: what the model is asked, and whether its answer can be trusted.
 
-`build_input` condenses the ad and the CV's experience into the text of one question (no name, email or
-phone); `parse` accepts an answer only when it has a sane range, a currency code and a source with a URL;
+`build_input` condenses the ad and the candidate's years of experience into the text of one question: no line
+of the CV, since the call may search the web and an ad could tell it to put the CV into a query; `parse` accepts an answer only when it has a sane range, a currency code and a source with a URL;
 `years_of_experience` does the overlap arithmetic over the role years `core.cv_read` read, so the model need not guess. No network, no model call:
 `commands/salary.py` asks.
 """
@@ -13,7 +13,6 @@ from door import i18n
 from door.core import cv_read, utils
 
 _MAX_AD_LINES = 6
-_MAX_CV_CHARS = 6000
 _CODE = re.compile(r"[A-Z]{3}")
 _PERIODS = ("month", "year")
 _POSITIONS = ("below", "within", "above")
@@ -72,7 +71,8 @@ def _experience_lines(description: str) -> list[str]:
 
 def build_input(posting: dict, cv_text: str, profile: dict, reading: dict, *, now_year: int | None = None) -> str:
     """The question's text: the ad (title, company, place, country and currency, the ad's own salary
-    and experience lines) and the candidate's experience (years counted from the reading `reading` of the CV, the CV without contact details)."""
+    and experience lines) and the candidate's years of experience, counted from the reading `reading` of the CV: an
+    integer, nothing else of the CV."""
     place = posting.get("location") or profile.get("location") or ""
     country = i18n.country_for_location(place) or i18n.country_for_location(str(profile.get("location") or ""))
     out = ["# The job", f"Title: {posting.get('title', '')}", f"Company: {posting.get('company', '')}",
@@ -88,11 +88,8 @@ def build_input(posting: dict, cv_text: str, profile: dict, reading: dict, *, no
         out += [f"- {ln}" for ln in asked]
     years = years_of_experience(reading, cv_text, now_year=now_year)
     out += ["", "# The candidate",
-            f"Years of experience counted from the dated roles: {years} years" if years is not None
-            else "Years of experience: not countable from the CV"]
-    cv = cv_read.anonymous(cv_text, profile, reading)[:_MAX_CV_CHARS]
-    if cv:
-        out += ["CV (contact details removed):", cv]
+            f"The candidate's years of experience: {years} years" if years is not None
+            else "The candidate's years of experience: not countable from the CV"]
     return "\n".join(out)
 
 

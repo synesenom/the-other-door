@@ -1,8 +1,11 @@
 """`skill-gaps`: a prioritised, WebSearch-cited learning plan for the gaps between
 the CV and a target role or some matches, written to `upskill/report-<date>.md`.
 
-One `claude -p` call does the analysis and the searching; the `skill_gaps` tool in a
-conversation and `cv gaps` in a shell make the same call.
+Two `claude -p` calls, so no call that can search the web holds the CV or an ad (a hidden instruction in an ad
+could otherwise put the CV into a search): the first, with no tools, reads the CV and the targets and names the
+gaps; the second, with WebSearch, gets only the date and the gap names and finds resources. Code keeps what it
+can verify of each answer and writes the Markdown itself. The `skill_gaps` tool in a conversation and
+`cv gaps` in a shell make the same calls.
 """
 
 import re
@@ -16,11 +19,37 @@ from door.commands import _common as common
 from door.commands import _progress
 from door.commands import matches as matches_cmd
 from door.core import profile_loader
-from door.core import claude_cli, cv_read, utils, workspace
+from door.core import claude_cli, utils, workspace
 from door.core import progress as progress_mod
 from door.matching import integrity
 
 _PLAN_ITEM_RE = re.compile(r"^### \d+\.", re.MULTILINE)
+MAX_GAPS = 15
+MAX_NAME = 80
+MAX_WHY = 300
+MAX_TITLE = 200
+_PRIORITIES = ("High", "Medium", "Low")
+_NO_RESOURCE = "No vetted resource found — manual research recommended."
+
+_GAPS_SCHEMA = {
+    "type": "object",
+    "properties": {"gaps": {"type": "array", "items": {
+        "type": "object",
+        "properties": {"name": {"type": "string"}, "pass": {"type": "integer", "enum": [1, 2]},
+                       "source_or_why": {"type": "string"}, "priority": {"type": "string", "enum": list(_PRIORITIES)}},
+        "required": ["name", "pass", "source_or_why", "priority"],
+    }}},
+    "required": ["gaps"],
+}
+_RESOURCES_SCHEMA = {
+    "type": "object",
+    "properties": {"resources": {"type": "array", "items": {
+        "type": "object",
+        "properties": {"gap": {"type": "string"}, "title": {"type": "string"}, "url": {"type": "string"}},
+        "required": ["gap", "url"],
+    }}},
+    "required": ["resources"],
+}
 
 
 def _today() -> str:
@@ -73,6 +102,65 @@ def _target_text(target: dict) -> str:
     )
 
 
+def _line(value, limit: int) -> str:
+    """One line of at most *limit* characters; a `|` would break a table cell."""
+    return " ".join(str(value or "").split()).replace("|", "/")[:limit].strip()
+
+
+def parse_gaps(answer: dict) -> list[dict]:
+    """The analysis's gaps held to what code can verify: at most `MAX_GAPS` distinct names, each one line of at most
+    `MAX_NAME` characters, a pass of 1 or 2, a known priority (else Medium).
+
+    Raises:
+        claude_cli.ClaudeError: the answer has no list of gaps.
+    """
+    items = answer.get("gaps")
+    if not isinstance(items, list):
+        raise claude_cli.ClaudeError("claude's analysis has no list of gaps")
+    gaps, seen = [], set()
+    for item in items:
+        name = _line(item.get("name"), MAX_NAME) if isinstance(item, dict) else ""
+        if not name or name.lower() in seen:
+            continue
+        seen.add(name.lower())
+        priority = item.get("priority")
+        gaps.append({"name": name, "pass": 1 if item.get("pass") == 1 else 2,
+                     "why": _line(item.get("source_or_why"), MAX_WHY),
+                     "priority": priority if priority in _PRIORITIES else "Medium"})
+        if len(gaps) == MAX_GAPS:
+            break
+    return gaps
+
+
+def parse_resources(answer: dict, gaps: list[dict]) -> dict[str, list[dict]]:
+    """Gap name to its resources: only for a gap that was sent, and only an http(s) URL."""
+    by_name = {g["name"] for g in gaps}
+    found: dict[str, list[dict]] = {}
+    for item in answer.get("resources") or []:
+        if not isinstance(item, dict) or item.get("gap") not in by_name:
+            continue
+        url = item.get("url")
+        if isinstance(url, str) and re.match(r"https?://\S+$", url):
+            found.setdefault(item["gap"], []).append({"title": _line(item.get("title"), MAX_TITLE) or url, "url": url})
+    return found
+
+
+def build_report(today: str, targets: list[dict], gaps: list[dict], resources: dict[str, list[dict]]) -> str:
+    """The Markdown report, written by code from the checked gaps and resources."""
+    out = [f"# Upskill Plan — {today}", "", "## Target role(s)"] + [f"- {_line(t['label'], 200)}" for t in targets]
+    for number, heading, column in ((1, "Hard-skill gaps", "Source"), (2, "Synthesised gaps", "Why it matters")):
+        out += ["", f"## Pass {number} — {heading}", "", f"| Gap | {column} | Priority |", "|-----|" + "-" * len(column) + "|----------|"]
+        out += [f"| {g['name']} | {g['why']} | {g['priority']} |" for g in gaps if g["pass"] == number]
+    planned = sorted((g for g in gaps if g["name"] in resources), key=lambda g: _PRIORITIES.index(g["priority"]))
+    out += ["", "## Prioritized learning plan"]
+    for i, g in enumerate(planned, 1):
+        out += ["", f"### {i}. {g['name']} (Priority: {g['priority']})", f"**Why**: {g['why']}", "**Resources**:"]
+        out += [f"- [{r['title'].replace(']', ')').replace('[', '(')}]({r['url']})" for r in resources[g["name"]]]
+    skipped = [f"- {g['name']}: {_NO_RESOURCE}" for g in gaps if g["name"] not in resources]
+    out += ["", "## Skipped gaps"] + (skipped or ["none"])
+    return "\n".join(out) + "\n"
+
+
 @common._with_progress
 def _skill_gaps_core(
     targets: list[str] | None = None,
@@ -87,18 +175,17 @@ def _skill_gaps_core(
 ) -> dict:
     """Write `upskill/report-<today>.md` for `targets` (role names), `jobs` (postings:
     words from the company and title, or ids) and/or the `top` N matches, with one
-    `claude -p` call that may use WebSearch and is given the CV without name and contact details. Never prints: the call is reported to ``progress``
-    (stage ``"gaps"``) as it starts and, with an ``outcome``, as it ends.
+    two `claude -p` calls (the analysis, then a WebSearch for resources that sees only the gap names). Never prints: the calls are reported to ``progress``
+    (stage ``"gaps"``) as they start and, with an ``outcome``, as they end.
 
     Returns:
         ``{"report_path", "report" (its Markdown), "targets": [{"kind", "label", "job_id"?}], "plan_items"}``.
 
     Raises:
         FileNotFoundError, ConfigError: no or invalid profile/config.json; no CV.
-        cv_read.CvReadError: the CV could not be read (it is then not sent).
         ValueError: no target, or a job reference that matches no job or several
             (`AmbiguousJobRef`).
-        claude_cli.ClaudeError: the `claude -p` call failed or returned nothing.
+        claude_cli.ClaudeError: a `claude -p` call failed or the analysis has no list of gaps.
     """
     if profile_dir is None:
         profile_dir = workspace.PROFILE_DIR
@@ -111,34 +198,37 @@ def _skill_gaps_core(
     resolved = _resolve_targets(targets or [], top, jobs_dir=jobs_dir, profile_dir=profile_dir, jobs=jobs)
 
     today = _today()
-    # the call has WebSearch, so it gets the CV without name and contact details; a CV that cannot be read is never sent as it is
-    cv = cv_read.anonymous(cv_path.read_text(encoding="utf-8"), config, common._cv_reading(config, profile_dir))
+    # the analysis has no tools, so it may read the whole CV and the ads
     prompt = (
         f"Date: {today}\n\n"
-        f"CV (contact details removed):\n<<<\n{cv}\n>>>\n\n"
+        f"CV:\n<<<\n{cv_path.read_text(encoding='utf-8')}\n>>>\n\n"
         "Targets:\n\n" + "\n\n".join(_target_text(t) for t in resolved) + "\n"
     )
     model = model or claude_cli.model_of("skill-gaps")
-    progress_mod.report(f"analysing {len(resolved)} target(s) with {model} and WebSearch (minutes)", stage="gaps")
+    progress_mod.report(f"analysing {len(resolved)} target(s) with {model} (minutes)", stage="gaps")
     try:
-        report = claude_cli.ask(
-            "skill-gaps", prompt, model=model, feature="skill_gaps",
-            timeout_s=timeout_s, profile_dir=profile_dir,
-        )
-        if not report:
-            raise claude_cli.ClaudeError("claude returned an empty report")
+        found = parse_gaps(claude_cli.ask("skill-gaps", prompt, model=model, feature="skill_gaps", schema=_GAPS_SCHEMA,
+                                          timeout_s=timeout_s, profile_dir=profile_dir))
+        resources: dict[str, list[dict]] = {}
+        if found:
+            # the search has the web, so it gets the date and the gap names, never the CV or an ad
+            names = "\n".join(f"- {g['name']}" for g in found)
+            resources = parse_resources(
+                claude_cli.ask("skill-resources", f"Date: {today}\n\nGaps:\n{names}\n", feature="skill_gaps",
+                               schema=_RESOURCES_SCHEMA, timeout_s=timeout_s, profile_dir=profile_dir), found)
     except claude_cli.ClaudeError:
         progress_mod.report("the analysis failed", stage="gaps", outcome="failed")
         raise
     progress_mod.report(f"analysed {len(resolved)} target(s)", stage="gaps", outcome="ok")
+    report = build_report(today, resolved, found, resources)
 
     out_dir = workspace.UPSKILL_DIR
     out_dir.mkdir(parents=True, exist_ok=True)
     report_path = out_dir / f"report-{today}.md"
-    utils.write_atomic(report_path, report + "\n")
+    utils.write_atomic(report_path, report)
     return {
         "report_path": str(report_path),
-        "report": report + "\n",
+        "report": report,
         "targets": [{k: v for k, v in t.items() if k != "posting"} for t in resolved],
         "plan_items": len(_PLAN_ITEM_RE.findall(report)),
     }
@@ -152,7 +242,7 @@ def _skill_gaps_core(
 def skill_gaps(targets: tuple[str, ...], jobs: tuple[str, ...], top: int | None, model: str | None):
     """Skill-gap report for TARGETS (role names), the --job postings and/or
     the --top N matches: a prioritised, WebSearch-cited learning plan written to
-    upskill/report-<today>.md by one `claude -p` call (minutes).
+    upskill/report-<today>.md by two `claude -p` calls (minutes).
     """
     interactive = common._stdout_is_tty()
     try:

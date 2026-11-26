@@ -67,9 +67,10 @@ There is no API key anywhere. What the call sends is read by Anthropic under you
 - **Preparing and revising an application:** your CV, story bank, the posting and the profile files the
   tailor reads, and what it writes.
 - **Other short calls:** reading your CV when you set up, proposing search terms and titles, grouping skill
-  names, checking the facts of a CV and letter, answering "ask about your jobs". The skill-gap report and the
-  salary estimate send the work sections of your CV with your name, email, phone and contact details taken
-  out, and use Claude's web search. Finding an employer's careers page searches the web for the employer's name.
+  names, checking the facts of a CV and letter, answering "ask about your jobs". The skill-gap report reads your CV
+  and the ads in one call that has no tools, and finds learning resources in a second call that has Claude's
+  web search and is given only the skill names, never your CV or an ad. The salary estimate, which also uses
+  web search, gets the ad's own lines and your years of experience as a number, no line of your CV. Finding an employer's careers page searches the web for the employer's name.
 
 Every call names its MCP servers explicitly (`--strict-mcp-config`), so your other MCP servers are not
 loaded into it. If you drive *The other door* from a Claude Code conversation, what a tool returns is read
