@@ -684,7 +684,7 @@ folder that has no profile yet says to set it up there first.
 **What a paired phone can do.** It cannot revise a CV or letter or change your profile (do that on the
 computer), and a day allows 10 prepares, 30 imported ads and 6 runs to find jobs (a rolling 24 hours; try
 again tomorrow, or do it on the computer). What it can reach, and what Cloudflare sees on the way:
-[Security and privacy](security.md#the-phone).
+[Security and privacy](security.md#the-phone); each limit with its reason: [what these protections cost you](security.md#what-these-protections-cost-you).
 
 **Share an ad to The other door.** On Android, Share → **The other door** from Chrome, the LinkedIn app or an email
 imports the ad and scores it against your CV, then opens it, with Prepare and Not for me as usual. On an

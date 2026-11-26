@@ -24,6 +24,7 @@ import shutil
 import sys
 import time
 import types
+import webbrowser
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -185,6 +186,11 @@ def _fake_ask(prompt_name, user_message, *, feature, **kwargs):
         return _world_cv_reader().read(md, {"kinds": _SECTION_KINDS, "languages": []})
     if feature == "facts":
         return {"findings": []}
+    if feature == "ad_layout":
+        return {"markdown": user_message}  # the ad as it is: same words, so it stays plain text
+    if feature == "ad_summary":
+        return {"requirements": ["Finance background", "Fluent English"], "nice_to_have": [], "salary": None,
+                "place": "Copenhagen", "work_mode": "hybrid", "languages": ["English"], "seniority": None}
     raise RuntimeError(f"the demo has no stand-in for the model call {feature!r}")
 
 
@@ -207,6 +213,7 @@ def install(sandbox: Path) -> None:
     companies_cmd._classify = _fake_classify
     scorer.score_postings = _fake_score_postings
     claude_cli.ask = _fake_ask
+    webbrowser.open = lambda url, *a, **k: True  # `show` in a chat opens the ad: never in the viewer's own browser
     prepare_cmd._run_tailor = _fake_run_tailor
     prepare_cmd._HEARTBEAT_INTERVAL_S = 2.0
     # no web search for a salary: none found, so prepare says nothing about it
