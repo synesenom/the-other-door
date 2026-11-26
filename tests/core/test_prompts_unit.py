@@ -31,6 +31,7 @@ PROMPTS = {
     "cv-reader": ("haiku", "47d0089f6137d469597472e2c392160874f13df59f576976f44bdbb9ec879ea7"),
     "careers-finder": ("haiku", "db7ae8bb770a26bd7b7e7e0721f7d5e8bae23dac0a8a44cb44a2b7b64539da80"),
     "title-translator": ("haiku", "7366039f9e7e68574fc0b240b86d9c456983ac93d83c46e729c571e286a79d61"),
+    "ad-summary": ("haiku", "2a8efd9a7d032d67ab7f06875e2a7481314f4dd75369de68da017accc1eaee49"),
     "fact-checker": ("haiku", "b59c8019c78432960dc58b23ebf15a133cd9db6c301c2d7b6c861697ba570f76"),
 }
 _FIELDS = {}

@@ -75,6 +75,8 @@ loaded into it. If you drive *The other door* from a Claude Code conversation, w
 by that conversation. Which plan pays is `claude_config_dir`. How much a call costs is logged in
 `jobs/usage.jsonl`, on this computer only; it is left out of exports and of Google Drive.
 
+In a Claude Code conversation Claude never reads an ad's text. An ad is written by a stranger and a conversation can run commands on your computer, so a line in the ad asking the model to ignore the text is only a request. `show` there opens the full ad in your browser (its own address, or a saved plain page under `.view/` with the text escaped) and hands Claude a short summary that one tool-less Haiku call extracts and code cuts to fixed bounds; no tool answer carries a description. The short fields of a posting (title, company, location, the reason of a score, the skills) are cut and come in a marker `<ad-…>…</ad-…>` with a token chosen anew for each answer, and `ask`'s answer is capped and wrapped the same way. The desktop app, the phone and the command line are not conversations and show the whole ad.
+
 A posting is written by someone else. A gate cleans it before a model reads it and every prompt says to treat
 it as data ([the ad is untrusted input](how-it-works.md#the-ad-is-untrusted-input), which also lists what the
 gate does not catch). Where the model has tools, they are cut down; see [What Claude's output can do](#what-claudes-output-can-do).

@@ -47,8 +47,8 @@ def test_a_claude_call_sends_and_reads_utf8(monkeypatch):
     seen["input"].encode(seen["encoding"], errors=seen.get("errors", "strict"))
 
 
-# receivers whose `.open` is no text file: archives, file descriptors, images
-_NOT_TEXT_OPENERS = {"tarfile", "os", "Image", "zipfile", "zf"}
+# receivers whose `.open` is no text file: archives, file descriptors, images, the browser
+_NOT_TEXT_OPENERS = {"tarfile", "os", "Image", "zipfile", "zf", "webbrowser"}
 
 
 def _mode(node: ast.Call, position: int) -> str:

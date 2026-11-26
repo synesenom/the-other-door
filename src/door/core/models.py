@@ -38,6 +38,7 @@ class JobPosting(BaseModel):
     employer: str | None = None  # the companies.json entry this posting belongs to, when known
     formatted: bool = False  # the description is written as Markdown (headings, lists), see matching/ad_layout.py
     integrity: dict | None = None  # {"verdict": "clean"|"suspicious", "findings": [{kind, excerpt}]}, see matching/integrity.py
+    summary: dict | None = None  # {"sha256": of the description, "fields": {...}}: what a chat reads instead of the ad, see matching/ad_summary.py
 
 
 def normalize_platform_id(raw: str) -> str:

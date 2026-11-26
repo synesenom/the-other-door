@@ -50,7 +50,7 @@ def arg(name: str) -> str | None:
 # `status_summary`'s `cost` and Analytics' Claude usage read the same in every run.
 COST_USD = {"cv_read": 0.01, "score": 0.02, "translate": 0.01, "read_ad": 0.01, "market": 0.01, "tailor": 0.40, "revise": 0.05, "facts": 0.01,
             # an ad's layout costs a fraction of a cent: nothing at the round figures the journeys read
-            "layout": 0.0}
+            "layout": 0.0, "ad_summary": 0.0}
 OTHER_COST_USD = 0.03
 
 
@@ -115,6 +115,7 @@ KINDS = [
     ("facts", "You check a tailored CV and cover letter"),
     ("market", "You group skill names"),
     ("layout", "You mark up the layout of a job ad"),
+    ("ad_summary", "You extract the facts of a job ad"),
     ("ask", "You answer one question about the user's job search"),
     ("careers", "You find the official careers page"),
 ]
@@ -172,6 +173,8 @@ elif kind == "read_ad":
     envelope(said.get("answer") or found or {"title": "", "company": "", "location": ""})
 elif kind == "layout":
     envelope({"markdown": STDIN})  # the ad back as it came: its words, no markup
+elif kind == "ad_summary":
+    envelope({"requirements": [], "nice_to_have": [], "salary": None, "place": None, "work_mode": None, "languages": [], "seniority": None})
 elif kind == "market":
     names = json.loads(STDIN).get("names", [])
     envelope({"groups": [{"variant": n, "canonical": n, "skill": True} for n in names]})
