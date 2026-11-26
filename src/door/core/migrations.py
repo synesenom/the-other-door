@@ -198,22 +198,14 @@ def _templates_from_code(profile_dir: Path) -> None:
 _FILE_KEYS = ("cv_content", "cv_template", "cover_letter_template", "photo")
 
 
-def _free_name(profile_dir: Path, source: Path) -> Path:
-    """Where *source* goes in *profile_dir*: its own name, or `<stem>-<n><suffix>` when that holds another file."""
-    target, n = profile_dir / source.name, 1
-    while target.exists() and not (target.is_file() and pinned.sha256(target) == pinned.sha256(source)):
-        n += 1
-        target = profile_dir / f"{source.stem}-{n}{source.suffix}"
-    return target
-
-
 def _files_into_profile(profile_dir: Path) -> None:
     """1 -> 2: the files the config names live in `profile/`.
 
-    v0.4.0 read a CV, a template or a photo from anywhere; this build reads only `profile/`'s. A file named outside it
-    is copied in (the original is left where it is) and the key names the copy; a key naming a file that is gone is
-    dropped (the CV is then `profile/cv.md`, a template the code's, no photo). Paths resolve as v0.4.0 resolved them:
-    a relative one from the data folder, the folder holding `profile/`.
+    v0.4.0 read a CV, a template or a photo from anywhere; this build reads only `profile/`'s. A key naming a file
+    outside it is dropped (the CV is then `profile/cv.md`, a template the code's, no photo): the same step runs on an
+    imported archive or a Drive pull, which must never bring a file of this computer in. A link inside `profile/`
+    that points out of it is replaced by a copy of its file: only this computer made it, as an archive carries no
+    links. Paths resolve as v0.4.0 resolved them: a relative one from the data folder, the folder holding `profile/`.
     """
     profile_dir = Path(profile_dir)
     config_path = profile_dir / "config.json"
@@ -228,16 +220,15 @@ def _files_into_profile(profile_dir: Path) -> None:
         value = config.get(key)
         if not isinstance(value, str) or not value:
             continue
-        source = (Path(value) if Path(value).is_absolute() else home / value).resolve()
-        if source.is_relative_to(inside):
+        named = Path(value) if Path(value).is_absolute() else home / value
+        if named.resolve().is_relative_to(inside):
             continue
-        if source.is_file():
-            target = _free_name(profile_dir, source)
-            if not target.exists():
-                utils.write_atomic(target, source.read_bytes())
-            config[key] = f"profile/{target.name}"
-        else:
-            del config[key]
+        if named.is_symlink() and named.is_file() and named.parent.resolve() == inside:
+            data = named.read_bytes()
+            named.unlink()
+            utils.write_atomic(named, data)
+            continue
+        del config[key]
         changed = True
     if changed:
         utils.write_json_atomic(config_path, config)
