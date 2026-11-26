@@ -18,6 +18,7 @@ run's worth of new matches, as a real review session would.
 import asyncio
 import json
 import os
+import re
 import shutil
 import sys
 import textwrap
@@ -165,10 +166,15 @@ def call(name: str, **args) -> dict:
     return result
 
 
+def plain(text: str) -> str:
+    """Text without the markers (`<ad-…>…</ad-…>`) a chat's tool answers carry: Claude's reply says it plainly."""
+    return re.sub(r"</?ad-[0-9a-f]+>", "", str(text))
+
+
 def say(*paragraphs: str) -> None:
     """Claude's reply: a ● and the text, streamed a line at a time."""
     lines = []
-    for paragraph in paragraphs:
+    for paragraph in map(plain, paragraphs):
         if lines:
             lines.append("")
         for raw in paragraph.splitlines():
@@ -243,6 +249,7 @@ def show_one() -> None:
         f"**{job['title']}** at {job['company']}, {job['location']}: score **{job['score']:.2f}**",
         job["score_reason"],
         f"- Matches: {', '.join(job['matching_skills'])}\n- Missing: {', '.join(job['missing_skills'])}",
+        f"The ad is open in your browser; I only have its summary ({', '.join(job['summary']['requirements'])}).",
     )
 
 

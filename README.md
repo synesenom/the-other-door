@@ -148,7 +148,7 @@ back to its source. You are responsible for the sites you configure (see [Job si
 | [Job sites](docs/job-sites.md) | Supported sites, per-company feeds, and the sources that find employers. |
 | [Adding a site or a country](docs/adding-a-site.md) | Adding the job boards of your country. |
 | [Your data](docs/data.md) | Where your profile, postings and generated materials live and how to back them up. Google Drive: [privacy](https://enysmones.com/the-other-door/#privacy). |
-| [Security and privacy](docs/security.md) | What leaves your computer and where it goes, the phone, what Claude's output can do, and what it does not protect against. |
+| [Security and privacy](docs/security.md) | Who is trusted and who is not, what holds back each untrusted source, what leaves your computer, what the protections cost you, and what is not covered yet. |
 | [How it works](docs/how-it-works.md) | The pipeline, freshness ("only what's new"), plan usage, project status. |
 | [Architecture](docs/architecture.md) | How the code is organised. |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Working on *The other door*: tests, conventions, adding a scraper. |
