@@ -195,6 +195,7 @@ export const SCENES: readonly Scene[] = [
   { id: 'settings-data-failed', group: 'Settings', title: 'Settings, an export and a report refused (the error box)', start: { destination: 'Settings' }, fails: { 'export-data': 'door-data.tar.gz is there already. Choose another name.', 'report-problem': 'report.zip is there already. A report never replaces a file, so nothing was written: choose another name.' }, press: ['Export…', 'Save logs…'] },
   { id: 'analytics', group: 'Analytics', title: 'Analytics: applications, Claude usage and the market', start: { destination: 'Analytics' } },
   { id: 'settings-signed-out', group: 'Settings', title: 'Settings, Claude signed out', start: { destination: 'Settings' }, claudeSignedOut: true },
+  { id: 'settings-phone-setup', group: 'Settings', title: 'Your phone: Set up, Continue while the address is still being found (reload to watch again)', start: { destination: 'Settings' }, slow: { phone_start: 8_000 }, press: ['Set up your phone…', 'Continue'] },
   { id: 'settings-drive', group: 'Settings', title: 'Google Drive: Connect (it syncs at once), Disconnect', start: { destination: 'Settings' }, drive: 'off', slow: { connect_drive: 2_500, sync_data: 1_500 } },
   { id: 'settings-drive-failed', group: 'Settings', title: 'Google Drive: the last sync failed', start: { destination: 'Settings' }, drive: 'failed' },
   { id: 'settings-drive-conflict', group: 'Settings', title: 'Google Drive: both sides changed, found on opening', start: { destination: 'Settings' }, drive: 'conflict' },

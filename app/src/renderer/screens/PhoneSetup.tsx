@@ -24,6 +24,9 @@ const failure = (data: unknown): string | null =>
 /** The QR code's SVG as an image address (shown with <img>: no markup goes into the page). */
 const qrSrc = (svg: string) => `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`
 
+// A stop asked for by a dialog cancelled mid-start: the next start waits for it, so it never ends that one.
+let stopping: Promise<unknown> = Promise.resolve()
+
 export function PhoneSetup({ onClose, start = 'how', pollMs = 2000 }: { onClose: () => void; start?: Step; pollMs?: number }) {
   const [step, setStep] = useState<Step>(start)
   const [busy, setBusy] = useState<string | null>(null)
@@ -35,15 +38,22 @@ export function PhoneSetup({ onClose, start = 'how', pollMs = 2000 }: { onClose:
   // The tunnel's new address takes a while to be found from a phone: it is asked for as the dialog opens,
   // so it is mostly ready by the time Continue is pressed.
   const starting = useRef<Promise<unknown> | null>(null)
-  const startTunnel = () => (starting.current ??= call<PhoneStatus | { error: string }>('phone_start', {}))
+  const startTunnel = () => (starting.current ??= stopping.then(() => call<PhoneStatus | { error: string }>('phone_start', {})))
   useEffect(() => {
-    if (start === 'how') void startTunnel().catch(() => undefined)
+    // a failed start made on opening is said nowhere: Continue starts again
+    if (start === 'how') {
+      const mine = startTunnel()
+      const forget = () => {
+        if (starting.current === mine) starting.current = null
+      }
+      void mine.then((r) => failure(r) && forget(), forget)
+    }
     // once, on opening
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const begin = async () => {
-    setBusy("Getting your phone's address… This can take a minute.")
+    setBusy("Getting this computer's address for your phone (up to a minute)…")
     setError(null)
     try {
       const r = await startTunnel()
@@ -64,7 +74,7 @@ export function PhoneSetup({ onClose, start = 'how', pollMs = 2000 }: { onClose:
 
   // Leaving before Continue undoes what opening started: nothing serves a phone that was never set up.
   const leave = () => {
-    if (step === 'how' && starting.current) void starting.current.then(() => call('phone_stop', {})).catch(() => undefined)
+    if (step === 'how' && starting.current) stopping = starting.current.then(() => call('phone_stop', {})).catch(() => undefined)
     onClose()
   }
 
