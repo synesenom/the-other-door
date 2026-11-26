@@ -12,7 +12,6 @@ import io
 import json
 import os
 import re
-import shutil
 import socket
 import sys
 import tarfile
@@ -33,6 +32,12 @@ CLOUDFLARED = {
     "darwin-arm64": ("cloudflared-darwin-arm64.tgz", "ea1e5105d35bbe16cee5b2f7b4742059ada341fbd35938ed827c24b85efa51c8"),
     "linux-x86_64": ("cloudflared-linux-amd64", "1d356dac769d0dbf62ebe588c4034824bbff98d5790c2f844cc99e0e2f57462d"),
     "windows-x86_64": ("cloudflared-windows-amd64.exe", "d521b3bf68982165f0d06d76732f22d9a105ef057ff3ae4c0986f3a23190950f"),
+}
+# The digest of the cloudflared program itself (the macOS download is an archive, so its own digest differs).
+CLOUDFLARED_BINARY_SHA256 = {
+    "darwin-arm64": "380451015c3676789adc4200f43757e950e7173b920b0094e272e8bea59d7927",
+    "linux-x86_64": CLOUDFLARED["linux-x86_64"][1],
+    "windows-x86_64": CLOUDFLARED["windows-x86_64"][1],
 }
 _TUNNEL_URL = re.compile(r"https://[a-z0-9-]+\.trycloudflare\.com")
 
@@ -67,13 +72,26 @@ def _bin_dir() -> Path:
     return Path.home() / ".local" / "bin"
 
 
-def find_cloudflared() -> str | None:
-    """The bundled cloudflared (the packaged app's DOOR_BIN), else ~/.local/bin's, else PATH's."""
-    name = "cloudflared.exe" if sys.platform == "win32" else "cloudflared"
+def _system_key(platform: str | None = None, machine: str | None = None) -> str:
+    import platform as platform_mod
+
+    system = {"darwin": "darwin", "win32": "windows"}.get(platform or sys.platform, "linux")
+    return f"{system}-{_arch(machine or platform_mod.machine())}"
+
+
+def find_cloudflared(*, binaries: dict = CLOUDFLARED_BINARY_SHA256, platform: str | None = None,
+                     machine: str | None = None) -> str | None:
+    """The cloudflared of the DOOR_BIN folder or ~/.local/bin whose sha256 is the pinned one, else None
+    (`start` then downloads the pinned one over it). A cloudflared of PATH, or any other copy, is never run."""
+    digest = binaries.get(_system_key(platform, machine))
+    if digest is None:
+        return None
+    name = "cloudflared.exe" if (platform or sys.platform) == "win32" else "cloudflared"
     for folder in filter(None, (os.environ.get("DOOR_BIN"), str(_bin_dir()))):
-        if (Path(folder) / name).is_file():
-            return str(Path(folder) / name)
-    return shutil.which("cloudflared")
+        path = Path(folder) / name
+        if path.is_file() and pinned.sha256(path) == digest:
+            return str(path)
+    return None
 
 
 def default_web_dir() -> Path:
@@ -96,11 +114,8 @@ def _arch(machine: str) -> str:
 def install_cloudflared(dest: Path | None = None, *, platform: str | None = None, machine: str | None = None,
                         pins: dict = CLOUDFLARED) -> Path:
     """Download the pinned cloudflared for this system, check its digest, put it in `dest` (~/.local/bin)."""
-    import platform as platform_mod
-
-    platform = platform or sys.platform
-    system = {"darwin": "darwin", "win32": "windows"}.get(platform, "linux")
-    key = f"{system}-{_arch(machine or platform_mod.machine())}"
+    system = {"darwin": "darwin", "win32": "windows"}.get(platform or sys.platform, "linux")
+    key = _system_key(platform, machine)
     if key not in pins:
         raise ValueError(f"no cloudflared for {key}; install it yourself (https://github.com/cloudflare/cloudflared)")
     asset, digest = pins[key]

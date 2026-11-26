@@ -303,3 +303,35 @@ def test_pairing_a_second_phone_is_refused_until_the_first_is_unpaired(tmp_path)
     assert "unpair" in out["error"].lower() and "qr_svg" not in out
     phone.remove(tmp_path, "Pixel")
     assert "error" not in phone.pair(tmp_path, "Other", **deps(w, tmp_path, qr=lambda text: "<svg/>"))
+
+
+def _own_cloudflared(tmp_path, monkeypatch, payload=b"real"):
+    """~/.local/bin is tmp_path/bin; the pin is the digest of `payload`."""
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    monkeypatch.setattr(phone, "_bin_dir", lambda: bin_dir)
+    monkeypatch.delenv("DOOR_BIN", raising=False)
+    return bin_dir, {"linux-x86_64": hashlib.sha256(payload).hexdigest()}
+
+
+def test_a_cloudflared_on_path_is_never_used(tmp_path, monkeypatch):
+    _, pins = _own_cloudflared(tmp_path, monkeypatch)
+    on_path = tmp_path / "path"
+    on_path.mkdir()
+    fake = on_path / "cloudflared"
+    fake.write_bytes(b"fake")
+    fake.chmod(0o755)
+    monkeypatch.setenv("PATH", str(on_path))
+    assert phone.find_cloudflared(binaries=pins, platform="linux", machine="x86_64") is None
+
+
+def test_a_downloaded_cloudflared_that_differs_from_the_pin_is_refused(tmp_path, monkeypatch):
+    bin_dir, pins = _own_cloudflared(tmp_path, monkeypatch)
+    (bin_dir / "cloudflared").write_bytes(b"tampered")
+    assert phone.find_cloudflared(binaries=pins, platform="linux", machine="x86_64") is None
+
+
+def test_a_downloaded_cloudflared_that_matches_the_pin_is_used(tmp_path, monkeypatch):
+    bin_dir, pins = _own_cloudflared(tmp_path, monkeypatch)
+    (bin_dir / "cloudflared").write_bytes(b"real")
+    assert phone.find_cloudflared(binaries=pins, platform="linux", machine="x86_64") == str(bin_dir / "cloudflared")
