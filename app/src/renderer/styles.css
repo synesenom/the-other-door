@@ -626,7 +626,7 @@ p.sidebar-problem { margin: 0; color: var(--color-ink-muted, var(--color-ink)); 
 /* Your phone (issue 444): the paired phones, the setup's steps and its QR code. */
 .phone-step { display: flex; flex-direction: column; gap: var(--space-4); }
 .phone-step > * { margin: 0; }
-.phone-qr { width: 240px; height: 240px; align-self: center; background: var(--color-page); padding: var(--space-3); border-radius: var(--radius-m); image-rendering: pixelated; }
+.phone-qr { width: 240px; height: 240px; align-self: center; background: var(--color-paper); padding: var(--space-3); border-radius: var(--radius-m); image-rendering: pixelated; }
 
 /* A field in focus: its border turns blue, no ring (buttons and links keep the ring of :focus-visible). Last, to win over each field's own border. */
 input:not([type="checkbox"], [type="radio"]):focus, select:focus, textarea:focus { outline: none; border-color: var(--color-accent); }

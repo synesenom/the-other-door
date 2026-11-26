@@ -39,6 +39,19 @@ _TUNNEL_URL = re.compile(r"https://[a-z0-9-]+\.trycloudflare\.com")
 
 
 # ----------------------------------------------------------------------------- the real world
+def _published(host: str) -> bool:
+    """Whether public DNS knows `host` yet, asked of Cloudflare's resolver over HTTPS: this computer's own
+    resolver would remember a too-early "not found" for a while."""
+    import requests
+
+    try:
+        r = requests.get("https://cloudflare-dns.com/dns-query", params={"name": host, "type": "A"},
+                         headers={"accept": "application/dns-json"}, timeout=5)
+        return r.ok and bool(r.json().get("Answer"))
+    except (requests.RequestException, ValueError):
+        return False
+
+
 def _answers(url: str) -> bool:
     import requests
 
@@ -67,7 +80,7 @@ def default_web_dir() -> Path:
 
 def _defaults() -> dict:
     return {
-        "spawn": process.spawn_detached, "is_alive": process.is_alive, "kill": process.kill_tree, "run": subprocess.run, "answers": _answers,
+        "spawn": process.spawn_detached, "is_alive": process.is_alive, "kill": process.kill_tree, "run": subprocess.run, "answers": _answers, "published": _published,
         "sleep": time.sleep, "platform": sys.platform, "find_cloudflared": find_cloudflared,
         "web_dir": default_web_dir(),
     }
@@ -222,6 +235,11 @@ def _start(home: Path, **deps) -> dict:
     if not _wait(registered, tries=120, sleep=d["sleep"]):
         _stop_pids(run, d["kill"])
         return {"error": f"the tunnel could not connect to Cloudflare; see {log}"}
+    # A phone that looks the new name up before public DNS has it gets "not found", and keeps that answer.
+    host = address().removeprefix("https://")
+    if not _wait(lambda: d["published"](host), tries=120, sleep=d["sleep"]):
+        _stop_pids(run, d["kill"])
+        return {"error": "the tunnel's address did not become reachable; try again"}
     run["address"] = address()
     _write_run(home, run)
     return status(home, **deps)

@@ -61,7 +61,7 @@ class World:
 def deps(world, tmp_path, **extra):
     return {
         "spawn": world.spawn, "is_alive": world.is_alive, "kill": world.kill, "run": world.run,
-        "answers": lambda url: True, "sleep": lambda s: None, "platform": "linux",
+        "answers": lambda url: True, "published": lambda host: True, "sleep": lambda s: None, "platform": "linux",
         "find_cloudflared": lambda: "/bin/cloudflared",
         "web_dir": tmp_path / "web", **extra,
     }
@@ -116,6 +116,23 @@ def test_a_quick_tunnel_is_ready_when_cloudflare_registers_it_and_its_new_name_i
     assert "error" in out and "connect" in out["error"]
     # a brand-new name looked up too early is remembered as missing by this computer's resolver
     assert not any("trycloudflare" in u for u in checked)
+
+
+def test_the_address_is_given_only_once_public_dns_knows_its_name(tmp_path):
+    # a phone that looks the new name up too early gets "not found", and its resolver keeps that answer
+    w = World(tmp_path)
+    asked = []
+    answers = iter([False, False, True])
+    out = phone.start(tmp_path, **deps(w, tmp_path, published=lambda host: asked.append(host) or next(answers)))
+    assert out["address"] == "https://calm-river.trycloudflare.com"
+    assert asked == ["calm-river.trycloudflare.com"] * 3
+
+
+def test_a_name_public_dns_never_learns_is_an_error_and_nothing_is_left_running(tmp_path):
+    w = World(tmp_path)
+    out = phone.start(tmp_path, **deps(w, tmp_path, published=lambda host: False))
+    assert "error" in out and "address" not in out
+    assert set(w.killed) == {s["pid"] for s in w.spawned}
 
 
 def test_stop_ends_everything_it_started(tmp_path):
