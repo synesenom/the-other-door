@@ -194,6 +194,55 @@ def _templates_from_code(profile_dir: Path) -> None:
         utils.write_json_atomic(config_path, config)
 
 
+# The config keys that name a file; since v0.5.0 each must name one inside `profile/` (`Profile._resolve_path`).
+_FILE_KEYS = ("cv_content", "cv_template", "cover_letter_template", "photo")
+
+
+def _free_name(profile_dir: Path, source: Path) -> Path:
+    """Where *source* goes in *profile_dir*: its own name, or `<stem>-<n><suffix>` when that holds another file."""
+    target, n = profile_dir / source.name, 1
+    while target.exists() and not (target.is_file() and pinned.sha256(target) == pinned.sha256(source)):
+        n += 1
+        target = profile_dir / f"{source.stem}-{n}{source.suffix}"
+    return target
+
+
+def _files_into_profile(profile_dir: Path) -> None:
+    """1 -> 2: the files the config names live in `profile/`.
+
+    v0.4.0 read a CV, a template or a photo from anywhere; this build reads only `profile/`'s. A file named outside it
+    is copied in (the original is left where it is) and the key names the copy; a key naming a file that is gone is
+    dropped (the CV is then `profile/cv.md`, a template the code's, no photo). Paths resolve as v0.4.0 resolved them:
+    a relative one from the data folder, the folder holding `profile/`.
+    """
+    profile_dir = Path(profile_dir)
+    config_path = profile_dir / "config.json"
+    try:
+        config = json.loads(config_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return
+    if not isinstance(config, dict):
+        return
+    inside, home, changed = profile_dir.resolve(), profile_dir.parent, False
+    for key in _FILE_KEYS:
+        value = config.get(key)
+        if not isinstance(value, str) or not value:
+            continue
+        source = (Path(value) if Path(value).is_absolute() else home / value).resolve()
+        if source.is_relative_to(inside):
+            continue
+        if source.is_file():
+            target = _free_name(profile_dir, source)
+            if not target.exists():
+                utils.write_atomic(target, source.read_bytes())
+            config[key] = f"profile/{target.name}"
+        else:
+            del config[key]
+        changed = True
+    if changed:
+        utils.write_json_atomic(config_path, config)
+
+
 PROFILE_STEPS: list[Step] = [
     Step(
         "templates come from the code", _templates_from_code,
@@ -202,6 +251,7 @@ PROFILE_STEPS: list[Step] = [
             "show_profile.templates.*.path",  # the template read is the code's, not a copy in profile/
         ),
     ),
+    Step("your CV, templates and photo are kept in your profile folder", _files_into_profile),
 ]
 JOBS_STEPS: list[Step] = []
 

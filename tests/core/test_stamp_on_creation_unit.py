@@ -4,7 +4,7 @@ import pytest
 
 from door.core import migrations, workspace
 
-PROFILE = "0.1\n"
+PROFILE = f"{migrations.current('profile')}\n"
 JOBS = "0.0\n"
 
 

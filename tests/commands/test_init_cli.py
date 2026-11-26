@@ -12,7 +12,7 @@ import pytest
 from click.testing import CliRunner
 
 from door.cli import cli
-from door.core import workspace
+from door.core import migrations, workspace
 import door.core.profile_loader as profile_loader
 from cli_utils import result_text
 from paths import REPO_ROOT
@@ -546,7 +546,7 @@ def test_init_partial_profile_dir_copies_missing_files_only(init_env, prompts):
 
     for name in ("cv.template.html", "cover-letter.template.html", "fonts"):
         assert not (init_env.profile_dir / name).exists()  # the templates and fonts come from the code (#56)
-    assert (init_env.profile_dir / ".data_version").read_text() == "0.1\n"  # made by this build: nothing to upgrade
+    assert (init_env.profile_dir / ".data_version").read_text() == f"{migrations.current('profile')}\n"  # made by this build: nothing to upgrade
     assert not (init_env.profile_dir / "cv.md").exists()  # no CV yet, not the example's
     assert (state_dir / "mine.json").read_text() == '{"notes": []}'
 
