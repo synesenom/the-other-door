@@ -1,10 +1,8 @@
 """The phone server under The other door's control (#444, #424): started, followed, paired and stopped for one data
 folder, with a Cloudflare quick tunnel. Processes and HTTP are faked."""
 
-import hashlib
 import io
 import json
-import tarfile
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -12,7 +10,6 @@ import pytest
 from door import version as door_version
 from door.core.phone import pairing
 from door.core.phone import phone
-from door.core.downloads import pinned as pinned_mod
 
 
 class Proc:
@@ -200,40 +197,6 @@ def test_status_lists_the_phones_and_where_it_serves(tmp_path):
     assert s["web_built"] is False
 
 
-def test_cloudflared_is_installed_from_its_pinned_release_and_checked(tmp_path, monkeypatch):
-    payload = b"\x7fELF fake cloudflared"
-    asset = phone.CLOUDFLARED["linux-x86_64"]
-
-    def fetch(url, to):
-        assert url.endswith(asset[0]) and phone.CLOUDFLARED_VERSION in url
-        to.write_bytes(payload)
-
-    monkeypatch.setattr(pinned_mod, "http_get", fetch)
-    with pytest.raises(ValueError, match="checksum"):
-        phone.install_cloudflared(tmp_path, platform="linux", machine="x86_64")
-    assert list(tmp_path.iterdir()) == []   # no binary, no staging folder
-    pinned = {"linux-x86_64": (asset[0], hashlib.sha256(payload).hexdigest())}
-    path = phone.install_cloudflared(tmp_path, platform="linux", machine="x86_64", pins=pinned)
-    assert path.read_bytes() == payload and path.stat().st_mode & 0o111
-    assert [p.name for p in tmp_path.iterdir()] == ["cloudflared"]
-
-
-def test_a_macos_cloudflared_comes_out_of_its_archive(tmp_path, monkeypatch):
-    buf = io.BytesIO()
-    with tarfile.open(fileobj=buf, mode="w:gz") as tar:
-        data = b"macho"
-        info = tarfile.TarInfo("cloudflared")
-        info.size = len(data)
-        tar.addfile(info, io.BytesIO(data))
-    blob = buf.getvalue()
-
-    pinned = {"darwin-arm64": ("cloudflared-darwin-arm64.tgz", hashlib.sha256(blob).hexdigest())}
-    monkeypatch.setattr(pinned_mod, "http_get", lambda url, to: to.write_bytes(blob))
-    path = phone.install_cloudflared(tmp_path, platform="darwin", machine="arm64", pins=pinned)
-    assert path.read_bytes() == b"macho"
-    assert [p.name for p in tmp_path.iterdir()] == ["cloudflared"]
-
-
 def test_remove_takes_a_phone_away(tmp_path):
     pairing.redeem(tmp_path, pairing.new_code(tmp_path, "Pixel"))
     assert phone.remove(tmp_path, "Pixel") == {"removed": "Pixel"}
@@ -303,3 +266,14 @@ def test_pairing_a_second_phone_is_refused_until_the_first_is_unpaired(tmp_path)
     assert "unpair" in out["error"].lower() and "qr_svg" not in out
     phone.remove(tmp_path, "Pixel")
     assert "error" not in phone.pair(tmp_path, "Other", **deps(w, tmp_path, qr=lambda text: "<svg/>"))
+
+
+def test_start_downloads_the_pinned_cloudflared_when_no_checked_copy_is_found(tmp_path):
+    world = World(tmp_path)
+    installed = []
+    d = deps(world, tmp_path, find_cloudflared=lambda: None,
+             install_cloudflared=lambda: installed.append(1) or tmp_path / "cloudflared-x" / "cloudflared")
+    out = phone.start(tmp_path, port=9000, **d)
+    assert "error" not in out and installed == [1]
+    tunnel = next(s for s in world.spawned if "tunnel" in s["argv"])
+    assert tunnel["argv"][0] == str(tmp_path / "cloudflared-x" / "cloudflared")

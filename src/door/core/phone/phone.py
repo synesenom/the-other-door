@@ -12,28 +12,19 @@ import io
 import json
 import os
 import re
-import shutil
 import socket
 import sys
-import tarfile
 import threading
 import time
 from datetime import UTC, datetime
 from pathlib import Path
 
-from door.core import process, utils, workspace
-from door.core.downloads import pinned
+from door.core import process, workspace
+from door.core.downloads import cloudflared
 from door import version
 from door.core.phone import pairing
 
 DEFAULT_PORT = 8765
-CLOUDFLARED_VERSION = "2026.10.6"
-# The release's own digests (github.com/cloudflare/cloudflared/releases), checked before anything runs.
-CLOUDFLARED = {
-    "darwin-arm64": ("cloudflared-darwin-arm64.tgz", "ea1e5105d35bbe16cee5b2f7b4742059ada341fbd35938ed827c24b85efa51c8"),
-    "linux-x86_64": ("cloudflared-linux-amd64", "1d356dac769d0dbf62ebe588c4034824bbff98d5790c2f844cc99e0e2f57462d"),
-    "windows-x86_64": ("cloudflared-windows-amd64.exe", "d521b3bf68982165f0d06d76732f22d9a105ef057ff3ae4c0986f3a23190950f"),
-}
 _TUNNEL_URL = re.compile(r"https://[a-z0-9-]+\.trycloudflare\.com")
 
 
@@ -63,19 +54,6 @@ def _answers(url: str) -> bool:
         return False
 
 
-def _bin_dir() -> Path:
-    return Path.home() / ".local" / "bin"
-
-
-def find_cloudflared() -> str | None:
-    """The bundled cloudflared (the packaged app's DOOR_BIN), else ~/.local/bin's, else PATH's."""
-    name = "cloudflared.exe" if sys.platform == "win32" else "cloudflared"
-    for folder in filter(None, (os.environ.get("DOOR_BIN"), str(_bin_dir()))):
-        if (Path(folder) / name).is_file():
-            return str(Path(folder) / name)
-    return shutil.which("cloudflared")
-
-
 def default_web_dir() -> Path:
     return Path(os.environ.get("DOOR_WEB_DIR") or workspace.REPO_ROOT / "app" / "out" / "web")
 
@@ -83,42 +61,9 @@ def default_web_dir() -> Path:
 def _defaults() -> dict:
     return {
         "spawn": process.spawn_detached, "is_alive": process.is_alive, "kill": process.kill_tree, "answers": _answers, "published": _published,
-        "sleep": time.sleep, "platform": sys.platform, "find_cloudflared": find_cloudflared,
+        "sleep": time.sleep, "platform": sys.platform, "find_cloudflared": cloudflared.find_cloudflared, "install_cloudflared": cloudflared.install_cloudflared,
         "web_dir": default_web_dir(),
     }
-
-
-# ----------------------------------------------------------------------------- cloudflared
-def _arch(machine: str) -> str:
-    return "arm64" if machine.lower() in ("arm64", "aarch64") else "x86_64"
-
-
-def install_cloudflared(dest: Path | None = None, *, platform: str | None = None, machine: str | None = None,
-                        pins: dict = CLOUDFLARED) -> Path:
-    """Download the pinned cloudflared for this system, check its digest, put it in `dest` (~/.local/bin)."""
-    import platform as platform_mod
-
-    platform = platform or sys.platform
-    system = {"darwin": "darwin", "win32": "windows"}.get(platform, "linux")
-    key = f"{system}-{_arch(machine or platform_mod.machine())}"
-    if key not in pins:
-        raise ValueError(f"no cloudflared for {key}; install it yourself (https://github.com/cloudflare/cloudflared)")
-    asset, digest = pins[key]
-    url = f"https://github.com/cloudflare/cloudflared/releases/download/{CLOUDFLARED_VERSION}/{asset}"
-    dest = Path(dest or _bin_dir())
-    target = dest / ("cloudflared.exe" if system == "windows" else "cloudflared")
-    with utils.staging(dest, ".cloudflared.") as staging:
-        pinned.download([(url, asset, digest)], staging)
-        staged = staging / target.name
-        if asset.endswith(".tgz"):
-            with tarfile.open(staging / asset, mode="r:gz") as tar:
-                member = next(m for m in tar.getmembers() if Path(m.name).name == "cloudflared" and m.isfile())
-                staged.write_bytes(tar.extractfile(member).read())
-        else:
-            (staging / asset).rename(staged)
-        staged.chmod(0o755)
-        staged.replace(target)
-    return target
 
 
 # ----------------------------------------------------------------------------- state
@@ -218,7 +163,7 @@ def _start(home: Path, **deps) -> dict:
     if d["platform"] == "darwin":  # a sleeping Mac cannot answer a phone
         run["awake_pid"] = d["spawn"](["caffeinate", "-i", "-w", str(serve.pid)], log=logs / "awake.log").pid
 
-    binary = d["find_cloudflared"]() or str(install_cloudflared())
+    binary = d["find_cloudflared"]() or str(d["install_cloudflared"]())
     log = logs / "tunnel.log"
     if log.exists():
         log.unlink()
