@@ -1,5 +1,5 @@
 // One quiet, dismissable line on the phone app once paired (#576): the browser's install button on
-// Android, the Share words on iOS Safari; nothing once installed or waved away.
+// Android, the Share words on an iPhone or iPad; nothing once installed or waved away.
 import { dismiss, install, useInstallOffer, type InstallOffer } from './install'
 
 export function InstallLineView({ what, onInstall, onDismiss }: { what: InstallOffer; onInstall(): void; onDismiss(): void }) {

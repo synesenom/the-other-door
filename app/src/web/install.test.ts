@@ -4,7 +4,7 @@ import { act, renderHook } from '@testing-library/react'
 import { captureInstallPrompt, dismiss, install, useInstallOffer } from './install'
 
 const offer = () => renderHook(() => useInstallOffer()).result.current
-const isIosSafari = () => offer() === 'ios'
+const isIos = () => offer() === 'ios'
 
 const IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1'
 const IPHONE_CHROME = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/124.0 Mobile/15E148 Safari/604.1'
@@ -33,20 +33,21 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe('isIosSafari', () => {
-  it('is true for iPhone Safari and for an iPad that says Macintosh', () => {
+describe('the Share words', () => {
+  // since iOS 16.4 every iPhone browser can add a page to the home screen from its Share sheet
+  it('show in any iPhone browser, Safari or Chrome, and on an iPad that says Macintosh', () => {
     setNav(IPHONE)
-    expect(isIosSafari()).toBe(true)
-    setNav(IPAD_AS_MAC, 5)
-    expect(isIosSafari()).toBe(true)
-  })
-  it('is false for a Mac, another iOS browser and Android', () => {
-    setNav(IPAD_AS_MAC, 0)
-    expect(isIosSafari()).toBe(false)
+    expect(isIos()).toBe(true)
     setNav(IPHONE_CHROME)
-    expect(isIosSafari()).toBe(false)
+    expect(isIos()).toBe(true)
+    setNav(IPAD_AS_MAC, 5)
+    expect(isIos()).toBe(true)
+  })
+  it('do not show on a Mac or on Android', () => {
+    setNav(IPAD_AS_MAC, 0)
+    expect(isIos()).toBe(false)
     setNav(ANDROID)
-    expect(isIosSafari()).toBe(false)
+    expect(isIos()).toBe(false)
   })
 })
 
@@ -82,7 +83,7 @@ describe('the install prompt', () => {
     act(() => void window.dispatchEvent(new Event('appinstalled')))
     expect(result.current).toBeNull()
   })
-  it('iOS Safari gets the Share words; standalone and dismissed get nothing', () => {
+  it('an iPhone gets the Share words; standalone and dismissed get nothing', () => {
     setNav(IPHONE)
     expect(offer()).toBe('ios')
     act(() => dismiss())

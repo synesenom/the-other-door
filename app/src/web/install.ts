@@ -1,5 +1,5 @@
 // Offering to install the phone app (#576). Chromium fires `beforeinstallprompt` once and early, so it is
-// kept from the page's start (captureInstallPrompt, called by main.tsx before React renders); iOS Safari
+// kept from the page's start (captureInstallPrompt, called by main.tsx before React renders); iOS
 // has no such event, only Share > Add to Home Screen, which the line says in words.
 import { useSyncExternalStore } from 'react'
 
@@ -38,10 +38,10 @@ function isStandalone(): boolean {
   return window.matchMedia('(display-mode: standalone)').matches || (navigator as { standalone?: boolean }).standalone === true
 }
 
-function isIosSafari(): boolean {
+// Any iOS browser: since iOS 16.4 each adds a page to the home screen from its Share sheet.
+function isIos(): boolean {
   const ua = navigator.userAgent
-  const ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)
-  return ios && !/CriOS|FxiOS|EdgiOS/.test(ua)
+  return /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)
 }
 
 function dismissed(): boolean {
@@ -65,7 +65,7 @@ export async function install(): Promise<void> {
 function offer(): InstallOffer {
   if (isStandalone() || dismissed()) return null
   if (kept) return 'prompt'
-  return isIosSafari() ? 'ios' : null
+  return isIos() ? 'ios' : null
 }
 
 export function useInstallOffer(): InstallOffer {
