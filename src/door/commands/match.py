@@ -180,12 +180,20 @@ def _match_core(
     needs_permit = bool(config.get("needs_work_permit", False))
 
     counters = {"scored": 0, "above_threshold": 0}
+    flagged: list[str] = []  # ads whose first answer quoted text aimed at a model: cleaned, to be scored once more
 
-    def _persist(job_id: str, result: dict) -> None:
+    def _persist(job_id: str, result: dict, *, rescoring: bool = False) -> None:
         entry = entries_by_id.get(job_id)
         if entry is None:
             return
         path, posting = entry
+        quotes = [] if rescoring else scorer.verified_quotes(posting, result)
+        if quotes:  # what the ad says to a model is removed and never scored; the second answer is the score
+            cleaned = integrity.remove_quoted(posting, quotes)
+            utils.write_json_atomic(path, cleaned)
+            entries_by_id[job_id] = (path, cleaned)
+            flagged.append(job_id)
+            return
         updated = scorer.apply_result(posting, result, needs_work_permit=needs_permit)
         utils.write_json_atomic(path, updated)
         counters["scored"] += 1
@@ -198,13 +206,19 @@ def _match_core(
         progress_mod.report("scoring", 0, len(postings), stage="match")
     start = time.monotonic()
     errors: dict[str, str] = {}
-    _results, failed = scorer.score_postings(
-        postings,
-        system_prompt=system_prompt,
-        model=scorer.DEFAULT_MODEL,
-        on_result=_persist,
-        errors=errors,
-    )
+    system_kwargs = {"system_prompt": system_prompt, "model": scorer.DEFAULT_MODEL, "errors": errors}
+    _results, failed = scorer.score_postings(postings, on_result=_persist, **system_kwargs)
+    if flagged:
+        # the rescoring shares the run's cap: what does not fit stays unscored (cleaned) for the next run, like a failed score
+        room = max(0, MAX_SCORED_PER_RUN - len(postings))
+        for job_id in flagged[room:]:
+            errors[job_id] = "text aimed at a model was removed; scoring waits for the next run"
+        failed += flagged[room:]
+        again = [entries_by_id[i][1] for i in flagged[:room]]
+        if again:
+            _results, failed_again = scorer.score_postings(
+                again, on_result=lambda i, r: _persist(i, r, rescoring=True), **system_kwargs)
+            failed += failed_again
     elapsed_s = time.monotonic() - start
 
     return {

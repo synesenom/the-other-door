@@ -181,5 +181,5 @@ See [SECURITY.md](../SECURITY.md): please do not put the details in a public iss
   user, and nothing is encrypted. Disk encryption and a screen lock are your protection.
 - **Cloudflare, the sites, Anthropic and Google.** What goes to them (above) is under their own terms and
   retention. If Cloudflare reading the phone's traffic is not acceptable, do not set up the phone.
-- **A job ad that tricks a model.** The gate and the cut-down tools limit what a hostile ad can do, but a
+- **A job ad that tricks a model.** The gate, the scorer's own quoting of text aimed at it (removed, then the ad scored again) and the cut-down tools limit what a hostile ad can do, but a
   model can still be misled into a wrong score or a wrong sentence in a letter. Read what you send.

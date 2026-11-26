@@ -118,6 +118,39 @@ def check(text: str, html: str | None = None) -> dict:
     return {"clean_text": text, "verdict": "suspicious" if findings else "clean", "findings": findings}
 
 
+def remove_quoted(posting: dict, quotes: list[str]) -> dict:
+    """A copy of ``posting`` with the sentence (or, for a quote across lines, each line) of its description
+    holding each quote removed, an ``instruction`` finding per quote, the verdict suspicious and the stale
+    ``description_condensed`` dropped. The quotes are checked by the caller."""
+    out = dict(posting)
+    out.pop("description_condensed", None)
+    lines = [" ".join(line.split()) for line in str(posting.get("description") or "").split("\n")]
+    for quote in quotes:
+        spans, at = [], 0  # each line's [start, end) in the lines joined by one space
+        for line in lines:
+            spans.append((at, at + len(line)))
+            at += len(line) + 1
+        start = " ".join(lines).find(quote)
+        if start < 0:
+            continue
+        end = start + len(quote)
+        hit = [i for i, (a, b) in enumerate(spans) if a < end and b > start]
+        if len(hit) == 1:
+            sentences = re.split(r"(?<=[.!?])\s+", lines[hit[0]])
+            kept = [x for x in sentences if quote not in x]
+            lines[hit[0]] = " ".join(kept) if len(kept) < len(sentences) else ""
+        else:
+            for i in hit:
+                lines[i] = ""
+    out["description"] = re.sub(r"\n{3,}", "\n\n", "\n".join(lines)).strip()
+    block = posting.get("integrity") or {}
+    out["integrity"] = {
+        "verdict": "suspicious",
+        "findings": [*(block.get("findings") or []), *({"kind": "instruction", "excerpt": _excerpt(q)} for q in quotes)],
+    }
+    return out
+
+
 def stored(result: dict) -> dict:
     """The part of a `check` result a posting keeps: ``{"verdict", "findings"}``."""
     return {"verdict": result["verdict"], "findings": result["findings"]}

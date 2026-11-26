@@ -151,7 +151,7 @@ if kind == "score":
         results.append({
             "job_id": job_id.strip(), "score": s["score"], "score_reason": s["score_reason"],
             "matching_skills": s.get("matching_skills", []), "missing_skills": s.get("missing_skills", []),
-            "language_requirement": s.get("language_requirement", "none"), "work_permit": "not_mentioned", "flags": [],
+            "language_requirement": s.get("language_requirement", "none"), "work_permit": "not_mentioned", "flags": [], "model_addressed": [],
         })
     if not results:  # a single posting, not a chunk
         title = re.search(r"^Title: (.*)$", STDIN, re.M)
@@ -160,7 +160,7 @@ if kind == "score":
         envelope(said.get("answer") or {
             "score": s["score"], "score_reason": s["score_reason"], "matching_skills": s.get("matching_skills", []),
             "missing_skills": s.get("missing_skills", []), "language_requirement": s.get("language_requirement", "none"),
-            "work_permit": "not_mentioned", "flags": [],
+            "work_permit": "not_mentioned", "flags": [], "model_addressed": [],
         })
     else:
         envelope(said.get("answer") or {"results": results})

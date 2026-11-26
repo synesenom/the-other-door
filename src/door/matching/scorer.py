@@ -253,6 +253,7 @@ SCORE_SCHEMA: dict = {
         },
         "work_permit": {"type": "string", "enum": WORK_PERMIT},
         "flags": {"type": "array", "items": {"type": "string"}},
+        "model_addressed": {"type": "array", "items": {"type": "string"}},
     },
     "required": [
         "score",
@@ -262,6 +263,7 @@ SCORE_SCHEMA: dict = {
         "language_requirement",
         "work_permit",
         "flags",
+        "model_addressed",
     ],
     "additionalProperties": False,
 }
@@ -349,7 +351,7 @@ def _validate_score_fields(data: dict, *, require_job_id: bool = False) -> None:
     if not isinstance(data["score_reason"], str):
         raise ScoreParseError("score_reason must be a string")
 
-    for field in ("matching_skills", "missing_skills", "flags"):
+    for field in ("matching_skills", "missing_skills", "flags", "model_addressed"):
         value = data[field]
         if not isinstance(value, list) or not all(isinstance(s, str) for s in value):
             raise ScoreParseError(f"{field} must be a list of strings")
@@ -402,6 +404,20 @@ def parse_chunk_output(stdout: str) -> list[dict]:
         _validate_score_fields(item, require_job_id=True)
 
     return data["results"]
+
+
+def seen_text(posting: dict) -> str:
+    """The description as the scorer is shown it (`build_user_message`)."""
+    description = posting.get("description_condensed") or posting.get("description") or ""
+    return description[:_USER_MESSAGE_CHAR_CAP]
+
+
+def verified_quotes(posting: dict, result: dict) -> list[str]:
+    """The ``model_addressed`` quotes of ``result`` that are verbatim in the text the scorer saw (spacing
+    squashed); a quote the model made up is dropped, so only text really in the ad is ever removed."""
+    seen = " ".join(seen_text(posting).split())
+    quotes = (" ".join(q.split()) for q in result.get("model_addressed") or [])
+    return [q for q in dict.fromkeys(quotes) if q and q in seen]
 
 
 # --------------------------------------------------------------------------- #
