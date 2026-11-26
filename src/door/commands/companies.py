@@ -927,7 +927,7 @@ def companies_group(ctx: click.Context):
 
 
 def _fail(exc: Exception) -> None:
-    click.echo(f"Error: {exc}", err=True)
+    click.echo(common.plain(f"Error: {exc}"), err=True)
     sys.exit(1)
 
 

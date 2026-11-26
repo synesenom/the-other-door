@@ -40,7 +40,7 @@ def export(path):
     try:
         result = archive_core._export_core(path, profile_dir=workspace.PROFILE_DIR, jobs_dir=workspace.JOBS_DIR)
     except (FileNotFoundError, FileExistsError, ValueError) as exc:
-        click.echo(f"Error: {exc}", err=True)
+        click.echo(common.plain(f"Error: {exc}"), err=True)
         sys.exit(1)
 
     console = common._console()
@@ -90,7 +90,7 @@ def import_data(archive):
     try:
         result = archive_core._import_core(archive, profile_dir=workspace.PROFILE_DIR, jobs_dir=workspace.JOBS_DIR)
     except (FileNotFoundError, ValueError) as exc:
-        click.echo(f"Error: {exc}", err=True)
+        click.echo(common.plain(f"Error: {exc}"), err=True)
         sys.exit(1)
 
     console = common._console()
@@ -157,7 +157,7 @@ def _disconnect_core() -> dict:
 
 
 def _fail(exc: Exception) -> None:
-    click.echo(f"Error: {exc}", err=True)
+    click.echo(common.plain(f"Error: {exc}"), err=True)
     sys.exit(1)
 
 

@@ -270,7 +270,7 @@ def _stdout_is_tty() -> bool:
 
 def _echo_config_error(exc: ConfigError) -> None:
     for line in exc.lines:
-        click.echo(f"Error: {line}", err=True)
+        click.echo(plain(f"Error: {line}"), err=True)
 
 
 def _local_time(iso: str) -> str:

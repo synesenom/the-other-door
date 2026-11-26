@@ -217,3 +217,13 @@ def test_the_profile_review_has_no_control_characters(capsys):
                                 "templates": {"cv": state, "cover_letter": state}, "story_bank": state,
                                 "cv": {**state, "headline": f"H{BAD}", "sections": [{"title": f"S{BAD}", "bullets": 1, "roles": []}]}})
     _no_control(capsys.readouterr().out)
+
+
+def test_an_ambiguous_job_error_names_the_titles_as_text(cli_env):
+    for i in (1, 2, 3):
+        write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", f"job-{i}", score=0.9, title=f"Welder{HOSTILE}",
+                           company="Acme")
+    result = CliRunner().invoke(cli, ["jobs", "show", "welder"])
+    assert result.exit_code != 0
+    text = _clean(result_text(result))
+    assert "jobs match" in text, text

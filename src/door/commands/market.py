@@ -375,7 +375,7 @@ def market(days: int, scored_companies: bool, save: bool):
     try:
         result = _market_core(days, save, scored_companies=scored_companies, jobs_dir=workspace.JOBS_DIR, profile_dir=workspace.PROFILE_DIR)
     except ValueError as exc:
-        click.echo(f"Error: {exc}", err=True)
+        click.echo(common.plain(f"Error: {exc}"), err=True)
         sys.exit(1)
     click.echo(common.plain(render_markdown(result)))
     if result["warning"]:

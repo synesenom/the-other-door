@@ -373,7 +373,7 @@ def _execute(ctx: click.Context, step: str | None, **options) -> None:
                 progress=reporter,
             )
     except (FileNotFoundError, ValueError) as exc:
-        click.echo(f"Error: {exc}", err=True)
+        click.echo(common.plain(f"Error: {exc}"), err=True)
         sys.exit(1)
 
     min_score = profile_loader.load_config_or_defaults(workspace.PROFILE_DIR).get("min_score", common._DEFAULT_MIN_SCORE)

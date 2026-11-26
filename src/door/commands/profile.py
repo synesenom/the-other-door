@@ -484,7 +484,7 @@ def _draft_from_sources(answers: dict) -> None:
             result = cv_cmd._draft_cv_core(sources, profile_dir=workspace.PROFILE_DIR)
             break
         except (ValueError, FileNotFoundError, claude_cli.ClaudeError) as exc:
-            click.echo(f"Error: {exc}", err=True)
+            click.echo(common.plain(f"Error: {exc}"), err=True)
     answers.update(draft_path=result["draft_path"], provenance=result["provenance"], todos=result["todos"])
     urls = [s for s in sources if common._is_url(s) and not re.match(r"https?://([^/]+\.)?linkedin\.", s, re.IGNORECASE)]
     if urls:
@@ -765,14 +765,14 @@ def _save_answers(answers: dict) -> bool:
     if answers.get("draft_path"):
         saved = _save_cv_core(Path(answers["draft_path"]).read_text(encoding="utf-8"))
         if "error" in saved:
-            click.echo(f"Error: {saved['error']}", err=True)
+            click.echo(common.plain(f"Error: {saved['error']}"), err=True)
             return False
         kept = f" (previous version: {common._display_path(Path(saved['backup']))})" if saved["backup"] else ""
         click.echo(f"Wrote {common._display_path(Path(saved['cv_path']))}{kept}.")
     if answers.get("photo"):
         saved = _save_photo_core(answers["photo"])
         if "error" in saved:
-            click.echo(f"Error: {saved['error']}", err=True)
+            click.echo(common.plain(f"Error: {saved['error']}"), err=True)
             answers.pop("photo")  # the rest is saved; back at the review the photo can be asked again
             answers["has_photo"] = False
             return False

@@ -165,6 +165,6 @@ def salary_cmd(job_id: str | None, refresh: bool, model: str | None):
             return
         result = _salary_core(job_id, refresh, model=model, jobs_dir=workspace.JOBS_DIR, profile_dir=workspace.PROFILE_DIR)
     except (ValueError, LookupError, claude_cli.ClaudeError, lock.LockHeldError) as exc:
-        click.echo(f"Error: {exc}", err=True)
+        click.echo(common.plain(f"Error: {exc}"), err=True)
         sys.exit(1)
     click.echo(render(result))
