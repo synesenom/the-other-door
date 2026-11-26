@@ -568,6 +568,8 @@ def _read_sources_step(answers: dict) -> None:
     click.echo("[3/4] Finding job titles that fit...")
     suggested = titles_cmd._titles_core(answers.get("role_targets"), languages=answers["languages"], profile_dir=workspace.PROFILE_DIR)
     if suggested.get("warning"):
+        from door.commands import _common as common
+
         click.echo(common.plain(f"No titles suggested: {suggested['warning']}"), err=True)
     answers["titles"] = suggested["titles"]
     answers["role_targets"] = [t["title"] for t in suggested["titles"] if t["recommended"]]
