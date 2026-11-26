@@ -12,6 +12,7 @@ chats and get answers as they are.
 from __future__ import annotations
 
 import html
+import re
 import secrets
 import webbrowser
 from pathlib import Path
@@ -56,7 +57,7 @@ _OPENED: set[str] = set()  # the jobs whose ad this server already opened
 # text, so a chat gets them whole (the CV a draft returns goes straight to `save_cv`). Read from each core's answer;
 # a tool whose answer can include any posting or employer text is not here (a test places every tool).
 OWN_DATA_TOOLS = frozenset({
-    "draft_cv", "enrich", "infer_basics", "keywords", "suggest_titles",  # the user's CV, their own pages and profile
+    "infer_basics", "keywords", "suggest_titles",  # the user's CV, their own pages and profile
     "show_profile", "init_profile", "save_cv", "save_photo", "remove_photo", "cv_style_sample",  # the profile and CV
     "list_stories", "draft_stories", "save_story", "remove_story",  # the user's story bank
     "doctor", "setup",  # checks and installs of this computer
@@ -65,6 +66,12 @@ OWN_DATA_TOOLS = frozenset({
     "phone_start", "phone_stop", "phone_status", "pair_phone", "unpair_phone",  # the phone server
     "cancel_job",  # stops a run: the code's own answer
 })
+
+# Tools whose answers must come back whole (the CV a draft returns goes to `save_cv`, a proposal's text is shown to the
+# user) but are written by a model from pages a stranger may have written: every string stays uncut and with its
+# lines, inside the call's marker. `save_cv` takes the marker off a text that is one marked block (`unmark`).
+WHOLE_TEXT_TOOLS = frozenset({"draft_cv", "enrich"})
+_MARKED = re.compile(r"<ad-([0-9a-f]{8})>(.*)</ad-\1>", re.S)
 
 
 def _marker() -> tuple[str, str]:
@@ -75,6 +82,12 @@ def _marker() -> tuple[str, str]:
 def _wrap(value: str, limit: int, marker: tuple[str, str]) -> str:
     text = " ".join(value.split())[:limit]
     return f"{marker[0]}{text}{marker[1]}"
+
+
+def unmark(text: str) -> str:
+    """``text`` without the marker a chat's answer put around all of it; any other text as it is."""
+    found = _MARKED.fullmatch(text.strip()) if isinstance(text, str) else None
+    return found.group(2) if found else text
 
 
 def wrap_text(value: str) -> str:
@@ -97,6 +110,8 @@ def _walk(node, key, kept, marker, tool):
     if isinstance(node, str):
         if kept:
             return node
+        if tool in WHOLE_TEXT_TOOLS:
+            return f"{marker[0]}{node}{marker[1]}"
         if tool == "ask" and key == "answer":
             return f"{marker[0]}{node.strip()[:ASK_CHARS]}{marker[1]}"
         return _wrap(node, _BOUNDS.get(key, TEXT_CHARS), marker)

@@ -1480,7 +1480,7 @@ def save_cv(markdown: str, backup: bool = True) -> dict:
     """
     from door.commands import profile as profile_cmd
 
-    return profile_cmd._save_cv_core(markdown, backup=backup)
+    return profile_cmd._save_cv_core(chat_guard.unmark(markdown), backup=backup)
 
 
 @mcp.tool()
