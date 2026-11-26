@@ -11,7 +11,7 @@ const DESKTOP = { width: 1280, height: 800 }, PHONE = { width: 390, height: 844 
 const SHOTS = [
   ['Main', 'matches', DESKTOP], ['Prepare', 'prepared', DESKTOP], ['Find', 'finding-jobs', DESKTOP],
   ['Applications', 'applications', DESKTOP], ['Review', 'review-dark', DESKTOP],
-  ['PhoneMatches', 'phone-matches', PHONE], ['PhoneMatches', 'phone-matches-dark', PHONE, '?dark=true'],
+  ['PhoneMatches', 'phone-matches', PHONE],
   ['PhonePosting', 'phone-posting', PHONE], ['PhonePrepared', 'phone-prepared', PHONE],
   ['PhoneFinding', 'phone-finding-jobs', PHONE], ['PhoneApplications', 'phone-applications', PHONE],
 ];

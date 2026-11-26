@@ -10,6 +10,7 @@ import type { LoginState } from '../main/claude-login'
 import type { PickResult } from '../main/cv-sources'
 import type { NoticeTarget } from '../main/notices'
 import type { RunBoard } from '../main/run-board'
+import { UNREACHABLE_HELP } from './PhoneScreens'
 
 type Impl = { [A in ActionName]?: (...args: ActionArgs<A>) => ActionResult<A> | Promise<ActionResult<A>> }
 type Progress = { progress: number; total?: number; message: string }
@@ -31,7 +32,7 @@ export interface WebDeps {
 
 export const LONG_TOOLS = new Set(['find_jobs', 'prepare'])
 export const ON_THE_MACHINE = 'Do this on the computer running The other door.'
-const UNREACHABLE = "Can't reach The other door. Is the computer on? If it restarted, set your phone up again on it and scan the new code."
+const UNREACHABLE = `Can't reach your computer. ${UNREACHABLE_HELP}`
 /** What a tunnel answers with no computer behind it (502-504, Cloudflare's 52x and 530). */
 export const NOTHING_BEHIND = (status: number) => (status >= 502 && status <= 504) || (status >= 520 && status <= 530)
 const UNPAIRED = 'This phone is no longer paired with The other door. Pair it again with a new code.'

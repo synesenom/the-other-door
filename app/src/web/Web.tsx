@@ -6,6 +6,7 @@ import { App } from '../renderer/App'
 import { Splash } from '../renderer/Splash'
 import { NOTHING_BEHIND, createWebDoor } from './bridge'
 import { InstallLine } from './InstallLine'
+import { OpenInChromeView, UnreachableView } from './PhoneScreens'
 import { Pair, codeFromHash } from './Pair'
 import { sharedFrom, type Shared } from './share'
 import type { TokenStore } from './token-store'
@@ -115,42 +116,15 @@ export function Web({ store, fetch }: { store: TokenStore; fetch: typeof globalT
   if (state.kind === 'unreachable') {
     const token = state.token
     return (
-      <main className="onb pair">
-        <h1 className="display-l">Can't reach your computer</h1>
-        <p className="body">
-          Make sure your computer is on and <AppName /> is open on it. If you set up your phone again there, scan the new code.
-        </p>
-        <div className="actions">
-          <button
-            type="button"
-            className="primary"
-            onClick={() => {
-              setState({ kind: 'loading' })
-              void enter(token).then((ok) => ok || unpaired())
-            }}
-          >
-            Try again
-          </button>
-        </div>
-      </main>
+      <UnreachableView
+        onRetry={() => {
+          setState({ kind: 'loading' })
+          void enter(token).then((ok) => ok || unpaired())
+        }}
+      />
     )
   }
-  if (state.kind === 'pair' && code && !here) {
-    return (
-      <main className="onb pair">
-        <h1 className="display-l">Open in Chrome</h1>
-        <p className="body">Chrome puts <AppName /> on your home screen as an app. Other browsers add their own badge to its icon.</p>
-        <div className="actions">
-          <button type="button" className="secondary" onClick={() => setHere(true)}>
-            Continue here
-          </button>
-          <a className="primary" href={inChrome()}>
-            Open in Chrome
-          </a>
-        </div>
-      </main>
-    )
-  }
+  if (state.kind === 'pair' && code && !here) return <OpenInChromeView href={inChrome()} onHere={() => setHere(true)} />
   if (state.kind === 'pair') {
     return (
       <Pair

@@ -301,11 +301,11 @@ components; only the layout changes below the sidebar breakpoint (`size.sidebar-
 - **Always light** on the phone: an installed Android app's status and navigation bars take one colour, the
   install's parchment, so a dark app would sit between light bars.
 
-![Phone screens: Matches light and dark, posting, ready to send, finding jobs, applications](screens/phones.png)
+![Phone screens: Matches, posting, ready to send, finding jobs, applications](screens/phones.png)
 
 ## Dark mode
 
-Follow the system setting, with an override in Settings. Dark swaps the ground and ink
+Follow the system setting, with an override in Settings (the desktop app only: the phone is always light). Dark swaps the ground and ink
 (ink `#1E1A16` becomes the ground, parchment the text) and uses the lighter blue from
 the table; the layouts and components stay the same.
 
