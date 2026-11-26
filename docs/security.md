@@ -52,8 +52,8 @@ And `robots.txt` is read for its `Sitemap:` lines and `Crawl-delay` but does not
 bar for each source is its terms, recorded as a verdict ([how it fetches](job-sites.md#how-the-other-door-fetches),
 [the legal disclaimer](../LEGAL_DISCLAIMER.md)).
 
-A request to a board or an employer's feed, and every redirect of it, connects only to a public
-internet address, and ignores the system proxy and `.netrc`. A link that points at
+Every request to a job site, and every redirect of it, connects only to a public internet address,
+and ignores the system proxy and `.netrc`. A link that points at
 your computer, your home network or a cloud metadata address is refused. This matters because a posting
 or a page you import can contain any link.
 
