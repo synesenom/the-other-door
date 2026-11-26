@@ -2,9 +2,9 @@
 
 An ad is written by a stranger, and a chat can run commands on the user's computer, so in a chat no tool
 answer carries an ad's text: `show` gives the summary of `matching/ad_summary` and opens the ad for the user
-(`open_ad`), and `guard` leaves the description and the integrity excerpts out of every answer and cuts the
-short ad-derived fields (title, company, the score's reason, skills) to a bound and wraps each in a marker
-``<ad-TOKEN>…</ad-TOKEN>``, a token drawn at random for each call, so text inside it cannot close it early or
+(`open_ad`), and `guard` leaves the description and the integrity excerpts out of every answer and cuts every
+other string to a bound and wraps it in a marker ``<ad-TOKEN>…</ad-TOKEN>`` (default deny: only the keys of
+`_KEEP`, whose texts the code makes, stay as they are), a token drawn at random for each call, so text inside it cannot close it early or
 pass for the server's own words. The desktop app (its main process sets `path_scope.ENV`) and the phone are not
 chats and get answers as they are.
 """
@@ -21,12 +21,35 @@ from door.core import utils, workspace
 
 VIEW_DIR = ".view"
 ASK_CHARS = 1500
+TEXT_CHARS = 300
+MAX_ITEMS = 50
 
-# key -> bound; list keys hold strings each cut to the bound, at most `_MAX_SKILLS` of them
-_TEXT = {"title": 120, "title_en": 120, "company": 80, "location": 80, "score_reason": 240}
+# Bounds of the fields that have their own (everything else wrapped is cut at TEXT_CHARS); the skills are lists of
+# strings, each cut, at most `_MAX_SKILLS` of them, and any other list at MAX_ITEMS.
+_BOUNDS = {"title": 120, "title_en": 120, "company": 80, "location": 80, "score_reason": 240,
+           "matching_skills": 40, "missing_skills": 40}
 _SKILLS = ("matching_skills", "missing_skills")
-_SKILL_CHARS, _MAX_SKILLS = 40, 20
+_MAX_SKILLS = 20
 _AD_TEXT = ("description", "description_condensed")
+
+# Default deny: in a chat every string in an answer is cut and wrapped, whatever its key, because ad text reaches
+# answers by routes no list of keys can foresee (an error quoting a title, a note read from a material, a progress
+# line, an employer's name). Only the values of these keys stay as they are, each a text the code itself makes and
+# no ad can choose; when unsure, a key is not here.
+_KEEP = frozenset({
+    "id", "job_id", "ids",  # `<site>.<platform id>`, the key of every ledger (an id a site would have to guess to forge)
+    "status", "kind", "verdict", "outcome", "stage", "feature",  # members of fixed lists the code picks from
+    "currency", "period", "position",  # the salary estimate's fixed words (`salary.py`)
+    "work_mode",  # `onsite|hybrid|remote` or null: `ad_summary.clean` drops any other value
+    "pdfs", "pngs", "pdf", "png", "path", "paths", "dir",  # files the code writes under `jobs/output/<id>/`
+    "at", "as_of", "start", "end",  # timestamps the code stamps (an event's time, a window's ends)
+})
+# Answers that are a dict from an ad's text to a count: its keys are wrapped too (the only ones, a test runs every tool).
+_NAMED_BY_AD = frozenset({"by_company"})
+_KEEP_SUFFIX = ("_at", "_path", "_dir")  # `scraped_at`, `updated_at`, `output_path`, ...: stamps and paths the code builds (but `posted_at` is the site's)
+
+
+_OPENED: set[str] = set()  # the jobs whose ad this server already opened
 
 
 def _marker() -> tuple[str, str]:
@@ -39,43 +62,48 @@ def _wrap(value: str, limit: int, marker: tuple[str, str]) -> str:
     return f"{marker[0]}{text}{marker[1]}"
 
 
+def wrap_text(value: str) -> str:
+    """One text (a progress line) as a chat may read it: cut and in a marker of its own."""
+    return _wrap(value, TEXT_CHARS, _marker())
+
+
 def _is_ad(node: dict) -> bool:
     """A dict that describes a posting: a title with a company or link or id, or a company with a place."""
     return ("title" in node and any(k in node for k in ("company", "url", "id", "job_id"))) or (
         "company" in node and "location" in node)
 
 
-def _walk(node, marker):
+def _kept(key) -> bool:
+    return isinstance(key, str) and (key in _KEEP or key.endswith(_KEEP_SUFFIX) and key != "posted_at")
+
+
+def _walk(node, key, kept, marker, tool):
+    """``node`` (the value of ``key``) with every string wrapped unless ``kept`` (under a key of `_KEEP`)."""
+    if isinstance(node, str):
+        if kept:
+            return node
+        if tool == "ask" and key == "answer":
+            return f"{marker[0]}{node.strip()[:ASK_CHARS]}{marker[1]}"
+        return _wrap(node, _BOUNDS.get(key, TEXT_CHARS), marker)
     if isinstance(node, list):
-        return [_walk(item, marker) for item in node]
-    if not isinstance(node, dict):
-        return node
-    ad = _is_ad(node)
-    out = {}
-    for key, value in node.items():
-        if ad and key in _AD_TEXT:
-            continue
-        if key == "excerpt" and "kind" in node:  # an integrity finding's quote of the ad
-            continue
-        if key == "score_reason" and isinstance(value, str) or ad and key in _TEXT and isinstance(value, str):
-            out[key] = _wrap(value, _TEXT[key], marker)
-        elif key in _SKILLS and isinstance(value, list):
-            out[key] = [_wrap(s, _SKILL_CHARS, marker) for s in value if isinstance(s, str)][:_MAX_SKILLS]
-        else:
-            out[key] = _walk(value, marker)
-    return out
+        return [_walk(item, key, kept, marker, tool) for item in node[:_MAX_SKILLS if key in _SKILLS else MAX_ITEMS]]
+    if isinstance(node, dict):
+        ad = _is_ad(node)
+        out = {}
+        for name, value in node.items():
+            if name in _AD_TEXT and ad:
+                continue
+            if name == "excerpt" and "kind" in node:  # an integrity finding's quote of the ad
+                continue
+            shown = _wrap(name, _BOUNDS.get(key, TEXT_CHARS), marker) if key in _NAMED_BY_AD and not kept else name
+            out[shown] = _walk(value, name, kept or _kept(name), marker, tool)
+        return out
+    return node
 
 
 def guard(tool: str, answer: dict) -> dict:
-    """``answer`` as a chat may read it. `ask`'s answer, a model's reading of ads, is capped and wrapped whole."""
-    marker = _marker()
-    if tool == "ask" and isinstance(answer.get("answer"), str):
-        answer = {**answer, "answer": _wrap_long(answer["answer"], marker)}
-    return _walk(answer, marker)
-
-
-def _wrap_long(text: str, marker: tuple[str, str]) -> str:
-    return f"{marker[0]}{text.strip()[:ASK_CHARS]}{marker[1]}"
+    """``answer`` as a chat may read it: no description, every string cut and wrapped but those of `_KEEP`."""
+    return _walk(answer, None, False, _marker(), tool)
 
 
 def view_page(posting: dict) -> str:
@@ -103,8 +131,10 @@ def open_ad(posting: dict) -> dict:
         page.parent.mkdir(parents=True, exist_ok=True)
         utils.write_atomic(page, view_page(posting))
         target = page.as_uri()
-    try:
-        ok = webbrowser.open(target)
-    except Exception:  # a browser that cannot start is not a failure of the tool
-        ok = False
-    return {"opened": target} if ok else {"opened": None, "open_failed": target}
+    job = str(posting.get("id") or "")
+    if job in _OPENED:  # once per job for the server's life: a chat that asks again must not open a tab each time
+        return {"opened": target}
+    if not webbrowser.open(target):
+        return {"opened": None, "open_failed": target}
+    _OPENED.add(job)
+    return {"opened": target}

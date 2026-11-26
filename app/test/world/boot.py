@@ -69,6 +69,10 @@ REPO = Path(__file__).resolve().parents[3]
 if not os.environ.get("PYTHONPATH"):
     sys.path.insert(0, str(REPO / "src"))
 
+import webbrowser  # noqa: E402
+
+webbrowser.open = lambda *args, **kwargs: True  # a chat's `show` opens the ad: no browser tab in a test
+
 import edges  # noqa: E402,F401 — installs every edge
 from edges import log_call, faults  # noqa: E402
 

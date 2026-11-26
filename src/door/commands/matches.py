@@ -341,11 +341,11 @@ def _show_core(job_id: str, *, open: bool = False, jobs_dir: Path | None = None)
     }
 
 
-def _chat_show(answer: dict, *, jobs_dir: Path | None = None) -> dict:
+def _chat_show(answer: dict) -> dict:
     """`show`'s answer as a Claude Code chat may read it (`core/chat_guard`): the ad opened for the user and a
     checked ``summary`` (`matching/ad_summary`) in place of the description, its condensed text and the integrity
     excerpts. A failed summary is ``None`` with a ``warning``, never the description."""
-    jobs_dir = jobs_dir or workspace.JOBS_DIR
+    jobs_dir = workspace.JOBS_DIR
     opened = chat_guard.open_ad(answer)
     path = find_posting_path(jobs_dir, str(answer.get("id") or ""))
     made = ad_summary.summarise(answer, path, jobs_dir=jobs_dir, profile_dir=workspace.PROFILE_DIR)

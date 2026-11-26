@@ -8,6 +8,7 @@ client against the `MCPServer` instance; no subprocess, no network.
 """
 
 import asyncio
+import re
 
 import pytest
 import json
@@ -262,6 +263,11 @@ def test_tool_errors_wrapper_works_for_async_tools(monkeypatch):
     assert asyncio.run(server.find_jobs()) == {"error": "bad site"}
 
 
+def _unmarked(line):
+    """A progress line as a chat gets it is in an `<ad-TOKEN>` marker (core/chat_guard); the line inside it."""
+    return re.sub(r"</?ad-[0-9a-f]{8}>", "", line)
+
+
 def test_long_tool_forwards_core_events_to_ctx_report_progress(monkeypatch):
     from door.core import progress
     from door.core.progress import Progress
@@ -280,7 +286,7 @@ def test_long_tool_forwards_core_events_to_ctx_report_progress(monkeypatch):
 
     assert [c[0] for c in ctx.calls] == [1.0, 2.0, 3.0]
     assert all(c[1] is None for c in ctx.calls)
-    assert [c[2] for c in ctx.calls] == [
+    assert [_unmarked(c[2]) for c in ctx.calls] == [
         Progress("scraping (site 1/1)", site="jobindex").line,
         Progress("detail", 2, 5, site="jobindex").line,
         "jobindex: 3 posting(s)",
@@ -451,7 +457,8 @@ def test_progress_notifications_reach_a_real_client_session(monkeypatch):
 
     result = asyncio.run(scenario())
     assert not result.is_error
-    assert received == [(1.0, None, "jobindex: scraping (site 1/1)"), (2.0, None, "jobindex: 2 posting(s)")]
+    assert [(v, t, _unmarked(m)) for v, t, m in received] == [
+        (1.0, None, "jobindex: scraping (site 1/1)"), (2.0, None, "jobindex: 2 posting(s)")]
 
 
 def test_tools_snapshot_matches_server():

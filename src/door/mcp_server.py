@@ -142,10 +142,15 @@ def _answer_for_chat(tool: str, result: CallToolResult) -> CallToolResult:
     answer = _answer_of(result)
     if answer is None:
         return result
+    blocks = [TextContent(type="text", text=json.dumps(chat_answer(tool, answer), indent=2))]
+    return CallToolResult(content=blocks, is_error=result.is_error)
+
+
+def chat_answer(tool: str, answer: dict) -> dict:
+    """``answer`` of ``tool`` as a chat reads it (also what the recorded demo session shows)."""
     if tool == "show" and "error" not in answer:
         answer = matches_cmd._chat_show(answer)
-    blocks = [TextContent(type="text", text=json.dumps(chat_guard.guard(tool, answer), indent=2))]
-    return CallToolResult(content=blocks, is_error=result.is_error)
+    return chat_guard.guard(tool, answer)
 
 
 def _log_answer(tool: str, answer: dict | None) -> None:
@@ -209,9 +214,9 @@ class _DoorMCP(MCPServer):
                 # line, not as a traceback on stderr (the problem log has the crash).
                 raise ToolError(_for_phone(f"Error executing tool {name}: {exc.__cause__}")) from exc.__cause__
             raise
-        if _in_chat():  # a model reads what comes back: never an ad's text (core/chat_guard)
-            result = await asyncio.to_thread(_answer_for_chat, name, result)
         _log_answer(name, _answer_of(result))
+        if _in_chat():  # a model reads what comes back: never an ad's text (core/chat_guard); the log has it as it was
+            result = await asyncio.to_thread(_answer_for_chat, name, result)
         return _answer_for_phone(name, result) if _runs["phone"] else result
 
     def _one_at_a_time(self, name):
@@ -417,7 +422,8 @@ class _McpBridge:
     async def pump(self) -> None:
         while (item := await self._queue.get()) is not None:
             try:
-                await self._ctx.report_progress(item[0], None, item[1])
+                line = chat_guard.wrap_text(item[1]) if _in_chat() else item[1]  # a progress line may quote an ad
+                await self._ctx.report_progress(item[0], None, line)
             except Exception:  # noqa: BLE001 — a client error must not fail the tool
                 pass
 

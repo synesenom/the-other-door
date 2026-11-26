@@ -145,7 +145,8 @@ def call(name: str, **args) -> dict:
 
     def work():
         result = fn(**args)
-        box["result"] = asyncio.run(result) if asyncio.iscoroutine(result) else result
+        result = asyncio.run(result) if asyncio.iscoroutine(result) else result
+        box["result"] = tools.chat_answer(name, result) if isinstance(result, dict) else result  # what Claude gets
 
     worker = threading.Thread(target=work)
     worker.start()
