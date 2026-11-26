@@ -118,37 +118,61 @@ def check(text: str, html: str | None = None) -> dict:
     return {"clean_text": text, "verdict": "suspicious" if findings else "clean", "findings": findings}
 
 
-def remove_quoted(posting: dict, quotes: list[str]) -> dict:
-    """A copy of ``posting`` with the sentence (or, for a quote across lines, each line) of its description
-    holding each quote removed, an ``instruction`` finding per quote, the verdict suspicious and the stale
-    ``description_condensed`` dropped. The quotes are checked by the caller."""
-    out = dict(posting)
-    out.pop("description_condensed", None)
-    lines = [" ".join(line.split()) for line in str(posting.get("description") or "").split("\n")]
-    for quote in quotes:
-        spans, at = [], 0  # each line's [start, end) in the lines joined by one space
-        for line in lines:
-            spans.append((at, at + len(line)))
-            at += len(line) + 1
-        start = " ".join(lines).find(quote)
-        if start < 0:
+_MIN_QUOTE_WORDS, _MIN_QUOTE_CHARS = 3, 15
+
+
+def _quote_pattern(quote: str):
+    """The quote's words in order with any run of spaces, punctuation or bullets between them (so a quote read
+    from the condensed text is found in the full one), case-insensitive; None for a quote too short to be told
+    from ordinary text."""
+    words = re.findall(r"\w+", quote)
+    if len(words) < _MIN_QUOTE_WORDS or len(quote.strip()) < _MIN_QUOTE_CHARS:
+        return None
+    trail = re.search(r"[^\w\s]*$", quote.strip()).group()  # the quote's own closing punctuation goes with it
+    return re.compile(r"\W+".join(re.escape(w) for w in words) + (re.escape(trail) if trail else "") + r"[ \t]*", re.IGNORECASE)
+
+
+def find_quote(text: str, quote: str) -> bool:
+    """True when ``quote`` (long enough to act on) is in ``text``."""
+    pattern = _quote_pattern(quote)
+    return bool(pattern and pattern.search(text))
+
+
+def _cut(text: str, pattern) -> str:
+    def gone(m):  # the span alone; its trailing blanks go with it, keeping one between two words it parted
+        before = text[m.start() - 1] if m.start() else " "
+        after = text[m.end()] if m.end() < len(text) else " "
+        return " " if before.isalnum() and after.isalnum() else ""
+
+    return re.sub(r"[ \t]+\n", "\n", pattern.sub(gone, text)).strip()
+
+
+def remove_quoted(posting: dict, quotes: list[str]) -> tuple[dict, list[str]]:
+    """``(copy, removed)``: ``posting`` with exactly each quoted span taken out of its title, company and
+    description, an ``instruction`` finding per quote found there, the verdict suspicious and the stale
+    ``description_condensed`` dropped. ``removed`` is the quotes found; a posting is unchanged when it is empty.
+    The quotes are checked by the caller."""
+    patterns = [(q, _quote_pattern(q)) for q in quotes]
+    out, removed = dict(posting), []
+    for quote, pattern in patterns:
+        if pattern is None:
             continue
-        end = start + len(quote)
-        hit = [i for i, (a, b) in enumerate(spans) if a < end and b > start]
-        if len(hit) == 1:
-            sentences = re.split(r"(?<=[.!?])\s+", lines[hit[0]])
-            kept = [x for x in sentences if quote not in x]
-            lines[hit[0]] = " ".join(kept) if len(kept) < len(sentences) else ""
-        else:
-            for i in hit:
-                lines[i] = ""
-    out["description"] = re.sub(r"\n{3,}", "\n\n", "\n".join(lines)).strip()
+        for field in ("title", "company", "description"):
+            text = str(out.get(field) or "")
+            if pattern.search(text):
+                out[field] = _cut(text, pattern)
+                if quote not in removed:
+                    removed.append(quote)
+    if not removed:
+        return posting, []
+    out.pop("description_condensed", None)
+    out["description"] = re.sub(r"\n{3,}", "\n\n", str(out.get("description") or "")).strip()
     block = posting.get("integrity") or {}
     out["integrity"] = {
         "verdict": "suspicious",
-        "findings": [*(block.get("findings") or []), *({"kind": "instruction", "excerpt": _excerpt(q)} for q in quotes)],
+        "findings": [*(block.get("findings") or []), *({"kind": "instruction", "excerpt": _excerpt(q)} for q in removed)],
     }
-    return out
+    return out, removed
 
 
 def stored(result: dict) -> dict:
