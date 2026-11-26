@@ -133,6 +133,65 @@ describe('Web', () => {
     expect(await screen.findByRole('heading', { name: 'The desktop screens' })).toBeInTheDocument()
   })
 
+  it("a computer that cannot be reached: our own screen, not the tunnel's error; Try again opens the app once it answers", async () => {
+    let down = true
+    const fetch = vi.fn(async (url: string) => (url === '/session' && down ? new Response('<h1>Cloudflare Tunnel error</h1>', { status: 530 }) : new Response('{}')))
+    render(<Web store={memoryStore('tok')} fetch={fetch as never} />)
+    expect(await screen.findByRole('heading', { name: "Can't reach your computer" })).toBeInTheDocument()
+    expect(screen.queryByText(/Cloudflare/)).toBeNull()
+    down = false
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+    expect(await screen.findByRole('heading', { name: 'The desktop screens' })).toBeInTheDocument()
+  })
+
+  it('no network at all: the same screen', async () => {
+    const fetch = vi.fn(async () => {
+      throw new TypeError('Failed to fetch')
+    })
+    render(<Web store={memoryStore('tok')} fetch={fetch as never} />)
+    expect(await screen.findByRole('heading', { name: "Can't reach your computer" })).toBeInTheDocument()
+  })
+
+  describe('a pairing link opened in another Android browser', () => {
+    const BRAVE = 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36'
+    const FIREFOX = 'Mozilla/5.0 (Android 14; Mobile; rv:138.0) Gecko/138.0 Firefox/138.0'
+    afterEach(() => {
+      vi.restoreAllMocks()
+      delete (navigator as { brave?: unknown }).brave
+    })
+
+    it('offers Chrome first, with the code carried along, and pairs nothing yet', async () => {
+      vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(BRAVE)
+      Object.defineProperty(navigator, 'brave', { value: {}, configurable: true })
+      window.location.hash = '#pair=ABCD-EFGH'
+      const fetch = server({})
+      render(<Web store={memoryStore()} fetch={fetch as never} />)
+      const chrome = await screen.findByRole('link', { name: 'Open in Chrome' })
+      expect(chrome.getAttribute('href')).toMatch(/^intent:\/\/.*#pair=ABCD-EFGH#Intent;scheme=https;package=com\.android\.chrome;end$/)
+      expect(fetch).not.toHaveBeenCalledWith('/pair', expect.anything())
+    })
+
+    it('Continue here pairs in this browser', async () => {
+      vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(FIREFOX)
+      window.location.hash = '#pair=ABCD-EFGH'
+      const store = memoryStore()
+      const fetch = server({ '/pair': () => new Response(JSON.stringify({ device: 'Pixel', token: 'tok' })) })
+      render(<Web store={store} fetch={fetch as never} />)
+      await userEvent.click(await screen.findByRole('button', { name: 'Continue here' }))
+      expect(await screen.findByRole('heading', { name: 'The desktop screens' })).toBeInTheDocument()
+      expect(store.value).toBe('tok')
+    })
+
+    it('Chrome itself pairs at once', async () => {
+      vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(BRAVE) // Chrome's own user agent, without navigator.brave
+      window.location.hash = '#pair=ABCD-EFGH'
+      const fetch = server({ '/pair': () => new Response(JSON.stringify({ device: 'Pixel', token: 'tok' })) })
+      render(<Web store={memoryStore()} fetch={fetch as never} />)
+      expect(await screen.findByRole('heading', { name: 'The desktop screens' })).toBeInTheDocument()
+      expect(screen.queryByRole('link', { name: 'Open in Chrome' })).toBeNull()
+    })
+  })
+
   it('offers the install after pairing, and not on the pair screen', async () => {
     captureInstallPrompt()
     const event = Object.assign(new Event('beforeinstallprompt', { cancelable: true }), { prompt: vi.fn(async () => undefined) })
