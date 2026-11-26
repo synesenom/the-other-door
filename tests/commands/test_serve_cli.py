@@ -18,18 +18,18 @@ def test_pair_prints_a_code_and_with_a_url_a_link_and_qr(tmp_path, monkeypatch):
     assert r.exit_code == 0
     code = next(w for w in r.output.split() if len(w) == 9 and w[4] == "-")
     assert "10 minutes" in r.output
-    assert pairing.redeem(tmp_path, code) is not None
 
     r = run("pair", "--device", "Tablet", "--url", "https://anna.example.net/")
     assert "https://anna.example.net/#pair=" in r.output
     assert "█" in r.output  # the QR code, for the phone's camera
+    assert pairing.redeem(tmp_path, code) is not None
 
 
-def test_pair_refuses_a_name_already_paired(tmp_path, monkeypatch):
+def test_pair_refuses_while_a_phone_is_paired(tmp_path, monkeypatch):
     monkeypatch.setattr(workspace, "HOME", tmp_path)
     pairing.redeem(tmp_path, pairing.new_code(tmp_path, "Pixel"))
-    r = run("pair", "--device", "Pixel")
-    assert r.exit_code == 1 and "already paired" in r.output
+    r = run("pair", "--device", "Tablet")
+    assert r.exit_code == 1 and "unpair" in r.output
 
 
 def test_devices_and_unpair(tmp_path, monkeypatch):

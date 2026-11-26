@@ -300,7 +300,13 @@ function DriveConnection({
  */
 /** Your phone (issue 444): one phone, served from this computer; the setup is a dialog. No word of serving or
  * addresses here: connected or not, and one Disconnect that undoes it all. */
-export function PhoneConnection() {
+export function PhoneConnection({ where = 'production' }: { where?: Environment }) {
+  // Staging and the sandbox never serve their data to a phone (the main process refuses it too).
+  if (where !== 'production') return <Row name="Your phone" fine={false} state={<p className="small muted">{where === 'sandbox' ? 'Not available in the sandbox' : 'Not available in staging'}</p>} />
+  return <ServedPhone />
+}
+
+function ServedPhone() {
   const [status, setStatus] = useState<PhoneStatus | null>(null)
   const [setup, setSetup] = useState<'how' | 'pair' | null>(null)
   const [busy, setBusy] = useState(false)
@@ -317,14 +323,10 @@ export function PhoneConnection() {
   useEffect(() => {
     void load()
   }, [])
-  // Disconnect: the phone's pairing goes (every one this computer keeps: one, or an old second from before),
-  // then this computer stops serving it
+  // Disconnect: this computer stops serving the phone, and its pairing ends with the tunnel's address
   const disconnect = () => {
     setConfirming(false)
-    return run(async () => {
-      for (const d of status?.devices ?? []) await call('unpair_phone', { device: d.device })
-      await call('phone_stop', {})
-    })
+    return run(() => call('phone_stop', {}))
   }
   const run = async (work: () => Promise<unknown>) => {
     setBusy(true)
@@ -342,11 +344,10 @@ export function PhoneConnection() {
   const paired = (status?.devices.length ?? 0) > 0
   let state: ReactNode
   if (status === null && !error) state = <Spinner message="Checking your phone…" />
-  else if (!running && paired) state = <p className="small muted">Disconnected when this computer restarted. Set it up again and scan a new code.</p>
   // not set up: the name and Set up your phone say it all, and the dialog tells what it is
   else if (!running) state = null
   else if (!paired) state = <p className="small muted">Not paired yet.</p>
-  else state = <p className="small muted">{status!.lasting ? 'Connected' : 'Connected until this computer restarts'}</p>
+  else state = <p className="small muted">Connected until this computer restarts</p>
   const actions = running ? (
     <>
       <button type="button" className="secondary" disabled={busy} onClick={() => setConfirming(true)}>
@@ -423,6 +424,7 @@ export function Connections({
     <ul className="connections" aria-label="Connections">
       <ClaudeConnection doctor={doctor} email={email} onRecheck={onRecheck} />
       <DriveConnection drive={drive} where={where} conflict={driveConflict} onConflict={onDriveConflict} onDriveChanged={onDriveChanged} onDataChanged={onDataChanged} />
+      <PhoneConnection where={where} />
     </ul>
   )
 }

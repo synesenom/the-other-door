@@ -6,10 +6,10 @@
 // screen still gets one answer at the end. What only the door machine can do (file dialogs, signing
 // in, export and import) says so.
 import type { ActionArgs, ActionName, ActionResult, Envelope, Events } from '../main/ipc'
-import type { LoginState } from '../main/claude-login'
 import type { PickResult } from '../main/cv-sources'
 import type { NoticeTarget } from '../main/notices'
 import type { RunBoard } from '../main/run-board'
+import { UNREACHABLE_HELP } from './PhoneScreens'
 
 type Impl = { [A in ActionName]?: (...args: ActionArgs<A>) => ActionResult<A> | Promise<ActionResult<A>> }
 type Progress = { progress: number; total?: number; message: string }
@@ -31,9 +31,9 @@ export interface WebDeps {
 
 export const LONG_TOOLS = new Set(['find_jobs', 'prepare'])
 export const ON_THE_MACHINE = 'Do this on the computer running The other door.'
-const UNREACHABLE = "Can't reach The other door. Is the computer on? If it restarted, set your phone up again on it and scan the new code."
+const UNREACHABLE = `Can't reach your computer. ${UNREACHABLE_HELP}`
 /** What a tunnel answers with no computer behind it (502-504, Cloudflare's 52x and 530). */
-const NOTHING_BEHIND = (status: number) => (status >= 502 && status <= 504) || (status >= 520 && status <= 530)
+export const NOTHING_BEHIND = (status: number) => (status >= 502 && status <= 504) || (status >= 520 && status <= 530)
 const UNPAIRED = 'This phone is no longer paired with The other door. Pair it again with a new code.'
 
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
@@ -156,9 +156,6 @@ export function createWebDoor(deps: WebDeps) {
     }
   }
 
-  const machineOnly = async (..._args: unknown[]) => ({ ok: false as const, error: ON_THE_MACHINE })
-  const loginState: LoginState = { state: 'failed', message: 'Sign in to Claude on the computer running The other door.' }
-
   // The phone's short list of actions; every other action is refused (the actions the desktop's own machine alone can do answer ON_THE_MACHINE).
   const actions: Impl = {
     'open-external': async (url) => {
@@ -174,18 +171,7 @@ export function createWebDoor(deps: WebDeps) {
     'cv-file': async () => null,
     'cv-sources-clear': async () => {},
     'pick-photo': async () => ({ error: ON_THE_MACHINE }),
-    'claude-login-start': machineOnly,
-    'claude-login-code': machineOnly,
-    'claude-login-open': machineOnly,
-    'claude-login-cancel': async () => ({ ok: true }),
-    'claude-login-state': async () => loginState,
     info: async () => ({ environment: 'production' as const, remote: true as const }),
-    'export-data': machineOnly,
-    'pick-archive': async () => ({ error: ON_THE_MACHINE }),
-    'report-problem': machineOnly,
-    'show-home': async () => ({ ok: false }),
-    'check-update': async () => ({ enabled: false as const }),
-    'install-update': async () => ({ ok: false }),
     'stop-run': async () => {
       const r = await rpc('cancel_job', {})
       return r.ok ? { ok: true } : { ok: false, error: r.error }
@@ -223,9 +209,7 @@ export function createWebDoor(deps: WebDeps) {
     for (const t of waiting) cb(t)
     return () => openers.delete(cb)
   }
-  const none = () => () => undefined
-  // update-state and claude-login never change on the phone.
-  const subscribers: { [E in keyof Events]: (cb: (payload: Events[E]) => void) => () => void } = { 'run-board': onRunBoard, open: onOpen, 'update-state': none, 'claude-login': none }
+  const subscribers: { [E in keyof Events]?: (cb: (payload: Events[E]) => void) => () => void } = { 'run-board': onRunBoard, open: onOpen }
 
   return {
     async call(tool: string, args: Record<string, unknown> = {}, callId?: string): Promise<Envelope> {

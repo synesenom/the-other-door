@@ -4,15 +4,28 @@ import { useCallback, useEffect, useState } from 'react'
 import { AppName, ErrorBox } from '../renderer/screens/AppName'
 import { App } from '../renderer/App'
 import { Splash } from '../renderer/Splash'
-import { createWebDoor } from './bridge'
+import { NOTHING_BEHIND, createWebDoor } from './bridge'
 import { InstallLine } from './InstallLine'
+import { OpenInChromeView, UnreachableView } from './PhoneScreens'
 import { Pair, codeFromHash } from './Pair'
 import { sharedFrom, type Shared } from './share'
 import type { TokenStore } from './token-store'
 
 const UNPAIRED = 'This phone is no longer paired with The other door. Make a new code on the computer running The other door.'
 
-type State = { kind: 'loading' } | { kind: 'pair'; notice?: string } | { kind: 'sharing'; error?: string } | { kind: 'app' }
+type State = { kind: 'loading' } | { kind: 'pair'; notice?: string } | { kind: 'sharing'; error?: string } | { kind: 'app' } | { kind: 'unreachable'; token: string }
+
+/** Android, in a browser other than Chrome: only Chrome installs the app without its own badge on the icon. */
+function otherAndroidBrowser(): boolean {
+  const ua = navigator.userAgent
+  return /Android/.test(ua) && ('brave' in navigator || /Firefox|EdgA|OPR|SamsungBrowser|DuckDuckGo|YaBrowser|UCBrowser/.test(ua))
+}
+
+/** The same page in Chrome, the pairing code carried along (Android opens an intent: link in the app it names). */
+function inChrome(): string {
+  const { host, pathname, hash } = window.location
+  return `intent://${host}${pathname}${hash}#Intent;scheme=https;package=com.android.chrome;end`
+}
 
 function whenVisible(): Promise<void> {
   return new Promise((resolve) => {
@@ -29,6 +42,7 @@ function whenVisible(): Promise<void> {
 export function Web({ store, fetch }: { store: TokenStore; fetch: typeof globalThis.fetch }) {
   const [state, setState] = useState<State>({ kind: 'loading' })
   const [code] = useState(() => codeFromHash(window.location.hash))
+  const [here, setHere] = useState(() => !otherAndroidBrowser())
   // Something shared to the installed app (Android's share sheet opens /share): imported once paired.
   const [shared] = useState<Shared | null>(() => (window.location.pathname === '/share' ? sharedFrom(window.location.search) : null))
 
@@ -37,14 +51,20 @@ export function Web({ store, fetch }: { store: TokenStore; fetch: typeof globalT
     setState({ kind: 'pair', notice: UNPAIRED })
   }, [store])
 
-  /** Opens the /files cookie for this token, installs the bridge and shows the app; false when the token is refused. */
+  /** Opens the /files cookie for this token, installs the bridge and shows the app; false when the token is refused.
+   * A computer it cannot reach (no network, or the tunnel's own error page) gets a screen of its own. */
   const enter = useCallback(
     async (token: string): Promise<boolean> => {
       try {
         const r = await fetch('/session', { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
         if (r.status === 401) return false
+        if (NOTHING_BEHIND(r.status)) {
+          setState({ kind: 'unreachable', token })
+          return true
+        }
       } catch {
-        // offline: the app opens and each screen says it can't reach The other door
+        setState({ kind: 'unreachable', token })
+        return true
       }
       window.door = createWebDoor({
         fetch: (input, init) => fetch(input, init),
@@ -93,6 +113,18 @@ export function Web({ store, fetch }: { store: TokenStore; fetch: typeof globalT
   }, [code, enter, store, unpaired])
 
   if (state.kind === 'loading') return <Splash />
+  if (state.kind === 'unreachable') {
+    const token = state.token
+    return (
+      <UnreachableView
+        onRetry={() => {
+          setState({ kind: 'loading' })
+          void enter(token).then((ok) => ok || unpaired())
+        }}
+      />
+    )
+  }
+  if (state.kind === 'pair' && code && !here) return <OpenInChromeView href={inChrome()} onHere={() => setHere(true)} />
   if (state.kind === 'pair') {
     return (
       <Pair

@@ -55,10 +55,13 @@ export async function serveDemo(options: { stubbed?: boolean } = {}): Promise<Se
   if (options.stubbed) forTheShim(fixture.home)
   const env = { ...process.env, ...fixture.env, PYTHONPATH: `${repoRoot}/src`, ...(options.stubbed ? { DOOR_DEMO_DIR: fixture.home } : {}) }
   const argv = (...rest: string[]) => (options.stubbed ? [SHIM, 'serve', ...rest] : cliArgs(...rest))
-  // A code works once: a test that pairs a second phone asks for another.
+  // A code works once, and one phone is paired at a time: a test that pairs another phone asks for a new code,
+  // which unpairs the one paired before.
   let phones = 0
+  const serveCli = (...rest: string[]) => spawnSync(fixture.python, argv(...rest), { env, encoding: 'utf8', cwd: repoRoot })
   const newCode = () => {
-    const pair = spawnSync(fixture.python, argv('pair', '--device', phones++ ? `Test phone ${phones}` : 'Test phone'), { env, encoding: 'utf8', cwd: repoRoot })
+    if (phones) serveCli('unpair', phones > 1 ? `Test phone ${phones}` : 'Test phone')
+    const pair = serveCli('pair', '--device', phones++ ? `Test phone ${phones}` : 'Test phone')
     const code = /([A-Z0-9]{4}-[A-Z0-9]{4})/.exec(pair.stdout)?.[1]
     if (!code) throw new Error(`no pairing code: ${pair.stdout}${pair.stderr}`)
     return code

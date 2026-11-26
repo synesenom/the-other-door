@@ -1,9 +1,9 @@
 """`serve`: door for a phone (#302). The MCP tools over HTTP for this data folder, and its paired phones.
 
 `serve` (`serve start`) runs `door.serve_http`'s app on this machine (127.0.0.1:8765 unless told
-otherwise); a tunnel (Cloudflare, Tailscale) gives it the HTTPS address a phone installs the app from.
-`serve pair` makes a one-time code for a phone, `serve devices` lists the paired ones and
-`serve unpair` revokes one. One data folder per person: each runs its own `serve` on its own port.
+otherwise); a Cloudflare tunnel gives it the HTTPS address a phone installs the app from.
+`serve pair` makes a one-time code for a phone (one phone at a time), `serve devices` shows it and
+`serve unpair` revokes it. One data folder per person: each runs its own `serve` on its own port.
 """
 
 from __future__ import annotations

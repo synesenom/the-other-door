@@ -8,6 +8,7 @@ import { ErrorBox } from '../renderer/screens/AppName'
 import { Hint } from '../renderer/screens/Hint'
 import { BackButton } from '../renderer/screens/BackButton'
 import { InstallLineView } from '../web/InstallLine'
+import { OpenInChromeView, UnreachableView } from '../web/PhoneScreens'
 
 const COLOURS = [
   'ground', 'surface', 'page', 'ink', 'ink-muted', 'border',
@@ -45,6 +46,9 @@ export function Guide() {
           <Row label="primary">
             <button type="button" className="primary">Prepare application</button>
             <button type="button" className="primary" disabled>Disabled</button>
+          </Row>
+          <Row label="primary link (leaves the app)">
+            <a className="primary go" href="#guide">Open in Chrome</a>
           </Row>
           <Row label="secondary">
             <div className="actions">
@@ -190,6 +194,14 @@ export function Guide() {
             <div style={{ width: '100%', minWidth: 0 }}>
               <InstallLineView what="prompt" onInstall={() => undefined} onDismiss={() => undefined} />
               <InstallLineView what="ios" onInstall={() => undefined} onDismiss={() => undefined} />
+            </div>
+          </Row>
+          <Row label="phone screens">
+            <div style={{ width: 390, maxWidth: '100%', border: '1px solid var(--color-border)' }}>
+              <UnreachableView onRetry={() => undefined} />
+            </div>
+            <div style={{ width: 390, maxWidth: '100%', border: '1px solid var(--color-border)' }}>
+              <OpenInChromeView href="#guide" onHere={() => undefined} />
             </div>
           </Row>
           <Row label="error">

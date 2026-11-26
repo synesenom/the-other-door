@@ -306,7 +306,7 @@ The command is the in-project virtualenv's interpreter (not `poetry run`), so a 
 ## Run The other door at home (the phone app)
 
 ```
-phone (the web app) ──HTTPS──▶ tunnel (Cloudflare / Tailscale) ──▶ ./door serve (one per person) ──▶ that person's claude
+phone (the web app) ──HTTPS──▶ Cloudflare tunnel ──▶ ./door serve (one per person) ──▶ that person's claude
 ```
 
 `./door serve` (`commands/serve.py`, `serve_http.py`) serves the same `mcp` object over streamable HTTP

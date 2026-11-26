@@ -16,10 +16,13 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url)
   if (request.method !== 'GET' || url.origin !== self.location.origin || NEVER.test(url.pathname)) return
   if (request.mode === 'navigate') {
-    // the newest page when online, the kept one when not
+    // the newest page when online, the kept one when not, or when the tunnel answers for a computer it
+    // cannot reach (its own error page): the kept app then says so in its own words
+    const nothingBehind = (s) => (s >= 502 && s <= 504) || (s >= 520 && s <= 530)
     event.respondWith(
       fetch(request)
         .then((response) => {
+          if (nothingBehind(response.status)) return caches.match('/').then((kept) => kept || response)
           const copy = response.clone()
           if (response.ok) caches.open(SHELL).then((c) => c.put('/', copy))
           return response

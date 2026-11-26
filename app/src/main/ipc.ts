@@ -106,6 +106,8 @@ const TOOL_TIMEOUTS: Record<string, number> = {
 
 // Staging and the sandbox run on throwaway data: none of it may reach the user's Drive.
 const DRIVE_TOOLS = new Set(['connect_drive', 'sync_data', 'disconnect_drive'])
+// ... and none of it may be served to a phone through a public tunnel (stopping and unpairing stay allowed).
+const PHONE_SERVING_TOOLS = new Set(['phone_start', 'pair_phone'])
 const COALESCE_MS = 200
 
 // Tool arguments that name a local file. The window may never send one through `door:call`:
@@ -370,6 +372,7 @@ export function registerIpc(
     const refusal = pathRefusal(tool, isPlainObject(args) ? args : {})
     if (refusal) return refuse(refusal)
     if (deps.info && deps.info.environment !== 'production' && DRIVE_TOOLS.has(tool)) return refuse('Google Drive is not available in staging or the sandbox.')
+    if (deps.info && deps.info.environment !== 'production' && PHONE_SERVING_TOOLS.has(tool)) return refuse('Your phone is not available in staging or the sandbox.')
     // Picked files come as tokens (draft_cv, enrich: reusable CV-file tokens; save_photo, import_data: one-shot
     // tokens of their own store; their `picked` PATH_ARGS rule): the paths go into that rule's argument, the window never names one.
     let toolArgs = isPlainObject(args) ? args : {}

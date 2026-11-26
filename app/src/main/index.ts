@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { readFile, realpath, stat, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -14,7 +14,7 @@ import { APP_ID, DoorServer, resolvePackagedSpawn, resolveSpawn } from './door-s
 import { beforeQuitStep, closeStep, flushPage } from './close-flush'
 import { pushEvent, registerIpc, type Progress } from './ipc'
 import { createNotifier } from './notifier'
-import { quitStep, restorePhoneAtStart, stopPhoneForUpdate, type PhoneUpdateDeps } from './phone-update'
+import { quitStep, stopOutdatedPhoneAtStart, stopPhoneForUpdate, type PhoneUpdateDeps } from './phone-update'
 import { createProblemLog } from './problem-log'
 import { MATERIAL_SCHEME, resolveMaterialRequest, resolvePhotoRequest } from './protocol'
 import { createPhotoFile } from './photo-file'
@@ -60,8 +60,6 @@ const mode = updatesAllowed(process.env) ? updateMode({ platform: process.platfo
 let stoppedForUpdate = false
 const phoneDeps = (): PhoneUpdateDeps => ({
   call: (tool, args, timeout) => server.call(tool, args ?? {}, timeout ? { timeout } : {}),
-  markerPath: join(app.getPath('userData'), 'phone-restart.marker'),
-  fs: { write: (p) => writeFileSync(p, ''), exists: existsSync, remove: (p) => rmSync(p, { force: true }) },
   log: (m) => problemLog.write('phone-update', m),
 })
 const updates = createUpdateManager({
@@ -251,7 +249,7 @@ app.whenReady().then(() => {
       : {}),
   })
   createWindow()
-  if (environment === 'production' && mode !== 'none') void restorePhoneAtStart(phoneDeps())
+  if (environment === 'production' && mode !== 'none') void stopOutdatedPhoneAtStart(phoneDeps())
   if (mode !== 'none') checkEvery(updates, CHECK_EVERY_MS) // at start and once a day; never waits, never throws
   // Start the server now so the first screen does not wait for Python.
   void server.listTools().catch(() => undefined)

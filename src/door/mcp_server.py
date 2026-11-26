@@ -529,10 +529,9 @@ def phone_status() -> dict:
     """Whether The other door is serving this data folder to a phone, where, over what, and which phones are paired.
 
     Returns:
-        ``{"running", "devices", "web_built", "tailscale_installed"}``, plus
-        ``"connection"`` (cloudflare or tailscale), ``"address"``, ``"port"`` and
-        ``"lasting"`` (Tailscale's address never changes; a quick tunnel's does)
-        while it runs, and ``"outdated"`` (started by another version of the app).
+        ``{"running", "devices", "web_built"}``, plus ``"address"``, ``"port"`` and
+        ``"started_at"`` while it runs (a quick tunnel's address changes on restart),
+        and ``"outdated"`` (started by another version of the app).
     """
     from door.core.phone import phone
 
@@ -541,23 +540,18 @@ def phone_status() -> dict:
 
 @mcp.tool()
 @_tool_errors
-async def phone_start(connection: str = "cloudflare") -> dict:
-    """Serve this data folder to a phone: `door serve` plus a connection the phone can reach.
+async def phone_start() -> dict:
+    """Serve this data folder to a phone: `door serve` plus a Cloudflare quick tunnel the phone can reach.
 
-    Args:
-        connection: "cloudflare" (a quick tunnel: nothing to install and no
-            account, but the address changes on restart, when the phone scans a
-            new code) or "tailscale" (a lasting, private address; Tailscale on
-            this computer and the phone, the same account).
+    No account and nothing to install; the address changes on restart, when the
+    phone scans a new code.
 
     Returns:
-        `phone_status`'s answer; or ``{"needs": "install_tailscale" |
-        "sign_in_tailscale" | "enable_https", "link"}`` for a step the user
-        takes (the link says where); or ``{"error"}``.
+        `phone_status`'s answer, or ``{"error"}``.
     """
     from door.core.phone import phone
 
-    return await asyncio.to_thread(phone.start, workspace.HOME, connection)
+    return await asyncio.to_thread(phone.start, workspace.HOME)
 
 
 @mcp.tool()
@@ -583,7 +577,7 @@ def pair_phone(device: str) -> dict:
 
     Returns:
         ``{"device", "qr_svg", "expires_at"}`` (an SVG to show), or ``{"error"}`` when
-        nothing is serving or the name is already paired.
+        nothing is serving or a phone is already paired (one phone: unpair it first).
     """
     from door.core.phone import phone
 

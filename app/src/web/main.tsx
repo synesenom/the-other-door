@@ -3,7 +3,7 @@
 import { StrictMode } from 'react'
 import { keepSplashTime } from '../renderer/Splash'
 import { createRoot } from 'react-dom/client'
-import { applyTheme, readTheme } from '../renderer/theme'
+import { applyTheme } from '../renderer/theme'
 import { Web } from './Web'
 import { captureInstallPrompt } from './install'
 import { indexedDbStore } from './token-store'
@@ -21,7 +21,7 @@ import './web.css'
 
 // The browser offers the install once and early: kept from here for the line shown after pairing.
 captureInstallPrompt()
-applyTheme(readTheme())
+applyTheme('light') // always light: an installed app's bars take one colour, the install's
 // index.html's splash bar is replaced by React's: the new one carries on where this one is.
 keepSplashTime()
 

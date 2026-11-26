@@ -184,9 +184,9 @@ runs no model and holds no data; every call goes to `serve`, for paired phones o
 | Command | What it does |
 |---------|--------------|
 | `serve` (`serve start`) | Serve this data folder: the phone app and the tools it uses (finding, preparing, the applications), at `http://127.0.0.1:8765`. `--port` (one per person), `--host` (only this computer unless you say otherwise), `--name` (the installed app's name, "*The other door* — Anna"). A tunnel gives it the `https://` address a phone needs. |
-| `serve pair --device NAME [--url https://…]` | A one-time code that pairs a phone (good once, for 10 minutes). With `--url`, also a link and a QR code to open on the phone. |
-| `serve devices` | The paired phones, and when each was last seen. |
-| `serve unpair NAME` | Revoke a phone; it shows the pairing screen again. |
+| `serve pair --device NAME [--url https://…]` | A one-time code that pairs a phone (good once, for 10 minutes). One phone at a time: refused while one is paired. With `--url`, also a link and a QR code to open on the phone. |
+| `serve devices` | The paired phone, and when it was last seen. |
+| `serve unpair NAME` | Revoke the phone; it shows the pairing screen again. |
 | `serve install-agent [--port] [--name]` | macOS: start this data folder's server at login and restart it if it stops (a launch agent; its log is `<data folder>/logs/serve.log`). |
 | `serve uninstall-agent [--name]` | macOS: remove that launch agent. |
 

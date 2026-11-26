@@ -3,7 +3,7 @@
 `serve pair` makes a code (8 characters, shown as XXXX-XXXX, valid ten minutes, good once); the phone
 trades it for a device token (`redeem`) and sends that token with every request (`verify`). Both live in
 `<home>/.serve/` (a 0700 folder, 0600 files) only as SHA-256 hashes: a stolen file pairs nothing.
-Each home is its own instance, so another person's token never verifies here.
+Each home pairs one phone. Each home is its own instance, so another person's token never verifies here.
 """
 
 from __future__ import annotations
@@ -64,20 +64,19 @@ def new_code(home: Path, device: str, *, now: datetime | None = None, strong: bo
     """A one-time pairing code for a device of this name; its hash is kept, not the code.
 
     `XXXX-XXXX` (ten minutes) to type from a terminal; `strong` is the QR code's: 24 characters
-    (about 2^119), five minutes, and it cancels the device's older codes. A QR code may name a paired
-    device: a quick tunnel's phone pairs again after a restart, and its old token goes when it is scanned.
+    (about 2^119), five minutes, and it cancels every older code. One phone at a time: while
+    one is paired, no code is made until it is unpaired.
     """
     device = device.strip()
     if not device:
         raise ValueError("name the device, e.g. --device \"Anna's phone\"")
-    if not strong and any(d["device"].casefold() == device.casefold() for d in devices(home)):
-        raise ValueError(f"{device!r} is already paired; `serve unpair {device!r}` first to pair it again")
+    paired = devices(home)
+    if paired:
+        raise ValueError(f"Only one phone can be paired: unpair {paired[0]['device']!r} first to pair another.")
     folder = _folder(home)
     at = _now(now)
     code = "".join(secrets.choice(_ALPHABET) for _ in range(STRONG_LENGTH if strong else 8))
-    pending = [p for p in _read(folder / "pairing.json") if datetime.fromisoformat(p["expires"]) > at]
-    if strong:
-        pending = [p for p in pending if p["device"].casefold() != device.casefold()]
+    pending = [] if strong else [p for p in _read(folder / "pairing.json") if datetime.fromisoformat(p["expires"]) > at]
     pending.append({"device": device, "code_hash": _hash(code), "expires": (at + (STRONG_TTL if strong else CODE_TTL)).isoformat()})
     _write(folder / "pairing.json", pending)
     return code if strong else f"{code[:4]}-{code[4:]}"
@@ -92,12 +91,12 @@ def redeem(home: Path, code: str, *, now: datetime | None = None) -> tuple[str, 
     match = next((p for p in pending if hmac.compare_digest(p["code_hash"], wanted)), None)
     rest = [p for p in pending if p is not match and datetime.fromisoformat(p["expires"]) > at]
     _write(folder / "pairing.json", rest)
-    if match is None or datetime.fromisoformat(match["expires"]) < at:
+    # one phone: a code made before a phone paired no longer pairs, whatever its name
+    if match is None or datetime.fromisoformat(match["expires"]) < at or devices(home):
         return None
     token = secrets.token_urlsafe(32)
-    rows = [d for d in _read(folder / "devices.json") if d["device"].casefold() != match["device"].casefold()]
-    rows.append({"device": match["device"], "token_hash": _hash(token), "paired_at": at.isoformat(), "last_seen": None})
-    _write(folder / "devices.json", rows)
+    _write(folder / "devices.json", [{"device": match["device"], "token_hash": _hash(token), "paired_at": at.isoformat(), "last_seen": None}])
+    _write(folder / "pairing.json", [])
     return match["device"], token
 
 
@@ -121,6 +120,13 @@ def touch(home: Path, device: str, *, now: datetime | None = None) -> None:
         if d["device"] == device:
             d["last_seen"] = _now(now).isoformat()
     _write(path, rows)
+
+
+def forget(home: Path) -> None:
+    """Forget the paired phone and every code: a new tunnel is a new address, which the old pairing never reaches."""
+    folder = _folder(home)
+    _write(folder / "devices.json", [])
+    _write(folder / "pairing.json", [])
 
 
 def unpair(home: Path, device: str) -> bool:

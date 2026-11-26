@@ -963,7 +963,7 @@
   },
   {
     "name": "pair_phone",
-    "description": "A QR code that pairs one phone with this data folder: show it on this screen; the phone's camera opens it.\n\n    The code inside is long (about 2^119), works once and only for five\n    minutes; it is never returned as text, and the phone's own token never\n    passes through here.\n\n    Args:\n        device: A name for the phone (\"Ada's Pixel\").\n\n    Returns:\n        ``{\"device\", \"qr_svg\", \"expires_at\"}`` (an SVG to show), or ``{\"error\"}`` when\n        nothing is serving or the name is already paired.\n    ",
+    "description": "A QR code that pairs one phone with this data folder: show it on this screen; the phone's camera opens it.\n\n    The code inside is long (about 2^119), works once and only for five\n    minutes; it is never returned as text, and the phone's own token never\n    passes through here.\n\n    Args:\n        device: A name for the phone (\"Ada's Pixel\").\n\n    Returns:\n        ``{\"device\", \"qr_svg\", \"expires_at\"}`` (an SVG to show), or ``{\"error\"}`` when\n        nothing is serving or a phone is already paired (one phone: unpair it first).\n    ",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -980,22 +980,16 @@
   },
   {
     "name": "phone_start",
-    "description": "Serve this data folder to a phone: `door serve` plus a connection the phone can reach.\n\n    Args:\n        connection: \"cloudflare\" (a quick tunnel: nothing to install and no\n            account, but the address changes on restart, when the phone scans a\n            new code) or \"tailscale\" (a lasting, private address; Tailscale on\n            this computer and the phone, the same account).\n\n    Returns:\n        `phone_status`'s answer; or ``{\"needs\": \"install_tailscale\" |\n        \"sign_in_tailscale\" | \"enable_https\", \"link\"}`` for a step the user\n        takes (the link says where); or ``{\"error\"}``.\n    ",
+    "description": "Serve this data folder to a phone: `door serve` plus a Cloudflare quick tunnel the phone can reach.\n\n    No account and nothing to install; the address changes on restart, when the\n    phone scans a new code.\n\n    Returns:\n        `phone_status`'s answer, or ``{\"error\"}``.\n    ",
     "inputSchema": {
       "type": "object",
-      "properties": {
-        "connection": {
-          "default": "cloudflare",
-          "title": "Connection",
-          "type": "string"
-        }
-      },
+      "properties": {},
       "title": "phone_startArguments"
     }
   },
   {
     "name": "phone_status",
-    "description": "Whether The other door is serving this data folder to a phone, where, over what, and which phones are paired.\n\n    Returns:\n        ``{\"running\", \"devices\", \"web_built\", \"tailscale_installed\"}``, plus\n        ``\"connection\"`` (cloudflare or tailscale), ``\"address\"``, ``\"port\"`` and\n        ``\"lasting\"`` (Tailscale's address never changes; a quick tunnel's does)\n        while it runs, and ``\"outdated\"`` (started by another version of the app).\n    ",
+    "description": "Whether The other door is serving this data folder to a phone, where, over what, and which phones are paired.\n\n    Returns:\n        ``{\"running\", \"devices\", \"web_built\"}``, plus ``\"address\"``, ``\"port\"`` and\n        ``\"started_at\"`` while it runs (a quick tunnel's address changes on restart),\n        and ``\"outdated\"`` (started by another version of the app).\n    ",
     "inputSchema": {
       "type": "object",
       "properties": {},

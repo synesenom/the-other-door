@@ -109,7 +109,7 @@ describe('Connections: Claude', () => {
 describe('Connections: Google Drive', () => {
   it('nothing runs when the list opens', () => {
     const { call, actions } = show({ drive: on })
-    expect(call.mock.calls.map((c) => c[0])).toEqual([])
+    expect(calls(call).map((c) => c[0])).toEqual([])
     expect(actions['claude-login-start']).not.toHaveBeenCalled()
   })
 
@@ -249,4 +249,23 @@ describe('Connections: Google Drive', () => {
     expect(row('Google Drive').getByText('Not available in this build')).toBeInTheDocument()
     expect(row('Google Drive').queryAllByRole('button')).toHaveLength(0)
   })
+})
+
+describe('Connections: Your phone', () => {
+  const idle = { running: false, devices: [], web_built: true }
+  it('is the third row, after Drive, with a way to set it up', async () => {
+    const { row } = show({ handlers: { phone_status: idle } })
+    expect(await row('Your phone').findByRole('button', { name: 'Set up your phone…' })).toBeInTheDocument()
+    const names = screen.getAllByRole('listitem').map((li) => li.getAttribute('aria-labelledby'))
+    expect(names.indexOf('connection-your-phone')).toBeGreaterThan(names.indexOf('connection-google-drive'))
+  })
+  it.each([['sandbox' as const, 'Not available in the sandbox'], ['staging' as const, 'Not available in staging']])(
+    'in %s it is not offered and reads nothing',
+    (where, why) => {
+      const { row, call } = show({ where, handlers: { phone_status: idle } })
+      expect(row('Your phone').getByText(why)).toBeInTheDocument()
+      expect(row('Your phone').queryByRole('button')).toBeNull()
+      expect(call.mock.calls.some((c) => c[0] === 'phone_status')).toBe(false)
+    },
+  )
 })

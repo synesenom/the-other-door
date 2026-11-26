@@ -344,9 +344,7 @@ test.describe('Google Drive, the last background sync failed', () => {
 
 // --------------------------------------------------------------------------- the phone
 
-// The Your phone row is not rendered in Settings for now (#650); its journeys wait for it.
-test.describe.skip('Your phone', () => {
-
+test.describe('Your phone', () => {
   test('Continue, the QR code at once, the phone scans it, Done: the row says it is paired', async ({ page, world }) => {
     await openSettings(page)
     const row = phoneRow(page)
@@ -358,13 +356,13 @@ test.describe.skip('Your phone', () => {
     await expect(setup.getByRole('textbox')).toHaveCount(0)
     await expect(setup).toContainText("Point your phone's camera at the code and open the link it shows. It works once, for five minutes.")
     await expect(setup.getByText('Waiting for your phone…')).toBeVisible()
-    expect(world.toolCalls('phone_start').map((c) => c.args)).toEqual([{ connection: 'cloudflare' }])
+    expect(world.toolCalls('phone_start').map((c) => c.args)).toEqual([{}])
     expect(world.toolCalls('pair_phone').map((c) => c.args)).toEqual([{ device: 'My phone' }])
 
     phoneScans(world)
     await expect(setup.getByRole('heading', { name: 'Add The other door to your home screen' })).toBeVisible()
     await expect(setup).toContainText('Your phone is paired. Once it opens The other door, it offers to install it as an app.')
-    await expect(setup).toContainText('When this computer restarts, set this up again and scan the new code.')
+    await expect(setup).toContainText('When this computer restarts, set your phone up again here and scan the new code.')
     await button(setup, 'Done').click()
     await expect(setup).toHaveCount(0)
     await expect(row).toContainText('Connected until this computer restarts')
@@ -373,7 +371,7 @@ test.describe.skip('Your phone', () => {
     await expect(button(row, 'Disconnect…')).toBeVisible()
   })
 
-  test('closed before the scan: Pair your phone brings the code back; Disconnect asks, then unpairs and stops', async ({ page, world }) => {
+  test('closed before the scan: Pair your phone brings the code back; Disconnect asks, then stops', async ({ page, world }) => {
     await openSettings(page)
     const row = phoneRow(page)
     await button(row, 'Set up your phone…').click()
@@ -394,16 +392,10 @@ test.describe.skip('Your phone', () => {
     await button(row, 'Disconnect…').click()
     await button(ask, 'Cancel').click()
     await expect(ask).toHaveCount(0)
-    world.faults({ tools: { unpair_phone: { error: "no paired phone is called 'My phone'", once: true } } })
-    await button(row, 'Disconnect…').click()
-    await button(ask, 'Disconnect').click()
-    await expect(row.getByRole('alert')).toHaveText("no paired phone is called 'My phone'")
-    expect(world.toolCalls('phone_stop')).toHaveLength(0)
     await button(row, 'Disconnect…').click()
     await button(ask, 'Disconnect').click()
     await expect(button(row, 'Set up your phone…')).toBeVisible()
-    await expect(row.getByRole('alert')).toHaveCount(0)
-    expect(world.toolCalls('unpair_phone').map((c) => c.args)).toEqual([{ device: 'My phone' }, { device: 'My phone' }])
+    expect(world.toolCalls('unpair_phone')).toHaveLength(0) // the pairing ends with the tunnel
     expect(world.toolCalls('phone_stop')).toHaveLength(1)
   })
 

@@ -11,8 +11,8 @@ const SIZES = [
   { w: 375, h: 667 },
   { w: 430, h: 932 },
 ]
-// the phone's three: the profile is changed on the computer running The other door
-const TABS = ['Matches', 'Applications', 'Settings']
+// the phone's two: the profile and the settings are the computer's
+const TABS = ['Matches', 'Applications']
 
 let served: Served
 test.beforeAll(async () => {

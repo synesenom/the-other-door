@@ -57,7 +57,7 @@ describe('createWebDoor', () => {
 
   it('an unreachable server is said in words', async () => {
     const { door } = setup(() => new TypeError('Failed to fetch'))
-    expect(await door.call('list_matches')).toEqual({ ok: false, error: "Can't reach The other door. Is the computer on? If it restarted, set your phone up again on it and scan the new code." })
+    expect(await door.call('list_matches')).toEqual({ ok: false, error: "Can't reach your computer. Make sure it is on and The other door is open on it. If you set up your phone again there, scan the new code." })
   })
 
   it('a long tool that started is followed to its result, with progress from status_summary', async () => {
@@ -103,7 +103,7 @@ describe('createWebDoor', () => {
       const door = createWebDoor({ fetch: vi.fn(async () => new Response('<html>', { status })) as never, token: async () => 't', onUnpaired: vi.fn(), visible: () => true, whenVisible: async () => undefined, open: vi.fn(), download: vi.fn() })
       const r = await door.call('list_matches')
       expect(r).toMatchObject({ ok: false })
-      expect((r as { error: string }).error).toMatch(/Can't reach The other door.*scan the new code/)
+      expect((r as { error: string }).error).toMatch(/Can't reach your computer.*scan the new code/)
     }
   })
 
@@ -123,7 +123,6 @@ describe('createWebDoor', () => {
     const { door } = setup(() => ({}))
     expect(await door.invoke('info')).toEqual({ environment: 'production', remote: true })
     expect(await door.invoke('pick-cv-files')).toEqual({ files: [], refused: [] })
-    expect(await door.invoke('export-data')).toEqual({ ok: false, error: expect.stringMatching(/computer running The other door/) })
   })
 
   it('a target opened before the app listens is held until it does', async () => {
@@ -171,6 +170,6 @@ describe('the phone refuses every action that is not on its list', () => {
   it('rejects an action it does not know, and answers a desktop-only one with where to do it', async () => {
     const { door } = setup(() => ({}))
     await expect((door as { invoke(a: string): Promise<unknown> }).invoke('no-such-action')).rejects.toThrow(/not available on the phone/)
-    expect(await door.invoke('pick-archive')).toEqual({ error: expect.stringMatching(/computer running The other door/) })
+    expect(await door.invoke('pick-photo')).toEqual({ error: expect.stringMatching(/computer running The other door/) })
   })
 })
