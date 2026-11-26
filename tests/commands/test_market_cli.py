@@ -107,3 +107,15 @@ def test_a_canonical_spanning_two_lines_is_not_stored_long_or_short(env, monkeyp
     assert stored["python"] == "Python"
 
 
+
+
+def test_market_escape_prints_ad_text_as_text(env):
+    bad = "\x1b]0;pwned\x07"
+    when = (datetime.now(timezone.utc) - timedelta(days=2)).isoformat()
+    for i in range(3):
+        write_list_posting(env, "2026-10-20", "jobindex", f"e{i}", posted_at=when, score=0.2, score_reason="x", scored_by="haiku",
+                           title=f"Welder{bad}", company=f"Acme{bad}", matching_skills=[f"Py{bad}"], missing_skills=[])
+    result = CliRunner().invoke(cli, ["market", "--no-save"])
+    assert result.exit_code == 0, result.output
+    assert "\x1b" not in result.output and "\x07" not in result.output
+    assert "Acme]0;pwned" in result.output

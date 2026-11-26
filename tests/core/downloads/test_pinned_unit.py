@@ -31,3 +31,14 @@ def test_download_refuses_a_file_that_does_not_match_its_pin(tmp_path, monkeypat
     monkeypatch.setattr(pinned, "http_get", lambda url, to: to.write_bytes(b"A"))
     with pytest.raises(pinned.ChecksumError, match="b does not match the pinned checksum"):
         pinned.download([("https://h/a", "a", _sha(b"A")), ("https://h/b", "b", _sha(b"B"))], tmp_path)
+
+
+def test_a_versioned_folder_removes_the_other_versions_of_its_name_only(tmp_path):
+    assert pinned.folder("tool", "2", tmp_path) == tmp_path / ".local" / "share" / "door" / "tool-2"
+    for name in ("tool-1", "tool-2", "other-1"):
+        (tmp_path / name).mkdir()
+    (tmp_path / "tool-0").write_text("a file, not a folder")
+    pinned.remove_other_versions(tmp_path / "tool-1", "tool")
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["other-1", "tool-0", "tool-1"]
+    pinned.remove_other_versions(tmp_path / "elsewhere", "tool")   # not a version folder: nothing removed
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["other-1", "tool-0", "tool-1"]

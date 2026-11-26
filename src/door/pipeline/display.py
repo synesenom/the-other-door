@@ -25,6 +25,8 @@ from contextlib import contextmanager
 
 import click
 
+from door.commands import _common as common
+
 from door.core.board_state import BoardState, StepView
 from door.core.progress import Progress
 
@@ -166,6 +168,7 @@ class StepBoard:
             self._thread.start()
 
     def report(self, event: Progress) -> None:
+        event = common.plain_event(event)
         with self._lock:
             self._state.apply(event, now=self._clock())
             if not self._animate or event.stage in ("steps", "step"):
@@ -209,6 +212,7 @@ class PlainSteps:
         self._lock = threading.Lock()
 
     def report(self, event: Progress) -> None:
+        event = common.plain_event(event)
         with self._lock:
             if event.stage == "steps" and event.message == "plan":
                 self._plan = [n for n in (event.detail or "").split(",") if n]

@@ -279,7 +279,7 @@ def add(source, title, company, url, location, force):
             else:
                 result = _add_core(source, progress=reporter, **kwargs)
     except (ValueError, FileNotFoundError) as exc:
-        click.echo(f"Error: {exc}", err=True)
+        click.echo(common.plain(f"Error: {exc}"), err=True)
         sys.exit(1)
     if result.get("missing"):
         names = " and ".join(result["missing"])

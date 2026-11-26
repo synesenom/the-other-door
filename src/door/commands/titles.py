@@ -11,6 +11,7 @@ from pathlib import Path
 import click
 
 from door import i18n
+from door.commands import _common as common
 from door.commands import cv as cv_cmd
 from door.core import claude_cli, profile_loader, workspace
 
@@ -118,6 +119,6 @@ def titles_command(titles: tuple[str, ...], hint: str | None, languages: str | N
     wanted = [part.strip() for part in languages.split(",") if part.strip()] if languages else None
     result = _titles_core(list(titles), hint=hint, languages=wanted, model=model, profile_dir=workspace.PROFILE_DIR)
     for item in result["titles"]:
-        click.echo(f"{'*' if item['recommended'] else ' '} {item['title']}: {item['reason']}")
+        click.echo(common.plain(f"{'*' if item['recommended'] else ' '} {item['title']}: {item['reason']}"))
     if result.get("warning"):
-        click.echo(f"Warning: {result['warning']}", err=True)
+        click.echo(common.plain(f"Warning: {result['warning']}"), err=True)

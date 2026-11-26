@@ -739,7 +739,7 @@ def show(job_id: str | None, open_: bool):
             return
         posting = _show_core(job_id, open=open_, jobs_dir=workspace.JOBS_DIR)
     except (ValueError, LookupError, FileNotFoundError) as exc:
-        click.echo(f"Error: {exc}", err=True)
+        click.echo(common.plain(f"Error: {exc}"), err=True)
         sys.exit(1)
 
     console = common._console()

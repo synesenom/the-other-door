@@ -50,7 +50,7 @@ def folder_masker(places: dict):
 
 def _sweep_stale_parts(dest: Path, prefix: str) -> None:
     """Remove the `prefix` staging folders a killed staged write left in `dest`, never one still in use, and never
-    another tool's (cloudflared's `dest` is the shared ~/.local/bin)."""
+    another tool's (an import's `dest` is the HOME parent, shared with whatever else is there)."""
     cutoff = time.time() - STALE_PART_SECONDS
     for part in Path(dest).glob(f"{glob.escape(prefix)}*.part"):
         if part.is_dir() and part.stat().st_mtime < cutoff:

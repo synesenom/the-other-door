@@ -18,7 +18,7 @@ Sources I read in full: `app/src/renderer/screens/{Settings,Connections,SignIn,D
 ### Child environment (what a test can and cannot inject)
 - From a checkout, `resolveSpawn` passes the Python child only `PYTHONPATH`, `DOOR_PATHS_FROM_DIALOGS=1`, `DOOR_HOME`, `HOME`, `XDG_CONFIG_HOME`, `APPDATA`, `PATH`, `CLAUDE_CONFIG_DIR`, plus the MCP SDK's short default list (HOME, LOGNAME, PATH, SHELL, TERM, USER). — not tested: a note on the harness, not an action
 - **`BROWSER`, `HTTPS_PROXY`, `DOOR_BIN`, `DOOR_WEB_DIR` etc. do NOT reach Python.** To set any other variable, or to monkeypatch Python, use `DOOR_PYTHON`: point it at a wrapper script that exports the variables (or puts a `sitecustomize.py` on the path) and then execs the real venv python. — not tested: a note on the harness, not an action
-- `PATH` does reach Python, so stand-in executables work: `claude` (already in `home-fixture.ts`), `cloudflared`, `curl`, `xdg-open` on Linux. — not tested: a note on the harness, not an action (the world's bin/: claude, chrome-headless-shell, and these journeys' stand-in curl)
+- `PATH` does reach Python, so stand-in executables work: `claude` (already in `home-fixture.ts`), `curl`, `xdg-open` on Linux. — not tested: a note on the harness, not an action (the world's bin/: claude, chrome-headless-shell, and these journeys' stand-in curl)
 - Drive state lives in `$XDG_CONFIG_HOME/door/drive.json` and phone instances in `$XDG_CONFIG_HOME/door/instances.json`. The fixture already isolates `XDG_CONFIG_HOME`. — not tested: a note on the harness, not an action (the world keeps drive.json in <world>/config, boot.py)
 
 ### Main-process stub seams (Playwright `app.evaluate`, as `journeys/fixtures.ts`'s `os` does for `settings.journey.ts`'s Your data)
@@ -38,7 +38,7 @@ Sources I read in full: `app/src/renderer/screens/{Settings,Connections,SignIn,D
 | **Open the sign-in page again** | `shell.openExternal(url)` | Patch `shell.openExternal`. | — ✓ Sign in with Claude waits for the browser, with the profile’s email on claude’s page
 | **the data folder's path** (Your data) | `shell.showItemInFolder(home)` (Finder) | Patch `shell.showItemInFolder`. | — ✓ Your data says where the data folder is; its path shows it
 | **Export…** and **Import…** | Native dialogs | Patch `dialog.*`. | — ✓ Export… writes an archive where the user says, and names it; ✓ Import replaces the data and keeps what was here in backups/
-| Phone setup opened (`phone_start{}`) | Spawns `python -m door serve start` (local), `caffeinate` on macOS, and `cloudflared tunnel` (internet). Downloads cloudflared from GitHub if none is found. | Stand-in `cloudflared` on PATH that prints `https://x.trycloudflare.com` and `Registered tunnel connection` to stdout (which is `logs/tunnel.log`) and stays alive. **These processes outlive the app: a test must call `phone_stop` (or kill them) in teardown.** | — ✓ Continue, the QR code at once, the phone scans it, Done: the row says it is paired (boot.py's pretend tunnel)
+| Phone setup opened (`phone_start{}`) | Spawns `python -m door serve start` (local), `caffeinate` on macOS, and `cloudflared tunnel` (internet). Runs only the pinned cloudflared in `~/.local/share/door/cloudflared-<version>/` (its sha256 checked at each start; PATH's is never used) and downloads it from GitHub if it is missing or differs. | Journeys do not run it: the world's `edges.py` replaces `phone.start` with a pretend tunnel. A real run needs the pinned program: a stand-in must hash to the pin, so the unit tests fake `spawn` instead. **These processes outlive the app: a test must call `phone_stop` (or kill them) in teardown.** | — ✓ Continue, the QR code at once, the phone scans it, Done: the row says it is paired (boot.py's pretend tunnel)
 
 ---
 
@@ -380,11 +380,11 @@ Focus: the Dialog focuses its first control on open. After a step change, if foc
 | No "Registered tunnel connection" within 60 s | "the tunnel could not connect to Cloudflare; see <log>" | — not tested: same path as a tunnel that does not start says why and stays on the first step; Continue again works
 | cloudflared missing and the download fails | `Error executing tool phone_start: <HTTPError/ConnectionError…>` (requests errors are not "expected") | — not tested: same path as a tunnel that does not start says why and stays on the first step; Continue again works
 | Digest mismatch | "the cloudflared download does not match its pinned checksum; nothing was installed (<url>)" | — not tested: same path as a tunnel that does not start says why and stays on the first step; Continue again works
-| Unsupported arch | "no cloudflared for <key>; install it yourself (https://github.com/cloudflare/cloudflared)" | — not tested: same path as a tunnel that does not start says why and stays on the first step; Continue again works
+| Unsupported arch | "The phone is not available on this system (<key>); it works on <the pinned systems>." | — not tested: same path as a tunnel that does not start says why and stays on the first step; Continue again works
 | No free port | `Error executing tool phone_start: no free port for the phone server` | — not tested: same path as a tunnel that does not start says why and stays on the first step; Continue again works
 | Timeout (300 s) | "The other door took too long to answer" | — not tested: 300 s
 
-  - With a stand-in `cloudflared` on PATH that prints both lines, the happy path is offline: on disk `<home>/.serve/run.json`, `<home>/logs/{serve,tunnel,awake}.log`, `$XDG_CONFIG_HOME/door/instances.json`, and real child processes (**clean them up**). — not tested: a note on the harness, not an action (boot.py's pretend tunnel instead: no processes)
+  - A real run needs the pinned cloudflared at the checked path (a stand-in does not pass the check): on disk `<home>/.serve/run.json`, `<home>/logs/{serve,tunnel,awake}.log`, `$XDG_CONFIG_HOME/door/instances.json`, and real child processes (**clean them up**). — not tested: a note on the harness, not an action (boot.py's pretend tunnel instead: no processes)
 
 ### Step `pair` (directly from "Pair your phone", or after Continue)
 - A muted line when `status.address` is set: — ✓ Continue, the QR code at once, the phone scans it, Done: the row says it is paired

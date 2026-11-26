@@ -484,7 +484,7 @@ def _draft_from_sources(answers: dict) -> None:
             result = cv_cmd._draft_cv_core(sources, profile_dir=workspace.PROFILE_DIR)
             break
         except (ValueError, FileNotFoundError, claude_cli.ClaudeError) as exc:
-            click.echo(f"Error: {exc}", err=True)
+            click.echo(common.plain(f"Error: {exc}"), err=True)
     answers.update(draft_path=result["draft_path"], provenance=result["provenance"], todos=result["todos"])
     urls = [s for s in sources if common._is_url(s) and not re.match(r"https?://([^/]+\.)?linkedin\.", s, re.IGNORECASE)]
     if urls:
@@ -568,7 +568,9 @@ def _read_sources_step(answers: dict) -> None:
     click.echo("[3/4] Finding job titles that fit...")
     suggested = titles_cmd._titles_core(answers.get("role_targets"), languages=answers["languages"], profile_dir=workspace.PROFILE_DIR)
     if suggested.get("warning"):
-        click.echo(f"No titles suggested: {suggested['warning']}", err=True)
+        from door.commands import _common as common
+
+        click.echo(common.plain(f"No titles suggested: {suggested['warning']}"), err=True)
     answers["titles"] = suggested["titles"]
     answers["role_targets"] = [t["title"] for t in suggested["titles"] if t["recommended"]]
     if not answers["role_targets"]:
@@ -598,8 +600,10 @@ def _first_look(answers: dict) -> None:
 
 def _pick_titles(answers: dict) -> None:
     """The titles with their reasons, plus the user's own; a change proposes the search terms again."""
+    from door.commands import _common as common
+
     before = set(answers.get("role_targets", []))
-    choices = [(f"{t['title']}: {t['reason']}", t["title"]) for t in answers.get("titles", [])]
+    choices = [(common.plain(f"{t['title']}: {t['reason']}"), t["title"]) for t in answers.get("titles", [])]
     picked = _prompts.checkbox("titles_pick", "Job titles to look for", choices=choices, default=list(answers.get("role_targets", [])))
     added = _split(_prompts.text("titles_add", "Add your own (comma-separated, optional)", default=""))
     chosen = list(dict.fromkeys([*picked, *added]))
@@ -723,9 +727,9 @@ def _print_review(answers: dict) -> None:
     if answers.get("draft_path"):
         click.echo(f"  {'CV draft':<14}{common._display_path(answers['draft_path'])}")
         for item in answers.get("provenance", []):
-            click.echo(f"    {item.get('source', '')}: {item.get('contributed', '')}")
+            click.echo(common.plain(f"    {item.get('source', '')}: {item.get('contributed', '')}"))
         for todo in answers.get("todos", []):
-            click.echo(f"    TODO: {todo}")
+            click.echo(common.plain(f"    TODO: {todo}"))
     click.echo("")
 
 
@@ -761,14 +765,14 @@ def _save_answers(answers: dict) -> bool:
     if answers.get("draft_path"):
         saved = _save_cv_core(Path(answers["draft_path"]).read_text(encoding="utf-8"))
         if "error" in saved:
-            click.echo(f"Error: {saved['error']}", err=True)
+            click.echo(common.plain(f"Error: {saved['error']}"), err=True)
             return False
         kept = f" (previous version: {common._display_path(Path(saved['backup']))})" if saved["backup"] else ""
         click.echo(f"Wrote {common._display_path(Path(saved['cv_path']))}{kept}.")
     if answers.get("photo"):
         saved = _save_photo_core(answers["photo"])
         if "error" in saved:
-            click.echo(f"Error: {saved['error']}", err=True)
+            click.echo(common.plain(f"Error: {saved['error']}"), err=True)
             answers.pop("photo")  # the rest is saved; back at the review the photo can be asked again
             answers["has_photo"] = False
             return False
@@ -1078,10 +1082,10 @@ def _print_profile(result: dict) -> None:
     cv = result["cv"]
     line("CV", cv)
     if cv["headline"]:
-        click.echo(f"    {cv['headline']}")
+        click.echo(common.plain(f"    {cv['headline']}"))
     for section in cv["sections"]:
         roles = f", {len(section['roles'])} roles" if section["roles"] else ""
-        click.echo(f"    {section['title']} ({section['bullets']} bullets{roles})")
+        click.echo(common.plain(f"    {section['title']} ({section['bullets']} bullets{roles})"))
     line("CV template", result["templates"]["cv"])
     line("Cover letter", result["templates"]["cover_letter"])
     line("Story bank", result["story_bank"])

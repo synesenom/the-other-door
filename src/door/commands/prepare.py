@@ -545,14 +545,14 @@ def prepare(job_id: str | None, force: bool, timeout_min: float):
                 profile_dir=workspace.PROFILE_DIR, progress=reporter,
             )
     except (ValueError, LookupError) as exc:
-        click.echo(f"Error: {exc}", err=True)
+        click.echo(common.plain(f"Error: {exc}"), err=True)
         sys.exit(1)
 
     if result["outcome"] == "no_matches":
         click.echo("No matches found — `./door find` first.")
         return
     if result["outcome"] not in ("prepared", "skipped"):
-        click.echo(f"Error: {result['error']}", err=True)
+        click.echo(common.plain(f"Error: {result['error']}"), err=True)
         if not common._claude_available():
             click.echo(claude_cli.INSTALL_HINT, err=True)
         elif not common._chromium_available():

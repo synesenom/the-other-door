@@ -95,8 +95,9 @@ link to your own computer or network, be huge, or flood a run to use up your pla
   [#567](https://github.com/synesenom/the-other-door/pull/567)): the title, company and place a model reads
   are kept only if the ad contains those words.
 - **Printing is safe** ([#549](https://github.com/synesenom/the-other-door/issues/549)): the command line
-  prints ad, page and model text without terminal tricks or markup, in postings, imports and reports and the
-  employer list. `companies merge` and the `market` report do not yet ([#589](https://github.com/synesenom/the-other-door/issues/589)).
+  prints ad, page, feed and model text without terminal tricks or markup: in postings, imports, reports, the
+  employer list, the market report, pick lists, progress lines and error lines
+  ([#593](https://github.com/synesenom/the-other-door/pull/593)).
 
 ### Employer pages and discovery sources
 
@@ -173,8 +174,10 @@ the phone and the command line show the whole ad. A Claude the app starts in the
 the app, so its answers are guarded too; the tailor's own server is the one exception, because the tailor
 reads the posting itself. Detail: [manual-claude.md](manual-claude.md).
 
-The exception: `enrich` and `draft_cv` answer with text written from the pages you named, and that text
-reaches a chat unmarked ([#587](https://github.com/synesenom/the-other-door/issues/587)).
+The CV draft and "Add a page" proposals, written by a model from the pages you named, come whole inside the
+same marker, and the save step takes it off, so your CV saves as drafted
+([#591](https://github.com/synesenom/the-other-door/pull/591)). Still unmarked: the job titles, search
+terms, name and city that the set-up suggests from that draft; they are short, but a page could shape them.
 
 ### The phone
 
@@ -208,9 +211,11 @@ and prepare it. The daily limits, the tailor's walls and the allow-list bound it
 stopped yet: see [not yet done](#not-yet-done).
 
 Two programs are downloaded and checked against a fingerprint fixed in the code before use: the Chromium that
-prints PDFs, and `cloudflared` for the phone; the installed app brings its own Chromium. Only the download itself is
-checked: once a `cloudflared` is in `~/.local/bin` or on your `PATH`, later starts use it without the check
-([#588](https://github.com/synesenom/the-other-door/issues/588)).
+prints PDFs, and `cloudflared` for the phone; the installed app brings its own Chromium. `cloudflared` lives in
+The other door's own folder and is checked again before every start; a copy elsewhere on your computer is never
+run, and one that no longer matches is downloaded again
+([#592](https://github.com/synesenom/the-other-door/pull/592)). The phone works on the computers it has a
+checked copy for (Mac, Linux on Intel and ARM, Raspberry Pi, Windows); elsewhere the app says it is not available.
 `doctor --fix` installs Claude's own `claude` tool with Claude's installer, which is not checked either.
 
 ## What these protections cost you
@@ -228,6 +233,8 @@ What you give up for them; the reasons are in the passages above.
 - A run scores at most 150 ads and asks about at most 30 employers; the rest wait for the next run.
 - A broken site waits for an app update; nothing repairs itself.
 - The phone has daily limits, no revising, no editing of your CV or profile, and goes through Cloudflare.
+- The phone needs a checked tunnel program for your kind of computer, and a copy of your own is never used;
+  the first phone start after an update downloads it again.
 - Settings and the CV must live inside the profile folder, and an oversized CV file is refused.
 - Some discovery sources stay off until you turn them on.
 
@@ -244,10 +251,8 @@ installed Windows apps and Linux AppImages, which update by themselves at their 
 are also not signed by Apple or Microsoft. Meanwhile, a macOS build and the `.deb` do not update by
 themselves: Settings shows "Version X is available" with a link. Install only from this project's releases page.
 
-Also open: a chat sees unmarked text from `enrich` and `draft_cv`
-([#587](https://github.com/synesenom/the-other-door/issues/587)), an unchecked `cloudflared`
-([#588](https://github.com/synesenom/the-other-door/issues/588)), and `companies merge` printing without
-the safe printing above ([#589](https://github.com/synesenom/the-other-door/issues/589)).
+Also open: the set-up's suggested titles, search terms, name and city reach a chat unmarked (see
+[a Claude Code chat](#a-claude-code-chat)).
 
 ## What is not covered
 

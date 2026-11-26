@@ -1,5 +1,5 @@
 """The one step that downloads a file pinned by sha256 (#202): the Chromium shell (`core/downloads/chromium`), cloudflared
-(`core/phone`).
+(`core/downloads/cloudflared`).
 
 A caller opens a `utils.staging` folder (a unique `.part` folder inside its destination, removed afterwards, the ones a
 killed install left swept first), `download`s its pinned files into it, each checked against its sha256, and then
@@ -39,3 +39,17 @@ def download(items, folder: Path) -> None:
         http_get(url, Path(folder) / name)
         if sha256(Path(folder) / name) != digest:
             raise ChecksumError(f"{name} does not match the pinned checksum; nothing was written")
+
+
+def folder(name: str, version: str, home: Path | None = None) -> Path:
+    """A pinned program's own folder, one per version: `~/.local/share/door/<name>-<version>`."""
+    return (Path(home) if home is not None else Path.home()) / ".local" / "share" / "door" / f"{name}-{version}"
+
+
+def remove_other_versions(dest: Path, name: str) -> None:
+    """Drop the older `<name>-*` folders beside `dest`, only where `dest` is one of them."""
+    if not dest.name.startswith(f"{name}-"):
+        return
+    for other in dest.parent.glob(f"{name}-*"):
+        if other != dest and other.is_dir():
+            shutil.rmtree(other, ignore_errors=True)

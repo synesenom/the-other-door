@@ -1214,3 +1214,18 @@ def test_aarhus_universitys_vacancy_page_is_followed_as_an_embedded_emply_list(c
 def test_career_hosts_of_the_united_kingdom_join_a_two_label_ending():
     gb = set(companies_cmd._host_guesses("London"))
     assert {"careers.{s}.co.uk", "jobs.{s}.co.uk", "recruitment.{s}.co.uk", "vacancies.{s}.co.uk"} <= gb
+
+
+def test_merge_escape_prints_outside_names_as_text(cli_env):
+    bad = "Acme\x1b]0;pwned\x07"
+    companies_store.save(cli_env.profile_dir, [
+        companies_store.Company(name=bad, feed=companies_store.Feed(platform="lever", id="acme"),
+                                status="followed", found_via="manual"),
+        companies_store.Company(name="Acme Inc", feed=companies_store.Feed(platform="lever", id="ACME"),
+                                status="followed", found_via="linkedin"),
+    ])
+    proposal = CliRunner().invoke(cli, ["companies", "merge"])
+    assert proposal.exit_code == 0 and "\x1b" not in proposal.output and "\x07" not in proposal.output
+    assert "Acme]0;pwned" in proposal.output
+    done = CliRunner().invoke(cli, ["companies", "merge", "Acme Inc", bad])
+    assert done.exit_code == 0 and "\x1b" not in done.output and "Acme]0;pwned" in done.output

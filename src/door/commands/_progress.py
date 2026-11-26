@@ -16,6 +16,8 @@ from contextlib import contextmanager
 
 import click
 
+from door.commands import _common as common
+
 _FRAMES = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
 CHECK = click.style("✓", fg="green")
 CROSS = click.style("✗", fg="red")
@@ -91,6 +93,7 @@ class LiveLine:
 
     # -- Reporter -------------------------------------------------------------
     def report(self, event) -> None:
+        event = common.plain_event(event)
         with self._lock:
             if event.outcome:
                 self._clear()

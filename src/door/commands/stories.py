@@ -198,11 +198,11 @@ def _fail(exc) -> None:
 
 
 def _echo_story(story: dict) -> None:
-    click.echo(f"{story['title']}")
+    click.echo(common.plain(story["title"]))
     for name in _TEXT_FIELDS:
-        click.echo(f"  {name.capitalize()}: {story.get(name) or '(empty)'}")
+        click.echo(common.plain(f"  {name.capitalize()}: {story.get(name) or '(empty)'}"))
     for conflict in story.get("conflicts") or []:
-        click.echo(f"  Differs from your CV: {conflict}")
+        click.echo(common.plain(f"  Differs from your CV: {conflict}"))
 
 
 @click.group("stories", invoke_without_command=True)
@@ -262,7 +262,7 @@ def add_story(title, context, action, result, learning, replace, replace_example
         saved = _save_story_core(
             **fields, replace=replace, replace_example=replace_example, profile_dir=workspace.PROFILE_DIR,
         )
-        click.echo(f"Story {saved['outcome']}: {saved['story']['title']} ({saved['count']} in the bank).")
+        click.echo(common.plain(f"Story {saved['outcome']}: {saved['story']['title']} ({saved['count']} in the bank)."))
     except (ValueError, FileNotFoundError, claude_cli.ClaudeError) as exc:
         _fail(exc)
 
@@ -275,7 +275,7 @@ def remove_story(title):
         saved = _remove_story_core(title, profile_dir=workspace.PROFILE_DIR)
     except ValueError as exc:
         _fail(exc)
-    click.echo(f"Removed: {saved['title']} ({saved['count']} left).")
+    click.echo(common.plain(f"Removed: {saved['title']} ({saved['count']} left)."))
 
 
 @stories_group.command("draft")
@@ -294,6 +294,6 @@ def draft_stories(text, from_cv, model):
     for story in result["stories"]:
         _echo_story(story)
         if story["missing"]:
-            click.echo(f"  Still to fill in: {', '.join(story['missing'])}")
+            click.echo(common.plain(f"  Still to fill in: {', '.join(story['missing'])}"))
         click.echo()
     click.echo("Save one with `cv stories add --title ... --context ... --action ... --result ... --learning ...`.")
