@@ -2,7 +2,7 @@
 import pytest
 import requests.adapters
 
-from door.scrapers import http_client, paged_discovery
+from door.scrapers import http_client
 from door.scrapers.discovery import linkedin
 
 
@@ -19,7 +19,7 @@ def _linkedin_get(url):
 
 
 def _paged_get(url):
-    return paged_discovery._open_session().get(url, timeout=5)
+    return http_client.public_session().get(url, timeout=5)
 
 
 @pytest.mark.parametrize("get", [_linkedin_get, _paged_get], ids=["linkedin", "paged"])
@@ -29,7 +29,7 @@ def test_a_discovery_request_to_a_private_address_is_refused(get, host, real_net
         get(f"http://{host}/latest/meta-data/")
 
 
-@pytest.mark.parametrize("make", [lambda: linkedin._open_session()._http, paged_discovery._open_session],
+@pytest.mark.parametrize("make", [lambda: linkedin._open_session()._http, http_client.public_session],
                          ids=["linkedin", "paged"])
 def test_a_discovery_session_reads_no_system_proxy(make):
     session = make()

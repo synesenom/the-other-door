@@ -16,11 +16,8 @@ import time
 from datetime import datetime, timezone
 from typing import Callable
 
-import requests
-
 from door.matching import title_fit
-from door.scrapers import record_error, record_pushback, report, wall_page
-from door.scrapers import http_client
+from door.scrapers import http_client, record_error, record_pushback, report, wall_page
 
 _TIMEOUT_S = 30
 
@@ -140,10 +137,6 @@ def _stop(name: str, stop: _Stop) -> None:
         record_pushback(name)
 
 
-def _open_session():
-    """A logged-out session that reaches only public addresses, as the boards' does."""
-    return http_client.public_session()
-
 
 def discover(
     config: dict, *, name: str, search_url: Callable[[str, int, dict], str], parse_cards: Callable[[str], list[dict]],
@@ -174,7 +167,7 @@ def discover(
     if not title_fit.keywords(config):
         return result
     now = datetime.now(timezone.utc).isoformat()
-    session = _open_session()
+    session = http_client.public_session()
     crawler = _Crawler(session, name=name, is_wall=is_wall, budget=budget, pause=pause, stop=stop)
     cards: list[dict] = []
     complete = True
