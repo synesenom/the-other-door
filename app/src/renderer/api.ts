@@ -276,6 +276,14 @@ export interface Posting {
   materials?: Materials | null
   /** The salary estimate `prepare` saved; null until there is one. `show` never asks for it. */
   salary?: Salary | null
+  /** What the gate found in the ad's text before scoring (`matching/integrity.py`). */
+  integrity?: AdIntegrity | null
+}
+
+/** The gate's verdict on an ad: `suspicious` when text hidden from readers or aimed at a model was found. */
+export interface AdIntegrity {
+  verdict: 'clean' | 'suspicious'
+  findings: { kind: string; excerpt?: string }[]
 }
 
 /** A salary estimate from public pages (`salary_estimate`'s fields), adjusted to the CV's experience. */

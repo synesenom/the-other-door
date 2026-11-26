@@ -2,6 +2,7 @@ import { useId, useState } from 'react'
 import { ErrorBox } from './AppName'
 import { call, errorText, placeLine, scoreText } from '../api'
 import type { ImportMissing, ImportResult, Posting } from '../api'
+import { AdFindings } from './AdFindings'
 import { Dialog } from './Dialog'
 import { Spinner } from './Spinner'
 
@@ -78,6 +79,7 @@ export function ImportDialog({ onClose, onOpen }: Props) {
             <p className="small muted">{placeLine(posting.company, posting.location)}</p>
           </div>
         )}
+        <AdFindings integrity={posting?.integrity} />
         {typeof r.score === 'number' ? (
           <>
             <p className="score-l">{scoreText(r.score)}</p>

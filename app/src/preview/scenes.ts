@@ -174,6 +174,7 @@ export const SCENES: readonly Scene[] = [
   { id: 'matches-weak', group: 'Matches', title: 'Matches, only weak ones', weak: 'keywords' },
   { id: 'matches-weak-sources', group: 'Matches', title: 'Matches, only weak ones, a source off', weak: 'sources' },
   { id: 'posting', group: 'Matches', title: 'Posting', open: { screen: 'posting', jobId: 'jobindex.demo-1', inPlay: false } },
+  { id: 'posting-suspicious', group: 'Matches', title: 'Posting, an ad with hidden text or a false link (a note under the score)', open: { screen: 'posting', jobId: 'jobindex.demo-sus', inPlay: false } },
   { id: 'applications', group: 'Applications', title: 'Applications board', start: { destination: 'Applications' } },
   { id: 'posting-prepared', group: 'Applications', title: 'Posting, prepared', open: { screen: 'posting', jobId: 'successfactors.demo-6', inPlay: true } },
   { id: 'materials', group: 'Applications', title: 'Ready to send (Revise)', open: { screen: 'materials', jobId: 'successfactors.demo-6', inPlay: true } },

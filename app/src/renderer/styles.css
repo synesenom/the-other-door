@@ -75,6 +75,8 @@ strong, b { font-weight: 600; }
 .reason { max-width: 60ch; }
 .score-line { position: relative; display: flex; align-items: center; gap: var(--size-gap-s); }
 .score-line .hint-pop { left: 0; right: auto; }
+.ad-findings { display: flex; flex-direction: column; gap: var(--size-gap-s); }
+.ad-findings ul { margin: var(--size-gap-s) 0 0; padding-left: var(--space-5); }
 .columns { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6); padding-top: var(--space-6); }
 .columns .label { margin: 0 0 var(--space-2); }
 .part > .columns { padding-top: 0; } /* in a part (Analytics' Market) the part's gap is above it already */

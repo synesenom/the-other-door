@@ -3,6 +3,7 @@
 // Its own layout is inline: a development page, in no build of the app.
 import { useState, type CSSProperties, type ReactNode } from 'react'
 import { CheckMark, CrossMark, WarningMark } from '../renderer/screens/CheckMark'
+import { AdFindings } from '../renderer/screens/AdFindings'
 import { Switch } from '../renderer/screens/Switch'
 import { ErrorBox } from '../renderer/screens/AppName'
 import { Hint } from '../renderer/screens/Hint'
@@ -233,6 +234,9 @@ export function Guide() {
                 </ul>
               </div>
             </div>
+          </Row>
+          <Row label="ad-findings (a marked line and its disclosure)">
+            <AdFindings integrity={{ verdict: 'suspicious', findings: [{ kind: 'hidden_css', excerpt: 'Text the page hid from readers' }] }} />
           </Row>
           <Row label="board column">
             <div className="board-column" style={{ width: '100%' }}>
