@@ -651,17 +651,17 @@ The phone app is this app's screens in your phone's browser, installed like an a
 The computer running *The other door* does all the work: it keeps your data, runs the searches and Claude, and serves the app;
 the phone shows it and holds no data of its own.
 
-Set it up by hand, on the computer running *The other door*, once:
+Set it up in the desktop app: **Settings → Connections → Your phone → Set up your phone…**. It starts a
+Cloudflare quick tunnel (free, no account, no router port opened), which gives this computer an
+`https://<random>.trycloudflare.com` address your phone can reach from anywhere. Finding that new
+address can take a minute or two; it starts as the dialog opens, so it is mostly ready when you press
+**Continue**. Then it shows a QR code that pairs your phone once, for five minutes. The address and the
+pairing last until this computer restarts or you press **Disconnect**: then set it up again and scan a
+new code (the app on your phone's home screen keeps the old address, so add it again and remove the old one).
 
-1. Build the phone app: `cd app && npm run build:web`.
-2. Start the server: `./door serve` (it listens on this machine only, port 8765).
-3. Give it an `https://` address your phone can reach. A phone installs an app only from a secure
-   address. A Cloudflare quick tunnel is free, needs no account and does not open your router: install
-   `cloudflared`, then `cloudflared tunnel --url http://localhost:8765`. It prints an address like
-   `https://<random>.trycloudflare.com` that works from anywhere, for as long as it runs (a new
-   address each time).
-4. Make a pairing code: `./door serve pair --device "My phone" --url https://<that address>`. It
-   prints a code and a QR code; both work once, for ten minutes.
+Without the desktop app, the same by hand: `cd app && npm run build:web`, then `./door serve`
+(this machine only, port 8765), `cloudflared tunnel --url http://localhost:8765` for the address, and
+`./door serve pair --device "My phone" --url https://<that address>`, which prints a code and a QR code.
 
 On the phone: scan the QR code (or open the address and type the code). The app opens on your matches
 and offers to install itself: on Android an **Install the app** button, on an iPhone the words "tap Share,
@@ -681,15 +681,10 @@ CV (Profile is not on the phone), signing in to
 Claude, connecting Google Drive and moving your data. A data
 folder that has no profile yet says to set it up there first.
 
-**What a paired phone can do.** It is not a Claude Code session on your machine: the server answers only
-the tools the phone app uses, never a file path on the machine (an ad comes as a link or text), never an
-address on the machine or your home network, and no question to Claude. What it answers holds no folder of
-your machine, no Google account and none of the settings that stay on the computer, and it serves only the
-rendered CV and letter (PDF and page images), nothing else of a job's folder. It cannot revise a CV or letter
-(do that on the computer), it sends only the arguments the app sends, and a day allows 10 prepares, 30 imported
-ads and 6 runs to find jobs (a rolling 24 hours; try again tomorrow, or do it on the computer). Every
-prepared or revised CV and letter is refused before compiling if it would read or write another file.
-Through a Cloudflare quick tunnel, Cloudflare's servers see the traffic decrypted on its way through.
+**What a paired phone can do.** It cannot revise a CV or letter or change your profile (do that on the
+computer), and a day allows 10 prepares, 30 imported ads and 6 runs to find jobs (a rolling 24 hours; try
+again tomorrow, or do it on the computer). What it can reach, and what Cloudflare sees on the way:
+[Security and privacy](security.md#the-phone).
 
 **Share an ad to The other door.** On Android, Share → **The other door** from Chrome, the LinkedIn app or an email
 imports the ad and scores it against your CV, then opens it, with Prepare and Not for me as usual. On an
@@ -698,4 +693,4 @@ iPhone (which does not offer web apps in the share sheet), copy the link and pas
 
 One phone is paired at a time: pairing another is refused until the first is unpaired.
 `./door serve devices` shows the paired phone; `./door serve unpair "My phone"` takes it away
-(it shows the pairing screen again). In the desktop app, Settings → Connections → Your phone sets it up and disconnects it.
+(it shows the pairing screen again).
