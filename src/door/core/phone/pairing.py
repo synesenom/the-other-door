@@ -95,8 +95,10 @@ def redeem(home: Path, code: str, *, now: datetime | None = None) -> tuple[str, 
     _write(folder / "pairing.json", rest)
     if match is None or datetime.fromisoformat(match["expires"]) < at:
         return None
-    token = secrets.token_urlsafe(32)
     rows = [d for d in _read(folder / "devices.json") if d["device"].casefold() != match["device"].casefold()]
+    if rows:  # one phone: a code made before another phone paired no longer pairs
+        return None
+    token = secrets.token_urlsafe(32)
     rows.append({"device": match["device"], "token_hash": _hash(token), "paired_at": at.isoformat(), "last_seen": None})
     _write(folder / "devices.json", rows)
     return match["device"], token

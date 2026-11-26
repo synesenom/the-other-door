@@ -74,11 +74,8 @@ Sources I read in full: `app/src/renderer/screens/{Settings,Connections,SignIn,D
 - The choice persists across a reload (localStorage) and is per window origin. Nothing goes to disk under `profile/`. — ✓ Dark turns the whole app dark and stays dark after a reload; Light turns it light
 - Where `applyTheme` is called at startup is outside this area (`main.tsx`). It is worth an e2e check that a stored `dark` applies after a relaunch. — ✓ Dark turns the whole app dark and stays dark after a reload; Light turns it light (a reload keeps dark)
 
-### Phone (`remote=true`, the web build only; never in Electron)
-- No Connections, no Your data, no Report a problem, no Documentation, no side nav, and no doctor call. — not tested: the phone build is the web journeys' (npm run test:web), not Electron
-- Shown: Appearance, plus a `region "This computer"` with: — not tested: phone build
-  - "Your profile and jobs are on the computer running The other door." — not tested: phone build
-  - "The phone finds, prepares and keeps your applications. Setting up, your profile and CV, connections and moving your data are done on the computer where it is installed." — not tested: phone build
+### Phone
+- The phone has no Settings: its tabs are Matches and Applications, and it is always light. — ✓ the phone e2e (npm run test:web) sees two tabs and a light ground under a dark system setting
 
 ### Narrow window (< 900 px; Electron `minWidth` is 720, so 720–899 px is testable)
 - There is no "Sections" nav on Settings at any width. — ✓ Settings has no side nav and no sidebar lines; Matches says Claude is not signed in on top

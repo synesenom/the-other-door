@@ -38,6 +38,9 @@ _TUNNEL_URL = re.compile(r"https://[a-z0-9-]+\.trycloudflare\.com")
 
 
 # ----------------------------------------------------------------------------- the real world
+PUBLISHED_TIMEOUT = 2  # seconds for one public DNS answer; 40 tries keep the whole wait under two minutes
+
+
 def _published(host: str) -> bool:
     """Whether public DNS knows `host` yet, asked of Cloudflare's resolver over HTTPS: this computer's own
     resolver would remember a too-early "not found" for a while."""
@@ -45,7 +48,7 @@ def _published(host: str) -> bool:
 
     try:
         r = requests.get("https://cloudflare-dns.com/dns-query", params={"name": host, "type": "A"},
-                         headers={"accept": "application/dns-json"}, timeout=5)
+                         headers={"accept": "application/dns-json"}, timeout=PUBLISHED_TIMEOUT)
         return r.ok and bool(r.json().get("Answer"))
     except (requests.RequestException, ValueError):
         return False
@@ -235,11 +238,10 @@ def _start(home: Path, **deps) -> dict:
         _stop_pids(run, d["kill"])
         return {"error": f"the tunnel could not connect to Cloudflare; see {log}"}
     # A phone that looks the new name up before public DNS has it gets "not found", and keeps that answer.
+    # A network that blocks the check gets the address after the wait: the tunnel itself is up.
     url = address()
     host = url.removeprefix("https://")
-    if not _wait(lambda: d["published"](host), tries=120, sleep=d["sleep"]):
-        _stop_pids(run, d["kill"])
-        return {"error": "the tunnel's address did not become reachable; try again"}
+    _wait(lambda: d["published"](host), tries=40, sleep=d["sleep"])
     run["address"] = url
     _write_run(home, run)
     return status(home, **deps)

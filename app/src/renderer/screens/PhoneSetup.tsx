@@ -14,7 +14,7 @@ export interface PhoneStatus {
   web_built: boolean
 }
 type Qr = { device: string; qr_svg: string; expires_at: string }
-/** One phone: always this name, so pairing again replaces the phone paired before. */
+/** One phone, always this name: another is refused until it is disconnected. */
 const DEVICE = 'My phone'
 type Step = 'how' | 'pair' | 'home'
 

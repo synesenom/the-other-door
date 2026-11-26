@@ -118,11 +118,14 @@ def test_the_address_is_given_only_once_public_dns_knows_its_name(tmp_path):
     assert asked == ["calm-river.trycloudflare.com"] * 3
 
 
-def test_a_name_public_dns_never_learns_is_an_error_and_nothing_is_left_running(tmp_path):
+def test_a_name_public_dns_cannot_confirm_is_given_after_a_bounded_wait(tmp_path):
+    # a network that blocks the public DNS check: the tunnel itself works, so it goes on, well within the
+    # app's five minutes for phone_start
     w = World(tmp_path)
-    out = phone.start(tmp_path, **deps(w, tmp_path, published=lambda host: False))
-    assert "error" in out and "address" not in out
-    assert set(w.killed) == {s["pid"] for s in w.spawned}
+    asked = []
+    out = phone.start(tmp_path, **deps(w, tmp_path, published=lambda host: asked.append(host) or False))
+    assert out["address"] == "https://calm-river.trycloudflare.com" and not w.killed
+    assert len(asked) * (phone.PUBLISHED_TIMEOUT + 0.5) <= 120
 
 
 def test_stop_ends_everything_it_started(tmp_path):

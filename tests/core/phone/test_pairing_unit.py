@@ -65,6 +65,14 @@ def test_a_second_phone_is_refused_until_the_first_is_unpaired(tmp_path):
     assert pairing.new_code(tmp_path, "iPad", now=NOW)
 
 
+def test_two_codes_made_before_either_is_used_pair_only_one_phone(tmp_path):
+    first = pairing.new_code(tmp_path, "Pixel", now=NOW)
+    second = pairing.new_code(tmp_path, "Tablet", now=NOW, strong=True)
+    assert pairing.redeem(tmp_path, first, now=NOW)
+    assert pairing.redeem(tmp_path, second, now=NOW) is None
+    assert [d["device"] for d in pairing.devices(tmp_path)] == ["Pixel"]
+
+
 def test_a_devices_file_of_several_phones_from_before_still_works(tmp_path):
     rows = [{"device": n, "token_hash": pairing._hash(t), "paired_at": "2026-01-01T00:00:00+00:00", "last_seen": None}
             for n, t in (("Pixel", "a"), ("iPad", "b"))]

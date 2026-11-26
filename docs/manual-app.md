@@ -665,7 +665,13 @@ Set it up by hand, on the computer running *The other door*, once:
 
 On the phone: scan the QR code (or open the address and type the code). The app opens on your matches
 and offers to install itself: on Android an **Install the app** button, on an iPhone the words "tap Share,
-then Add to Home Screen". **Not now** hides the line for good.
+then Add to Home Screen". **Not now** hides the line for good. On Android, a code opened in another
+browser (Brave, Firefox, …) first offers **Open in Chrome**: only Chrome installs the app without its own
+badge on the icon; **Continue here** pairs in that browser instead.
+
+When the phone cannot reach the computer (it is off, *The other door* is closed, or the tunnel's address
+changed), the app says **Can't reach your computer** with **Try again**. A new address means setting the
+phone up again on the computer and scanning the new code.
 
 The phone is for what you do on the road: find new jobs (the run goes on while the phone is locked),
 read postings, import an ad, prepare an application, and keep Applications up to date. It
