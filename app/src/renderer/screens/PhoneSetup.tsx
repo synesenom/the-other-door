@@ -24,6 +24,9 @@ const failure = (data: unknown): string | null =>
 /** The QR code's SVG as an image address (shown with <img>: no markup goes into the page). */
 const qrSrc = (svg: string) => `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`
 
+// A stop asked for by a dialog cancelled mid-start: the next start waits for it, so it never ends that one.
+let stopping: Promise<unknown> = Promise.resolve()
+
 export function PhoneSetup({ onClose, start = 'how', pollMs = 2000 }: { onClose: () => void; start?: Step; pollMs?: number }) {
   const [step, setStep] = useState<Step>(start)
   const [busy, setBusy] = useState<string | null>(null)
@@ -32,20 +35,47 @@ export function PhoneSetup({ onClose, start = 'how', pollMs = 2000 }: { onClose:
   const [qr, setQr] = useState<Qr | null>(null)
   const [expired, setExpired] = useState(false)
 
+  // The tunnel's new address takes a while to be found from a phone: it is asked for as the dialog opens,
+  // so it is mostly ready by the time Continue is pressed.
+  const starting = useRef<Promise<unknown> | null>(null)
+  const startTunnel = () => (starting.current ??= stopping.then(() => call<PhoneStatus | { error: string }>('phone_start', {})))
+  useEffect(() => {
+    // a failed start made on opening is said nowhere: Continue starts again
+    if (start === 'how') {
+      const mine = startTunnel()
+      const forget = () => {
+        if (starting.current === mine) starting.current = null
+      }
+      void mine.then((r) => failure(r) && forget(), forget)
+    }
+    // once, on opening
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const begin = async () => {
-    setBusy('Starting The other door for your phone…')
+    setBusy("Getting this computer's address for your phone (up to a minute)…")
     setError(null)
     try {
-      const r = await call<PhoneStatus | { error: string }>('phone_start', {})
+      const r = await startTunnel()
       const why = failure(r)
-      if (why) return setError(why)
+      if (why) {
+        starting.current = null // Continue tries again
+        return setError(why)
+      }
       setStatus(r as PhoneStatus)
       setStep('pair')
     } catch (e) {
+      starting.current = null
       setError(errorText(e))
     } finally {
       setBusy(null)
     }
+  }
+
+  // Leaving before Continue undoes what opening started: nothing serves a phone that was never set up.
+  const leave = () => {
+    if (step === 'how' && starting.current) stopping = starting.current.then(() => call('phone_stop', {})).catch(() => undefined)
+    onClose()
   }
 
   const showQr = async () => {
@@ -105,7 +135,7 @@ export function PhoneSetup({ onClose, start = 'how', pollMs = 2000 }: { onClose:
   })
 
   return (
-    <Dialog title="Set up your phone" onClose={onClose}>
+    <Dialog title="Set up your phone" onClose={leave}>
       {step === 'how' && (
         <div className="phone-step">
           <p className="body"><AppName /> on your phone is this app, served by this computer. There is nothing to install: scan a code and it works anywhere while this computer is on.</p>
@@ -113,7 +143,7 @@ export function PhoneSetup({ onClose, start = 'how', pollMs = 2000 }: { onClose:
           {busy && <Spinner message={busy} />}
           {error && <ErrorBox className="small" text={error} />}
           <div className="actions">
-            <button type="button" className="quiet" onClick={onClose}>
+            <button type="button" className="quiet" onClick={leave}>
               Cancel
             </button>
             <button type="button" className="primary" disabled={Boolean(busy)} onClick={() => void begin()}>

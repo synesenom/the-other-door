@@ -106,6 +106,70 @@ describe('PhoneSetup', () => {
   })
 
 
+  it('the address is asked for as the dialog opens: Continue waits for it, saying so', async () => {
+    let ready: (v: unknown) => void = () => undefined
+    const { call } = mockDoor({
+      phone_start: () => new Promise((r) => (ready = r)),
+      pair_phone: () => ({ device: 'My phone', qr_svg: SVG, expires_at: future() }),
+      phone_status: { ...serving, devices: [] },
+    })
+    render(<PhoneSetup onClose={vi.fn()} pollMs={5} />)
+    await vi.waitFor(() => expect(call.mock.calls.filter((c) => c[0] === 'phone_start')).toEqual([['phone_start', {}]]))
+    await userEvent.click(screen.getByRole('button', { name: 'Continue' }))
+    expect(await screen.findByText(/Getting this computer's address for your phone/)).toBeInTheDocument()
+    ready({ ...serving, devices: [] })
+    expect(await screen.findByRole('img', { name: 'QR code that pairs your phone' })).toBeInTheDocument()
+    expect(call.mock.calls.filter((c) => c[0] === 'phone_start')).toHaveLength(1)
+  })
+
+  it('Cancel before Continue stops what opening started', async () => {
+    const onClose = vi.fn()
+    const { call } = mockDoor({ phone_start: { ...serving, devices: [] }, phone_stop: { stopped: true } })
+    render(<PhoneSetup onClose={onClose} pollMs={5} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    await vi.waitFor(() => expect(call).toHaveBeenCalledWith('phone_stop', {}))
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  it('a start that failed is tried again by Continue', async () => {
+    let n = 0
+    const { call } = mockDoor({
+      phone_start: () => (n++ === 0 ? { error: 'the tunnel could not connect to Cloudflare' } : { ...serving, devices: [] }),
+      pair_phone: () => ({ device: 'My phone', qr_svg: SVG, expires_at: future() }),
+      phone_status: { ...serving, devices: [] },
+    })
+    render(<PhoneSetup onClose={vi.fn()} pollMs={5} />)
+    await vi.waitFor(() => expect(n).toBe(1)) // the start made on opening failed, unseen
+    await userEvent.click(screen.getByRole('button', { name: 'Continue' }))
+    expect(await screen.findByRole('img', { name: 'QR code that pairs your phone' })).toBeInTheDocument()
+    expect(call.mock.calls.filter((c) => c[0] === 'phone_start')).toHaveLength(2)
+  })
+
+  it('cancelled while starting, then opened again: the new start waits for the stop, so the stop never ends it', async () => {
+    let ready: (v: unknown) => void = () => undefined
+    const order: string[] = []
+    mockDoor({
+      phone_start: () => {
+        order.push('phone_start')
+        return order.length === 1 ? new Promise((r) => (ready = r)) : { ...serving, devices: [] }
+      },
+      phone_stop: () => {
+        order.push('phone_stop')
+        return { stopped: true }
+      },
+      pair_phone: () => ({ device: 'My phone', qr_svg: SVG, expires_at: future() }),
+      phone_status: { ...serving, devices: [] },
+    })
+    const first = render(<PhoneSetup onClose={vi.fn()} pollMs={5} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    first.unmount()
+    render(<PhoneSetup onClose={vi.fn()} pollMs={5} />)
+    ready({ ...serving, devices: [] })
+    await userEvent.click(screen.getByRole('button', { name: 'Continue' }))
+    expect(await screen.findByRole('img', { name: 'QR code that pairs your phone' })).toBeInTheDocument()
+    expect(order).toEqual(['phone_start', 'phone_stop', 'phone_start'])
+  })
+
   it('an expired code says so and makes a new one on a click', async () => {
     let n = 0
     const { call } = mockDoor({
