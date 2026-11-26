@@ -39,7 +39,8 @@ tools, to use up your Claude plan, to make your computer fetch from your own net
 ## Where your data lives and what leaves your computer
 
 Everything is in your data folder: `profile/` (settings, CV, story bank), `jobs/` (postings, applications,
-the CVs and letters it made), `backups/` and `logs/` ([Your data](data.md)). The project runs no server and
+the CVs and letters it made), `backups/` and `logs/` ([Your data](data.md)); the Google Drive connection is kept
+apart, in your account's settings folder (`~/.config/door/` on Linux), readable by your user only. The project runs no server and
 holds no account of yours, and nothing is sent to the project. The files are ordinary files of your user
 account and are not encrypted: whoever can read your folder can read them.
 
@@ -76,7 +77,8 @@ link to your own computer or network, be huge, or flood a run to use up your pla
 
 - **Only the public internet** ([#548](https://github.com/synesenom/the-other-door/issues/548), PR
   [#560](https://github.com/synesenom/the-other-door/pull/560)). Every request to a job site, and every
-  redirect, goes only to a public address, ignores the system's proxy settings, and stops reading at 50 MB.
+  redirect, goes only to a public address and ignores the system's proxy settings. A board's or an employer's
+  answer stops being read at 50 MB; the four discovery sources below have no such size limit yet.
   A link to your computer or home network is refused.
 - **A cleaning step before a model reads an ad.** It removes invisible characters and lines addressed to a
   model, and for an imported page also hidden text. What it removed is recorded and the ad is marked
@@ -89,12 +91,12 @@ link to your own computer or network, be huge, or flood a run to use up your pla
   result of "Add a job", say when part of an ad was hidden or written for an AI, and show what was cut.
 - **A run is capped** ([#551](https://github.com/synesenom/the-other-door/issues/551), PR
   [#564](https://github.com/synesenom/the-other-door/pull/564)): 150 ads scored, taken in turn from each
-  site so one flooding site cannot crowd out the rest, a score kept only for its own job, and lengths of
+  employer (or site, when no employer is known) so one flooding source cannot crowd out the rest, a score kept only for its own job, and lengths of
   translated titles and skill aliases bounded.
 - **An added ad keeps only what it says** ([#545](https://github.com/synesenom/the-other-door/issues/545), PR
   [#567](https://github.com/synesenom/the-other-door/pull/567)): the title, company and place a model reads
   are kept only if the ad contains those words.
-- **Printing is safe** ([#549](https://github.com/synesenom/the-other-door/issues/549)): the command line
+- **Printing is safe** ([#589](https://github.com/synesenom/the-other-door/issues/589)): the command line
   prints ad, page, feed and model text without terminal tricks or markup: in postings, imports, reports, the
   employer list, the market report, pick lists, progress lines and error lines
   ([#593](https://github.com/synesenom/the-other-door/pull/593)).
@@ -103,7 +105,7 @@ link to your own computer or network, be huge, or flood a run to use up your pla
 
 *What it could try.* Answer with links to private addresses, or push back until the app misbehaves.
 
-*What stops it.* The same public-only connection as the boards
+*What stops it.* The same public-only, no-proxy connection as the boards, without the 50 MB limit
 ([#580](https://github.com/synesenom/the-other-door/pull/580)). The sources that only find employers
 (LinkedIn, profession.hu, HelloWork, Jobbsafari) are off until you turn them on, logged out only, paced,
 capped, stopped at the first sign of pushback and rested a day after a refusal. Every source has a recorded
@@ -129,8 +131,9 @@ are in code, not in the prompt ([architecture](architecture.md), the `cv enrich`
 
 *What stops it* ([#552](https://github.com/synesenom/the-other-door/issues/552), PR
 [#566](https://github.com/synesenom/the-other-door/pull/566)). The CV, templates and photo named in your
-settings must be files inside the profile folder, however the settings arrive. A CV file is read only up to a
-size (a DOCX 20 MB unpacked, a PDF 30 pages and 300,000 characters). A tool that takes a path refuses one
+settings must be files inside the profile folder, however the settings arrive. A DOCX or PDF CV is read only up to a
+size (each part of a DOCX 20 MB unpacked, a PDF 30 pages and 300,000 characters); a Markdown or text CV is
+read whole. A tool that takes a path refuses one
 outside the data folder and the checkout; in the desktop app every path comes from a dialog the app opens.
 
 ### Archives you import and Drive pulls
@@ -154,7 +157,8 @@ hide your data in a link, change your story bank, or run a command. *What stops 
   bank, and a link your CV and story bank do not write prints as plain text.
 - **The body is an allow-list.** A CV or letter holds only a small set of tags and links; no script, image or
   other code, or it is refused. The PDF is printed by a sealed headless Chromium (no JavaScript, only the
-  job's own folder served). On Linux as root, Chromium's own sandbox is off; the rest holds.
+  job's own folder served). On Linux, Chromium's own sandbox is off when it runs as root or when the system refuses it (Ubuntu 23.10
+  and later); the rest holds.
 - **Facts are checked, not blocked:** numbers, employers, skills and degrees your CV does not back are listed.
   It is another model call, not a guarantee.
 - **Scraper repair is gone** ([#553](https://github.com/synesenom/the-other-door/issues/553), PR
@@ -227,15 +231,15 @@ What you give up for them; the reasons are in the passages above.
 - The tailor sees only your CV, story bank and templates, so a letter cannot draw on other settings.
 - The salary estimate uses your years of experience, not what is special in your history. There is no
   skill-gap report.
-- A suspicious ad has text cut out and is scored twice.
-- Fetching: no private networks, no proxy for anything The other door fetches itself, nothing over 50 MB; reading your pages, at most 20
+- An ad whose first score names text aimed at the model has that text cut out and is scored twice.
+- Fetching: no private networks, no proxy for anything The other door fetches itself, nothing over 50 MB from a board or an employer; reading your pages, at most 20
   and no LinkedIn or Indeed.
 - A run scores at most 150 ads and asks about at most 30 employers; the rest wait for the next run.
 - A broken site waits for an app update; nothing repairs itself.
 - The phone has daily limits, no revising, no editing of your CV or profile, and goes through Cloudflare.
 - The phone needs a checked tunnel program for your kind of computer, and a copy of your own is never used;
   the first phone start after an update downloads it again.
-- Settings and the CV must live inside the profile folder, and an oversized CV file is refused.
+- Settings and the CV must live inside the profile folder, and an oversized DOCX or PDF CV is refused.
 - Some discovery sources stay off until you turn them on.
 
 ## Not yet done
@@ -248,7 +252,8 @@ What you give up for them; the reasons are in the passages above.
 update is not checked against a signature. It is checked against a fingerprint that sits in the same release,
 and anyone who can write to a release can change both. So whoever could alter a release could ship code to
 installed Windows apps and Linux AppImages, which update by themselves at their next daily check. The builds
-are also not signed by Apple or Microsoft. Meanwhile, a macOS build and the `.deb` do not update by
+are signed by Apple or Microsoft only when a release is built with the project's signing keys. A macOS build
+updates itself only when it is signed and notarized; an unsigned macOS build and the `.deb` do not update by
 themselves: Settings shows "Version X is available" with a link. Install only from this project's releases page.
 
 Also open: the set-up's suggested titles, search terms, name and city reach a chat unmarked (see
@@ -264,7 +269,7 @@ Also open: the set-up's suggested titles, search terms, name and city reach a ch
   still be misled into a wrong score or a wrong sentence in a letter. Read what you send.
 - **Proxies.** Everything The other door fetches itself (job sites, employer pages, Wikidata, the pages you
   give it, an ad's link) ignores the system's proxy, so behind a required proxy none of it works. Google
-  Drive, the program downloads and Claude itself follow it.
+  Drive, the program downloads, the phone's check that its tunnel is up, and Claude itself follow it.
 - **Archive size.** An archive you import has no size limit.
 - **Old installs.** The planned signature check cannot protect an app of version 0.4.0 or older: it installs
   the next release unchecked once. Installers you download by hand are not signed or checksummed.
