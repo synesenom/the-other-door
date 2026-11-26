@@ -3,13 +3,7 @@
 Your files stay on your computer, inside this checkout, unless you connect Google Drive
 (see below). Both folders below are gitignored, so nothing personal is ever committed.
 
-Two things do leave your computer:
-
-- **To Anthropic, through your own Claude plan:** each posting with your CV when it is scored, and
-  your CV, story bank and the posting when an application is prepared or revised. The `claude`
-  command line tool sends them, under your Claude account and Anthropic's terms.
-- **To your Google Drive, if you connect it:** one archive of `profile/` and `jobs/` (see below).
-  How *The other door* uses your Drive is on its [privacy page](https://enysmones.com/the-other-door/#privacy).
+What leaves your computer, and to whom: [Security and privacy](security.md#what-leaves-your-computer).
 
 | Folder | What's in it |
 |--------|--------------|
