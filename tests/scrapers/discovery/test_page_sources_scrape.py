@@ -178,7 +178,7 @@ def src(request):
 @pytest.fixture
 def session(src, monkeypatch):
     s = _Session()
-    monkeypatch.setattr(paged_discovery.requests, "Session", lambda: s)
+    monkeypatch.setattr(paged_discovery.http_client, "public_session", lambda: s)
     drain_errors()
     drain_pushback(src.name)
     return s

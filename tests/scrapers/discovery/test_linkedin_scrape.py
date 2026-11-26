@@ -295,12 +295,12 @@ def test_without_keywords_no_browser_is_opened(session):
 
 
 def test_a_fresh_http_session_is_used_and_closed_and_no_browser_is_needed(session, monkeypatch):
-    import requests
 
     seen = {}
 
     class Http:
-        headers = {}
+        def __init__(self, headers=None, **_kw):
+            self.headers = headers or {"User-Agent": http_client.USER_AGENT}
 
         def get(self, url, timeout=None):
             seen["ua"] = self.headers["User-Agent"]
@@ -309,8 +309,8 @@ def test_a_fresh_http_session_is_used_and_closed_and_no_browser_is_needed(sessio
         def close(self):
             seen["closed"] = True
 
-    monkeypatch.undo()  # the autouse fakes: use the real `_open_session` on a stub `requests.Session`
-    monkeypatch.setattr(requests, "Session", Http)
+    monkeypatch.undo()  # the autouse fakes: use the real `_open_session` on a stub public session
+    monkeypatch.setattr(linkedin.sdk, "public_session", Http)
     http = linkedin._open_session()
     assert http.page.goto("https://x/y").text() == _EMPTY
     http.close()

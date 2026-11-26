@@ -99,7 +99,7 @@ from door.scrapers import (
 )
 from door.scrapers._parallel import host_of, map_by_group, workers
 from door.scrapers.paged_discovery import discover as paged_discovery
-from door.scrapers.http_client import FEED_DELAY, USER_AGENT, PoliteSession, RobotsBlocked
+from door.scrapers.http_client import FEED_DELAY, USER_AGENT, PoliteSession, RobotsBlocked, public_session
 
 # Documentation for re-exports that carry no docstring of their own.
 _DOCS: dict[str, str] = {
@@ -113,7 +113,7 @@ _DOCS: dict[str, str] = {
 }
 
 __all__ = [
-    "JobPosting", "make_job_id", "normalize_platform_id", "tenant_platform_id", "PoliteSession", "USER_AGENT", "RobotsBlocked", "FEED_DELAY", "PROBE_TIMEOUT_S",
+    "JobPosting", "make_job_id", "normalize_platform_id", "tenant_platform_id", "PoliteSession", "public_session", "USER_AGENT", "RobotsBlocked", "FEED_DELAY", "PROBE_TIMEOUT_S",
     "report", "record_error", "record_entry_error", "record_pushback", "record_answered", "record_non_local", "tracked", "log_keyword_results",
     "wall_page", "Refused", "is_challenge", "get_page", "refusal", "stop_for_run",
     "ProbeResult", "run_probe", "probe_failure", "probe_session", "scrape_feeds", "list_at", "strip_html", "parse_iso_date", "job_postings",
