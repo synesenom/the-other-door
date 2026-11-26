@@ -24,7 +24,7 @@ class World:
     """Fake processes: `spawn` records argv; a cloudflared writes its address to its log."""
 
     def __init__(self, tmp_path, *, tunnel_url="https://calm-river.trycloudflare.com", registers=True):
-        self.spawned, self.killed, self.ran = [], [], []
+        self.spawned, self.killed = [], []
         self.alive = set()
         self.next_pid = 100
         self.tunnel_url = tunnel_url
@@ -46,21 +46,11 @@ class World:
         self.killed.append(pid)
         self.alive.discard(pid)
 
-    def run(self, argv, **kw):
-        self.ran.append(argv)
-
-        class R:
-            returncode = 0
-            stdout = ""
-            stderr = ""
-
-        r = R()
-        return r
 
 
 def deps(world, tmp_path, **extra):
     return {
-        "spawn": world.spawn, "is_alive": world.is_alive, "kill": world.kill, "run": world.run,
+        "spawn": world.spawn, "is_alive": world.is_alive, "kill": world.kill,
         "answers": lambda url: True, "published": lambda host: True, "sleep": lambda s: None, "platform": "linux",
         "find_cloudflared": lambda: "/bin/cloudflared",
         "web_dir": tmp_path / "web", **extra,

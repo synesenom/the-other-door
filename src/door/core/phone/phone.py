@@ -14,7 +14,6 @@ import os
 import re
 import shutil
 import socket
-import subprocess
 import sys
 import tarfile
 import threading
@@ -80,7 +79,7 @@ def default_web_dir() -> Path:
 
 def _defaults() -> dict:
     return {
-        "spawn": process.spawn_detached, "is_alive": process.is_alive, "kill": process.kill_tree, "run": subprocess.run, "answers": _answers, "published": _published,
+        "spawn": process.spawn_detached, "is_alive": process.is_alive, "kill": process.kill_tree, "answers": _answers, "published": _published,
         "sleep": time.sleep, "platform": sys.platform, "find_cloudflared": find_cloudflared,
         "web_dir": default_web_dir(),
     }
@@ -236,11 +235,12 @@ def _start(home: Path, **deps) -> dict:
         _stop_pids(run, d["kill"])
         return {"error": f"the tunnel could not connect to Cloudflare; see {log}"}
     # A phone that looks the new name up before public DNS has it gets "not found", and keeps that answer.
-    host = address().removeprefix("https://")
+    url = address()
+    host = url.removeprefix("https://")
     if not _wait(lambda: d["published"](host), tries=120, sleep=d["sleep"]):
         _stop_pids(run, d["kill"])
         return {"error": "the tunnel's address did not become reachable; try again"}
-    run["address"] = address()
+    run["address"] = url
     _write_run(home, run)
     return status(home, **deps)
 

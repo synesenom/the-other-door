@@ -33,7 +33,6 @@ export const LONG_TOOLS = new Set(['find_jobs', 'prepare'])
 export const ON_THE_MACHINE = 'Do this on the computer running The other door.'
 const UNREACHABLE = "Can't reach The other door. Is the computer on? If it restarted, set your phone up again on it and scan the new code."
 /** What a tunnel answers with no computer behind it (502-504, Cloudflare's 52x and 530). */
-/** A tunnel's own answer when nothing answers behind it (the computer off, or The other door stopped). */
 export const NOTHING_BEHIND = (status: number) => (status >= 502 && status <= 504) || (status >= 520 && status <= 530)
 const UNPAIRED = 'This phone is no longer paired with The other door. Pair it again with a new code.'
 
