@@ -5,6 +5,7 @@ import type { PrepareResult, Posting as PostingData, SetStatusResult } from '../
 import { useNarrow } from '../useNarrow'
 import { SkillColumn } from './SkillColumn'
 import { Dialog } from './Dialog'
+import { AdFindings } from './AdFindings'
 import { Hint } from './Hint'
 import { SalaryLine } from './SalaryLine'
 import { Spinner } from './Spinner'
@@ -191,6 +192,7 @@ export function Posting({ jobId, onChanged, onOpenMaterials }: Props) {
           {posting.score_reason && <Hint label="Why this score">{posting.score_reason}</Hint>}
         </div>
       )}
+      <AdFindings integrity={posting.integrity} />
       {running && (
         <div className="preparing">
           <Spinner message={prepareText(running.message)} />

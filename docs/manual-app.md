@@ -278,7 +278,7 @@ bar at the bottom.
 
 Choosing a row shows the posting: title (and its English translation), company and place,
 the score (the reason for it behind the info icon beside it: hover or focus it), the skills that fit and the gaps, the ad's language and
-what it asks of you, the salary to expect once the job is prepared (below), and the ad itself, with its headings and lists set out once the job has reached your "Match fit" setting or you are applying for it (a plain text flow until then, and whenever Claude could not set it out; the next run tries again). The buttons:
+what it asks of you, the salary to expect once the job is prepared (below), and the ad itself, with its headings and lists set out once the job has reached your "Match fit" setting or you are applying for it (a plain text flow until then, and whenever Claude could not set it out; the next run tries again). When part of an ad was hidden from readers or written for an AI, a line with the warning mark under the score says so and that it was left out of the score, and "See what was found" shows the text; a link that names one site and opens another has its own line. The buttons:
 
 - **Prepare application** (the one dark button while nothing is prepared and the job is not
   yet applied) tailors a CV and a cover letter for this posting (below).
