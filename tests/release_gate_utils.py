@@ -116,7 +116,7 @@ def open_release(sample: Path, home: Path, monkeypatch, *, profile_steps=None, j
     """
     for name in ("profile", "jobs"):
         shutil.copytree(sample / name, home / name)
-    for name, relative in (("PROFILE_DIR", "profile"), ("JOBS_DIR", "jobs"), ("BACKUPS_DIR", "backups"), ("UPSKILL_DIR", "upskill")):
+    for name, relative in (("PROFILE_DIR", "profile"), ("JOBS_DIR", "jobs"), ("BACKUPS_DIR", "backups")):
         monkeypatch.setattr(workspace, name, home / relative)
     monkeypatch.setattr(workspace, "HOME", home)
     monkeypatch.setattr(workspace, "MCP_CONFIG", home / ".mcp.json")

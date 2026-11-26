@@ -26,7 +26,6 @@ NEW_SINCE_RELEASE: set[str] = {"JobPosting.formatted"}
 
 # Files the inventory names that a release's own sample does not hold, and why (never for lack of effort).
 ABSENT_BY_DESIGN = {
-    "upskill/**": "not in profile/ or jobs/, the two folders a sample holds",
     "jobs/output/*/*.tex": "a job prepared with LaTeX by 0.2.0 keeps it, unread; no release since writes one (#182)",
     "jobs/output/*/*.tex.bak": "the same: only 0.2.0 and earlier wrote it (#182)",
 }

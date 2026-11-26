@@ -11,7 +11,7 @@ What leaves your computer, and to whom: [Security and privacy](security.md#what-
 | `jobs/` | scraped and scored postings (`postings/<date>/<site>/`; day folders an older version left directly under `jobs/` are moved there the next time *The other door* reads or writes them), the history and application ledgers, run records (a block per `find` step), the candidates queue (`candidates.json`: employers `follow` has yet to look at), the discovery state, one file per source (`discovery/linkedin.json`, `discovery/profession.json`), the `market` reports (`market/report-<date>.md`) the salary estimates (`salary.json`: `{job_id: {low, high, currency, period, position, sources, as_of}}`, from `jobs salary` or `jobs prepare`; delete an entry to ask again) and its skill-name groups (`skill_aliases.json`: `{"variant": "Canonical"}`, `null` for a name that is not a skill; edit it freely, your edits are kept), and the generated CVs and cover letters (`jobs/output/<job_id>/`); every posting carries an `integrity` verdict (see [how it works](how-it-works.md#the-ad-is-untrusted-input)) |
 
 By default both folders sit in the checkout. Set the environment variable `DOOR_HOME` to a
-folder and *The other door* keeps `profile/`, `jobs/`, `backups/`, `upskill/`, `logs/` and a generated `.mcp.json`
+folder and *The other door* keeps `profile/`, `jobs/`, `backups/`, `logs/` and a generated `.mcp.json`
 there instead (see [configuration](configuration.md#where-your-data-lives)); `./door doctor`
 prints the folder in use.
 

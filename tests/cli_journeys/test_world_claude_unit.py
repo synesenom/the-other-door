@@ -1,4 +1,4 @@
-"""The test world's stand-in claude answers `skill_gaps` the way the real one does (#33): in an envelope."""
+"""The test world's stand-in claude answers the way the real one does (#33): in an envelope, as its schemas."""
 
 import json
 import os
@@ -7,24 +7,10 @@ import sys
 
 import pytest
 
-from door.commands import gaps
 from door.core import claude_cli, cv_read, usage
 from paths import REPO_ROOT
 
 CLAUDE = REPO_ROOT / "app" / "test" / "world" / "claude.py"
-REPORT = "## Plan\n\n### 1. Bayesian models (Priority: High)\n- r\n\n### 2. Grid basics\n- r\n\n## Skipped gaps\n- x\n"
-
-
-def test_the_gaps_answer_is_an_envelope_the_ask_reader_and_the_plan_counter_accept(tmp_path):
-    (tmp_path / "world.json").write_text(json.dumps({"answers": {"gaps": REPORT}}))
-    argv = [sys.executable, str(CLAUDE), str(tmp_path), "-p", "--model", "haiku", "--system-prompt", claude_cli.prompt("skill-gaps"),
-            *claude_cli.STREAM_ARGS, "--tools", "", "--no-session-persistence"]
-    out = subprocess.run(argv, input="the CV and the targets", capture_output=True, text=True)
-    assert out.returncode == 0, out.stderr
-    text = claude_cli.envelope_result(out.stdout)
-    assert isinstance(text, str) and text.strip() == REPORT.strip()
-    assert len(gaps._PLAN_ITEM_RE.findall(text)) == 2
-
 
 # kind: (system prompt, stdin, the price COST_USD gives it)
 _PRICED = {
@@ -34,7 +20,6 @@ _PRICED = {
     "market": ("You group skill names.", json.dumps({"names": ["Python"]}), 0.01),
     "revise": (claude_cli.prompt("reviser"), "Document: cover letter\nCurrent body:\nOne.\n\nTwo.\n\nThree.", 0.05),
     "facts": ("You check a tailored CV and cover letter against the candidate's own sources.", "SOURCE CV:\n<<<\nx\n>>>\n", 0.01),
-    "gaps": (claude_cli.prompt("skill-gaps"), "the CV and the targets", 0.03),
     "cv_read": (claude_cli.prompt("cv-reader"), "CV:\n<<<\n# A\n\n## Skills\n\nPython\n>>>\n", 0.01),
 }
 
@@ -43,7 +28,7 @@ _PRICED = {
 def test_every_answer_carries_its_price_the_usage_log_weighs(tmp_path, kind):
     """#67: each answer is priced (`total_cost_usd`), so `status_summary`'s `cost` reads in the world."""
     system, stdin, price = _PRICED[kind]
-    (tmp_path / "world.json").write_text(json.dumps({"answers": {"gaps": REPORT}}))
+    (tmp_path / "world.json").write_text(json.dumps({"answers": {}}))
     argv = [sys.executable, str(CLAUDE), str(tmp_path), "-p", "--model", "haiku", "--system-prompt", system,
             *claude_cli.STREAM_ARGS, "--tools", "", "--no-session-persistence"]
     out = subprocess.run(argv, input=stdin, capture_output=True, text=True)

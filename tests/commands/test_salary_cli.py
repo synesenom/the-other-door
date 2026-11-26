@@ -50,6 +50,18 @@ def test_asks_haiku_with_web_search_and_caches(env):
     assert cache["jobindex.1"]["high"] == 70000 and "as_of" in cache["jobindex.1"]
 
 
+def test_the_web_search_call_gets_the_years_and_no_line_of_the_cv(env):
+    """The call has WebSearch: a hidden instruction in an ad must find nothing of the CV to put into a search."""
+    jobs, calls, profile = env
+    (profile / "cv.md").write_text("# Jane Doe\njane.doe@example.com\n\n## Work Experience\n\n"
+                                   "### Controller | Acme — 2016 - present\n- Canary-CV-9f3a: led the secret merger.\n")
+    salary_cmd._salary_core("trustpilot", jobs_dir=jobs, profile_dir=profile)
+    text = calls[0]["text"]
+    for private in ("Canary-CV-9f3a", "secret merger", "Jane", "jane.doe@example.com", "Acme"):
+        assert private not in text
+    assert "years of experience: " in text and "Senior Controller" in text
+
+
 def test_second_look_makes_no_call_and_refresh_does(env):
     jobs, calls, profile = env
     salary_cmd._salary_core("trustpilot", jobs_dir=jobs, profile_dir=profile)

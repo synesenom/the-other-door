@@ -178,7 +178,7 @@ def test_ask_reads_the_prompt_model_and_tools_from_the_agent_file_unless_told_ot
     assert argv[argv.index("--model") + 1] == "haiku" and argv[argv.index("--tools") + 1] == ""
 
 
-@pytest.mark.parametrize("agent", ["careers-finder", "salary", "skill-gaps"])
+@pytest.mark.parametrize("agent", ["careers-finder", "salary"])
 def test_a_call_with_web_search_has_only_that_built_in_tool(monkeypatch, agent):
     calls = []
     monkeypatch.setattr(claude_cli.subprocess, "run", _fake_run(calls, _stream(_result(result="x"))))

@@ -663,7 +663,6 @@ def test_merge_companies_proposes_merges_and_reports_errors(tmp_path, monkeypatc
     (lambda: server.suggest_titles(["Quant"]), "warning"),     # no CV yet
     (lambda: server.infer_basics("# CV"), "warning"),          # the model call failed
     (lambda: server.enrich(), "error"),                        # no profile
-    (lambda: server.skill_gaps(), "error"),
 ])
 def test_the_profile_tools_answer_with_their_cores_result_or_an_error(tmp_path, monkeypatch, call, key):
     from door.core import claude_cli, cv_read

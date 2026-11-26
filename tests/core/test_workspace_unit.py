@@ -94,8 +94,8 @@ def reloaded(monkeypatch):
 def test_door_home_moves_the_data_dirs_only(reloaded, tmp_path, door_home):
     ws = reloaded(tmp_path if door_home == "tmp" else door_home)
     assert ws.HOME == (tmp_path.resolve() if door_home == "tmp" else ws.REPO_ROOT)
-    assert (ws.PROFILE_DIR, ws.JOBS_DIR, ws.BACKUPS_DIR, ws.UPSKILL_DIR, ws.MCP_CONFIG) == tuple(
-        ws.HOME / name for name in ("profile", "jobs", "backups", "upskill", ".mcp.json"))
+    assert (ws.PROFILE_DIR, ws.JOBS_DIR, ws.BACKUPS_DIR, ws.MCP_CONFIG) == tuple(
+        ws.HOME / name for name in ("profile", "jobs", "backups", ".mcp.json"))
     assert ws.PROFILE_EXAMPLE_DIR == ws.REPO_ROOT / "profile.example"
 
 

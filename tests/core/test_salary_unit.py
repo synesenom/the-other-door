@@ -81,9 +81,9 @@ def test_a_dated_line_before_the_first_heading_or_under_a_skills_section_is_no_r
     assert _years(cv, sections=[{"heading": "Experience", "kind": "experience"}, {"heading": "Toolbox", "kind": "skills"}]) == 2
 
 
-def _input(cv=CV, profile=None, **replace):
+def _input(years=11, profile=None):
     profile = profile or {"name": "Jane Doe", "email": "jane@example.com", "location": "Copenhagen"}
-    return salary.build_input(POSTING, cv, profile, cv_read_utils.reading(cv, **replace), now_year=2026)
+    return salary.build_input(POSTING, profile, years)
 
 
 def test_input_has_the_ad_the_country_and_the_counted_years():
@@ -93,24 +93,11 @@ def test_input_has_the_ad_the_country_and_the_counted_years():
     assert "DKK 60,000 per month" in text
     assert "11 years" in text
     assert "Cake on Fridays" not in text
+    assert "Jane" not in text and "jane@example.com" not in text
 
 
-def test_input_leaves_out_name_email_and_phone():
-    text = _input(profile={"name": "Jane Doe", "email": "jane.doe@example.com", "location": "Copenhagen"})
-    for private in ("Jane", "Doe", "jane.doe@example.com", "12 34 56 78"):
-        assert private not in text
-    assert "Senior Financial Controller" in text
-
-
-def test_the_cv_is_sent_from_its_first_section_so_the_header_never_goes():
-    text = _input("# Ada L\n\n> Engineer at Zed | ada@example.org\n\n## Experience\n\n### Dev — 2020 - 2022\n- Built it\n")
-    assert "Built it" in text and "Engineer at Zed" not in text and "# Ada" not in text
-
-
-def test_a_contact_value_the_reading_found_goes_even_when_the_profile_has_none():
-    cv = "# Ada\n\n**Tlf:** 99 88 77 66 | **Web:** ada-site.example\n\n## Experience\n\n### Dev at ada-site.example — 2020 - 2022\n"
-    text = _input(cv, profile={}, contacts=[{"kind": "web", "label": "Web", "value": "ada-site.example"}], name="Ada")
-    assert "ada-site.example" not in text and "Dev at" in text
+def test_input_says_when_the_years_cannot_be_counted():
+    assert "not countable" in _input(None)
 
 
 GOOD = {
@@ -153,20 +140,3 @@ def test_parse_of_null_and_junk_is_none():
 def test_parse_keeps_only_valid_sources():
     sources = [{"title": "bad", "url": "ftp://x"}, {"title": "ok", "url": "https://ok.example/p"}]
     assert salary.parse({**GOOD, "sources": sources})["sources"] == [{"title": "ok", "url": "https://ok.example/p"}]
-
-
-def test_sections_that_are_not_about_the_work_never_go_out_references_and_contacts_included():
-    cv = ("# Ada\n\n## Summary\n\nCall me.\n\n## Experience\n\n### Dev — 2020 - 2022\n- Built it\n\n"
-          "## References\n\nBo Berg, 00 00 00 99\n\n## Contact\n\nada@example.org\n\n## Skills\n\nPython\n")
-    kinds = ["summary", "experience", "other", "other", "skills"]
-    sections = [{"heading": h, "kind": k} for h, k in zip(["Summary", "Experience", "References", "Contact", "Skills"], kinds)]
-    text = _input(cv, profile={}, sections=sections)
-    assert "Built it" in text and "Python" in text
-    for gone in ("Bo Berg", "ada@example.org", "Call me"):
-        assert gone not in text
-
-
-def test_a_contact_value_is_removed_however_the_cv_spaces_it():
-    cv = "# Ada\n\n## Experience\n\n### Dev — 2020 - 2022\n- Reach me on +45  00 00\n  00 00 any time\n"
-    text = _input(cv, profile={}, contacts=[{"kind": "phone", "label": None, "value": "+45 00 00 00 00"}])
-    assert "00 00" not in text and "any time" in text
