@@ -51,12 +51,12 @@ What goes out, and to whom:
   email. Other short calls read your CV when you set up, propose search terms, check facts and set out ads.
   Two calls search the web and send no CV: the salary estimate sends the ad's own lines and your years of
   experience ([#583](https://github.com/synesenom/the-other-door/pull/583)), and the careers-page finder sends
-  an employer's name and your location. Anthropic reads what a call sends under your account and its terms.
+  an employer's name, the title of one of its jobs and your location. Anthropic reads what a call sends under your account and its terms.
   Your other MCP servers are not loaded into these calls.
 - **Google Drive**, only if you connect it: one archive of `profile/` and `jobs/` in its own folder. It is not
   encrypted, so it is as private as your Google account. The app asks for the `drive.file` permission only, so
   it sees nothing else in your Drive. "Disconnect" in Settings removes the connection.
-- **Wikidata:** employer names, with your profile's country code and language, to find an employer's website.
+- **Wikidata:** employer names, with your country's code and its main language, to find an employer's website.
 - **Cloudflare**, only if you set up the phone: its servers carry the phone's traffic ([the phone](#the-phone)).
 - **GitHub and Google:** downloads and update checks. The check sends the app's version and nothing else.
 
@@ -96,7 +96,7 @@ link to your own computer or network, be huge, or flood a run to use up your pla
   are kept only if the ad contains those words.
 - **Printing is safe** ([#549](https://github.com/synesenom/the-other-door/issues/549)): the command line
   prints ad, page and model text without terminal tricks or markup, in postings, imports and reports and the
-  employer list. `companies merge` does not yet ([#589](https://github.com/synesenom/the-other-door/issues/589)).
+  employer list. `companies merge` and the `market` report do not yet ([#589](https://github.com/synesenom/the-other-door/issues/589)).
 
 ### Employer pages and discovery sources
 
@@ -208,9 +208,9 @@ and prepare it. The daily limits, the tailor's walls and the allow-list bound it
 stopped yet: see [not yet done](#not-yet-done).
 
 Two programs are downloaded and checked against a fingerprint fixed in the code before use: the Chromium that
-prints PDFs, and `cloudflared` for the phone; the installed app brings its own Chromium. A `cloudflared` found
-on your `PATH` or already in `~/.local/bin` is used without that check; only the app's bundled one and the
-one The other door downloads are checked ([#588](https://github.com/synesenom/the-other-door/issues/588)).
+prints PDFs, and `cloudflared` for the phone; the installed app brings its own Chromium. Only the download itself is
+checked: once a `cloudflared` is in `~/.local/bin` or on your `PATH`, later starts use it without the check
+([#588](https://github.com/synesenom/the-other-door/issues/588)).
 `doctor --fix` installs Claude's own `claude` tool with Claude's installer, which is not checked either.
 
 ## What these protections cost you
@@ -223,7 +223,7 @@ What you give up for them; the reasons are in the passages above.
 - The salary estimate uses your years of experience, not what is special in your history. There is no
   skill-gap report.
 - A suspicious ad has text cut out and is scored twice.
-- Fetching: no private networks, no proxy for job sites, nothing over 50 MB; reading your pages, at most 20
+- Fetching: no private networks, no proxy for anything The other door fetches itself, nothing over 50 MB; reading your pages, at most 20
   and no LinkedIn or Indeed.
 - A run scores at most 150 ads and asks about at most 30 employers; the rest wait for the next run.
 - A broken site waits for an app update; nothing repairs itself.
@@ -257,8 +257,9 @@ the safe printing above ([#589](https://github.com/synesenom/the-other-door/issu
   seeing the phone's traffic is not acceptable, do not set up the phone.
 - **A job ad that tricks a model.** The protections above limit what a hostile ad can do, but a model can
   still be misled into a wrong score or a wrong sentence in a letter. Read what you send.
-- **Proxies for the rest.** Job-site fetches ignore the system's proxy; Google Drive and the program
-  downloads follow it. There is no proxy support for the sites.
+- **Proxies.** Everything The other door fetches itself (job sites, employer pages, Wikidata, the pages you
+  give it, an ad's link) ignores the system's proxy, so behind a required proxy none of it works. Google
+  Drive, the program downloads and Claude itself follow it.
 - **Archive size.** An archive you import has no size limit.
 - **Old installs.** The planned signature check cannot protect an app of version 0.4.0 or older: it installs
   the next release unchecked once. Installers you download by hand are not signed or checksummed.
