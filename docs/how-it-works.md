@@ -28,7 +28,6 @@ tracks status, but does not fill or submit live application forms. See [Status](
 
 - [The pipeline step by step](#the-pipeline-step-by-step)
   - [The five steps](#the-five-steps)
-- [Your CV's style](#your-cvs-style)
 - [The ad is untrusted input](#the-ad-is-untrusted-input)
 - [Plan usage](#plan-usage)
   - [How much of the plan is left](#how-much-of-the-plan-is-left)
@@ -90,7 +89,7 @@ tracks status, but does not fill or submit live application forms. See [Status](
    or last relevant becomes **dormant** and is not read (an employer you added by hand is never
    retired); the step's summary counts them ("3 retired"). Career sites of global employers are read
    for your country only: jobs that name another country's place are dropped before any page is fetched and
-   counted as `non_local`; the feeds of followed employers drop a posting whose stated location is in another country too ([job-sites.md](job-sites.md#sites-without-a-sitemap-or-markup)).
+   counted as `non_local`; the feeds of followed employers drop a posting whose stated location is in another country too ([job-sites.md](job-sites.md#career-sites)).
    A feed lists every job the employer has, so only postings whose title is on topic for your
    keywords are kept, by the same test (`topic_terms` or a whole keyword; without them, any content
    word of `search_keywords` or `role_targets`, synonyms included). The others are remembered in
@@ -257,7 +256,7 @@ of racing it. The MCP tools return the same message as `{"error": ...}`. While i
 the lock holder keeps its latest progress event in `jobs/.progress.json` (removed when the lock
 is released), so `jobs summary` can say how far it is.
 
-When this computer is connected to Google Drive (`data connect`), the outermost lock block also pulls first and pushes after: see [Your data](data.md#keeping-computers-in-step-with-google-drive). It never fails the command, except that a change on both sides is refused.
+When this computer is connected to Google Drive (`data connect`), the outermost lock block also pulls first and pushes after: see [the `data` commands](manual-cli.md#moving-to-another-computer-data). It never fails the command, except that a change on both sides is refused.
 
 ## Status
 
