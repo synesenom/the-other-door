@@ -598,8 +598,10 @@ def _first_look(answers: dict) -> None:
 
 def _pick_titles(answers: dict) -> None:
     """The titles with their reasons, plus the user's own; a change proposes the search terms again."""
+    from door.commands import _common as common
+
     before = set(answers.get("role_targets", []))
-    choices = [(f"{t['title']}: {t['reason']}", t["title"]) for t in answers.get("titles", [])]
+    choices = [(common.plain(f"{t['title']}: {t['reason']}"), t["title"]) for t in answers.get("titles", [])]
     picked = _prompts.checkbox("titles_pick", "Job titles to look for", choices=choices, default=list(answers.get("role_targets", [])))
     added = _split(_prompts.text("titles_add", "Add your own (comma-separated, optional)", default=""))
     chosen = list(dict.fromkeys([*picked, *added]))

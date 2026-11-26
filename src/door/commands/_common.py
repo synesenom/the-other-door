@@ -147,7 +147,7 @@ def _job_ref_cli(ref: str | None, jobs_dir: Path | None = None) -> str | None:
         if not _stdout_is_tty():
             raise
         return _prompts.select("job", f"Several jobs match {exc.ref!r}. Which one", choices=[
-            (f"{c['title']} — {c['company']}  [{c['status']}]", c["job_id"]) for c in exc.candidates[:30]
+            (plain(f"{c['title']} — {c['company']}  [{c['status']}]"), c["job_id"]) for c in exc.candidates[:30]
         ])
 
 
@@ -218,7 +218,7 @@ def _pick_job() -> str | None:
 
     def label(posting: dict) -> str:
         current = app_tracker.get_status(posting["id"]) or "unapplied"
-        return f"{posting.get('title', '')} — {posting.get('company', '')}  [{current}]"
+        return plain(f"{posting.get('title', '')} — {posting.get('company', '')}  [{current}]")
 
     return _prompts.select("job", "Which posting", choices=[(label(p), p["id"]) for p in postings])
 
@@ -482,6 +482,16 @@ def plain(text) -> str:
     """Text that came from an ad, a page or the model, safe to print: control characters (a terminal escape
     that retitles the window, a bell) dropped, newlines and tabs kept."""
     return _CONTROL_RE.sub("", str(text if text is not None else ""))
+
+
+def plain_event(event):
+    """A progress event with the text it carries (a title, an employer, a feed's error) made safe to print."""
+    import dataclasses
+
+    return dataclasses.replace(event, **{
+        f.name: plain(getattr(event, f.name)) for f in dataclasses.fields(event)
+        if isinstance(getattr(event, f.name), str)
+    })
 
 
 def literal(text):

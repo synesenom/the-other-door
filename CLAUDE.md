@@ -385,6 +385,7 @@ A rule that only lives in prose gets forgotten; this table lists the ones someth
 | Writes are atomic | `tests/core/test_atomic_write_guard_unit.py` | before #478 |
 | Subprocess stdin and encoding are set | `tests/core/test_subprocess_stdin_guard_unit.py`, `test_subprocess_encoding_guard_unit.py` | before #478 |
 | No real network, browser, robots or forbidden hosts in tests or code | `tests/core/test_network_guard_unit.py`, `test_no_browser_guard_unit.py`, `test_robots_guard_unit.py`, `test_no_forbidden_hosts_unit.py` | before #478 |
+| The command line prints outside text (ads, pages, feeds, model answers) through `common.plain` | `tests/commands/test_terminal_text_cli.py` | #589 |
 | A scraper's request reaches only public addresses (no plain `requests.Session()` outside `http_client.py`) | `tests/scrapers/test_public_session_guard_unit.py` | this change |
 | A CV or letter body stays inside the HTML allow-list | `tests/render/test_html_guard_unit.py` | before #478 |
 | A quiet zero-hit board is told from a broken one | `tests/scrapers/test_zero_hit_guard_unit.py` | before #478 |

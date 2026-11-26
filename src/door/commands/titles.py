@@ -121,4 +121,4 @@ def titles_command(titles: tuple[str, ...], hint: str | None, languages: str | N
     for item in result["titles"]:
         click.echo(common.plain(f"{'*' if item['recommended'] else ' '} {item['title']}: {item['reason']}"))
     if result.get("warning"):
-        click.echo(f"Warning: {result['warning']}", err=True)
+        click.echo(common.plain(f"Warning: {result['warning']}"), err=True)
