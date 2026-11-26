@@ -18,9 +18,6 @@ jobs/
 !src/door/core/jobs/
 !tests/core/jobs/
 
-# Upskill reports (top-level output directory only)
-/upskill/
-
 # The problem log of a checkout used as the data folder (core/problem_log.py)
 /logs/
 

@@ -41,7 +41,7 @@ def _list_core(
     ``scraped_at``; ``null`` disables) are dropped.
 
     Args:
-        limit: Only the top N (`cv gaps --top N`).
+        limit: Only the top N.
         new_only: Only postings first seen (``scraped_at``) after the last
             review (`jobs/last_review.json`, stamped by `reviewed`).
         status: Only postings with this ledger status (``unapplied`` includes the

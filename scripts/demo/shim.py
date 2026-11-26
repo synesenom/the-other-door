@@ -192,7 +192,6 @@ def install(sandbox: Path) -> None:
     workspace.PROFILE_DIR = sandbox / "profile"
     workspace.JOBS_DIR = sandbox / "jobs"
     workspace.BACKUPS_DIR = sandbox / "backups"
-    workspace.UPSKILL_DIR = sandbox / "upskill"
     # Never your Google Drive: the sync would treat the sandbox as the workspace and push it
     # over your archive (or pull yours in). A config dir of its own is a computer never connected.
     workspace.CONFIG_BASE = sandbox / "config"

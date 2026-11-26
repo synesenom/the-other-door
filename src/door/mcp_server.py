@@ -76,7 +76,6 @@ from door.commands import query as query_cmd
 from door.commands import report as report_cmd
 from door.commands import cv as cv_cmd
 from door.commands import enrich as enrich_cmd
-from door.commands import gaps as gaps_cmd
 from door.commands import salary as salary_cmd
 from door.commands import keywords as keywords_cmd
 from door.commands import preview as preview_cmd
@@ -240,7 +239,6 @@ CLI_COMMAND_TOOLS = {
     "jobs salary": ("salary_estimate",),
     "init": ("init_profile", "draft_cv", "infer_basics", "keywords", "show_profile"),  # the wizard's reading step
     "cv enrich": ("enrich",),
-    "cv gaps": ("skill_gaps",),
     "cv titles": ("suggest_titles",),
     "cv stories list": ("list_stories",),
     "cv stories add": ("save_story",),
@@ -282,14 +280,14 @@ CLI_ONLY_COMMANDS = ("serve start", "serve pair", "serve devices", "serve unpair
 
 # Every tool, once: the ones that only read (what `ask` may hand its model, `commands/ask.ASK_TOOLS`)
 # and the ones that can write profile/, jobs/ or elsewhere, or act on the computer (doctor saves drift
-# probes; keywords, market and skill_gaps can save; show opens the PDF viewer and renders page images). A new tool goes in one of the two; a test fails until it does.
+# probes; keywords and market can save; show opens the PDF viewer and renders page images). A new tool goes in one of the two; a test fails until it does.
 READ_ONLY_TOOLS = frozenset({
     "status_summary", "list_matches", "show_profile", "query_jobs", "list_companies", "why_company", "ask", "job_result", "phone_status", "suggest_titles", "infer_basics", "preview_matches",
     "list_stories", "draft_stories",
 })
 WRITING_TOOLS = frozenset({
     "find_jobs", "cancel_job", "phone_start", "phone_stop", "pair_phone", "unpair_phone", "set_status", "prepare", "import_posting", "revise", "compile", "check_facts", "mark_reviewed", "mark_seen", "init_profile",
-    "keywords", "save_cv", "save_photo", "remove_photo", "draft_cv", "enrich", "skill_gaps", "market", "salary_estimate", "doctor", "setup", "add_company",
+    "keywords", "save_cv", "save_photo", "remove_photo", "draft_cv", "enrich", "market", "salary_estimate", "doctor", "setup", "add_company",
     "remove_company", "merge_companies", "save_story", "remove_story", "export_data", "import_data", "report_problem", "connect_drive", "sync_data", "disconnect_drive",
     "cv_style_sample",  # prints under HOME/.style/preview/
     "show",  # opens the PDF viewer with `open`, and renders missing page images under jobs/output/
@@ -1201,36 +1199,6 @@ def draft_stories(text: str | None = None, from_cv: bool = False, model: str | N
 
 @mcp.tool()
 @_tool_errors
-def skill_gaps(
-    targets: list[str] | None = None, jobs: list[str] | None = None, top: int | None = None, model: str | None = None
-) -> dict:
-    """A skill-gap report with a WebSearch-cited learning plan, written to
-    `upskill/report-<today>.md`.
-
-    "What should I learn for the Trustpilot job?": two `claude -p` calls (minutes):
-    the first compares the CV with the targets — a hard-skill diff, then broader
-    gaps (soft skills, domain depth, tooling maturity, credentials, evidence);
-    the second, which sees only the gap names, searches the web for real
-    resources. The code writes the prioritised plan. Read the report back to
-    summarise it. Identical to `./door cv gaps`.
-
-    Args:
-        targets: Role names ("Senior Accountant") or skills.
-        jobs: Postings to analyse: each a job id or words from its company
-            and title ("trustpilot"). Never ask the user for an id.
-        top: Also analyse the top N matches.
-        model: Claude model to analyse with (default: sonnet).
-
-    Returns:
-        ``{"report_path", "report" (its Markdown), "targets": [{"kind", "label", "job_id"?}], "plan_items", "warning"?}``.
-    """
-    return gaps_cmd._skill_gaps_core(
-        targets, jobs=jobs, top=top, model=model, profile_dir=workspace.PROFILE_DIR, jobs_dir=workspace.JOBS_DIR
-    )
-
-
-@mcp.tool()
-@_tool_errors
 def salary_estimate(job_id: str, refresh: bool = False, model: str | None = None) -> dict:
     """The salary range the user can expect for one job: "What salary can I expect for the Trustpilot one?".
 
@@ -1328,8 +1296,7 @@ def market(days: int = 30, save: bool = True, scored_companies: bool = False) ->
     have 50+ scored ads), near misses (what kept ads just under `min_score`
     below it), titles in the matches that no search keyword covers, and
     companies posting repeatedly. Saved to `jobs/market/report-<date>.md`.
-    Next steps: "plan for the top 3 gaps" -> `skill_gaps` with those skills as
-    targets; "add those titles" -> confirm, then `init_profile` with
+    Next steps: "add those titles" -> confirm, then `init_profile` with
     `search_keywords`. Identical to `./door market`.
 
     Args:

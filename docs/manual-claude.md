@@ -79,10 +79,8 @@ Things you can say:
 - "How does the market look?" → `market` counts the last 30 days of scraped ads (seconds; one Haiku call, only for skill names not yet in `jobs/skill_aliases.json`, groups variants such as "Excel" and "Microsoft Excel" and drops non-skills):
   the most requested skills and whether you have them, near misses (what kept ads just under
   `min_score` below it), titles in your matches that no search keyword covers, and companies posting
-  repeatedly (marked when you already follow them; `scored_companies=True` counts only scored ads). "Follow Pleo" on an unfollowed repeat employer → `add_company`. Then "make a plan for the top 3 gaps" → `skill_gaps` with those skills as targets;
+  repeatedly (marked when you already follow them; `scored_companies=True` counts only scored ads). "Follow Pleo" on an unfollowed repeat employer → `add_company`. Then
   "add those titles" → after you confirm, `init_profile` with `search_keywords` (your current keywords plus those titles).
-- "What should I learn for the Trustpilot job?" → `skill_gaps` writes the learning plan
-  (minutes).
 
 ## The MCP server behind it
 
@@ -153,7 +151,6 @@ a `Needs the maintainer:` line), so the conversation starts on them.
 | `jobs query [filters]` | `query_jobs` | `count`, `average_score`, `by_site`, `by_company`, `by_status`, `by_month` and the best `rows` (`id`, `title`, `company`, `score`, `status`, `site`, dates) for postings matching `since`, `until`, `site`, `company`, `status` (or `interview` for any round), `min_score`, `max_score`, `language`, `has_materials`; read only — for questions no other tool answers |
 | `jobs salary [JOB] [--refresh] [--model M]` | `salary_estimate` | `job_id`, `title`, `company`, `found`; when found `low`, `high`, `currency`, `period` (`month`/`year`), `gross`, `position` (`below`/`within`/`above`), `basis`, `sources` (`title`, `url`), `ad_salary`, `as_of`, `cached`; else a `message` and no number |
 | `market [--days N] [--scored-companies] [--no-save]` | `market` | `window`, `counts` (scraped, scored, above `min_score`), `skills` (name, count, share, `have`, `trend`), `near_misses`, `uncovered_titles`, `companies` (`population`, and per row `followed`), a `warning` (text when the grouping call failed, else null) and the `report_path` (`jobs/market/report-<date>.md`) |
-| `cv gaps [TARGET ...] [--top N] [--model …]` | `skill_gaps` | the report path (`upskill/report-<date>.md`), the targets analysed and the number of plan items |
 | `init` (the wizard's reading step) | `infer_basics` | what a CV says, read by one cached model call per CV text: `name`, `email`, `location` (a known city; `unsupported_location` names a city in a country not covered), `languages`, `remote`, and `missing`, the only things to ask; a CV that cannot be read gives a `warning` and everything in `missing` |
 | `cv titles [TITLE ...] [--hint …] [--languages …] [--model …]` | `suggest_titles` | `titles`: each `title` with its `reason` and whether it is `recommended`; writes nothing |
 | — (a wizard's first look) | `preview_matches` | a few ads of one job board scored against the CV, from answers not saved yet (`board`, `matches`, or a `warning`); writes nothing |

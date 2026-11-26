@@ -913,7 +913,7 @@
   },
   {
     "name": "market",
-    "description": "What the scraped ads ask for: \"How does the market look?\".\n\n    Counts the ads of the last `days` days (seconds; one Haiku call only for\n    skill names not yet in `jobs/skill_aliases.json`, which groups variants like\n    \"Excel\" and \"Microsoft Excel\" and drops non-skills): the most\n    requested skills (and whether the user has each; a trend when both windows\n    have 50+ scored ads), near misses (what kept ads just under `min_score`\n    below it), titles in the matches that no search keyword covers, and\n    companies posting repeatedly. Saved to `jobs/market/report-<date>.md`.\n    Next steps: \"plan for the top 3 gaps\" -> `skill_gaps` with those skills as\n    targets; \"add those titles\" -> confirm, then `init_profile` with\n    `search_keywords`. Identical to `./door market`.\n\n    Args:\n        days: Window length in days (default 30).\n        save: Write the report to `jobs/market/` (default true).\n        scored_companies: Count repeat companies over scored ads only (default: all scraped ads).\n\n    Returns:\n        ``{\"window\", \"counts\": {\"scraped\", \"scored\", \"above_min_score\"},\n        \"skills\": [{\"name\", \"count\", \"share\", \"have\", \"trend\"}],\n        \"near_misses\": {\"n\", \"rows\": [{\"skill\", \"count\"}]},\n        \"uncovered_titles\": [{\"title\", \"count\"}],\n        \"companies\": {\"population\": \"scraped\"|\"scored\", \"rows\": [{\"name\", \"count\", \"followed\"}]},\n        \"warning\" (text when grouping failed, else null), \"report_path\"}``. An unfollowed repeat employer can be followed with `add_company`.\n    ",
+    "description": "What the scraped ads ask for: \"How does the market look?\".\n\n    Counts the ads of the last `days` days (seconds; one Haiku call only for\n    skill names not yet in `jobs/skill_aliases.json`, which groups variants like\n    \"Excel\" and \"Microsoft Excel\" and drops non-skills): the most\n    requested skills (and whether the user has each; a trend when both windows\n    have 50+ scored ads), near misses (what kept ads just under `min_score`\n    below it), titles in the matches that no search keyword covers, and\n    companies posting repeatedly. Saved to `jobs/market/report-<date>.md`.\n    Next steps: \"add those titles\" -> confirm, then `init_profile` with\n    `search_keywords`. Identical to `./door market`.\n\n    Args:\n        days: Window length in days (default 30).\n        save: Write the report to `jobs/market/` (default true).\n        scored_companies: Count repeat companies over scored ads only (default: all scraped ads).\n\n    Returns:\n        ``{\"window\", \"counts\": {\"scraped\", \"scored\", \"above_min_score\"},\n        \"skills\": [{\"name\", \"count\", \"share\", \"have\", \"trend\"}],\n        \"near_misses\": {\"n\", \"rows\": [{\"skill\", \"count\"}]},\n        \"uncovered_titles\": [{\"title\", \"count\"}],\n        \"companies\": {\"population\": \"scraped\"|\"scored\", \"rows\": [{\"name\", \"count\", \"followed\"}]},\n        \"warning\" (text when grouping failed, else null), \"report_path\"}``. An unfollowed repeat employer can be followed with `add_company`.\n    ",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -1611,70 +1611,6 @@
         }
       },
       "title": "show_profileArguments"
-    }
-  },
-  {
-    "name": "skill_gaps",
-    "description": "A skill-gap report with a WebSearch-cited learning plan, written to\n    `upskill/report-<today>.md`.\n\n    \"What should I learn for the Trustpilot job?\": two `claude -p` calls (minutes):\n    the first compares the CV with the targets — a hard-skill diff, then broader\n    gaps (soft skills, domain depth, tooling maturity, credentials, evidence);\n    the second, which sees only the gap names, searches the web for real\n    resources. The code writes the prioritised plan. Read the report back to\n    summarise it. Identical to `./door cv gaps`.\n\n    Args:\n        targets: Role names (\"Senior Accountant\") or skills.\n        jobs: Postings to analyse: each a job id or words from its company\n            and title (\"trustpilot\"). Never ask the user for an id.\n        top: Also analyse the top N matches.\n        model: Claude model to analyse with (default: sonnet).\n\n    Returns:\n        ``{\"report_path\", \"report\" (its Markdown), \"targets\": [{\"kind\", \"label\", \"job_id\"?}], \"plan_items\", \"warning\"?}``.\n    ",
-    "inputSchema": {
-      "type": "object",
-      "properties": {
-        "targets": {
-          "anyOf": [
-            {
-              "items": {
-                "type": "string"
-              },
-              "type": "array"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Targets"
-        },
-        "jobs": {
-          "anyOf": [
-            {
-              "items": {
-                "type": "string"
-              },
-              "type": "array"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Jobs"
-        },
-        "top": {
-          "anyOf": [
-            {
-              "type": "integer"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Top"
-        },
-        "model": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Model"
-        }
-      },
-      "title": "skill_gapsArguments"
     }
   },
   {

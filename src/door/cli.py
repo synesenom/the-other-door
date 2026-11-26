@@ -17,7 +17,6 @@ from door.commands import ask as ask_cmd
 from door.commands import companies as companies_cmd
 from door.commands import cv as cv_cmd
 from door.commands import enrich as enrich_cmd
-from door.commands import gaps as gaps_cmd
 from door.commands import jobs as jobs_cmd
 from door.commands import market as market_cmd
 from door.commands import profile as profile_cmd
@@ -137,7 +136,6 @@ cli.add_command(market_cmd.market)
 cli.add_command(ask_cmd.ask)
 
 cv_cmd.cv_group.add_command(enrich_cmd.enrich, "enrich")
-cv_cmd.cv_group.add_command(gaps_cmd.skill_gaps, "gaps")
 cv_cmd.cv_group.add_command(titles_cmd.titles_command, "titles")
 cv_cmd.cv_group.add_command(stories_cmd.stories_group, "stories")
 cli.add_command(cv_cmd.cv_group)

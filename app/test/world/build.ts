@@ -381,20 +381,6 @@ export function answersFor(persona: Persona) {
       ],
       unreachable: [],
     },
-    // the skill-gap analysis (no tools: names the gaps) and the resource search (WebSearch: only the gap names)
-    gaps: {
-      gaps: [
-        { name: 'Bayesian hierarchical models', pass: 1, source_or_why: 'three of the ads ask for it and the CV does not show it', priority: 'High' },
-        { name: 'Grid operations basics', pass: 2, source_or_why: 'the energy employers assume it', priority: 'Medium' },
-        { name: 'Trading desk tooling', pass: 1, source_or_why: 'one ad names it', priority: 'Low' },
-      ],
-    },
-    resources: {
-      resources: [
-        { gap: 'Bayesian hierarchical models', title: 'PyMC documentation', url: 'https://www.pymc.io/projects/docs/en/stable/' },
-        { gap: 'Grid operations basics', title: 'ENTSO-E transparency platform guide', url: 'https://transparency.entsoe.eu/' },
-      ],
-    },
     ask: { answer: 'Three of your matches are with energy companies, and the strongest is the forecasting role.', sources: [] },
   }
 }

@@ -27,7 +27,7 @@ tailor writes only those) and `.photo` (a template without it prints no photo). 
 
 ## Where your data lives
 
-`profile/`, `jobs/`, `backups/` and `upskill/` live in the checkout by default. To keep them
+`profile/`, `jobs/` and `backups/` live in the checkout by default. To keep them
 elsewhere (outside the git checkout, or because the code sits in a read-only install), set the
 environment variable `DOOR_HOME` to a folder before running *The other door*:
 
@@ -36,8 +36,7 @@ DOOR_HOME=~/door-data ./door init --name "Jane Doe" ...
 ```
 
 It is an environment variable, not a config key, because it says where `config.json` is. Unset
-or empty, everything stays where it is today. What moves: `profile/`, `jobs/`, `backups/`,
-`upskill/`, and the `.mcp.json` the tailor session uses (generated there for the Python
+or empty, everything stays where it is today. What moves: `profile/`, `jobs/`, `backups/`, and the `.mcp.json` the tailor session uses (generated there for the Python
 running *The other door*, and rewritten when that changes; the checkout's own `.mcp.json` is used when
 `DOOR_HOME` is unset). What does not: `profile.example/`, and `src/`,
 which ship with the code. Relative paths in `config.json` (`cv_content`, `cv_template`,

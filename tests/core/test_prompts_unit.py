@@ -21,8 +21,6 @@ PROMPTS = {
     "cv-drafter": ("sonnet", "f06c6f1dc3886c4cdd78fa0f4691d84f45e55e9965e9aca4f53b9345743c9640"),
     "cv-enricher": ("sonnet", "4a63e2564df682b453451e5b4ec24460a32c5dfa0054fde4b31373f621cec0eb"),
     "page-reader": ("sonnet", "2c4d773ae8106566aabfc72f8e6a7f5b09a1ec5f5ff32d8e3d9598877546bd52"),
-    "skill-gaps": ("sonnet", "d9c2bb31be946312d7ce1a51c9cdb1dd17840f848171267dda3736162f29e650"),
-    "skill-resources": ("sonnet", "fffea61645be8170ff95ed477c6611f2a5a7132ddc36294f0d2a07a79e13e5dd"),
     "keywords": ("haiku", "6b9c81f3e5d8791f6750aca0c4207840daba6280df0b3d0d1a0519e2395f3513"),
     "skill-grouper": ("haiku", "f3492df541d158d0b13e3071464e7879bcdbabb30aca2a536bd304daa63d5e96"),
     "reviser": ("sonnet", "5d9a5cb38d4b2cc68801817fe8a3e79e561d02d21e318178c41044f037ecaded"),

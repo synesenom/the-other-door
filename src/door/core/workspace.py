@@ -1,5 +1,5 @@
 """Where The other door keeps its data: the repo root (the code, `profile.example/`, `.claude/`), and the data
-folder `HOME` (`$DOOR_HOME`, the repo root when unset) with `profile/`, `jobs/`, `backups/`, `upskill/`
+folder `HOME` (`$DOOR_HOME`, the repo root when unset) with `profile/`, `jobs/`, `backups/`
 and a generated `.mcp.json`; and where in `jobs/` the postings go: `jobs/postings/<YYYY-MM-DD>/<site>/`, apart from the ledgers.
 
 Commands read these at call time (`workspace.JOBS_DIR`), so tests can point them at a
@@ -21,7 +21,6 @@ PROFILE_DIR = HOME / "profile"
 PROFILE_EXAMPLE_DIR = REPO_ROOT / "profile.example"   # ships with the code
 JOBS_DIR = HOME / "jobs"
 BACKUPS_DIR = HOME / "backups"   # what `import` replaced, one folder per import
-UPSKILL_DIR = HOME / "upskill"   # `cv gaps` / `skill_gaps` reports
 MCP_CONFIG = HOME / ".mcp.json"   # the checkout's committed file, or the one `ensure_mcp_config` writes
 
 # The per-user config folder (`drive.json`, `instances.json`); None = the per-OS default. Tests point it at a temp dir.

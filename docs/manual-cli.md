@@ -11,7 +11,7 @@ Every command runs as `./door <command>` from the repo checkout (on Windows,
 Set up      init · doctor
 Find        run
 Your lists  jobs [show|add|status|summary|prepare] · companies [why|add|remove|merge]
-Your CV     cv [enrich|gaps]
+Your CV     cv [enrich]
 Move        data [export|import|connect|sync|disconnect]
 ```
 
@@ -139,7 +139,6 @@ several open a list of just those to pick from; where the job is optional (`jobs
 | `cv stories add [--title T --context … --action … --result … --learning …] [--replace OLD_TITLE] [--replace-example] [--from-text TEXT]` | Add a story, or with `--replace` swap the one with that title for this one (a new `--title` renames it). Fields you leave out are asked for in a terminal (in a pipe they are an error); `--from-text` drafts the story from your description (read beside your CV, the text winning, differences shown), asks for the gaps and confirms. A title already in the bank is refused without `--replace`; the made-up example bank (`profile.example/`'s) is refused too until `--replace-example` starts your own. All four texts are required. |
 | `cv stories remove TITLE` | Remove the story with that title. |
 | `cv stories draft [TEXT] [--from-cv] [--model NAME]` | Propose the one story some text tells, or with `--from-cv` one story from `profile/cv.md` as an example of what a story is (the bank holds what your CV does not say), with one `claude -p` call. With text, your CV is read beside it for facts the text leaves out, never as a story of its own; where they differ the text wins and the difference is shown. A field the source does not support is left empty and named; nothing is saved. |
-| `cv gaps [ROLE ...] [--job JOB ...] [--top N] [--model NAME]` | A skill-gap report for role names, postings (`--job trustpilot`, repeatable) and/or the top N matches: two `claude -p` calls (minutes): the first, with no tools, diffs the CV against them and names the gaps; the second finds real resources with WebSearch, seeing only the gap names. The report is `upskill/report-<date>.md`. |
 
 ### What the ads ask for: `market`
 
