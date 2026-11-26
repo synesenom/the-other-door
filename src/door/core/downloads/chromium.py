@@ -70,8 +70,7 @@ def download_url(key: str) -> str:
 
 def chromium_root(home: Path | None = None) -> Path:
     """Where `doctor --fix` puts the shell: user-owned, one folder per pinned version."""
-    base = Path(home) if home is not None else Path.home()
-    return base / ".local" / "share" / "door" / f"chromium-{pin()['version']}"
+    return pinned.folder("chromium", pin()["version"], home)
 
 
 def find_chromium(home: Path | None = None) -> str | None:
@@ -91,15 +90,6 @@ def find_chromium(home: Path | None = None) -> str | None:
     return None
 
 
-def _remove_other_versions(dest: Path) -> None:
-    """Drop the older `chromium-*` folders beside `dest`, only where `dest` is one of them."""
-    if not dest.name.startswith("chromium-"):
-        return
-    for other in dest.parent.glob("chromium-*"):
-        if other != dest and other.is_dir():
-            shutil.rmtree(other, ignore_errors=True)
-
-
 def install(dest: Path) -> None:
     """Download the pinned zip, check its sha256 and unpack it into `dest` (a no-op when there)."""
     key = platform_key()
@@ -108,7 +98,7 @@ def install(dest: Path) -> None:
     dest = Path(dest)
     folder = dest / f"chrome-headless-shell-{key}"
     if (folder / exe_name(key)).is_file():
-        _remove_other_versions(dest)
+        pinned.remove_other_versions(dest, "chromium")
         return
     try:
         with utils.staging(dest, f"{folder.name}.") as staging:
@@ -129,7 +119,7 @@ def install(dest: Path) -> None:
             except OSError:
                 if not (folder / exe_name(key)).is_file():   # else another install finished first: keep it
                     raise
-        _remove_other_versions(dest)
+        pinned.remove_other_versions(dest, "chromium")
     except (OSError, zipfile.BadZipFile, pinned.ChecksumError) as exc:
         raise ChromiumError(str(exc)) from exc
 

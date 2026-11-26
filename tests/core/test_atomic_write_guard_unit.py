@@ -17,7 +17,7 @@ EXEMPT = {
     ("core/migrations.py", "write_version"): "a temp file linked or replaced into place (link semantics)",
     ("core/migrations.py", "_backup"): "copies the folder to a new backup folder, which is not state in use",
     ("core/migrations.py", "_restore"): "puts a backup back over a folder a failed step left; there is no older file to keep",
-    ("core/phone/phone.py", "install_cloudflared"): _STAGED,
+    ("core/downloads/cloudflared.py", "install_cloudflared"): _STAGED,
     ("core/phone/launch_agent.py", "install"): "a launch-agent plist outside HOME, not user state",
     ("core/sync/archive.py", "_keep_local_keys"): _STAGED,
     ("core/sync/drive.py", "download"): _DOWNLOAD,

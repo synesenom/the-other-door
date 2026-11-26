@@ -39,7 +39,7 @@ def test_staging_sweeps_its_own_stale_part_folders_and_keeps_a_fresh_one(tmp_pat
 
 
 def test_staging_leaves_another_tools_stale_part_folder_alone(tmp_path):
-    """A shared destination (cloudflared's ~/.local/bin) may hold another tool's `.part` folder."""
+    """A shared destination (an import's HOME parent) may hold another tool's `.part` folder."""
     foreign = _aged(tmp_path / "other.a.part", 2 * utils.STALE_PART_SECONDS)
     with utils.staging(tmp_path, "x."):
         pass
