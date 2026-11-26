@@ -1,13 +1,10 @@
 import type { AdIntegrity } from '../api'
 import { WarningMark } from './CheckMark'
 
-/** What the gate found in the ad's text that was hidden from readers or aimed at a model, and removed. */
-const REMOVED = ['hidden_css', 'aria_hidden', 'invisible_unicode', 'instruction', 'score_request']
-
 /** The posting's note on a suspicious ad: what was done, and (behind a disclosure) the text found, shown as text. */
 export function AdFindings({ integrity }: { integrity?: AdIntegrity | null }) {
   if (integrity?.verdict !== 'suspicious' || !integrity.findings.length) return null
-  const removed = integrity.findings.some((f) => REMOVED.includes(f.kind))
+  const removed = integrity.findings.some((f) => f.kind !== 'link_mismatch')  // every other kind is text taken out
   const link = integrity.findings.some((f) => f.kind === 'link_mismatch')
   const lines = integrity.findings.map((f) => f.excerpt).filter((e): e is string => Boolean(e))
   return (
