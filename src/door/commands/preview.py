@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, timezone
 from door import i18n
 from door import scrapers
 from door.core import sites
-from door.matching import scorer, title_fit
+from door.matching import integrity, scorer, title_fit
 
 _WINDOW_DAYS = 7
 
@@ -67,7 +67,7 @@ def _preview_core(config: dict, cv_text: str | None, *, limit: int = 5) -> dict:
         # The scraper's bookkeeping stays out of the real run's report.
         scrapers.drain_errors(board)
     # an ad whose answer quotes text aimed at the scorer is left out: the preview rescores and writes nothing
-    ads = [ad for ad in ads if ad["id"] in scores and not scorer.verified_quotes(ad, scores[ad["id"]])]
+    ads = [ad for ad in ads if ad["id"] in scores and not integrity.remove_quoted(ad, scores[ad["id"]].get("model_addressed") or [])[1]]
     matches = [
         {**{key: ad.get(key) for key in ("title", "company", "location", "url")},
          "score": scores[ad["id"]]["score"], "score_reason": scores[ad["id"]]["score_reason"]}

@@ -72,7 +72,6 @@ from typing import Callable
 from door import i18n
 from door.core import claude_cli, usage, utils
 from door.core.downloads import installers
-from door.matching import integrity
 
 _MATCHER_AGENT_PATH = claude_cli.PROMPTS_DIR / "matcher.md"
 
@@ -210,16 +209,10 @@ def build_system_prompt(profile_cfg: dict, cv_md: str, rubric_md: str) -> str:
     )
 
 
-def seen_text(posting: dict) -> str:
-    """The description as the scorer is shown it."""
-    description = posting.get("description_condensed") or posting.get("description") or ""
-    return description[:_USER_MESSAGE_CHAR_CAP]
-
-
 def build_user_message(posting: dict) -> str:
     """Title/company/location/posted_at + description_condensed (falling
     back to description), hard-capped at 6000 chars."""
-    description = seen_text(posting)
+    description = (posting.get("description_condensed") or posting.get("description") or "")[:_USER_MESSAGE_CHAR_CAP]
 
     lines = [
         f"Title: {posting.get('title', '')}",
@@ -409,15 +402,6 @@ def parse_chunk_output(stdout: str) -> list[dict]:
         _validate_score_fields(item, require_job_id=True)
 
     return data["results"]
-
-
-def verified_quotes(posting: dict, result: dict) -> list[str]:
-    """The ``model_addressed`` quotes of ``result`` found in what the scorer was shown (title, company,
-    description) and long enough to act on; a quote the model made up is dropped, so only text really in the
-    ad is ever removed."""
-    shown = (str(posting.get("title") or ""), str(posting.get("company") or ""), seen_text(posting))
-    quotes = dict.fromkeys(" ".join(q.split()) for q in result.get("model_addressed") or [])
-    return [q for q in quotes if any(integrity.find_quote(t, q) for t in shown)]
 
 
 # --------------------------------------------------------------------------- #

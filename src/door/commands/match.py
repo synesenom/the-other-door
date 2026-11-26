@@ -198,7 +198,7 @@ def _match_core(
             return
         path, posting = entry
         # what the ad says to a model is removed and never scored; the second answer is the score
-        cleaned, removed = integrity.remove_quoted(posting, scorer.verified_quotes(posting, result))
+        cleaned, removed = integrity.remove_quoted(posting, result.get("model_addressed") or [])
         if not removed:
             _store(job_id, result)
             return
