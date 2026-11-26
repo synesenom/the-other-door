@@ -52,6 +52,21 @@ _KEEP_SUFFIX = ("_at", "_path", "_dir")  # `scraped_at`, `updated_at`, `output_p
 _OPENED: set[str] = set()  # the jobs whose ad this server already opened
 
 
+# Tools whose answers hold only the user's own data or the code's own words, never a posting's or an employer's
+# text, so a chat gets them whole (the CV a draft returns goes straight to `save_cv`). Read from each core's answer;
+# a tool whose answer can include any posting or employer text is not here (a test places every tool).
+OWN_DATA_TOOLS = frozenset({
+    "draft_cv", "enrich", "infer_basics", "keywords", "suggest_titles",  # the user's CV, their own pages and profile
+    "show_profile", "init_profile", "save_cv", "save_photo", "remove_photo", "cv_style_sample",  # the profile and CV
+    "list_stories", "draft_stories", "save_story", "remove_story",  # the user's story bank
+    "doctor", "setup",  # checks and installs of this computer
+    "export_data", "import_data", "report_problem",  # archives and reports: paths and counts
+    "connect_drive", "sync_data", "disconnect_drive",  # the Drive link and its sync state
+    "phone_start", "phone_stop", "phone_status", "pair_phone", "unpair_phone",  # the phone server
+    "cancel_job",  # stops a run: the code's own answer
+})
+
+
 def _marker() -> tuple[str, str]:
     token = secrets.token_hex(4)
     return f"<ad-{token}>", f"</ad-{token}>"
@@ -103,7 +118,7 @@ def _walk(node, key, kept, marker, tool):
 
 def guard(tool: str, answer: dict) -> dict:
     """``answer`` as a chat may read it: no description, every string cut and wrapped but those of `_KEEP`."""
-    return _walk(answer, None, False, _marker(), tool)
+    return answer if tool in OWN_DATA_TOOLS else _walk(answer, None, False, _marker(), tool)
 
 
 def view_page(posting: dict) -> str:

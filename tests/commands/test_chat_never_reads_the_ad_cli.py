@@ -230,24 +230,15 @@ def test_progress_lines_to_a_chat_are_wrapped():
     assert sent and not _outside_marker(sent)
 
 
-# The tools run over the canary below, and the ones that are not, with why each cannot run offline.
+# Every tool is guarded in a chat unless it is in `chat_guard.OWN_DATA_TOOLS`. The guarded ones run over the canary
+# below (_RUN); the others, with why each cannot run offline.
 _RUN = {"show", "list_matches", "query_jobs", "set_status", "status_summary", "mark_seen", "mark_reviewed",
-        "show_profile", "list_companies", "why_company", "list_stories", "market", "import_posting"}
+        "list_companies", "why_company", "market", "import_posting"}
 _NOT_RUN = {
     "find_jobs": "scrapes the sites", "prepare": "runs the tailor on the user's plan",
     "revise": "runs the tailor on the user's plan", "compile": "prints with Chromium",
-    "check_facts": "asks a model", "cancel_job": "stops a run, none runs", "job_result": "needs a finished run's id",
-    "doctor": "probes the machine", "setup": "installs the prerequisites",
-    "export_data": "writes an archive", "import_data": "reads an archive", "report_problem": "writes a report",
-    "connect_drive": "needs Google", "sync_data": "needs Google", "disconnect_drive": "needs Google",
-    "phone_start": "starts a server", "phone_stop": "stops a server", "pair_phone": "pairs a phone",
-    "unpair_phone": "unpairs a phone", "phone_status": "reads a server that does not run",
-    "draft_cv": "reads a CV file", "enrich": "reads pages online", "save_cv": "writes the CV",
-    "save_photo": "writes the photo", "remove_photo": "removes the photo", "cv_style_sample": "prints the CV",
-    "init_profile": "writes the profile", "keywords": "asks a model about the profile",
-    "suggest_titles": "asks a model about the profile", "infer_basics": "reads the CV",
-    "preview_matches": "scrapes a board", "draft_stories": "reads the CV", "save_story": "writes a story",
-    "remove_story": "removes a story", "salary_estimate": "searches the web",
+    "check_facts": "asks a model", "job_result": "needs a finished run's id",
+    "preview_matches": "scrapes a board", "salary_estimate": "searches the web",
     "add_company": "detects a feed online", "remove_company": "edits the list", "merge_companies": "edits the list",
     "ask": "asks a model; its answer is capped and wrapped (test above)",
 }
@@ -266,8 +257,11 @@ def test_no_tool_answer_carries_the_ads_text_outside_a_marker_in_a_chat(world, m
 
     monkeypatch.setattr(add_cmd, "_read_ad", lambda text, **k: {"title": f"{CANARY} " + "x" * 400})
     names = asyncio.run(_tool_names())
-    unknown = names - _RUN - set(_NOT_RUN)
-    assert not unknown, f"a new tool: run it over the canary or say in _NOT_RUN why it cannot: {sorted(unknown)}"
+    own = chat_guard.OWN_DATA_TOOLS
+    unknown = names - _RUN - set(_NOT_RUN) - own
+    assert not unknown, f"a new tool: guard it (run it over the canary or say in _NOT_RUN why it cannot) or, if its answer can " \
+                        f"never hold a posting's or employer's text, put it in chat_guard.OWN_DATA_TOOLS: {sorted(unknown)}"
+    assert not own - names and not own & (_RUN | set(_NOT_RUN)), "OWN_DATA_TOOLS names a tool that is gone or also guarded"
     leaks = {}
     for tool in sorted(_RUN):
         answer = _call(tool, _ARGS.get(tool, {}))
@@ -285,3 +279,12 @@ def test_the_running_find_message_is_wrapped_in_status_summary(world):
         add_cmd._step(f"saved {CANARY} at Acme", "ok")
         answer = _call("status_summary")
     assert not _outside_marker(answer)
+
+
+def test_a_drafted_cv_comes_back_whole_in_a_chat(world, monkeypatch):
+    from door.commands import cv as cv_cmd
+
+    text = "# Name\n" + "A line of the CV.\n" * 400
+    monkeypatch.setattr(cv_cmd, "_draft_cv_core", lambda *a, **k: {"written": False, "markdown": text, "todos": []})
+    answer = _call("draft_cv", {"sources": ["cv.pdf"]})
+    assert answer["markdown"] == text
