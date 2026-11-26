@@ -69,9 +69,9 @@ OWN_DATA_TOOLS = frozenset({
 
 # Tools whose answers must come back whole (the CV a draft returns goes to `save_cv`, a proposal's text is shown to the
 # user) but are written by a model from pages a stranger may have written: every string stays uncut and with its
-# lines, inside the call's marker. `save_cv` takes the marker off a text that is one marked block (`unmark`).
+# lines, inside the call's marker. `save_cv` takes the marker tags off the text it is given (`unmark`).
 WHOLE_TEXT_TOOLS = frozenset({"draft_cv", "enrich"})
-_MARKED = re.compile(r"<ad-([0-9a-f]{8})>(.*)</ad-\1>", re.S)
+_TAG = re.compile(r"</?ad-[0-9a-f]{8}>")
 
 
 def _marker() -> tuple[str, str]:
@@ -85,9 +85,9 @@ def _wrap(value: str, limit: int, marker: tuple[str, str]) -> str:
 
 
 def unmark(text: str) -> str:
-    """``text`` without the marker a chat's answer put around all of it; any other text as it is."""
-    found = _MARKED.fullmatch(text.strip()) if isinstance(text, str) else None
-    return found.group(2) if found else text
+    """``text`` without any marker tag a chat's answer put in it, wherever it sits (a draft edited around its marker,
+    two marked pieces joined)."""
+    return _TAG.sub("", text)
 
 
 def wrap_text(value: str) -> str:

@@ -1365,7 +1365,7 @@ def draft_cv(sources: list[str], write: bool = False, model: str | None = None) 
     other sources only add, nothing is invented (missing facts are TODOs).
     Works before profile/config.json exists. Writes `profile/cv.draft.md`:
     read it, show it to the user with `provenance` and `todos`, take their
-    edits, and only then put it in place (Write to profile/cv.md), or call
+    edits, and only then call `save_cv` with the draft (in a chat the text comes in a marker that `save_cv` removes), or call
     again with `write=True` to replace profile/cv.md directly (the previous
     one is kept as cv.md.bak). The same call as `./door init`'s CV step.
 

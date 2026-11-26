@@ -293,6 +293,12 @@ def test_a_drafted_cv_comes_back_whole_in_one_marker_and_saves_without_it(world,
     assert (workspace.PROFILE_DIR / "cv.md").read_text() == text
 
 
+def test_unmark_removes_every_marker_tag_wherever_it_sits():
+    assert chat_guard.unmark("<ad-0a1b2c3d>one\ntwo\n</ad-0a1b2c3d>\nadded line") == "one\ntwo\n\nadded line"
+    assert chat_guard.unmark("<ad-0a1b2c3d>a</ad-0a1b2c3d><ad-ffffffff>b</ad-ffffffff>") == "ab"
+    assert chat_guard.unmark("plain <b> text") == "plain <b> text"
+
+
 def test_enrich_proposals_come_inside_a_marker_in_a_chat(world, monkeypatch):
     from door.commands import enrich as enrich_cmd
 
