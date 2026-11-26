@@ -77,7 +77,7 @@ def _html_pass(html: str) -> tuple[str, list[dict]]:
         shown = _URL_TEXT.search(link.get_text(" "))
         target = _host(str(link["href"])) if str(link["href"]).lower().startswith(("http://", "https://", "//")) else ""
         if shown and target and _host(shown.group(0)) != target:
-            findings.append({"kind": "link_mismatch", "excerpt": _excerpt(f"{link.get_text(' ')} -> {target}")})
+            findings.append({"kind": "link_mismatch", "excerpt": _excerpt(f"{link.get_text(' ')} opens {target}")})
     lines = (" ".join(line.split()) for line in soup.get_text("\n").splitlines())
     return "\n".join(line for line in lines if line), findings
 
@@ -86,7 +86,7 @@ def _text_pass(text: str) -> tuple[str, list[dict]]:
     findings: list[dict] = []
     bidi = _BIDI.findall(text)
     if bidi:
-        findings.append({"kind": "invisible_unicode", "excerpt": f"{len(bidi)} hidden direction/tag characters"})
+        findings.append({"kind": "invisible_unicode", "excerpt": f"{len(bidi)} hidden characters"})
     text = _ZERO_WIDTH.sub("", _BIDI.sub("", text))
     phrases = i18n.injection_phrases()
     kept = []

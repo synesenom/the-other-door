@@ -235,7 +235,7 @@ export function Guide() {
               </div>
             </div>
           </Row>
-          <Row label="ad-findings (a note and its disclosure)">
+          <Row label="ad-findings (a marked line and its disclosure)">
             <AdFindings integrity={{ verdict: 'suspicious', findings: [{ kind: 'hidden_css', excerpt: 'Text the page hid from readers' }] }} />
           </Row>
           <Row label="board column">

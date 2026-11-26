@@ -574,7 +574,7 @@ describe('Posting, a suspicious ad', () => {
   })
 
   it('says a mismatched link opens another site, when nothing was removed', async () => {
-    mockDoor({ show: sus([{ kind: 'link_mismatch', excerpt: 'acme.com -> evil.example' }]) })
+    mockDoor({ show: sus([{ kind: 'link_mismatch', excerpt: 'acme.com opens evil.example' }]) })
     render(<Posting jobId="jobindex.1" onChanged={() => {}} />)
     expect(await screen.findByText('A link in this ad names one site and opens another.')).toBeInTheDocument()
     expect(screen.queryByText(/Part of this ad/)).toBeNull()

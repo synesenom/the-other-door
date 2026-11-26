@@ -93,6 +93,7 @@ def test_a_link_whose_text_names_another_site_is_flagged():
     html = '<p>Apply at <a href="https://evil.example/x">https://good.example/jobs</a></p>'
     result = integrity.check("", html=html)
     assert "link_mismatch" in _kinds(result) and result["verdict"] == "suspicious"
+    assert result["findings"][0]["excerpt"] == "https://good.example/jobs opens evil.example"
     ok = integrity.check("", html='<a href="https://good.example/a">https://www.good.example/jobs</a>')
     assert ok["verdict"] == "clean"
 

@@ -43,6 +43,7 @@ describe('seedSandbox', () => {
       expect(p.url).toMatch(/^https:\/\/example\.com\//)
     }
     expect(all.some((p) => p.title_en)).toBe(true)
+    expect(all.some((p) => p.integrity?.verdict === 'suspicious')).toBe(true) // the note on a suspicious ad shows in the sandbox
     const ledger = JSON.parse(readFileSync(join(demo, 'jobs', 'applications.json'), 'utf8'))
     const statuses = Object.values(ledger).map((e) => (e as { status: string }).status)
     for (const s of ['prepared', 'applied', 'interview:screening', 'discarded']) expect(statuses).toContain(s)
