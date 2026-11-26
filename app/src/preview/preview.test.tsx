@@ -83,7 +83,7 @@ describe('the visual guide', () => {
   it('shows every kind of button, enabled and disabled', () => {
     render(<Guide />)
     const count = (sel: string) => document.querySelectorAll(sel).length
-    const counts = { primary: [2, 1], secondary: [3, 1], quiet: [1, 1] }
+    const counts = { primary: [2, 1], secondary: [4, 1], quiet: [3, 1] }
     for (const [kind, [enabled, disabled]] of Object.entries(counts)) {
       expect(count(`button.${kind}:not(.sidebar-problem, .sidebar-find *):not(:disabled)`)).toBe(enabled)
       expect(count(`button.${kind}:disabled`)).toBe(disabled)

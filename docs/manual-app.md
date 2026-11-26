@@ -663,8 +663,9 @@ Set it up by hand, on the computer running *The other door*, once:
 4. Make a pairing code: `./door serve pair --device "My phone" --url https://<that address>`. It
    prints a code and a QR code; both work once, for ten minutes.
 
-On the phone: scan the QR code (or open the address and type the code), then in Chrome's menu tap
-**Install app** (iPhone: Safari's Share → **Add to Home Screen**). The app opens on your matches.
+On the phone: scan the QR code (or open the address and type the code). The app opens on your matches
+and offers to install itself: on Android an **Install the app** button, on an iPhone the words "tap Share,
+then Add to Home Screen". **Not now** hides the line for good.
 
 The phone is for what you do on the road: find new jobs (the run goes on while the phone is locked),
 read postings, import an ad, prepare an application, and keep Applications up to date. It

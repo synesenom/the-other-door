@@ -1,15 +1,22 @@
 // @vitest-environment jsdom
 import { act, cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('../renderer/App', () => ({ App: () => <h1>The desktop screens</h1> }))
 
 import { Web } from './Web'
+import { captureInstallPrompt } from './install'
 import type { TokenStore } from './token-store'
+
+beforeEach(() => {
+  localStorage.clear()
+  window.matchMedia = vi.fn().mockReturnValue({ matches: false }) as never
+})
 
 afterEach(() => {
   cleanup()
+  window.dispatchEvent(new Event('appinstalled')) // forgets a kept install prompt
   window.location.hash = ''
   window.history.replaceState(null, '', '/')
 })
@@ -124,5 +131,20 @@ describe('Web', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('The page could not be read.')
     await userEvent.click(screen.getByRole('button', { name: 'Go to The other door' }))
     expect(await screen.findByRole('heading', { name: 'The desktop screens' })).toBeInTheDocument()
+  })
+
+  it('offers the install after pairing, and not on the pair screen', async () => {
+    captureInstallPrompt()
+    const event = Object.assign(new Event('beforeinstallprompt', { cancelable: true }), { prompt: vi.fn(async () => undefined) })
+    const store = memoryStore()
+    const fetch = server({ '/pair': () => new Response(JSON.stringify({ device: 'Pixel', token: 'tok' })) })
+    render(<Web store={store} fetch={fetch as never} />)
+    await screen.findByLabelText('Pairing code')
+    act(() => void window.dispatchEvent(event))
+    expect(screen.queryByRole('button', { name: 'Install the app' })).toBeNull()
+    await userEvent.type(screen.getByLabelText('Pairing code'), 'ABCD-EFGH')
+    await userEvent.click(screen.getByRole('button', { name: 'Pair' }))
+    expect(await screen.findByRole('heading', { name: 'The desktop screens' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Install the app' })).toBeInTheDocument()
   })
 })

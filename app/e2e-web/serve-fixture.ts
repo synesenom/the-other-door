@@ -18,6 +18,7 @@ export interface Served {
   fixture: Home
   url: string
   code: string
+  newCode(): string
   stop(): void
 }
 
@@ -54,9 +55,15 @@ export async function serveDemo(options: { stubbed?: boolean } = {}): Promise<Se
   if (options.stubbed) forTheShim(fixture.home)
   const env = { ...process.env, ...fixture.env, PYTHONPATH: `${repoRoot}/src`, ...(options.stubbed ? { DOOR_DEMO_DIR: fixture.home } : {}) }
   const argv = (...rest: string[]) => (options.stubbed ? [SHIM, 'serve', ...rest] : cliArgs(...rest))
-  const pair = spawnSync(fixture.python, argv('pair', '--device', 'Test phone'), { env, encoding: 'utf8', cwd: repoRoot })
-  const code = /([A-Z0-9]{4}-[A-Z0-9]{4})/.exec(pair.stdout)?.[1]
-  if (!code) throw new Error(`no pairing code: ${pair.stdout}${pair.stderr}`)
+  // A code works once: a test that pairs a second phone asks for another.
+  let phones = 0
+  const newCode = () => {
+    const pair = spawnSync(fixture.python, argv('pair', '--device', phones++ ? `Test phone ${phones}` : 'Test phone'), { env, encoding: 'utf8', cwd: repoRoot })
+    const code = /([A-Z0-9]{4}-[A-Z0-9]{4})/.exec(pair.stdout)?.[1]
+    if (!code) throw new Error(`no pairing code: ${pair.stdout}${pair.stderr}`)
+    return code
+  }
+  const code = newCode()
   const port = await freePort()
   const child: ChildProcess = spawn(fixture.python, argv('start', '--port', String(port), '--web', `${repoRoot}/app/out/web`, '--name', 'Jane'), {
     env,
@@ -72,5 +79,5 @@ export async function serveDemo(options: { stubbed?: boolean } = {}): Promise<Se
     }
     await new Promise((r) => setTimeout(r, 200))
   }
-  return { fixture, url, code, stop: () => child.kill() }
+  return { fixture, url, code, newCode, stop: () => child.kill() }
 }

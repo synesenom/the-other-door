@@ -2,3 +2,6 @@
 body { padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left); }
 .pair { min-height: 100vh; justify-content: center; }
 .pair-code { font-size: 20px; letter-spacing: 0.12em; text-transform: uppercase; }
+/* The install line (#576) sits above the app; the app keeps the rest of the height. */
+.web-app { display: flex; flex-direction: column; height: 100%; }
+.web-app > :not(.install-line) { flex: 1; min-height: 0; }

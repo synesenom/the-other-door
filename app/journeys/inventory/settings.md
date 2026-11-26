@@ -416,8 +416,7 @@ Focus: the Dialog focuses its first control on open. After a step change, if foc
 
 ### Step `home`
 - h3 "Add The other door to your home screen". — skipped until the phone returns (#23)
-- "Your phone is paired. So that The other door opens like an app:" — skipped until the phone returns (#23)
-- A list with "Android: in Chrome, open the menu (⋮) and tap Install app." and "iPhone: in Safari, tap Share, then Add to Home Screen." — skipped until the phone returns (#23)
+- "Your phone is paired. Once it opens The other door, it offers to install it as an app." — skipped until the phone returns (#23)
 - If not `status.lasting` (always so for cloudflare, and when there is no status): the muted line "When this computer restarts, set this up again and scan the new code. The address changes with it, so add it again to your home screen and remove the old one." — skipped until the phone returns (#23)
 - **"Done"** (primary) closes the dialog, and the row re-reads `phone_status`. It now shows `Serving at …` and **"Remove phone"**. — skipped until the phone returns (#23)
 
