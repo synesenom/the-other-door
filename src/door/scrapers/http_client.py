@@ -221,6 +221,19 @@ class RobotsBlocked(Exception):
         self.url = url
 
 
+def public_session(headers=None, *, system_trust: bool = False) -> requests.Session:
+    """A ``requests.Session`` that connects only to public addresses (#548), redirects included, and reads no
+    system proxy or .netrc: a proxy resolves the name itself, so the check could not bind to the address it
+    connects to."""
+    session = requests.Session()
+    session.trust_env = False
+    session.headers.update(headers if headers is not None else {"User-Agent": USER_AGENT})
+    adapter = _PublicAdapter(system_trust=system_trust)
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+    return session
+
+
 class PoliteSession:
     """A ``requests.Session`` wrapper with jitter, backoff and robots awareness.
 
@@ -300,15 +313,7 @@ class PoliteSession:
         """The host's own ``requests.Session`` (create it on first use). Use it under `_host_lock`."""
         with self._guard:
             if host not in self._host_sessions:
-                session = requests.Session()
-                # No system proxy and no .netrc: a proxy resolves the name itself, so the public-only
-                # check could not bind to the address it connects to.
-                session.trust_env = False
-                session.headers.update(self._session.headers)
-                adapter = _PublicAdapter(system_trust=self.system_trust)
-                session.mount("http://", adapter)
-                session.mount("https://", adapter)
-                self._host_sessions[host] = session
+                self._host_sessions[host] = public_session(self._session.headers, system_trust=self.system_trust)
             return self._host_sessions[host]
 
     def _fetch_robots(self, origin: str) -> robots.Rules:
