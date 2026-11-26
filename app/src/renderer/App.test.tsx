@@ -596,13 +596,13 @@ describe('App, the first-launch gate', () => {
     expect(call).toHaveBeenCalledWith('doctor', { quick: true }) // no test print on the app's own status call
   })
 
-  it('on the phone: Matches, Applications and Settings; the profile is changed on the computer', async () => {
+  it('on the phone: Matches and Applications; the profile and the settings are the computer\'s', async () => {
     const { actions } = gated(profile())
     const info = actions['info']
     info.mockResolvedValue({ environment: 'production', remote: true })
     render(<App />)
     const nav = await screen.findByRole('navigation')
-    expect(within(nav).getAllByRole('button').map((b) => b.textContent)).toEqual(['Matches', 'Applications', 'Settings'])
+    expect(within(nav).getAllByRole('button').map((b) => b.textContent)).toEqual(['Matches', 'Applications'])
   })
 
   it('on the phone, doctor is never asked and what needs you is said, not a button to a screen it lacks', async () => {
@@ -614,8 +614,6 @@ describe('App, the first-launch gate', () => {
     expect(within(needs).getByText('You have no CV yet')).toBeInTheDocument()
     expect(within(needs).queryByRole('button')).toBeNull()
     expect(within(needs).queryByText(/LinkedIn/)).toBeNull()
-    await userEvent.click(screen.getByRole('button', { name: 'Settings' }))
-    await screen.findByRole('heading', { name: 'Settings', level: 1 })
     expect(call.mock.calls.map((c) => c[0])).not.toContain('doctor')
   })
 

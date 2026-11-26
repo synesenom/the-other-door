@@ -273,7 +273,7 @@ The phone app (#303) is the same renderer, so it uses the same tokens, type and
 components; only the layout changes below the sidebar breakpoint (`size.sidebar-breakpoint`, 900 px; the `phone` sizes reach the renderer as `--phone-*` variables):
 
 - **Tab bar** instead of the sidebar: Matches, Applications, Profile, Settings, Analytics (the paired
-  phone has only Matches, Applications and Settings: the profile and the CV
+  phone has only Matches and Applications: the profile, the CV and the settings
   are changed, and Analytics read, on the computer running *The other door*), each a
   22 px stroke icon over an 11 px label; the active tab is ink, 600 weight and underlined. 22 px of bottom padding clears the home indicator.
 - **Pushed screens**: list → posting → materials, each with a back link naming the screen
@@ -298,6 +298,8 @@ components; only the layout changes below the sidebar breakpoint (`size.sidebar-
   app opens from the home screen; the desktop app never shows it.
 - Type steps down one size (headings 19 px);
   body text stays 14–15 px.
+- **Always light** on the phone: an installed Android app's status and navigation bars take one colour, the
+  install's parchment, so a dark app would sit between light bars.
 
 ![Phone screens: Matches light and dark, posting, ready to send, finding jobs, applications](screens/phones.png)
 

@@ -4,14 +4,13 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mockDoor } from '../testing'
 import { Settings } from './Settings'
-import { RemoteContext } from '../remote'
 
 /** The calls a test is about: the phone row's status read (issue 444) happens on every open. */
 const calls = (call: { mock: { calls: unknown[][] } }) => call.mock.calls.filter((c) => c[0] !== 'phone_status')
 
 afterEach(cleanup)
 
-function show(where: 'production' | 'staging' | 'sandbox' = 'production', remote = false, update?: unknown) {
+function show(where: 'production' | 'staging' | 'sandbox' = 'production', update?: unknown) {
   const h = mockDoor({})
   if (update) h.actions['check-update'].mockResolvedValue(update as never)
   const props = {
@@ -25,11 +24,7 @@ function show(where: 'production' | 'staging' | 'sandbox' = 'production', remote
     onDriveChanged: vi.fn(),
     onDataChanged: vi.fn(),
   }
-  render(
-    <RemoteContext.Provider value={remote}>
-      <Settings {...props} />
-    </RemoteContext.Provider>,
-  )
+  render(<Settings {...props} />)
   return { ...h, ...props }
 }
 
@@ -70,7 +65,7 @@ describe('Settings', () => {
   })
 
   it('Help holds the version, the documents and the report button', async () => {
-    show('production', false, { enabled: true, mode: 'install', checked: true, current: '0.1.0', available: false })
+    show('production', { enabled: true, mode: 'install', checked: true, current: '0.1.0', available: false })
     const help = await screen.findByRole('region', { name: 'Help' })
     expect(await within(help).findByText('Version 0.1.0')).toBeInTheDocument()
     expect(within(help).getByRole('button', { name: 'Legal disclaimer…' })).toBeInTheDocument()
@@ -110,11 +105,6 @@ describe('Settings', () => {
     expect(onReported).toHaveBeenCalledTimes(1)
   })
 
-  it('the phone has no Help', () => {
-    show('production', true)
-    expect(screen.queryByRole('region', { name: 'Help' })).toBeNull()
-  })
-
   it('has Your data', () => {
     show()
     expect(screen.getByRole('region', { name: 'Your data' })).toHaveTextContent('Export…')
@@ -128,23 +118,6 @@ describe('Settings', () => {
     expect(document.documentElement).toHaveAttribute('data-theme', 'dark')
     await userEvent.click(within(section).getByRole('radio', { name: 'Same as the system' }))
     expect(document.documentElement).not.toHaveAttribute('data-theme')
-  })
-
-  it('on the phone: no export, import or report; it says these are done on the computer running The other door', () => {
-    show('production', true)
-    const computer = screen.getByRole('region', { name: 'This computer' })
-    expect(within(computer).getByText(/where it is installed/)).toBeInTheDocument()
-    expect(screen.queryByRole('region', { name: 'Your data' })).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Save logs…' })).toBeNull()
-  })
-
-  it('on the phone: only Appearance and where the data is; no connections, no doctor', () => {
-    const { onRecheck, call } = show('production', true)
-    expect(screen.getByRole('region', { name: 'Appearance' })).toBeInTheDocument()
-    expect(screen.getByRole('region', { name: 'This computer' })).toHaveTextContent('Your profile and jobs are on the computer running')
-    expect(screen.queryByRole('region', { name: 'Connections' })).toBeNull()
-    expect(onRecheck).not.toHaveBeenCalled()
-    expect(call).not.toHaveBeenCalled()
   })
 
 })
@@ -163,7 +136,7 @@ describe('Settings: Version', () => {
   })
 
   it('a build that cannot install says a newer version is available and opens its page', async () => {
-    const { actions } = show('production', false, link)
+    const { actions } = show('production', link)
     const openExternal = actions['open-external']
     const section = await screen.findByRole('region', { name: 'Help' })
     expect(await within(section).findByText('Version 0.1.1 is available')).toBeInTheDocument()
@@ -174,21 +147,21 @@ describe('Settings: Version', () => {
   })
 
   it('with nothing newer: only the version, nothing to press (the app checks by itself)', async () => {
-    show('production', false, none)
+    show('production', none)
     const section = await screen.findByRole('region', { name: 'Help' })
     expect(await within(section).findByText('Version 0.1.0')).toBeInTheDocument()
     expect(within(section).queryByRole('button', { name: /Download|Restart/ })).toBeNull()
   })
 
   it('says it is downloading, with no Download link', async () => {
-    show('production', false, downloading)
+    show('production', downloading)
     const section = await screen.findByRole('region', { name: 'Help' })
     expect(await within(section).findByText('Downloading 0.1.1')).toBeInTheDocument()
     expect(within(section).queryByRole('button', { name: 'Download' })).toBeNull()
   })
 
   it('offers a restart once downloaded', async () => {
-    const { actions } = show('production', false, downloaded)
+    const { actions } = show('production', downloaded)
     const installUpdate = actions['install-update']
     const section = await screen.findByRole('region', { name: 'Help' })
     await userEvent.click(await within(section).findByRole('button', { name: 'Restart to update to 0.1.1' }))
@@ -196,7 +169,7 @@ describe('Settings: Version', () => {
   })
 
   it('follows the state the app pushes', async () => {
-    const h = show('production', false, downloading)
+    const h = show('production', downloading)
     const section = await screen.findByRole('region', { name: 'Help' })
     expect(await within(section).findByText('Downloading 0.1.1')).toBeInTheDocument()
     act(() => h.pushUpdate(downloaded))

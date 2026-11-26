@@ -22,11 +22,16 @@ test('pair by the link, then Matches, a posting, Applications and a prepared app
   })
   try {
     const page = await app.firstWindow()
+    // light whatever the phone's setting: the phone paints its own bars from the install, one colour only
+    await page.emulateMedia({ colorScheme: 'dark' })
     // the code in the link pairs; the app opens on Matches with the tab bar at the bottom
     await expect(page.getByRole('heading', { name: 'Matches', level: 1 })).toBeVisible({ timeout: 30_000 })
     expect(page.url()).not.toContain('#pair=')
     const tabs = page.getByRole('navigation')
     await expect(tabs.getByRole('button', { name: 'Applications' })).toBeVisible()
+    await expect(tabs.getByRole('button')).toHaveCount(2)
+    const ground = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--color-ground').trim().toUpperCase())
+    expect(ground).toBe('#F1E6CF')
 
     // a posting, pushed, and back
     await page.getByText('Senior Financial Controller').first().click()

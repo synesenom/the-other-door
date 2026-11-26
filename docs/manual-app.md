@@ -669,7 +669,7 @@ then Add to Home Screen". **Not now** hides the line for good.
 
 The phone is for what you do on the road: find new jobs (the run goes on while the phone is locked),
 read postings, import an ad, prepare an application, and keep Applications up to date. It
-has three tabs, Matches, Applications and Settings (only the look, and a line saying your data is on the computer, with no folder).
+has two tabs, Matches and Applications, and is always light: the settings are the computer's.
 Everything else is done on the computer running *The other door*: first-time setup, your profile and
 CV (Profile is not on the phone), signing in to
 Claude, connecting Google Drive and moving your data. A data

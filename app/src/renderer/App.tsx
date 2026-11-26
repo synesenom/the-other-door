@@ -26,7 +26,7 @@ const DESTINATIONS = ['Matches', 'Applications', 'Profile', 'Settings', 'Analyti
 type Destination = (typeof DESTINATIONS)[number]
 /** The phone finds new jobs, prepares them and keeps the applications: the profile, the CV and the
  * employers are changed, and Analytics read, on the computer running The other door. */
-const PHONE_DESTINATIONS: readonly Destination[] = ['Matches', 'Applications', 'Settings']
+const PHONE_DESTINATIONS: readonly Destination[] = ['Matches', 'Applications']
 
 /** Search and match only on the first run: following and collecting employers wait for the next one. */
 const FIRST_RUN_SKIP = ['discover', 'follow', 'collect']
