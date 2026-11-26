@@ -13,6 +13,7 @@ import subprocess
 import types
 
 import pytest
+from profile_utils import base_config
 
 from door.commands import prepare as prepare_cmd
 from door.core import usage, workspace
@@ -75,7 +76,7 @@ def _tailor(calls, tmp_path, monkeypatch):
 def test_each_claude_call_site(call_site, tmp_path, monkeypatch):
     profile_dir = tmp_path / "profile"
     profile_dir.mkdir()
-    (profile_dir / "config.json").write_text(json.dumps({"claude_config_dir": "/plans/personal"}))
+    (profile_dir / "config.json").write_text(json.dumps({**base_config(profile_dir), "claude_config_dir": "/plans/personal"}))
     monkeypatch.setattr(workspace, "PROFILE_DIR", profile_dir)
     monkeypatch.setenv("CLAUDE_CODE_SESSION_ID", "parent")
     monkeypatch.setenv("CLAUDECODE", "1")

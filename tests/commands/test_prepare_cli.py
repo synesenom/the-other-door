@@ -226,6 +226,39 @@ def test_prepare_stages_exactly_the_tailor_inputs_and_removes_them(cli_env, monk
     assert not (cli_env.jobs_dir / ".tailor" / "job-abc").exists()
 
 
+def test_the_tailors_posting_copy_carries_nothing_the_scorer_wrote_from_the_profile(cli_env, monkeypatch):
+    # the score's reason may repeat the user's preferences from config.json: the tailor never sees it
+    write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc", score=0.9)
+    seen = {}
+
+    def _run(job_id, posting_path, **kw):
+        seen["copy"] = json.loads(posting_path.read_text(encoding="utf-8"))
+        return fake_tailor(cli_env.jobs_dir)(job_id, posting_path)
+
+    monkeypatch.setattr(prepare_cmd, "_run_tailor", _run)
+    prepare_cmd._prepare_core("job-abc", jobs_dir=cli_env.jobs_dir)
+    assert seen["copy"]["title"] and seen["copy"]["description"]
+    assert not {"score", "score_reason", "matching_skills", "missing_skills"} & set(seen["copy"])
+
+
+def test_a_run_killed_earlier_leaves_nothing_the_next_tailor_sees(cli_env, monkeypatch):
+    write_list_posting(cli_env.jobs_dir, "2026-07-01", "jobindex", "job-abc", score=0.9)
+    stale = cli_env.jobs_dir / ".tailor" / "job-abc"
+    stale.mkdir(parents=True)
+    (stale / "story_bank.md").write_text("## A story the user has since deleted\n", encoding="utf-8")
+    (stale / "notes.txt").write_text("x", encoding="utf-8")
+    (cli_env.profile_dir / "story_bank.md").unlink(missing_ok=True)
+    seen = {}
+
+    def _run(job_id, posting_path, **kw):
+        seen["files"] = sorted(p.name for p in posting_path.parent.iterdir())
+        return fake_tailor(cli_env.jobs_dir)(job_id, posting_path)
+
+    monkeypatch.setattr(prepare_cmd, "_run_tailor", _run)
+    prepare_cmd._prepare_core("job-abc", jobs_dir=cli_env.jobs_dir)
+    assert "story_bank.md" not in seen["files"] and "notes.txt" not in seen["files"]
+
+
 def test_tailor_mcp_config_names_the_server_absolutely(cli_env):
     """The session runs outside the checkout, so the server's command and paths are absolute."""
     from pathlib import Path
@@ -240,6 +273,7 @@ def test_run_tailor_has_the_mcp_config_written_when_claude_starts(tmp_path, monk
     home = tmp_path / "home"
     monkeypatch.setattr(workspace, "HOME", home)
     monkeypatch.setattr(workspace, "MCP_CONFIG", home / ".mcp.json")
+    monkeypatch.setattr(workspace, "PROFILE_DIR", home / "profile")  # never the checkout's own profile
     seen = []
     monkeypatch.setattr(subprocess, "run", lambda cmd, **kw: seen.append((home / ".mcp.json").exists()) or FakeCompleted(0))
     prepare_cmd._run_tailor("job-abc", tmp_path / "p.json")

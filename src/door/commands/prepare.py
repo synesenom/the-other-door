@@ -78,6 +78,15 @@ def _tailor_templates(profile_dir: Path) -> dict[str, Path]:
     return {key: templates.resolve(key, config, profile_dir) for key in templates.FILES}
 
 
+# What the scorer wrote on a posting: it read config.json (the user's preferences), so the tailor never sees it.
+_SCORER_FIELDS = ("score", "score_reason", "matching_skills", "missing_skills")
+
+
+def _tailor_posting(posting: dict) -> dict:
+    """The posting as the tailor reads it: no excerpts of removed text, nothing the scorer wrote."""
+    return {k: v for k, v in integrity.for_model(posting).items() if k not in _SCORER_FIELDS}
+
+
 def _stage_tailor_inputs(tailor_dir: Path, profile_dir: Path) -> None:
     """Copy what the tailor reads of the profile into its own folder: `cv.md`, the story bank and the two templates.
     It sees nothing else of the profile (no config, no employer list): an ad that steered it could copy only these."""
@@ -138,10 +147,7 @@ def _tailor_args(job_id: str, posting_path: Path, feedback: str | None = None) -
     """
     output_dir = workspace.JOBS_DIR / "output" / job_id
     tailor_dir = Path(posting_path).parent
-    try:
-        config = profile_loader.load_config_or_defaults(workspace.PROFILE_DIR)
-    except Exception:  # noqa: BLE001 - an invalid config fails the run on its own (`_prepare_core` loads it first)
-        config = {}
+    config = profile_loader.load_config_or_defaults(workspace.PROFILE_DIR)  # `_prepare_core` refused an invalid one
     fields = {"output_dir": str(output_dir)}
     prompt = claude_cli.prompt(
         "tailor-request", **fields, job_id=repr(job_id), posting=str(posting_path),
@@ -379,7 +385,8 @@ def _prepare_core(
     retry_failed = False
     try:
         with progress_mod.heartbeat(f"tailoring {label}", stage="prepare", interval_s=_HEARTBEAT_INTERVAL_S):
-            utils.write_json_atomic(model_copy, integrity.for_model(json.loads(posting_path.read_text(encoding="utf-8"))))
+            shutil.rmtree(tailor_dir, ignore_errors=True)  # a killed run's copies are never handed on
+            utils.write_json_atomic(model_copy, _tailor_posting(json.loads(posting_path.read_text(encoding="utf-8"))))
             _stage_tailor_inputs(tailor_dir, home)
             _run_tailor(job_id, model_copy, timeout_s=timeout_s)
             _step("tailored the CV and cover letter", "ok")
