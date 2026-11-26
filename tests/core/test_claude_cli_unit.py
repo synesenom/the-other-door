@@ -54,6 +54,14 @@ def test_missing_or_broken_config_leaves_the_environment_alone(profile):
     assert claude_cli.env({"A": "1"}) == {"A": "1"}
 
 
+def test_a_claude_child_is_never_the_app(monkeypatch):
+    from door.core import path_scope
+
+    monkeypatch.setenv(path_scope.ENV, "1")
+    assert path_scope.ENV not in claude_cli.env()
+    assert path_scope.ENV not in claude_cli.env({path_scope.ENV: "1", "A": "b"})
+
+
 def test_env_does_not_mutate_its_base(profile):
     profile("/plans/personal")
     base = {"A": "1"}

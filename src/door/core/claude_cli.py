@@ -13,7 +13,7 @@ import re
 import subprocess
 from pathlib import Path
 
-from door.core import usage, workspace
+from door.core import path_scope, usage, workspace
 from door.core.downloads import installers
 
 # The words are the app's (no command, #304); a command adds `INSTALL_HINT`.
@@ -46,6 +46,7 @@ def env(base: dict[str, str] | None = None, profile_dir: Path | None = None) -> 
     if base is None:
         base = {k: v for k, v in os.environ.items() if not k.startswith("CLAUDE_CODE_") and k != "CLAUDECODE"}
     result = dict(base)
+    result.pop(path_scope.ENV, None)  # a model is never the desktop app: its servers' answers are guarded (chat_guard)
     configured = config_dir(profile_dir)
     if configured:
         result["CLAUDE_CONFIG_DIR"] = configured

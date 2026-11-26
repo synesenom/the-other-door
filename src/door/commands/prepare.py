@@ -154,7 +154,7 @@ def _tailor_args(job_id: str, posting_path: Path, feedback: str | None = None) -
         "--agents", str(Path(posting_path).parent / _AGENTS_FILE),
         "--agent", "tailor",
         "--allowedTools", ",".join(_tailor_tools(job_id, posting_path)),
-        "--mcp-config", json.dumps(workspace.mcp_config_entry()),
+        "--mcp-config", json.dumps(workspace.mcp_config_entry(reader="tailor")),
         *claude_cli.STREAM_ARGS,  # the stream carries the run's usage and the plan's limits (#575)
     ]
     argv += ["--add-dir", str(tailor_dir.absolute())]

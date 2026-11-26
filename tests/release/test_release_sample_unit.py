@@ -22,7 +22,7 @@ from release_gate_utils import DEFAULT, releases
 
 # Fields and files that exist in the current code but not in the newest saved release, as `<Model>.<field>` or the
 # inventory pattern. Emptied when a release is saved (docs/development/releasing.md).
-NEW_SINCE_RELEASE: set[str] = {"JobPosting.formatted"}
+NEW_SINCE_RELEASE: set[str] = {"JobPosting.formatted", "JobPosting.summary"}
 
 # Files the inventory names that a release's own sample does not hold, and why (never for lack of effort).
 ABSENT_BY_DESIGN = {

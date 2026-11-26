@@ -58,6 +58,7 @@ FEATURES = {
     "market_aliases": "other",
     "salary": "other",
     "import_posting": "other",
+    "ad_summary": "other",
     "ask": "other",
 }
 
@@ -81,6 +82,7 @@ FEATURE_LABELS = {
     "market_aliases": "Market report",
     "salary": "Salary estimates",
     "import_posting": "Adding a job",
+    "ad_summary": "Summarising an ad for a chat",
     "ask": "Questions about your jobs",
 }
 

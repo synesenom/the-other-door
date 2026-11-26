@@ -17,6 +17,11 @@ from door.core import workspace
 ENV = "DOOR_PATHS_FROM_DIALOGS"
 
 
+def from_app() -> bool:
+    """Whether the desktop app started this server (every path comes from its dialogs): the one caller that is not a chat."""
+    return os.environ.get(ENV) == "1"
+
+
 def check(path: str) -> Path:
     """`path` (relative ones from the data folder), resolved, if a tool may use it.
 
@@ -25,7 +30,7 @@ def check(path: str) -> Path:
     """
     given = Path(path).expanduser()
     full = given if given.is_absolute() else workspace.HOME / given
-    if os.environ.get(ENV) == "1":
+    if from_app():
         return full
     real = full.resolve()
     if any(real.is_relative_to(Path(root).resolve()) for root in (workspace.HOME, workspace.REPO_ROOT)):

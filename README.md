@@ -73,7 +73,7 @@ From then on, a session is a conversation:
 |---------|--------------|
 | "Get me today's jobs." | Searches the job boards in your profile, finds the employers' own job feeds and reads them (only what's new since last time), filters out what can't fit, scores the rest against your CV, and shows the ranked matches. A few minutes. |
 | "What's new?" | What happened since you last looked, then the new matches, best first. |
-| "Show me the Acme one." | The posting in full. You name a job by its company or title; when several fit, it asks which. |
+| "Show me the Acme one." | Opens the ad in your browser and gives Claude a short summary of it. You name a job by its company or title; when several fit, it asks which. |
 | "Not the data engineer one, it's on-site." | Hides it, with your reason. |
 | "Prepare the Acme one." | A tailored CV and cover letter, compiled to PDF (a few minutes). |
 | "Let me see it." | Both PDFs with page images, keywords, page counts and letter length. |

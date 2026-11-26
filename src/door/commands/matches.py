@@ -15,7 +15,9 @@ from door.commands import _prompts
 from door.commands import compile as compile_cmd
 from door.commands import salary as salary_cmd
 from door.commands import status as status_cmd
-from door.core import profile_loader, sites, utils, workspace
+from door.core import chat_guard, profile_loader, sites, utils, workspace
+from door.core.jobs.selection import find_posting_path
+from door.matching import ad_summary
 from door.tailoring import facts as facts_mod
 from door.render import html_doc, readability
 
@@ -337,6 +339,25 @@ def _show_core(job_id: str, *, open: bool = False, jobs_dir: Path | None = None)
         "no_answer": _tracker_mod.no_answer(app_tracker, job_id),
         "no_answer_days": _tracker_mod.NO_ANSWER_DAYS,
     }
+
+
+def _chat_show(answer: dict) -> dict:
+    """`show`'s answer as a Claude Code chat may read it (`core/chat_guard`): the ad opened for the user and a
+    checked ``summary`` (`matching/ad_summary`) in place of the description, its condensed text and the integrity
+    excerpts. A failed summary is ``None`` with a ``warning``, never the description."""
+    jobs_dir = workspace.JOBS_DIR
+    opened = chat_guard.open_ad(answer)
+    path = find_posting_path(jobs_dir, str(answer.get("id") or ""))
+    made = ad_summary.summarise(answer, path, jobs_dir=jobs_dir, profile_dir=workspace.PROFILE_DIR)
+    out = {k: v for k, v in answer.items() if k not in ("description", "description_condensed", "formatted")}
+    out.update(opened)
+    out["summary"] = made["summary"]
+    warnings = [made["warning"]] if made.get("warning") else []
+    if opened.get("open_failed"):
+        warnings.append(f"the browser could not be started: give the user this link to open the ad: {opened['open_failed']}")
+    if warnings:
+        out["warning"] = "; ".join(warnings)
+    return out
 
 
 def _material_pngs(output_dir: Path, name: str) -> list[str]:
