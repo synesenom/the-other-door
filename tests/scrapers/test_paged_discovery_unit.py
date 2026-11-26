@@ -34,7 +34,7 @@ def _cards(html):
 
 def _discover(monkeypatch, answers, *, rotation=("a",), sleeps=None, **kwargs):
     session = _Session(answers)
-    monkeypatch.setattr(paged_discovery.requests, "Session", lambda: session)
+    monkeypatch.setattr(paged_discovery, "_open_session", lambda: session)
 
     def sleep(seconds, stop):
         (sleeps if sleeps is not None else []).append(seconds)
@@ -97,7 +97,7 @@ def test_a_stop_set_before_the_first_request_reads_nothing(monkeypatch):
 def test_a_stop_set_while_waiting_between_two_requests_ends_the_run(monkeypatch):
     stop = threading.Event()
     session = _Session([(200, "full", None)])
-    monkeypatch.setattr(paged_discovery.requests, "Session", lambda: session)
+    monkeypatch.setattr(paged_discovery, "_open_session", lambda: session)
     monkeypatch.setattr(paged_discovery, "_sleep", lambda seconds, s: (s.set(), True)[1])
     result = sdk.paged_discovery(
         {"search_keywords": ["data"]}, name="fake", search_url=lambda kw, page, config: f"https://fake.example/{page}",
@@ -108,7 +108,7 @@ def test_a_stop_set_while_waiting_between_two_requests_ends_the_run(monkeypatch)
 
 def test_without_keywords_nothing_is_read(monkeypatch):
     session = _Session([(200, "full", None)])
-    monkeypatch.setattr(paged_discovery.requests, "Session", lambda: session)
+    monkeypatch.setattr(paged_discovery, "_open_session", lambda: session)
     result = sdk.paged_discovery({}, name="fake", search_url=lambda *a: "", parse_cards=_cards, is_wall=lambda url: False,
                                  page_cap=1, full_page=1, max_budget=1, min_pause=(1.0, 1.0), rotation=["a"])
     assert result["outcome"] == "ok" and session.calls == []

@@ -249,8 +249,7 @@ class _HttpSession:
     shaped like the browser page the crawler was written for (``goto``, ``url``)."""
 
     def __init__(self):
-        self._http = requests.Session()
-        self._http.headers["User-Agent"] = sdk.USER_AGENT
+        self._http = sdk.public_session()
         self.page = self
         self.url = ""
 
