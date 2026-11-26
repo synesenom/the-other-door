@@ -74,3 +74,6 @@ app/journeys-coverage/
 
 # ...except the saved data of each release (#57), which the release gate opens
 !/tests/data_versions/**
+
+# Old learning-plan reports drawn from a CV: never committed
+/upskill/
