@@ -723,9 +723,9 @@ def _print_review(answers: dict) -> None:
     if answers.get("draft_path"):
         click.echo(f"  {'CV draft':<14}{common._display_path(answers['draft_path'])}")
         for item in answers.get("provenance", []):
-            click.echo(f"    {item.get('source', '')}: {item.get('contributed', '')}")
+            click.echo(common.plain(f"    {item.get('source', '')}: {item.get('contributed', '')}"))
         for todo in answers.get("todos", []):
-            click.echo(f"    TODO: {todo}")
+            click.echo(common.plain(f"    TODO: {todo}"))
     click.echo("")
 
 
@@ -1078,10 +1078,10 @@ def _print_profile(result: dict) -> None:
     cv = result["cv"]
     line("CV", cv)
     if cv["headline"]:
-        click.echo(f"    {cv['headline']}")
+        click.echo(common.plain(f"    {cv['headline']}"))
     for section in cv["sections"]:
         roles = f", {len(section['roles'])} roles" if section["roles"] else ""
-        click.echo(f"    {section['title']} ({section['bullets']} bullets{roles})")
+        click.echo(common.plain(f"    {section['title']} ({section['bullets']} bullets{roles})"))
     line("CV template", result["templates"]["cv"])
     line("Cover letter", result["templates"]["cover_letter"])
     line("Story bank", result["story_bank"])

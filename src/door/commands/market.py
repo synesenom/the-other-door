@@ -377,7 +377,7 @@ def market(days: int, scored_companies: bool, save: bool):
     except ValueError as exc:
         click.echo(f"Error: {exc}", err=True)
         sys.exit(1)
-    click.echo(render_markdown(result))
+    click.echo(common.plain(render_markdown(result)))
     if result["warning"]:
         click.echo(f"Warning: {result['warning']}", err=True)
     if result["report_path"]:

@@ -1010,10 +1010,10 @@ def merge_companies(names: tuple[str, ...]):
             click.echo("No duplicate employers.")
             return
         for group in result["candidates"]:
-            click.echo(f"{', '.join(group['names'])}  ({group['reason']})")
+            click.echo(common.plain(f"{', '.join(group['names'])}  ({group['reason']})"))
         click.echo("Merge one with `./door companies merge <keep> <fold in>`.")
         return
-    click.echo(f"Merged {result['removed']} into {result['merged']['name']}.")
+    click.echo(common.plain(f"Merged {result['removed']} into {result['merged']['name']}."))
 
 
 @click.command("why")
