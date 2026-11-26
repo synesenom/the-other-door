@@ -69,15 +69,6 @@ def _rule_path(path) -> str:
     return "/" + posix
 
 
-def _tailor_templates(profile_dir: Path) -> dict[str, Path]:
-    """The two HTML templates the tailor reads, as absolute paths (`door.core.templates`: the user's own, else the code's)."""
-    try:
-        config = profile_loader.load_config_or_defaults(profile_dir)
-    except Exception:  # noqa: BLE001 - an invalid config fails the run on its own; the rules stay narrow
-        config = {}
-    return {key: templates.resolve(key, config, profile_dir) for key in templates.FILES}
-
-
 # What the scorer wrote on a posting: it read config.json (the user's preferences), so the tailor never sees it.
 _SCORER_FIELDS = ("score", "score_reason", "matching_skills", "missing_skills")
 
@@ -87,14 +78,14 @@ def _tailor_posting(posting: dict) -> dict:
     return {k: v for k, v in integrity.for_model(posting).items() if k not in _SCORER_FIELDS}
 
 
-def _stage_tailor_inputs(tailor_dir: Path, profile_dir: Path) -> None:
+def _stage_tailor_inputs(tailor_dir: Path, profile_dir: Path, config: dict) -> None:
     """Copy what the tailor reads of the profile into its own folder: `cv.md`, the story bank and the two templates.
     It sees nothing else of the profile (no config, no employer list): an ad that steered it could copy only these."""
     for name in ("cv.md", "story_bank.md"):
         if (profile_dir / name).is_file():
             utils.write_atomic(tailor_dir / name, (profile_dir / name).read_bytes())
-    for key, src in _tailor_templates(profile_dir).items():
-        utils.write_atomic(tailor_dir / templates.FILES[key], src.read_bytes())
+    for key, name in templates.FILES.items():  # the user's own template, else the code's
+        utils.write_atomic(tailor_dir / name, templates.resolve(key, config, profile_dir).read_bytes())
 
 
 def _tailor_tools(job_id: str, posting_path: Path) -> list[str]:
@@ -387,7 +378,7 @@ def _prepare_core(
         with progress_mod.heartbeat(f"tailoring {label}", stage="prepare", interval_s=_HEARTBEAT_INTERVAL_S):
             shutil.rmtree(tailor_dir, ignore_errors=True)  # a killed run's copies are never handed on
             utils.write_json_atomic(model_copy, _tailor_posting(json.loads(posting_path.read_text(encoding="utf-8"))))
-            _stage_tailor_inputs(tailor_dir, home)
+            _stage_tailor_inputs(tailor_dir, home, config)
             _run_tailor(job_id, model_copy, timeout_s=timeout_s)
             _step("tailored the CV and cover letter", "ok")
             if not _tailor_outputs_missing(output_dir):
