@@ -11,7 +11,7 @@ Every command runs as `./door <command>` from the repo checkout (on Windows,
 Set up      init · doctor
 Find        run
 Your lists  jobs [show|add|status|summary|prepare] · companies [why|add|remove|merge]
-Your CV     cv [enrich]
+Your CV     cv [enrich|titles|stories]
 Move        data [export|import|connect|sync|disconnect]
 ```
 
