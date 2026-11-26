@@ -203,7 +203,7 @@ def status(job_id: str | None, status: str | None, notes: str | None, at: str | 
     if result.get("sent_dir"):
         click.echo(f"Kept a copy of what was sent in {common._display_path(result['sent_dir'])}.")
     if result.get("warning"):
-        click.echo(f"Warning: {result['warning']}", err=True)
+        click.echo(common.plain(f"Warning: {result['warning']}"), err=True)
 
 
 @click.command("summary")
@@ -236,7 +236,7 @@ def _pick_status(job_ref: str) -> str:
     current = _tracker_mod.ApplicationTracker(workspace.JOBS_DIR / "applications.json").get_status(job_id) or "unapplied"
     width = max(map(len, _tracker_mod.STATUSES))
     return _prompts.select(
-        "status", f"{common._job_label(job_id, workspace.JOBS_DIR)} is {current}. New status",
+        "status", common.plain(f"{common._job_label(job_id, workspace.JOBS_DIR)} is {current}. New status"),
         choices=[(f"{label:<{width}}  {_STATUS_HINTS[label]}", label) for label in _tracker_mod.STATUSES],
         default=current,
     )

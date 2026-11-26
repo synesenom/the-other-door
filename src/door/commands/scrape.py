@@ -526,6 +526,10 @@ def _held_back(site: str, scrape_state: dict, now: "datetime") -> "dict | None":
 
 def _site_done_message(entry: dict) -> str:
     """The one-line outcome of a site, shown live and sent with its closing event."""
+    return common.plain(_site_message(entry))
+
+
+def _site_message(entry: dict) -> str:
     site = entry["site"]
     outcome = entry["outcome"]
     if outcome == "ok":

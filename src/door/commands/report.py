@@ -166,7 +166,7 @@ def report(path):
     try:
         result = _report_core(path)
     except FileExistsError as exc:
-        click.echo(f"Error: {exc}", err=True)
+        click.echo(common.plain(f"Error: {exc}"), err=True)
         sys.exit(1)
     console = common._console()
     console.print()

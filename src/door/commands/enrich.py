@@ -293,5 +293,5 @@ def enrich(urls: tuple[str, ...], apply: list[int] | None, all_: bool, files: tu
         chosen = {"all": True} if answer.lower() == "all" else {"apply": _numbers(answer)}
         _echo_applied(_enrich_core(**chosen, profile_dir=workspace.PROFILE_DIR))
     except (ValueError, FileNotFoundError, claude_cli.ClaudeError) as exc:
-        click.echo(f"Error: {exc}", err=True)
+        click.echo(common.plain(f"Error: {exc}"), err=True)
         sys.exit(1)

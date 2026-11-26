@@ -15,6 +15,7 @@ from pathlib import Path
 
 import click
 
+from door.commands import _common as common
 from door.core import workspace
 from door.core.phone import instances
 from door.core.phone import launch_agent
@@ -101,7 +102,7 @@ def start(host: str, port: int, name: str | None, web_dir: Path | None):
         instances.register(workspace.HOME, port=port, name=info["name"],
                            claude_config_dir=_profile_config(Path(workspace.HOME)).get("claude_config_dir"))
     except ValueError as exc:
-        click.echo(f"Error: {exc}", err=True)
+        click.echo(common.plain(f"Error: {exc}"), err=True)
         sys.exit(1)
     mcp_server._startup_pull()
     app = serve_http.build_app(home=workspace.HOME, web_dir=Path(info["web_dir"]), name=info["name"])
@@ -116,7 +117,7 @@ def pair(device: str, url: str | None):
     try:
         result = _pair_core(home=workspace.HOME, device=device, url=url)
     except ValueError as exc:
-        click.echo(f"Error: {exc}", err=True)
+        click.echo(common.plain(f"Error: {exc}"), err=True)
         sys.exit(1)
     click.echo(f"Pairing code for {result['device']}: {result['code']}")
     click.echo(f"It works once, for {result['expires_in_minutes']} minutes. Type it in the app on the phone.")
@@ -160,7 +161,7 @@ def install_agent(port: int, name: str | None):
     try:
         path = launch_agent.install(home=workspace.HOME, port=port, name=name)
     except ValueError as exc:
-        click.echo(f"Error: {exc}", err=True)
+        click.echo(common.plain(f"Error: {exc}"), err=True)
         sys.exit(1)
     click.echo(f"The other door for {name} now starts at login and restarts if it stops ({path}).")
     click.echo(f"Its log: {Path(workspace.HOME) / 'logs' / 'serve.log'}")
@@ -174,6 +175,6 @@ def uninstall_agent(name: str | None):
     try:
         path = launch_agent.uninstall(name=name)
     except ValueError as exc:
-        click.echo(f"Error: {exc}", err=True)
+        click.echo(common.plain(f"Error: {exc}"), err=True)
         sys.exit(1)
     click.echo(f"Removed {path}." if path else f"No launch agent for {name}.")

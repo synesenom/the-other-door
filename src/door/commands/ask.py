@@ -100,7 +100,7 @@ def ask(question: tuple[str, ...], model: str | None):
     try:
         result = _ask_core(" ".join(question), model=model, jobs_dir=workspace.JOBS_DIR, profile_dir=workspace.PROFILE_DIR)
     except (ValueError, claude_cli.ClaudeError) as exc:
-        click.echo(f"Error: {exc}", err=True)
+        click.echo(common.plain(f"Error: {exc}"), err=True)
         raise SystemExit(1) from None
     console = common._console()
     console.print(common.literal(result["answer"]))
