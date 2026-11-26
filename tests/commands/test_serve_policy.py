@@ -30,7 +30,7 @@ def clock(monkeypatch):
 
 @pytest.mark.parametrize("tool", [
     "ask", "setup", "export_data", "import_data", "draft_cv", "compile", "connect_drive", "query_jobs",
-    "init_profile", "save_cv", "keywords", "enrich", "skill_gaps", "market",
+    "init_profile", "save_cv", "keywords", "enrich", "market",
     "list_stories", "save_story", "remove_story", "draft_stories",
     "list_companies", "why_company", "add_company", "remove_company", "merge_companies",
     "doctor", "sync_data", "disconnect_drive", "revise", "mark_reviewed",

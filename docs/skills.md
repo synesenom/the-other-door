@@ -69,7 +69,7 @@ Agents are not invoked directly; tools and skills run them.
 |-------|--------|------|
 | `matcher` | `match` | The scoring rubric, used as the system prompt of one `claude -p` call per posting. |
 | `scorer` | `door.matching.scorer` | The scoring prompt's wrapper: it fills in the matcher's rubric, the language and work-permit phrases, the profile and the CV. |
-| `ask`, `cv-drafter`, `cv-enricher`, `page-reader`, `skill-gaps`, `keywords`, `skill-grouper`, `reviser`, `salary`, `story-from-text`, `story-from-cv`, `titles`, `posting-reader` | `door.commands.ask`, `cv`, `enrich`, `door.core.page_reader`, `gaps`, `keywords`, `market`, `revise`, `salary`, `stories`, `titles`, `add` | One model prompt each: the file's body is the system prompt of one `claude -p` call, its frontmatter the model and tools (`claude_cli.prompt`). |
+| `ask`, `cv-drafter`, `cv-enricher`, `page-reader`, `keywords`, `skill-grouper`, `reviser`, `salary`, `story-from-text`, `story-from-cv`, `titles`, `posting-reader` | `door.commands.ask`, `cv`, `enrich`, `door.core.page_reader`, `keywords`, `market`, `revise`, `salary`, `stories`, `titles`, `add` | One model prompt each: the file's body is the system prompt of one `claude -p` call, its frontmatter the model and tools (`claude_cli.prompt`). |
 | `cv-reader`, `fact-checker`, `careers-finder`, `title-translator` | `door.core.cv_read`, `door.tailoring.facts`, `door.core.employers.careers_ai`, `door.matching.language` | The same, for the code below the commands. |
 | `tailor-request`, `tailor-retry` | `door.commands.prepare` | Message files: the `-p` request that runs the tailor (and its retry), with the job filled in. |
 | `tailor` | `prepare` | Writes the tailored CV and cover letter, compiles and checks page limits. |

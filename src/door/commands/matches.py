@@ -22,7 +22,6 @@ from door.render import html_doc, readability
 
 def _list_core(
     min_score: float | None = None,
-    limit: int | None = None,
     jobs_dir: Path | None = None,
     profile_dir: Path | None = None,
     new_only: bool = False,
@@ -41,7 +40,6 @@ def _list_core(
     ``scraped_at``; ``null`` disables) are dropped.
 
     Args:
-        limit: Only the top N (`cv gaps --top N`).
         new_only: Only postings first seen (``scraped_at``) after the last
             review (`jobs/last_review.json`, stamped by `reviewed`).
         status: Only postings with this ledger status (``unapplied`` includes the
@@ -57,11 +55,11 @@ def _list_core(
         "score", "title", "title_en", "company", "location", "work_permit",
         "status", "is_new", "updated_at", "rounds", "no_answer", "no_answer_days",
         "stalled_days"}, ...]}``, sorted by score descending;
-        ``weak`` is None, or, in the default view only (no status, ongoing, closed, new_only or limit) until any posting
+        ``weak`` is None, or, in the default view only (no status, ongoing, closed, new_only) until any posting
         on disk has scored at least the config's ``min_score``, ``{"matches": [rows like the above, the best 3 untracked
         fresh postings below the bar], "hint": "sources" | "keywords", "sources": [{"key", "label"}]}``: ``sources``
         names the discovery sources serving the profile's city that are not turned on;
-        ``scored`` is how many postings on disk the model scored (score above 0), whatever the filters, status or limit;
+        ``scored`` is how many postings on disk the model scored (score above 0), whatever the filters, status;
         ``updated_at`` is when the current status happened (None when untracked), ``rounds`` the
         interview rounds as ``[{"stage", "result"}]`` (`ApplicationTracker.interview_rounds`); ``no_answer`` is whether an applied or interviewing job has been
         silent for more than ``no_answer_days`` days (`tracker.NO_ANSWER_DAYS`, #89); ``stalled_days`` is its
@@ -106,10 +104,8 @@ def _list_core(
     seen = status_cmd._seen_since_review(jobs_dir)
     if new_only:
         matches = [m for m in matches if status_cmd._is_new_since(m, reviewed_at, seen)]
-    if limit is not None:
-        matches = matches[:limit]
     weak = None
-    if wanted is None and not new_only and limit is None:
+    if wanted is None and not new_only:
         weak = _weak_matches(postings, app_tracker, jobs_dir, config, reviewed_at, seen)
 
     return {

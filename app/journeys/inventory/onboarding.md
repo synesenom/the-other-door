@@ -337,7 +337,7 @@ Stdin: `Role targets: A; B\nAd languages: English, Danish`. Called from Reading 
 `keywords` must be a non-empty list (else "claude's answer has no `keywords` list" / "claude proposed no keywords"); `topic_terms` may be empty or missing. To vary the answer between the Reading call and a review re-proposal, a stand-in can match on the stdin role targets (it is on stdin, not argv: read stdin in the script).
 
 ### Not called by the app wizard
-`preview_matches` (`/onboard` only; its scoring would be the matcher prompt), `enrich`, `skill_gaps`, `market`.
+`preview_matches` (`/onboard` only; its scoring would be the matcher prompt), `enrich`, `market`.
 
 ---
 

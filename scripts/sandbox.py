@@ -26,7 +26,6 @@ def install(sandbox: Path) -> None:
     workspace.PROFILE_DIR = sandbox / "profile"
     workspace.JOBS_DIR = sandbox / "jobs"
     workspace.BACKUPS_DIR = sandbox / "backups"
-    workspace.UPSKILL_DIR = sandbox / "upskill"
     workspace.MCP_CONFIG = sandbox / ".mcp.json"
     if not workspace.PROFILE_DIR.exists():
         shutil.copytree(workspace.PROFILE_EXAMPLE_DIR, workspace.PROFILE_DIR)

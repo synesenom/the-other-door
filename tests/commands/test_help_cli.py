@@ -22,7 +22,7 @@ def test_top_level_help_is_sectioned_in_order():
         "jobs [show|add|status|summary|prepare|query|salary]",
         "ask",
         "companies [why|add|remove|merge]",
-        "cv [enrich|gaps|titles|stories]",
+        "cv [enrich|titles|stories]",
         "data [export|import|connect|sync|disconnect|report]",
     ):
         assert re.search(rf"^  {re.escape(line)}\s", out, re.MULTILINE), line

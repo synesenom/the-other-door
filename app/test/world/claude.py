@@ -111,7 +111,6 @@ KINDS = [
     ("stories", "You draft CARL stories"),
     ("keywords", "You propose search terms"),
     ("titles", "You suggest the job titles"),
-    ("gaps", "You write a skill-gap analysis"),
     ("revise", "You revise the body of an HTML CV or cover letter"),
     ("facts", "You check a tailored CV and cover letter"),
     ("market", "You group skill names"),

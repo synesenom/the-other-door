@@ -86,25 +86,6 @@ def lines_by_kind(md: str, reading: dict):
         yield (kinds[section] if 0 <= section < len(kinds) else None), line
 
 
-SENT_KINDS = ("experience", "education", "skills", "certifications", "languages")  # the rest (a summary, references, contacts) stays home
-
-def anonymous(cv_text: str, profile: dict, reading: dict) -> str:
-    """The CV's sections about the work (`SENT_KINDS`, by the reading's kinds), without the profile's name, email and
-    phone, nor the name, email and contact details the reading found, each taken out as its literal text, however the CV
-    spaces it."""
-    private = [str(profile.get(k)) for k in ("name", "email", "phone") if profile.get(k)]
-    private += [part for part in str(profile.get("name") or "").split() if len(part) > 1]
-    private += [str(reading.get(k)) for k in ("name", "email") if reading.get(k)]
-    private += [str(c["value"]) for c in reading.get("contacts") or [] if c.get("value")]
-    kept = [line for kind, line in lines_by_kind(cv_text, reading) if kind in SENT_KINDS]
-    text = "\n".join(kept)
-    for value in sorted(set(private), key=len, reverse=True):
-        if value.split():
-            text = re.sub(r"\s+".join(map(re.escape, value.split())), "", text, flags=re.IGNORECASE)
-    return text.strip()
-
-
-
 def check(answer, md: str) -> dict:
     """`answer` held to what the code can verify of the CV `md` (normalised): the `## ` headings are the CV's own, in order and
     none left out, the `### ` headings are real lines and each entry's parts sit in its own, every value is text of the CV, enums and years hold.

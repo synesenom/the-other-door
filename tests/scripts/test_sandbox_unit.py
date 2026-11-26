@@ -21,7 +21,7 @@ _spec.loader.exec_module(sandbox)
 def _restore(monkeypatch):
     """`install` sets module globals; put them back after each test."""
     for module, name in [(workspace, "PROFILE_DIR"), (workspace, "JOBS_DIR"), (workspace, "HOME"),
-                         (workspace, "BACKUPS_DIR"), (workspace, "UPSKILL_DIR"), (workspace, "MCP_CONFIG"),
+                         (workspace, "BACKUPS_DIR"), (workspace, "MCP_CONFIG"),
                          (lock, "pre_acquire_hook"), (lock, "post_release_hook")]:
         monkeypatch.setattr(module, name, getattr(module, name))
 
@@ -33,7 +33,6 @@ def test_install_points_the_workspace_at_the_sandbox(tmp_path):
     assert workspace.JOBS_DIR == tmp_path / "jobs"
     assert workspace.HOME == tmp_path
     assert workspace.BACKUPS_DIR == tmp_path / "backups"
-    assert workspace.UPSKILL_DIR == tmp_path / "upskill"
     assert workspace.MCP_CONFIG == tmp_path / ".mcp.json"
 
 

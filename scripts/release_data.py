@@ -143,7 +143,7 @@ def main(argv: list[str]) -> int:
     home = Path(argv[1]).resolve()
     from door.core import lock, workspace
 
-    for name, relative in (("PROFILE_DIR", "profile"), ("JOBS_DIR", "jobs"), ("BACKUPS_DIR", "backups"), ("UPSKILL_DIR", "upskill")):
+    for name, relative in (("PROFILE_DIR", "profile"), ("JOBS_DIR", "jobs"), ("BACKUPS_DIR", "backups")):
         setattr(workspace, name, home / relative)
     workspace.HOME = home
     for hook in ("pre_acquire_hook", "post_release_hook"):  # never a Google Drive: the data is a sample
