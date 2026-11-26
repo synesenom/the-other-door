@@ -29,6 +29,7 @@ def _item(job_id, score=0.7):
         "missing_skills": [],
         "language_requirement": "none",
         "flags": [],
+        "model_addressed": [],
     }
 
 

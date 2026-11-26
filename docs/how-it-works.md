@@ -165,7 +165,14 @@ posting's `integrity` (`clean` or `suspicious`, with a short excerpt per finding
 `score_reason` starts with "suspicious ad:", and `show` lists the findings. Scraped ads are gated as text
 only: scrapers turn HTML into text before the gate runs, so CSS-hidden text in a scraped ad is not yet
 detected (a known gap; the prompts also tell the models to treat the ad as data, never as instructions).
-A gate that fails never drops an ad or stops a run.
+A gate that fails never drops an ad or stops a run. The gate's phrase list is not the only guard: the scorer
+also quotes, in `model_addressed`, any text of the ad that speaks to an AI, a screener or a scoring system or
+tells the reader how to score it. Code keeps only quotes of three words and 15 characters or more found in
+what the scorer was shown (title, company, description, matched word by word, ignoring spacing, bullets and
+punctuation between words), removes exactly the quoted span and nothing around it, records an `instruction` finding (the ad becomes suspicious) and scores the cleaned ad once more
+(that answer is not checked again); when the run's cap of scored ads leaves no room, the cleaned ad stays
+unscored and is scored on the next run. The first look in setup writes nothing and does not rescore: an ad
+whose answer quotes such text is left out of it.
 
 ## Plan usage
 

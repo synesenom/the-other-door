@@ -180,12 +180,10 @@ def _match_core(
     needs_permit = bool(config.get("needs_work_permit", False))
 
     counters = {"scored": 0, "above_threshold": 0}
+    flagged: list[str] = []  # ads whose first answer quoted text aimed at a model: cleaned, to be scored once more
 
-    def _persist(job_id: str, result: dict) -> None:
-        entry = entries_by_id.get(job_id)
-        if entry is None:
-            return
-        path, posting = entry
+    def _store(job_id: str, result: dict) -> None:
+        path, posting = entries_by_id[job_id]
         updated = scorer.apply_result(posting, result, needs_work_permit=needs_permit)
         utils.write_json_atomic(path, updated)
         counters["scored"] += 1
@@ -194,24 +192,44 @@ def _match_core(
         if score is not None and score >= min_score:
             counters["above_threshold"] += 1
 
+    def _first(job_id: str, result: dict) -> None:
+        entry = entries_by_id.get(job_id)
+        if entry is None:
+            return
+        path, posting = entry
+        # what the ad says to a model is removed and never scored; the second answer is the score
+        cleaned, removed = integrity.remove_quoted(posting, result.get("model_addressed") or [])
+        if not removed:
+            _store(job_id, result)
+            return
+        utils.write_json_atomic(path, cleaned)
+        entries_by_id[job_id] = (path, cleaned)
+        flagged.append(job_id)
+
+    def _second(job_id: str, result: dict) -> None:
+        if job_id in entries_by_id:
+            _store(job_id, result)
+
     if postings:
         progress_mod.report("scoring", 0, len(postings), stage="match")
     start = time.monotonic()
     errors: dict[str, str] = {}
-    _results, failed = scorer.score_postings(
-        postings,
-        system_prompt=system_prompt,
-        model=scorer.DEFAULT_MODEL,
-        on_result=_persist,
-        errors=errors,
-    )
+    system_kwargs = {"system_prompt": system_prompt, "model": scorer.DEFAULT_MODEL, "errors": errors}
+    _results, failed = scorer.score_postings(postings, on_result=_first, **system_kwargs)
+    # the rescoring shares the run's cap: what does not fit stays unscored (cleaned) and waits for the next run
+    room = max(0, MAX_SCORED_PER_RUN - len(postings))
+    waiting = len(held_back) + len(flagged[room:])
+    again = [entries_by_id[i][1] for i in flagged[:room]]
+    if again:
+        _results, failed_again = scorer.score_postings(again, on_result=_second, **system_kwargs)
+        failed += failed_again
     elapsed_s = time.monotonic() - start
 
     return {
         "candidates_dir": str(candidates_dir),
         "candidate_dirs": [str(d) for d in candidate_dirs],
         "unscored_before": unscored_before,
-        "waiting": len(held_back),
+        "waiting": waiting,
         "scored": counters["scored"],
         "failed": failed,
         "failures": [{"id": i, "error": errors.get(i, "")} for i in failed[:MAX_FAILURES]],

@@ -212,9 +212,7 @@ def build_system_prompt(profile_cfg: dict, cv_md: str, rubric_md: str) -> str:
 def build_user_message(posting: dict) -> str:
     """Title/company/location/posted_at + description_condensed (falling
     back to description), hard-capped at 6000 chars."""
-    description = posting.get("description_condensed") or posting.get("description") or ""
-    if len(description) > _USER_MESSAGE_CHAR_CAP:
-        description = description[:_USER_MESSAGE_CHAR_CAP]
+    description = (posting.get("description_condensed") or posting.get("description") or "")[:_USER_MESSAGE_CHAR_CAP]
 
     lines = [
         f"Title: {posting.get('title', '')}",
@@ -253,6 +251,7 @@ SCORE_SCHEMA: dict = {
         },
         "work_permit": {"type": "string", "enum": WORK_PERMIT},
         "flags": {"type": "array", "items": {"type": "string"}},
+        "model_addressed": {"type": "array", "items": {"type": "string"}},
     },
     "required": [
         "score",
@@ -262,6 +261,7 @@ SCORE_SCHEMA: dict = {
         "language_requirement",
         "work_permit",
         "flags",
+        "model_addressed",
     ],
     "additionalProperties": False,
 }
@@ -349,7 +349,7 @@ def _validate_score_fields(data: dict, *, require_job_id: bool = False) -> None:
     if not isinstance(data["score_reason"], str):
         raise ScoreParseError("score_reason must be a string")
 
-    for field in ("matching_skills", "missing_skills", "flags"):
+    for field in ("matching_skills", "missing_skills", "flags", "model_addressed"):
         value = data[field]
         if not isinstance(value, list) or not all(isinstance(s, str) for s in value):
             raise ScoreParseError(f"{field} must be a list of strings")
