@@ -280,7 +280,6 @@ def ask(
     feature: str,
     model: str | None = None,
     fields: dict[str, str] | None = None,
-    allowed_tools: tuple[str, ...] | None = None,
     schema: dict | None = None,
     timeout_s: float | None = None,
     profile_dir: Path | None = None,
@@ -288,8 +287,8 @@ def ask(
     mcp_config: dict | None = None,
 ):
     """One question to the model: the body of `src/door/prompts/<agent>.md` as the system prompt (`fields`
-    filled in, see `prompt`), `input` on stdin, no session kept. The model and the tools are the file's
-    unless `model` or `allowed_tools` (`()` for none) says otherwise.
+    filled in, see `prompt`), `input` on stdin, no session kept. The tools are always the file's (reviewed in
+    `tests/core/test_prompt_tools_guard_unit.py`), the model the file's unless `model` says otherwise.
 
     With `schema`, the answer is asked for as JSON of that shape and returned
     as a dict; without, the answer text is returned stripped. Either way the
@@ -301,8 +300,7 @@ def ask(
         ClaudeError: as `run()`, or an answer that is not a JSON object when a
             schema was given.
     """
-    if allowed_tools is None:
-        allowed_tools = tools_of(agent)
+    allowed_tools = tools_of(agent)
     args = ["--model", model or model_of(agent), "--system-prompt", prompt(agent, **(fields or {}))]
     if schema is not None:
         args += ["--json-schema", json.dumps(schema)]
