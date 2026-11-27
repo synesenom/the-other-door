@@ -287,6 +287,16 @@ LEDGER = {
 }
 
 
+# a good match whose ad is set out as Markdown and has the summary a chat reads (0.5.0)
+_FIRST = POSTINGS[0][1]
+_FIRST["formatted"] = True
+_FIRST["summary"] = {
+    "sha256": hashlib.sha256(_FIRST["description"].encode("utf-8")).hexdigest(),
+    "fields": {"requirements": ["Excel", "IFRS"], "nice_to_have": [], "languages": ["English"], "salary": None,
+               "place": "Copenhagen", "seniority": "senior", "work_mode": "hybrid"},
+}
+
+
 def make_postings() -> None:
     store = history.HistoryStore(JOBS / "history.json")
     for days_ago, fields, extra in POSTINGS:
